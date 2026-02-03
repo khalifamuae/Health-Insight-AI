@@ -175,6 +175,27 @@ export type TestResultWithDefinition = TestResult & {
   testDefinition: TestDefinition;
 };
 
+// All 50 tests merged with user values (0 if missing)
+export interface AllTestsData {
+  id: string;
+  testId: string;
+  nameEn: string;
+  nameAr: string;
+  category: TestCategory;
+  importance: number;
+  unit: string | null;
+  normalRangeMin: number | null;
+  normalRangeMax: number | null;
+  recheckMonths: number | null;
+  value: number;
+  valueText: string | null;
+  status: TestStatus | "pending";
+  testDate: string | null;
+  pdfFileName: string | null;
+  hasResult: boolean;
+  order: number;
+}
+
 export type TestCategory = "vitamins" | "minerals" | "hormones" | "organ_functions" | "lipids" | "immunity" | "blood" | "coagulation" | "special";
 export type TestStatus = "normal" | "low" | "high";
 export type SubscriptionPlan = "free" | "basic" | "premium";

@@ -83,7 +83,22 @@ const resources = {
         analysisFailed: 'فشل التحليل',
         loginRequired: 'يرجى تسجيل الدخول',
         limitReached: 'وصلت للحد الأقصى'
-      }
+      },
+      pending: 'معلق',
+      testsCompleted: 'فحص مكتمل',
+      yourValue: 'قيمتك',
+      testDate: 'تاريخ الفحص',
+      loading: 'جاري التحميل...',
+      noData: 'لا توجد بيانات',
+      vitamins: 'الفيتامينات',
+      minerals: 'المعادن',
+      hormones: 'الهرمونات',
+      organ_functions: 'وظائف الأعضاء',
+      lipids: 'الدهون',
+      immunity: 'المناعة',
+      blood: 'فحوصات الدم',
+      coagulation: 'التخثر',
+      special: 'فحوصات خاصة'
     }
   },
   en: {
@@ -166,7 +181,22 @@ const resources = {
         analysisFailed: 'Analysis failed',
         loginRequired: 'Please login',
         limitReached: 'Limit reached'
-      }
+      },
+      pending: 'Pending',
+      testsCompleted: 'tests completed',
+      yourValue: 'Your Value',
+      testDate: 'Test Date',
+      loading: 'Loading...',
+      noData: 'No data available',
+      vitamins: 'Vitamins',
+      minerals: 'Minerals',
+      hormones: 'Hormones',
+      organ_functions: 'Organ Functions',
+      lipids: 'Lipids',
+      immunity: 'Immunity',
+      blood: 'Blood Tests',
+      coagulation: 'Coagulation',
+      special: 'Special Tests'
     }
   }
 };

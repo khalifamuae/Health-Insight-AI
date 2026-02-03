@@ -63,7 +63,7 @@ export async function registerRoutes(
     }
   });
 
-  // Test results routes
+  // Test results routes - returns only user's actual test results
   app.get("/api/tests", isAuthenticated, async (req: any, res: Response) => {
     try {
       const userId = req.user.claims.sub;
@@ -72,6 +72,58 @@ export async function registerRoutes(
     } catch (error) {
       console.error("Error fetching tests:", error);
       res.status(500).json({ error: "Failed to fetch tests" });
+    }
+  });
+
+  // Get ALL 50 tests merged with user values (0 if missing)
+  // Ordered by importance level and category as defined in app
+  app.get("/api/tests/all", isAuthenticated, async (req: any, res: Response) => {
+    try {
+      const userId = req.user.claims.sub;
+      
+      // Get all test definitions (ordered by importance and category)
+      const definitions = await storage.getTestDefinitions();
+      
+      // Get user's test results
+      const userTests = await storage.getTestResultsByUser(userId);
+      
+      // Create map of latest user test results by testId
+      const userTestMap = new Map<string, any>();
+      for (const test of userTests) {
+        const existing = userTestMap.get(test.testId);
+        if (!existing || (test.testDate && existing.testDate && new Date(test.testDate) > new Date(existing.testDate))) {
+          userTestMap.set(test.testId, test);
+        }
+      }
+      
+      // Merge all definitions with user values
+      const allTests = definitions.map((def, index) => {
+        const userTest = userTestMap.get(def.id);
+        return {
+          id: userTest?.id || `empty-${def.id}`,
+          testId: def.id,
+          nameEn: def.nameEn,
+          nameAr: def.nameAr,
+          category: def.category,
+          importance: def.level,
+          unit: def.unit,
+          normalRangeMin: def.normalRangeMin,
+          normalRangeMax: def.normalRangeMax,
+          recheckMonths: def.recheckMonths,
+          value: userTest?.value ?? 0,
+          valueText: userTest?.valueText || null,
+          status: userTest?.status || "pending",
+          testDate: userTest?.testDate || null,
+          pdfFileName: userTest?.pdfFileName || null,
+          hasResult: !!userTest,
+          order: index,
+        };
+      });
+      
+      res.json(allTests);
+    } catch (error) {
+      console.error("Error fetching all tests:", error);
+      res.status(500).json({ error: "Failed to fetch all tests" });
     }
   });
 

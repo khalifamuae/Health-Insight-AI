@@ -1,17 +1,17 @@
 import { useQuery } from "@tanstack/react-query";
-import { TestsTable } from "@/components/TestsTable";
+import { AllTestsTable } from "@/components/AllTestsTable";
 import { MedicalDisclaimer } from "@/components/MedicalDisclaimer";
-import type { TestResultWithDefinition } from "@shared/schema";
+import type { AllTestsData } from "@shared/schema";
 
 export default function MyTests() {
-  const { data: tests = [], isLoading } = useQuery<TestResultWithDefinition[]>({
-    queryKey: ["/api/tests"],
+  const { data: tests = [], isLoading } = useQuery<AllTestsData[]>({
+    queryKey: ["/api/tests/all"],
   });
 
   return (
     <div className="space-y-6">
       <MedicalDisclaimer />
-      <TestsTable tests={tests} isLoading={isLoading} />
+      <AllTestsTable tests={tests} isLoading={isLoading} />
     </div>
   );
 }

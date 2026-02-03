@@ -113,6 +113,12 @@ const resources = {
       confirm: "Confirm",
       noData: "No data available",
       years: "years",
+      pending: "Pending",
+      testsCompleted: "tests completed",
+      abnormal: "abnormal",
+      defaultOrder: "Default Order",
+      allCategories: "All Categories",
+      allStatuses: "All Statuses",
     }
   },
   ar: {
@@ -225,6 +231,12 @@ const resources = {
       confirm: "تأكيد",
       noData: "لا توجد بيانات",
       years: "سنة",
+      pending: "معلق",
+      testsCompleted: "فحص مكتمل",
+      abnormal: "غير طبيعي",
+      defaultOrder: "الترتيب الافتراضي",
+      allCategories: "جميع التصنيفات",
+      allStatuses: "جميع الحالات",
     }
   }
 };

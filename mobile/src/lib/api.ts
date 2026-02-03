@@ -104,6 +104,7 @@ export const queries = {
   user: () => api.get('/api/user'),
   tests: () => api.get('/api/tests'),
   userTests: () => api.get('/api/user-tests'),
+  allTests: () => api.get('/api/tests/all'),
   reminders: () => api.get('/api/reminders'),
   testDefinitions: () => api.get('/api/test-definitions')
 };
