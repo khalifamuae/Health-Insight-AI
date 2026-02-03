@@ -30,14 +30,14 @@
     "web": {
       "favicon": "./assets/favicon.png"
     },
-    "plugins": [
-      "expo-localization",
-      "expo-secure-store"
-    ],
     "extra": {
       "eas": {
         "projectId": "your-project-id"
       }
-    }
+    },
+    "plugins": [
+      "expo-secure-store",
+      "expo-localization"
+    ]
   }
 }

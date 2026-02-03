@@ -46,10 +46,9 @@ export default function TabNavigator() {
         component={HomeScreen}
         options={{
           title: t('home'),
-          tabBarIcon: ({ color, size }) => (
+          tabBarIcon: ({ color, size }: { color: string; size: number }) => (
             <Ionicons name="home" size={size} color={color} />
-          ),
-          tabBarTestID: 'tab-home'
+          )
         }}
       />
       <Tab.Screen
@@ -57,10 +56,9 @@ export default function TabNavigator() {
         component={TestsScreen}
         options={{
           title: t('tests'),
-          tabBarIcon: ({ color, size }) => (
+          tabBarIcon: ({ color, size }: { color: string; size: number }) => (
             <Ionicons name="flask" size={size} color={color} />
-          ),
-          tabBarTestID: 'tab-tests'
+          )
         }}
       />
       <Tab.Screen
@@ -68,10 +66,9 @@ export default function TabNavigator() {
         component={UploadScreen}
         options={{
           title: t('upload'),
-          tabBarIcon: ({ color, size }) => (
+          tabBarIcon: ({ color, size }: { color: string; size: number }) => (
             <Ionicons name="cloud-upload" size={size} color={color} />
-          ),
-          tabBarTestID: 'tab-upload'
+          )
         }}
       />
       <Tab.Screen
@@ -79,10 +76,9 @@ export default function TabNavigator() {
         component={RemindersScreen}
         options={{
           title: t('reminders.title'),
-          tabBarIcon: ({ color, size }) => (
+          tabBarIcon: ({ color, size }: { color: string; size: number }) => (
             <Ionicons name="notifications" size={size} color={color} />
-          ),
-          tabBarTestID: 'tab-reminders'
+          )
         }}
       />
       <Tab.Screen
@@ -90,10 +86,9 @@ export default function TabNavigator() {
         component={ProfileScreen}
         options={{
           title: t('profile'),
-          tabBarIcon: ({ color, size }) => (
+          tabBarIcon: ({ color, size }: { color: string; size: number }) => (
             <Ionicons name="person" size={size} color={color} />
-          ),
-          tabBarTestID: 'tab-profile'
+          )
         }}
       />
     </Tab.Navigator>
