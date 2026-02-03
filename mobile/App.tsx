@@ -6,7 +6,8 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import './src/lib/i18n';
-import TabNavigator from './src/navigation/TabNavigator';
+import { AuthProvider } from './src/context/AuthContext';
+import RootNavigator from './src/navigation/RootNavigator';
 
 I18nManager.allowRTL(true);
 I18nManager.forceRTL(true);
@@ -24,10 +25,12 @@ export default function App() {
   return (
     <SafeAreaProvider>
       <QueryClientProvider client={queryClient}>
-        <NavigationContainer>
-          <StatusBar style="dark" />
-          <TabNavigator />
-        </NavigationContainer>
+        <AuthProvider>
+          <NavigationContainer>
+            <StatusBar style="dark" />
+            <RootNavigator />
+          </NavigationContainer>
+        </AuthProvider>
       </QueryClientProvider>
     </SafeAreaProvider>
   );

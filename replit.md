@@ -13,6 +13,10 @@ HealthLab is a comprehensive health tracking application that analyzes PDF lab r
 - **Subscription System**: Free (3 PDFs), Basic (20 PDFs), Premium (unlimited)
 
 ## Recent Changes
+- Added React Native/Expo mobile application for Android and iOS
+- Mobile app includes: Home, Tests, Upload, Reminders, Profile screens
+- Added authentication context and secure storage for mobile
+- Mobile app uses same backend API as web app
 - Initial implementation of complete health tracking system
 - Created 50 test definitions with Arabic/English names
 - Implemented PDF upload and AI analysis using Replit AI Integrations
@@ -21,12 +25,20 @@ HealthLab is a comprehensive health tracking application that analyzes PDF lab r
 
 ## Project Architecture
 
-### Frontend (client/src/)
+### Web Frontend (client/src/)
 - **Framework**: React with Vite
 - **UI Library**: Shadcn/ui with Tailwind CSS
 - **State Management**: TanStack Query
 - **Routing**: Wouter
 - **i18n**: i18next with Arabic (default) and English
+
+### Mobile App (mobile/)
+- **Framework**: React Native with Expo
+- **Navigation**: React Navigation (bottom tabs + stack)
+- **State Management**: TanStack Query
+- **i18n**: i18next with Arabic (default) and English + RTL
+- **Secure Storage**: expo-secure-store for auth tokens
+- **Build System**: EAS Build for Android/iOS
 
 ### Backend (server/)
 - **Framework**: Express.js with TypeScript
@@ -49,13 +61,40 @@ HealthLab is a comprehensive health tracking application that analyzes PDF lab r
 - Dark mode available
 
 ## Important Paths
+
+### Web App
 - Main app: `/client/src/App.tsx`
 - API routes: `/server/routes.ts`
 - Database schema: `/shared/schema.ts`
 - Translations: `/client/src/lib/i18n.ts`
 - Test definitions seed: `/server/seedTests.ts`
 
+### Mobile App
+- Main app: `/mobile/App.tsx`
+- Screens: `/mobile/src/screens/`
+- Navigation: `/mobile/src/navigation/`
+- API client: `/mobile/src/lib/api.ts`
+- Translations: `/mobile/src/lib/i18n.ts`
+- Auth context: `/mobile/src/context/AuthContext.tsx`
+- Build config: `/mobile/app.json`, `/mobile/eas.json`
+
 ## Running the Project
+
+### Web App
 - Development: `npm run dev`
 - Database push: `npm run db:push`
 - Seed tests: `npx tsx server/seedTests.ts`
+
+### Mobile App
+```bash
+cd mobile
+npm install
+npx expo start
+```
+
+### Building Mobile App for Stores
+```bash
+cd mobile
+eas build --platform android --profile production
+eas build --platform ios --profile production
+```
