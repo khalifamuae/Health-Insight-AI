@@ -310,70 +310,66 @@ export function AllTestsTable({ tests, isLoading }: AllTestsTableProps) {
 
   return (
     <Card>
-      <CardHeader className="pb-4">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <CardHeader className="pb-3 space-y-3">
+        <div className="flex items-center justify-between">
           <div>
             <CardTitle className="flex items-center gap-2">
               <ArrowUpDown className="h-5 w-5" />
               {t("myTests")}
             </CardTitle>
-            <p className="text-sm text-muted-foreground mt-1">
+            <p className="text-xs text-muted-foreground mt-1">
               {testsWithResults} / 50 {t("testsCompleted")} • {abnormalTests} {t("abnormal")}
             </p>
           </div>
-          <div className="flex flex-wrap gap-2">
-            <Select value={sortBy} onValueChange={(v) => setSortBy(v as SortOption)}>
-              <SelectTrigger className="w-[140px]" data-testid="select-sort">
-                <SelectValue placeholder={t("sortBy")} />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="default">{t("defaultOrder")}</SelectItem>
-                <SelectItem value="importance">{t("importance")}</SelectItem>
-                <SelectItem value="status">{t("byStatus")}</SelectItem>
-                <SelectItem value="category">{t("byCategory")}</SelectItem>
-              </SelectContent>
-            </Select>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleShare}
+            className="gap-1"
+            data-testid="button-share-results"
+          >
+            {copied ? <Check className="h-4 w-4" /> : <Share2 className="h-4 w-4" />}
+            {t("share")}
+          </Button>
+        </div>
+        <div className="grid grid-cols-3 gap-2">
+          <Select value={sortBy} onValueChange={(v) => setSortBy(v as SortOption)}>
+            <SelectTrigger className="w-full text-xs" data-testid="select-sort">
+              <SelectValue placeholder={t("sortBy")} />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="default">{t("defaultOrder")}</SelectItem>
+              <SelectItem value="importance">{t("importance")}</SelectItem>
+              <SelectItem value="status">{t("byStatus")}</SelectItem>
+              <SelectItem value="category">{t("byCategory")}</SelectItem>
+            </SelectContent>
+          </Select>
 
-            <Select value={filterCategory} onValueChange={(v) => setFilterCategory(v as FilterCategory)}>
-              <SelectTrigger className="w-[140px]" data-testid="select-category">
-                <Filter className="h-4 w-4 me-1" />
-                <SelectValue placeholder={t("category")} />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">{t("allCategories")}</SelectItem>
-                {categories.map(cat => (
-                  <SelectItem key={cat} value={cat}>{t(cat)}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+          <Select value={filterCategory} onValueChange={(v) => setFilterCategory(v as FilterCategory)}>
+            <SelectTrigger className="w-full text-xs" data-testid="select-category">
+              <Filter className="h-3 w-3 me-1" />
+              <SelectValue placeholder={t("category")} />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">{t("allCategories")}</SelectItem>
+              {categories.map(cat => (
+                <SelectItem key={cat} value={cat}>{t(cat)}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
 
-            <Select value={filterStatus} onValueChange={(v) => setFilterStatus(v as FilterStatus)}>
-              <SelectTrigger className="w-[120px]" data-testid="select-status">
-                <SelectValue placeholder={t("status")} />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">{t("allStatuses")}</SelectItem>
-                <SelectItem value="normal">{t("normal")}</SelectItem>
-                <SelectItem value="low">{t("low")}</SelectItem>
-                <SelectItem value="high">{t("high")}</SelectItem>
-                <SelectItem value="pending">{t("pending")}</SelectItem>
-              </SelectContent>
-            </Select>
-
-            <Button
-              variant="outline"
-              onClick={handleShare}
-              className="gap-2"
-              data-testid="button-share-results"
-            >
-              {copied ? (
-                <Check className="h-4 w-4" />
-              ) : (
-                <Share2 className="h-4 w-4" />
-              )}
-              {t("shareResults")}
-            </Button>
-          </div>
+          <Select value={filterStatus} onValueChange={(v) => setFilterStatus(v as FilterStatus)}>
+            <SelectTrigger className="w-full text-xs" data-testid="select-status">
+              <SelectValue placeholder={t("status")} />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">{t("allStatuses")}</SelectItem>
+              <SelectItem value="normal">{t("normal")}</SelectItem>
+              <SelectItem value="low">{t("low")}</SelectItem>
+              <SelectItem value="high">{t("high")}</SelectItem>
+              <SelectItem value="pending">{t("pending")}</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
       </CardHeader>
       <CardContent className="p-2">
