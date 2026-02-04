@@ -122,8 +122,12 @@ export function AllTestsTable({ tests, isLoading }: AllTestsTableProps) {
         const range = test.normalRangeMin !== null && test.normalRangeMax !== null
           ? `${test.normalRangeMin}-${test.normalRangeMax} ${test.unit || ""}`
           : "";
+        const testDateStr = test.testDate 
+          ? ` | ${isArabic ? "تاريخ الفحص" : "Test Date"}: ${format(new Date(test.testDate), "yyyy-MM-dd")}`
+          : "";
         text += `- ${name}: ${test.value} ${test.unit || ""} (${statusText})`;
         if (range) text += ` [${isArabic ? "الطبيعي" : "Normal"}: ${range}]`;
+        text += testDateStr;
         text += "\n";
       });
       text += "\n";
@@ -133,7 +137,16 @@ export function AllTestsTable({ tests, isLoading }: AllTestsTableProps) {
       text += isArabic ? "[OK] نتائج طبيعية:\n" : "[OK] Normal Results:\n";
       normalTests.forEach(test => {
         const name = isArabic ? test.nameAr : test.nameEn;
-        text += `- ${name}: ${test.value} ${test.unit || ""}\n`;
+        const range = test.normalRangeMin !== null && test.normalRangeMax !== null
+          ? `${test.normalRangeMin}-${test.normalRangeMax} ${test.unit || ""}`
+          : "";
+        const testDateStr = test.testDate 
+          ? ` | ${isArabic ? "تاريخ الفحص" : "Test Date"}: ${format(new Date(test.testDate), "yyyy-MM-dd")}`
+          : "";
+        text += `- ${name}: ${test.value} ${test.unit || ""}`;
+        if (range) text += ` [${isArabic ? "الطبيعي" : "Normal"}: ${range}]`;
+        text += testDateStr;
+        text += "\n";
       });
     }
 
