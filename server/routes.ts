@@ -401,12 +401,12 @@ export async function registerRoutes(
         });
       }
 
-      // Create pending PDF record first
+      // Create PDF record with processing status (analysis starts immediately)
       const pdfRecord = await storage.createUploadedPdf({
         userId,
         fileName: file.originalname,
         filePath: "",
-        status: "pending",
+        status: "processing",
       });
 
       // Increment files uploaded

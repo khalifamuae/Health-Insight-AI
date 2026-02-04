@@ -139,6 +139,12 @@ const resources = {
       retry: "Retry",
       retryFailed: "Retry failed. Please try again.",
       pleaseUploadPdf: "Please upload a PDF file",
+      
+      // Share
+      shareResults: "Share Results",
+      shareSuccess: "Shared successfully",
+      copiedToClipboard: "Copied to clipboard",
+      copyFailed: "Failed to copy",
     }
   },
   ar: {
@@ -277,6 +283,12 @@ const resources = {
       retry: "إعادة المحاولة",
       retryFailed: "فشلت إعادة المحاولة. يرجى المحاولة مرة أخرى.",
       pleaseUploadPdf: "يرجى رفع ملف PDF",
+      
+      // Share
+      shareResults: "مشاركة النتائج",
+      shareSuccess: "تمت المشاركة بنجاح",
+      copiedToClipboard: "تم النسخ إلى الحافظة",
+      copyFailed: "فشل في النسخ",
     }
   }
 };

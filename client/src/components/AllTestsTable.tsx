@@ -29,7 +29,7 @@ import { CategoryBadge } from "./CategoryBadge";
 import { format } from "date-fns";
 import { arSA, enUS } from "date-fns/locale";
 import type { AllTestsData, TestCategory, Reminder } from "@shared/schema";
-import { ArrowUpDown, Filter, CheckCircle, XCircle, Clock, CalendarDays, Bell, X } from "lucide-react";
+import { ArrowUpDown, Filter, CheckCircle, XCircle, Clock, CalendarDays, Bell, X, Share2, Copy, Check } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 
@@ -60,6 +60,7 @@ export function AllTestsTable({ tests, isLoading }: AllTestsTableProps) {
   const [filterCategory, setFilterCategory] = useState<FilterCategory>("all");
   const [filterStatus, setFilterStatus] = useState<FilterStatus>("all");
   const [openPopover, setOpenPopover] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
 
   const { data: reminders = [] } = useQuery<ReminderWithDef[]>({
     queryKey: ["/api/reminders"],
@@ -88,6 +89,87 @@ export function AllTestsTable({ tests, isLoading }: AllTestsTableProps) {
       toast({ title: t("reminderDeleted") });
     },
   });
+
+  const generateShareText = () => {
+    const testsWithResults = tests.filter(test => test.hasResult);
+    if (testsWithResults.length === 0) {
+      return isArabic 
+        ? "لا توجد نتائج فحوصات لمشاركتها"
+        : "No test results to share";
+    }
+
+    const header = isArabic 
+      ? "📋 تقرير الفحوصات الطبية\n" + "═".repeat(30) + "\n\n"
+      : "📋 Medical Test Results Report\n" + "═".repeat(30) + "\n\n";
+
+    const abnormalTests = testsWithResults.filter(t => t.status === "high" || t.status === "low");
+    const normalTests = testsWithResults.filter(t => t.status === "normal");
+
+    let text = header;
+
+    if (abnormalTests.length > 0) {
+      text += isArabic ? "⚠️ نتائج غير طبيعية:\n" : "⚠️ Abnormal Results:\n";
+      abnormalTests.forEach(test => {
+        const name = isArabic ? test.nameAr : test.nameEn;
+        const statusText = test.status === "high" 
+          ? (isArabic ? "مرتفع" : "High") 
+          : (isArabic ? "منخفض" : "Low");
+        const range = test.normalRangeMin !== null && test.normalRangeMax !== null
+          ? `${test.normalRangeMin}-${test.normalRangeMax} ${test.unit || ""}`
+          : "";
+        text += `• ${name}: ${test.value} ${test.unit || ""} (${statusText})`;
+        if (range) text += ` [${isArabic ? "الطبيعي" : "Normal"}: ${range}]`;
+        text += "\n";
+      });
+      text += "\n";
+    }
+
+    if (normalTests.length > 0) {
+      text += isArabic ? "✅ نتائج طبيعية:\n" : "✅ Normal Results:\n";
+      normalTests.forEach(test => {
+        const name = isArabic ? test.nameAr : test.nameEn;
+        text += `• ${name}: ${test.value} ${test.unit || ""}\n`;
+      });
+    }
+
+    const footer = isArabic
+      ? "\n📅 " + format(new Date(), "PPP", { locale: dateLocale })
+      : "\n📅 " + format(new Date(), "PPP", { locale: dateLocale });
+    text += footer;
+
+    return text;
+  };
+
+  const handleShare = async () => {
+    const shareText = generateShareText();
+
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: isArabic ? "تقرير الفحوصات" : "Test Results Report",
+          text: shareText,
+        });
+        toast({ title: t("shareSuccess") });
+      } catch (error) {
+        if ((error as Error).name !== "AbortError") {
+          await copyToClipboard(shareText);
+        }
+      }
+    } else {
+      await copyToClipboard(shareText);
+    }
+  };
+
+  const copyToClipboard = async (text: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(true);
+      toast({ title: t("copiedToClipboard") });
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      toast({ title: t("error"), description: t("copyFailed"), variant: "destructive" });
+    }
+  };
 
   const categories: TestCategory[] = [
     "vitamins", "minerals", "hormones", "organ_functions",
@@ -242,6 +324,20 @@ export function AllTestsTable({ tests, isLoading }: AllTestsTableProps) {
                 <SelectItem value="pending">{t("pending")}</SelectItem>
               </SelectContent>
             </Select>
+
+            <Button
+              variant="outline"
+              onClick={handleShare}
+              className="gap-2"
+              data-testid="button-share-results"
+            >
+              {copied ? (
+                <Check className="h-4 w-4" />
+              ) : (
+                <Share2 className="h-4 w-4" />
+              )}
+              {t("shareResults")}
+            </Button>
           </div>
         </div>
       </CardHeader>
