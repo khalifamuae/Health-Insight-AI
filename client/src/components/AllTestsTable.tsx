@@ -21,6 +21,11 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { Calendar } from "@/components/ui/calendar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -29,7 +34,7 @@ import { CategoryBadge } from "./CategoryBadge";
 import { format } from "date-fns";
 import { arSA, enUS } from "date-fns/locale";
 import type { AllTestsData, TestCategory, Reminder } from "@shared/schema";
-import { ArrowUpDown, Filter, CheckCircle, XCircle, Clock, CalendarDays, Bell, X, Share2, Check } from "lucide-react";
+import { ArrowUpDown, Filter, CheckCircle, XCircle, Clock, CalendarDays, Bell, X, Share2, Check, Info } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 
@@ -387,7 +392,21 @@ export function AllTestsTable({ tests, isLoading }: AllTestsTableProps) {
                       {index + 1}
                     </TableCell>
                     <TableCell className="font-medium">
-                      {isArabic ? test.nameAr : test.nameEn}
+                      <div className="flex items-center gap-1">
+                        {isArabic ? test.nameAr : test.nameEn}
+                        {(test.descriptionEn || test.descriptionAr) && (
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Info className="h-4 w-4 text-muted-foreground cursor-help flex-shrink-0" />
+                            </TooltipTrigger>
+                            <TooltipContent side="top" className="max-w-[250px]">
+                              <p className="text-sm">
+                                {isArabic ? test.descriptionAr : test.descriptionEn}
+                              </p>
+                            </TooltipContent>
+                          </Tooltip>
+                        )}
+                      </div>
                     </TableCell>
                     <TableCell>
                       <CategoryBadge category={test.category} />

@@ -190,6 +190,8 @@ export interface AllTestsData {
   normalRangeMin: number | null;
   normalRangeMax: number | null;
   recheckMonths: number | null;
+  descriptionEn: string | null;
+  descriptionAr: string | null;
   value: number;
   valueText: string | null;
   status: TestStatus | "pending";

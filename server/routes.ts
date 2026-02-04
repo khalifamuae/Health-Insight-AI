@@ -110,6 +110,8 @@ export async function registerRoutes(
           normalRangeMin: def.normalRangeMin,
           normalRangeMax: def.normalRangeMax,
           recheckMonths: def.recheckMonths,
+          descriptionEn: def.descriptionEn,
+          descriptionAr: def.descriptionAr,
           value: userTest?.value ?? 0,
           valueText: userTest?.valueText || null,
           status: userTest?.status || "pending",

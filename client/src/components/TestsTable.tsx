@@ -15,13 +15,18 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { TestStatusBadge } from "./TestStatusBadge";
 import { CategoryBadge } from "./CategoryBadge";
 import { format } from "date-fns";
 import { arSA, enUS } from "date-fns/locale";
 import type { TestResultWithDefinition, TestCategory, TestStatus } from "@shared/schema";
-import { ArrowUpDown, Filter } from "lucide-react";
+import { ArrowUpDown, Filter, Info } from "lucide-react";
 
 interface TestsTableProps {
   tests: TestResultWithDefinition[];
@@ -147,22 +152,22 @@ export function TestsTable({ tests, isLoading }: TestsTableProps) {
           </div>
         </div>
       </CardHeader>
-      <CardContent>
+      <CardContent className="p-0">
         {sortedAndFilteredTests.length === 0 ? (
           <div className="text-center py-12 text-muted-foreground">
             {t("noData")}
           </div>
         ) : (
-          <div className="overflow-x-auto">
+          <div className="relative overflow-auto max-h-[60vh]">
             <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>{t("testName")}</TableHead>
-                  <TableHead>{t("category")}</TableHead>
-                  <TableHead className="text-center">{t("yourValue")}</TableHead>
-                  <TableHead className="text-center">{t("normalRange")}</TableHead>
-                  <TableHead className="text-center">{t("status")}</TableHead>
-                  <TableHead>{t("testDate")}</TableHead>
+              <TableHeader className="sticky top-0 z-20">
+                <TableRow className="bg-card border-b-2 border-border">
+                  <TableHead className="bg-card font-bold">{t("testName")}</TableHead>
+                  <TableHead className="bg-card font-bold">{t("category")}</TableHead>
+                  <TableHead className="text-center bg-card font-bold">{t("yourValue")}</TableHead>
+                  <TableHead className="text-center bg-card font-bold">{t("normalRange")}</TableHead>
+                  <TableHead className="text-center bg-card font-bold">{t("status")}</TableHead>
+                  <TableHead className="bg-card font-bold">{t("testDate")}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -173,7 +178,21 @@ export function TestsTable({ tests, isLoading }: TestsTableProps) {
                     data-testid={`row-test-${test.id}`}
                   >
                     <TableCell className="font-medium">
-                      {isArabic ? test.testDefinition.nameAr : test.testDefinition.nameEn}
+                      <div className="flex items-center gap-1">
+                        {isArabic ? test.testDefinition.nameAr : test.testDefinition.nameEn}
+                        {(test.testDefinition.descriptionEn || test.testDefinition.descriptionAr) && (
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Info className="h-4 w-4 text-muted-foreground cursor-help flex-shrink-0" />
+                            </TooltipTrigger>
+                            <TooltipContent side="top" className="max-w-[250px]">
+                              <p className="text-sm">
+                                {isArabic ? test.testDefinition.descriptionAr : test.testDefinition.descriptionEn}
+                              </p>
+                            </TooltipContent>
+                          </Tooltip>
+                        )}
+                      </div>
                     </TableCell>
                     <TableCell>
                       <CategoryBadge category={test.testDefinition.category} />
