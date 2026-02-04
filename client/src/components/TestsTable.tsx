@@ -16,11 +16,12 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { TestStatusBadge } from "./TestStatusBadge";
 import { CategoryBadge } from "./CategoryBadge";
 import { format } from "date-fns";
@@ -181,16 +182,18 @@ export function TestsTable({ tests, isLoading }: TestsTableProps) {
                       <div className="flex items-center gap-1">
                         {isArabic ? test.testDefinition.nameAr : test.testDefinition.nameEn}
                         {(test.testDefinition.descriptionEn || test.testDefinition.descriptionAr) && (
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <Info className="h-4 w-4 text-muted-foreground cursor-help flex-shrink-0" />
-                            </TooltipTrigger>
-                            <TooltipContent side="top" className="max-w-[250px]">
+                          <Popover>
+                            <PopoverTrigger asChild>
+                              <Button variant="ghost" size="icon" className="h-5 w-5 p-0">
+                                <Info className="h-4 w-4 text-blue-500" />
+                              </Button>
+                            </PopoverTrigger>
+                            <PopoverContent side="top" className="max-w-[250px] p-3">
                               <p className="text-sm">
                                 {isArabic ? test.testDefinition.descriptionAr : test.testDefinition.descriptionEn}
                               </p>
-                            </TooltipContent>
-                          </Tooltip>
+                            </PopoverContent>
+                          </Popover>
                         )}
                       </div>
                     </TableCell>

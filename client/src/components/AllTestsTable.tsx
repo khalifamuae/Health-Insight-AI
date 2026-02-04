@@ -395,16 +395,18 @@ export function AllTestsTable({ tests, isLoading }: AllTestsTableProps) {
                       <div className="flex items-center gap-1">
                         {isArabic ? test.nameAr : test.nameEn}
                         {(test.descriptionEn || test.descriptionAr) && (
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <Info className="h-4 w-4 text-muted-foreground cursor-help flex-shrink-0" />
-                            </TooltipTrigger>
-                            <TooltipContent side="top" className="max-w-[250px]">
+                          <Popover>
+                            <PopoverTrigger asChild>
+                              <Button variant="ghost" size="icon" className="h-5 w-5 p-0">
+                                <Info className="h-4 w-4 text-blue-500" />
+                              </Button>
+                            </PopoverTrigger>
+                            <PopoverContent side="top" className="max-w-[250px] p-3">
                               <p className="text-sm">
                                 {isArabic ? test.descriptionAr : test.descriptionEn}
                               </p>
-                            </TooltipContent>
-                          </Tooltip>
+                            </PopoverContent>
+                          </Popover>
                         )}
                       </div>
                     </TableCell>
