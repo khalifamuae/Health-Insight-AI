@@ -18,10 +18,14 @@ import { useTranslation } from "react-i18next";
 import { useAuth } from "@/hooks/use-auth";
 
 function AuthenticatedLayout({ children }: { children: React.ReactNode }) {
+  const { t } = useTranslation();
   return (
     <div className="flex flex-col min-h-screen w-full">
       <header className="flex items-center justify-between gap-4 p-3 border-b bg-background/95 backdrop-blur shrink-0 sticky top-0 z-40">
-        <h1 className="text-lg font-bold text-primary">مختبر الصحة</h1>
+        <div className="flex flex-col">
+          <h1 className="text-lg font-bold text-primary">{t("appName")}</h1>
+          <span className="text-[10px] text-muted-foreground">{t("companyName")}</span>
+        </div>
         <div className="flex items-center gap-1">
           <LanguageToggle />
           <ThemeToggle />
