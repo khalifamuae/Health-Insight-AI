@@ -13,6 +13,10 @@ HealthLab is a comprehensive health tracking application that analyzes PDF lab r
 - **Subscription System**: Free (3 PDFs), Basic (20 PDFs), Premium (unlimited)
 
 ## Recent Changes
+- **Bottom Navigation**: Replaced sidebar with 4-item bottom navigation bar (Home, Tests, Upload, Profile) with RTL support
+- **Reminder System**: Added calendar date picker in tests table for setting recheck reminders
+- **Tests Table Columns**: 8 columns (#, Test Name, Category, Your Value, Normal Range, Status, Test Date, Reminder)
+- **All 50 Tests Display**: Tests without results show value "0" ensuring complete table view
 - Added React Native/Expo mobile application for Android and iOS
 - Mobile app includes: Home, Tests, Upload, Reminders, Profile screens
 - Added authentication context and secure storage for mobile
