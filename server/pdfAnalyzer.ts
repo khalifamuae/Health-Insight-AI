@@ -1,8 +1,6 @@
 import OpenAI from "openai";
-import { createRequire } from "module";
-
-const require = createRequire(import.meta.url);
-const pdfParse = require("pdf-parse");
+import * as pdfParseModule from "pdf-parse";
+const pdf = (pdfParseModule as any).default || pdfParseModule;
 
 const openai = new OpenAI({
   apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
@@ -240,7 +238,7 @@ function findTestId(testName: string): string | null {
 
 export async function analyzeLabPdf(pdfBuffer: Buffer): Promise<ExtractedTest[]> {
   try {
-    const pdfData = await pdfParse(pdfBuffer);
+    const pdfData = await pdf(pdfBuffer);
     const pdfText = pdfData.text;
 
     if (!pdfText || pdfText.trim().length < 50) {
