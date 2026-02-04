@@ -172,9 +172,19 @@ export function ProfileForm({ user, profile }: ProfileFormProps) {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>{t("phone")}</FormLabel>
-                    <div className="flex gap-2">
+                    <div className="flex flex-row-reverse gap-2" dir="ltr">
+                      <FormControl>
+                        <Input 
+                          {...field} 
+                          type="tel"
+                          placeholder="5XX XXX XXXX"
+                          className="flex-1 text-start"
+                          dir="ltr"
+                          data-testid="input-phone"
+                        />
+                      </FormControl>
                       <Select value={countryCode} onValueChange={setCountryCode}>
-                        <SelectTrigger className="w-[100px]" data-testid="select-country-code">
+                        <SelectTrigger className="w-[100px] shrink-0" data-testid="select-country-code">
                           <SelectValue>
                             {countryCodes.find(c => c.code === countryCode)?.flag} {countryCode}
                           </SelectValue>
@@ -187,15 +197,6 @@ export function ProfileForm({ user, profile }: ProfileFormProps) {
                           ))}
                         </SelectContent>
                       </Select>
-                      <FormControl>
-                        <Input 
-                          {...field} 
-                          type="tel"
-                          placeholder="5XX XXX XXXX"
-                          className="flex-1"
-                          data-testid="input-phone"
-                        />
-                      </FormControl>
                     </div>
                     <FormMessage />
                   </FormItem>
