@@ -29,7 +29,7 @@ import { CategoryBadge } from "./CategoryBadge";
 import { format } from "date-fns";
 import { arSA, enUS } from "date-fns/locale";
 import type { AllTestsData, TestCategory, Reminder } from "@shared/schema";
-import { ArrowUpDown, Filter, CheckCircle, XCircle, Clock, CalendarDays, Bell, X, Share2, Copy, Check } from "lucide-react";
+import { ArrowUpDown, Filter, CheckCircle, XCircle, Clock, CalendarDays, Bell, X, Share2, Check } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 
@@ -99,8 +99,8 @@ export function AllTestsTable({ tests, isLoading }: AllTestsTableProps) {
     }
 
     const header = isArabic 
-      ? "📋 تقرير الفحوصات الطبية\n" + "═".repeat(30) + "\n\n"
-      : "📋 Medical Test Results Report\n" + "═".repeat(30) + "\n\n";
+      ? "تقرير الفحوصات الطبية\n" + "═".repeat(30) + "\n\n"
+      : "Medical Test Results Report\n" + "═".repeat(30) + "\n\n";
 
     const abnormalTests = testsWithResults.filter(t => t.status === "high" || t.status === "low");
     const normalTests = testsWithResults.filter(t => t.status === "normal");
@@ -108,7 +108,7 @@ export function AllTestsTable({ tests, isLoading }: AllTestsTableProps) {
     let text = header;
 
     if (abnormalTests.length > 0) {
-      text += isArabic ? "⚠️ نتائج غير طبيعية:\n" : "⚠️ Abnormal Results:\n";
+      text += isArabic ? "[!] نتائج غير طبيعية:\n" : "[!] Abnormal Results:\n";
       abnormalTests.forEach(test => {
         const name = isArabic ? test.nameAr : test.nameEn;
         const statusText = test.status === "high" 
@@ -117,7 +117,7 @@ export function AllTestsTable({ tests, isLoading }: AllTestsTableProps) {
         const range = test.normalRangeMin !== null && test.normalRangeMax !== null
           ? `${test.normalRangeMin}-${test.normalRangeMax} ${test.unit || ""}`
           : "";
-        text += `• ${name}: ${test.value} ${test.unit || ""} (${statusText})`;
+        text += `- ${name}: ${test.value} ${test.unit || ""} (${statusText})`;
         if (range) text += ` [${isArabic ? "الطبيعي" : "Normal"}: ${range}]`;
         text += "\n";
       });
@@ -125,16 +125,16 @@ export function AllTestsTable({ tests, isLoading }: AllTestsTableProps) {
     }
 
     if (normalTests.length > 0) {
-      text += isArabic ? "✅ نتائج طبيعية:\n" : "✅ Normal Results:\n";
+      text += isArabic ? "[OK] نتائج طبيعية:\n" : "[OK] Normal Results:\n";
       normalTests.forEach(test => {
         const name = isArabic ? test.nameAr : test.nameEn;
-        text += `• ${name}: ${test.value} ${test.unit || ""}\n`;
+        text += `- ${name}: ${test.value} ${test.unit || ""}\n`;
       });
     }
 
     const footer = isArabic
-      ? "\n📅 " + format(new Date(), "PPP", { locale: dateLocale })
-      : "\n📅 " + format(new Date(), "PPP", { locale: dateLocale });
+      ? "\nالتاريخ: " + format(new Date(), "PPP", { locale: dateLocale })
+      : "\nDate: " + format(new Date(), "PPP", { locale: dateLocale });
     text += footer;
 
     return text;
