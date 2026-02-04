@@ -136,6 +136,8 @@ export default function LandingPage() {
       <footer className="border-t py-8">
         <div className="container mx-auto px-4 text-center text-sm text-muted-foreground">
           <p>{t("medicalDisclaimer")}</p>
+          <p className="mt-4 font-semibold text-foreground">{t("appName")}</p>
+          <p className="text-xs">{t("companyName")}</p>
           <p className="mt-2">© 2024 {t("appName")}. All rights reserved.</p>
         </div>
       </footer>

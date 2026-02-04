@@ -6,8 +6,9 @@ const resources = {
   en: {
     translation: {
       // App
-      appName: "HealthLab",
+      appName: "BioTrack AI",
       appDescription: "AI-Powered Health Analysis",
+      companyName: "by Alshira company",
       warning: "Warning",
       appPurpose: "This app is for health tracking and awareness purposes only.",
       medicalDisclaimer: "This app does not replace professional medical advice. Always consult a healthcare provider.",
@@ -158,8 +159,9 @@ const resources = {
   ar: {
     translation: {
       // App
-      appName: "مختبر الصحة",
+      appName: "BioTrack AI",
       appDescription: "تحليل صحي مدعوم بالذكاء الاصطناعي",
+      companyName: "by Alshira company",
       warning: "تحذير",
       appPurpose: "هذا التطبيق لمتابعة الصحة ولأغراض التوعوية فقط.",
       medicalDisclaimer: "لا يغني هذا التطبيق عن الاستشارة الطبية. استشر طبيبك دائماً.",

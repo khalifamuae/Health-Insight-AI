@@ -1,7 +1,8 @@
-# HealthLab - AI-Powered Health Analysis Application
+# BioTrack AI - AI-Powered Health Analysis Application
+**by Alshira company**
 
 ## Overview
-HealthLab is a comprehensive health tracking application that analyzes PDF lab results using AI and helps users track 50 different medical tests. The app supports Arabic (default) and English languages with RTL support.
+BioTrack AI is a comprehensive health tracking application that analyzes PDF lab results using AI and helps users track 50 different medical tests. The app supports Arabic (default) and English languages with RTL support.
 
 ## Key Features
 - **AI PDF Analysis**: Upload lab results and AI automatically extracts test values

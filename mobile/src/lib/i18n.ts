@@ -5,7 +5,8 @@ import { I18nManager } from 'react-native';
 const resources = {
   ar: {
     translation: {
-      appName: 'مختبر الصحة',
+      appName: 'BioTrack AI',
+      companyName: 'by Alshira company',
       home: 'الرئيسية',
       tests: 'الفحوصات',
       upload: 'رفع PDF',
@@ -13,7 +14,7 @@ const resources = {
       settings: 'الإعدادات',
       login: 'تسجيل الدخول',
       logout: 'تسجيل الخروج',
-      welcome: 'مرحباً بك في مختبر الصحة',
+      welcome: 'مرحباً بك في BioTrack AI',
       subtitle: 'تحليل نتائج فحوصاتك الطبية بالذكاء الاصطناعي',
       uploadPdf: 'رفع ملف PDF',
       selectFile: 'اختر ملف',
@@ -103,7 +104,8 @@ const resources = {
   },
   en: {
     translation: {
-      appName: 'Health Lab',
+      appName: 'BioTrack AI',
+      companyName: 'by Alshira company',
       home: 'Home',
       tests: 'Tests',
       upload: 'Upload PDF',
@@ -111,7 +113,7 @@ const resources = {
       settings: 'Settings',
       login: 'Login',
       logout: 'Logout',
-      welcome: 'Welcome to Health Lab',
+      welcome: 'Welcome to BioTrack AI',
       subtitle: 'AI-powered analysis of your lab results',
       uploadPdf: 'Upload PDF File',
       selectFile: 'Select File',

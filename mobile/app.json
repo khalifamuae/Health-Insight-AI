@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "مختبر الصحة",
-    "slug": "healthlab-mobile",
+    "name": "BioTrack AI",
+    "slug": "biotrack-ai",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -14,7 +14,7 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.healthlab.mobile",
+      "bundleIdentifier": "com.alshira.biotrack",
       "buildNumber": "1"
     },
     "android": {
@@ -24,7 +24,7 @@
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
-      "package": "com.healthlab.mobile",
+      "package": "com.alshira.biotrack",
       "versionCode": 1
     },
     "web": {
