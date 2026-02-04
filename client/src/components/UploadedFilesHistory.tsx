@@ -204,7 +204,11 @@ export function UploadedFilesHistory() {
                   {pdf.status === "failed" && pdf.errorMessage && (
                     <p className="text-sm text-destructive flex items-center gap-1">
                       <AlertTriangle className="h-3 w-3" />
-                      {t("aiCouldNotRead")}
+                      {pdf.errorMessage === "SCANNED_PDF" 
+                        ? t("scannedPdfError") 
+                        : pdf.errorMessage === "ANALYSIS_FAILED"
+                          ? t("analysisFailedError")
+                          : t("aiCouldNotRead")}
                     </p>
                   )}
                 </div>

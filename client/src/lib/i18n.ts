@@ -145,6 +145,10 @@ const resources = {
       shareSuccess: "Shared successfully",
       copiedToClipboard: "Copied to clipboard",
       copyFailed: "Failed to copy",
+      
+      // PDF Errors
+      scannedPdfError: "This PDF appears to be scanned. Please upload a digital/text-based PDF.",
+      analysisFailedError: "Failed to analyze this file. Please try again.",
     }
   },
   ar: {
@@ -289,6 +293,10 @@ const resources = {
       shareSuccess: "تمت المشاركة بنجاح",
       copiedToClipboard: "تم النسخ إلى الحافظة",
       copyFailed: "فشل في النسخ",
+      
+      // PDF Errors
+      scannedPdfError: "يبدو أن هذا الملف ممسوح ضوئياً. يرجى رفع ملف PDF رقمي/نصي.",
+      analysisFailedError: "فشل في تحليل هذا الملف. يرجى المحاولة مرة أخرى.",
     }
   }
 };
