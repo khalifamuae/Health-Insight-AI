@@ -134,30 +134,30 @@ export function ProfileForm({ user, profile }: ProfileFormProps) {
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
             <div className="flex flex-col items-center gap-4 pb-6 border-b">
-              <div className="relative">
-                <Avatar className="h-24 w-24">
+              <div className="relative inline-block">
+                <Avatar className="h-24 w-24 border-2 border-muted">
                   <AvatarImage 
                     src={imagePreview || profile?.profileImagePath || user.profileImageUrl || undefined} 
                     alt={displayName} 
                   />
-                  <AvatarFallback className="text-2xl bg-primary/10 text-primary">
+                  <AvatarFallback className="text-2xl bg-muted text-muted-foreground">
                     {initials}
                   </AvatarFallback>
                 </Avatar>
                 <label 
                   htmlFor="avatar-upload"
-                  className="absolute bottom-0 end-0 p-2 bg-primary text-primary-foreground rounded-full cursor-pointer hover-elevate"
+                  className="absolute -bottom-1 -end-1 p-2 bg-primary text-primary-foreground rounded-full cursor-pointer shadow-md"
                 >
                   <Camera className="h-4 w-4" />
-                  <input
-                    id="avatar-upload"
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    onChange={handleImageChange}
-                    data-testid="input-avatar"
-                  />
                 </label>
+                <input
+                  id="avatar-upload"
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={handleImageChange}
+                  data-testid="input-avatar"
+                />
               </div>
               <div className="text-center">
                 <h3 className="font-semibold text-lg">{displayName}</h3>
