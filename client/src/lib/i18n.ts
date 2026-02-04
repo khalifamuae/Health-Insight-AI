@@ -119,6 +119,14 @@ const resources = {
       defaultOrder: "Default Order",
       allCategories: "All Categories",
       allStatuses: "All Statuses",
+      reminder: "Reminder",
+      setReminder: "Set Reminder",
+      reminderSet: "Reminder Set",
+      reminderSetDesc: "You will be reminded on the selected date",
+      reminderDeleted: "Reminder Deleted",
+      reminderError: "Failed to set reminder",
+      home: "Home",
+      upload: "Upload",
     }
   },
   ar: {
@@ -237,6 +245,14 @@ const resources = {
       defaultOrder: "الترتيب الافتراضي",
       allCategories: "جميع التصنيفات",
       allStatuses: "جميع الحالات",
+      reminder: "تذكير",
+      setReminder: "تعيين تذكير",
+      reminderSet: "تم تعيين التذكير",
+      reminderSetDesc: "سيتم تذكيرك في التاريخ المحدد",
+      reminderDeleted: "تم حذف التذكير",
+      reminderError: "فشل في تعيين التذكير",
+      home: "الرئيسية",
+      upload: "رفع",
     }
   }
 };

@@ -38,6 +38,8 @@ export interface IStorage {
   getRemindersByUser(userId: string): Promise<(Reminder & { testDefinition: TestDefinition })[]>;
   createReminder(reminder: InsertReminder): Promise<Reminder>;
   updateReminder(id: string, userId: string, updates: { sent?: boolean; sentAt?: Date | null }): Promise<void>;
+  deleteReminder(id: string, userId: string): Promise<void>;
+  deleteReminderByTest(userId: string, testId: string): Promise<void>;
   
   getUploadedPdfsByUser(userId: string): Promise<UploadedPdf[]>;
   createUploadedPdf(pdf: InsertUploadedPdf): Promise<UploadedPdf>;
@@ -164,6 +166,14 @@ export class DatabaseStorage implements IStorage {
       .update(reminders)
       .set(updates)
       .where(and(eq(reminders.id, id), eq(reminders.userId, userId)));
+  }
+
+  async deleteReminder(id: string, userId: string): Promise<void> {
+    await db.delete(reminders).where(and(eq(reminders.id, id), eq(reminders.userId, userId)));
+  }
+
+  async deleteReminderByTest(userId: string, testId: string): Promise<void> {
+    await db.delete(reminders).where(and(eq(reminders.userId, userId), eq(reminders.testId, testId)));
   }
 
   async getUploadedPdfsByUser(userId: string): Promise<UploadedPdf[]> {

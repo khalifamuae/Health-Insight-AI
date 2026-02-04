@@ -244,6 +244,47 @@ export async function registerRoutes(
     }
   });
 
+  // Create or update reminder for a test
+  app.post("/api/reminders", isAuthenticated, async (req: any, res: Response) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { testId, dueDate } = req.body;
+
+      if (!testId || !dueDate) {
+        return res.status(400).json({ error: "testId and dueDate are required" });
+      }
+
+      // Delete existing reminder for this test if any
+      await storage.deleteReminderByTest(userId, testId);
+
+      // Create new reminder
+      const reminder = await storage.createReminder({
+        userId,
+        testId,
+        dueDate: new Date(dueDate),
+      });
+
+      res.json(reminder);
+    } catch (error) {
+      console.error("Error creating reminder:", error);
+      res.status(500).json({ error: "Failed to create reminder" });
+    }
+  });
+
+  // Delete reminder
+  app.delete("/api/reminders/:id", isAuthenticated, async (req: any, res: Response) => {
+    try {
+      const userId = req.user.claims.sub;
+      const reminderId = req.params.id;
+
+      await storage.deleteReminder(reminderId, userId);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error deleting reminder:", error);
+      res.status(500).json({ error: "Failed to delete reminder" });
+    }
+  });
+
   // PDF upload and analysis
   app.post("/api/analyze-pdf", isAuthenticated, upload.single("pdf"), async (req: any, res: Response) => {
     try {

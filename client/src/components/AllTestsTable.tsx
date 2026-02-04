@@ -1,5 +1,6 @@
 import { useState, useMemo } from "react";
 import { useTranslation } from "react-i18next";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Table,
   TableBody,
@@ -15,13 +16,22 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { CategoryBadge } from "./CategoryBadge";
 import { format } from "date-fns";
 import { arSA, enUS } from "date-fns/locale";
-import type { AllTestsData, TestCategory } from "@shared/schema";
-import { ArrowUpDown, Filter, CheckCircle, XCircle, Clock } from "lucide-react";
+import type { AllTestsData, TestCategory, Reminder } from "@shared/schema";
+import { ArrowUpDown, Filter, CheckCircle, XCircle, Clock, CalendarDays, Bell, X } from "lucide-react";
+import { apiRequest } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
 
 interface AllTestsTableProps {
   tests: AllTestsData[];
@@ -32,19 +42,65 @@ type SortOption = "default" | "importance" | "category" | "status";
 type FilterCategory = TestCategory | "all";
 type FilterStatus = "all" | "normal" | "low" | "high" | "pending";
 
+interface ReminderWithDef extends Reminder {
+  testDefinition?: {
+    nameEn: string;
+    nameAr: string;
+  };
+}
+
 export function AllTestsTable({ tests, isLoading }: AllTestsTableProps) {
   const { t, i18n } = useTranslation();
   const isArabic = i18n.language === "ar";
   const dateLocale = isArabic ? arSA : enUS;
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
 
   const [sortBy, setSortBy] = useState<SortOption>("default");
   const [filterCategory, setFilterCategory] = useState<FilterCategory>("all");
   const [filterStatus, setFilterStatus] = useState<FilterStatus>("all");
+  const [openPopover, setOpenPopover] = useState<string | null>(null);
+
+  const { data: reminders = [] } = useQuery<ReminderWithDef[]>({
+    queryKey: ["/api/reminders"],
+  });
+
+  const createReminderMutation = useMutation({
+    mutationFn: async ({ testId, dueDate }: { testId: string; dueDate: Date }) => {
+      return apiRequest("POST", "/api/reminders", { testId, dueDate: dueDate.toISOString() });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/reminders"] });
+      toast({ title: t("reminderSet"), description: t("reminderSetDesc") });
+      setOpenPopover(null);
+    },
+    onError: () => {
+      toast({ title: t("error"), description: t("reminderError"), variant: "destructive" });
+    },
+  });
+
+  const deleteReminderMutation = useMutation({
+    mutationFn: async (reminderId: string) => {
+      return apiRequest("DELETE", `/api/reminders/${reminderId}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/reminders"] });
+      toast({ title: t("reminderDeleted") });
+    },
+  });
 
   const categories: TestCategory[] = [
     "vitamins", "minerals", "hormones", "organ_functions",
     "lipids", "immunity", "blood", "coagulation", "special"
   ];
+
+  const remindersByTestId = useMemo(() => {
+    const map: Record<string, ReminderWithDef> = {};
+    reminders.forEach(r => {
+      map[r.testId] = r;
+    });
+    return map;
+  }, [reminders]);
 
   const sortedAndFilteredTests = useMemo(() => {
     let result = [...tests];
@@ -112,6 +168,12 @@ export function AllTestsTable({ tests, isLoading }: AllTestsTableProps) {
         {status === "high" ? t("high") : t("low")}
       </Badge>
     );
+  };
+
+  const handleSetReminder = (testId: string, date: Date | undefined) => {
+    if (date) {
+      createReminderMutation.mutate({ testId, dueDate: date });
+    }
   };
 
   const testsWithResults = tests.filter(t => t.hasResult).length;
@@ -195,49 +257,104 @@ export function AllTestsTable({ tests, isLoading }: AllTestsTableProps) {
                 <TableHead className="text-center">{t("normalRange")}</TableHead>
                 <TableHead className="text-center">{t("status")}</TableHead>
                 <TableHead>{t("testDate")}</TableHead>
+                <TableHead className="text-center">{t("reminder")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {sortedAndFilteredTests.map((test, index) => (
-                <TableRow 
-                  key={test.id} 
-                  className={getStatusRowClass(test.status, test.hasResult)}
-                  data-testid={`row-test-${test.testId}`}
-                >
-                  <TableCell className="text-muted-foreground text-sm">
-                    {index + 1}
-                  </TableCell>
-                  <TableCell className="font-medium">
-                    {isArabic ? test.nameAr : test.nameEn}
-                  </TableCell>
-                  <TableCell>
-                    <CategoryBadge category={test.category} />
-                  </TableCell>
-                  <TableCell className="text-center font-mono">
-                    {test.hasResult ? (
-                      <span className={test.status !== "normal" && test.status !== "pending" ? "font-bold text-red-600 dark:text-red-400" : ""}>
-                        {test.value} {test.unit || ""}
-                      </span>
-                    ) : (
-                      <span className="text-muted-foreground">0</span>
-                    )}
-                  </TableCell>
-                  <TableCell className="text-center text-muted-foreground text-sm">
-                    {test.normalRangeMin !== null && test.normalRangeMax !== null
-                      ? `${test.normalRangeMin} - ${test.normalRangeMax} ${test.unit || ""}`
-                      : "-"}
-                  </TableCell>
-                  <TableCell className="text-center">
-                    {getStatusBadge(test.status, test.hasResult)}
-                  </TableCell>
-                  <TableCell className="text-muted-foreground">
-                    {test.testDate 
-                      ? format(new Date(test.testDate), "PP", { locale: dateLocale })
-                      : "-"
-                    }
-                  </TableCell>
-                </TableRow>
-              ))}
+              {sortedAndFilteredTests.map((test, index) => {
+                const existingReminder = remindersByTestId[test.testId];
+                
+                return (
+                  <TableRow 
+                    key={test.id} 
+                    className={getStatusRowClass(test.status, test.hasResult)}
+                    data-testid={`row-test-${test.testId}`}
+                  >
+                    <TableCell className="text-muted-foreground text-sm">
+                      {index + 1}
+                    </TableCell>
+                    <TableCell className="font-medium">
+                      {isArabic ? test.nameAr : test.nameEn}
+                    </TableCell>
+                    <TableCell>
+                      <CategoryBadge category={test.category} />
+                    </TableCell>
+                    <TableCell className="text-center font-mono">
+                      {test.hasResult ? (
+                        <span className={test.status !== "normal" && test.status !== "pending" ? "font-bold text-red-600 dark:text-red-400" : ""}>
+                          {test.value} {test.unit || ""}
+                        </span>
+                      ) : (
+                        <span className="text-muted-foreground">0</span>
+                      )}
+                    </TableCell>
+                    <TableCell className="text-center text-muted-foreground text-sm">
+                      {test.normalRangeMin !== null && test.normalRangeMax !== null
+                        ? `${test.normalRangeMin} - ${test.normalRangeMax} ${test.unit || ""}`
+                        : "-"}
+                    </TableCell>
+                    <TableCell className="text-center">
+                      {getStatusBadge(test.status, test.hasResult)}
+                    </TableCell>
+                    <TableCell className="text-muted-foreground">
+                      {test.testDate 
+                        ? format(new Date(test.testDate), "PP", { locale: dateLocale })
+                        : "-"
+                      }
+                    </TableCell>
+                    <TableCell className="text-center">
+                      {existingReminder ? (
+                        <div className="flex items-center justify-center gap-1">
+                          <Badge variant="secondary" className="gap-1">
+                            <Bell className="h-3 w-3" />
+                            {format(new Date(existingReminder.dueDate), "PP", { locale: dateLocale })}
+                          </Badge>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-6 w-6"
+                            onClick={() => deleteReminderMutation.mutate(existingReminder.id)}
+                            data-testid={`button-delete-reminder-${test.testId}`}
+                          >
+                            <X className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      ) : (
+                        <Popover 
+                          open={openPopover === test.testId} 
+                          onOpenChange={(open) => setOpenPopover(open ? test.testId : null)}
+                        >
+                          <PopoverTrigger asChild>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="gap-1"
+                              data-testid={`button-set-reminder-${test.testId}`}
+                            >
+                              <CalendarDays className="h-4 w-4" />
+                              {t("setReminder")}
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-auto p-0" align="center">
+                            <Calendar
+                              mode="single"
+                              selected={undefined}
+                              onSelect={(date) => handleSetReminder(test.testId, date)}
+                              disabled={(date) => {
+                                const today = new Date();
+                                today.setHours(0, 0, 0, 0);
+                                return date < today;
+                              }}
+                              initialFocus
+                              locale={dateLocale}
+                            />
+                          </PopoverContent>
+                        </Popover>
+                      )}
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
             </TableBody>
           </Table>
         </div>
