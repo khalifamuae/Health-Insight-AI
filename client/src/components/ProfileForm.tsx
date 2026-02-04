@@ -50,11 +50,28 @@ interface ProfileFormProps {
   profile?: UserProfile | null;
 }
 
+const countryCodes = [
+  { code: "+966", country: "SA", flag: "🇸🇦", name: "Saudi Arabia" },
+  { code: "+971", country: "AE", flag: "🇦🇪", name: "UAE" },
+  { code: "+973", country: "BH", flag: "🇧🇭", name: "Bahrain" },
+  { code: "+965", country: "KW", flag: "🇰🇼", name: "Kuwait" },
+  { code: "+968", country: "OM", flag: "🇴🇲", name: "Oman" },
+  { code: "+974", country: "QA", flag: "🇶🇦", name: "Qatar" },
+  { code: "+20", country: "EG", flag: "🇪🇬", name: "Egypt" },
+  { code: "+962", country: "JO", flag: "🇯🇴", name: "Jordan" },
+  { code: "+961", country: "LB", flag: "🇱🇧", name: "Lebanon" },
+  { code: "+964", country: "IQ", flag: "🇮🇶", name: "Iraq" },
+  { code: "+212", country: "MA", flag: "🇲🇦", name: "Morocco" },
+  { code: "+1", country: "US", flag: "🇺🇸", name: "USA" },
+  { code: "+44", country: "GB", flag: "🇬🇧", name: "UK" },
+];
+
 export function ProfileForm({ user, profile }: ProfileFormProps) {
   const { t } = useTranslation();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [countryCode, setCountryCode] = useState("+966");
 
   const form = useForm<ProfileFormValues>({
     resolver: zodResolver(profileSchema),
@@ -155,14 +172,31 @@ export function ProfileForm({ user, profile }: ProfileFormProps) {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>{t("phone")}</FormLabel>
-                    <FormControl>
-                      <Input 
-                        {...field} 
-                        type="tel"
-                        placeholder="+966 5XX XXX XXXX"
-                        data-testid="input-phone"
-                      />
-                    </FormControl>
+                    <div className="flex gap-2">
+                      <Select value={countryCode} onValueChange={setCountryCode}>
+                        <SelectTrigger className="w-[100px]" data-testid="select-country-code">
+                          <SelectValue>
+                            {countryCodes.find(c => c.code === countryCode)?.flag} {countryCode}
+                          </SelectValue>
+                        </SelectTrigger>
+                        <SelectContent>
+                          {countryCodes.map((c) => (
+                            <SelectItem key={c.code} value={c.code}>
+                              {c.flag} {c.code} ({c.name})
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormControl>
+                        <Input 
+                          {...field} 
+                          type="tel"
+                          placeholder="5XX XXX XXXX"
+                          className="flex-1"
+                          data-testid="input-phone"
+                        />
+                      </FormControl>
+                    </div>
                     <FormMessage />
                   </FormItem>
                 )}
