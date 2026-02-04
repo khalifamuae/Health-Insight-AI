@@ -359,18 +359,18 @@ export function AllTestsTable({ tests, isLoading }: AllTestsTableProps) {
         </div>
       </CardHeader>
       <CardContent className="p-0">
-        <div className="overflow-x-auto max-h-[70vh] overflow-y-auto">
+        <div className="relative overflow-auto max-h-[70vh]">
           <Table>
-            <TableHeader className="sticky top-0 bg-background z-10 shadow-sm">
-              <TableRow>
-                <TableHead className="w-[40px] bg-background">#</TableHead>
-                <TableHead className="bg-background">{t("testName")}</TableHead>
-                <TableHead className="bg-background">{t("category")}</TableHead>
-                <TableHead className="text-center bg-background">{t("yourValue")}</TableHead>
-                <TableHead className="text-center bg-background">{t("normalRange")}</TableHead>
-                <TableHead className="text-center bg-background">{t("status")}</TableHead>
-                <TableHead className="bg-background">{t("testDate")}</TableHead>
-                <TableHead className="text-center bg-background">{t("reminder")}</TableHead>
+            <TableHeader className="sticky top-0 z-20">
+              <TableRow className="bg-card border-b-2 border-border">
+                <TableHead className="w-[40px] bg-card font-bold">#</TableHead>
+                <TableHead className="bg-card font-bold">{t("testName")}</TableHead>
+                <TableHead className="bg-card font-bold">{t("category")}</TableHead>
+                <TableHead className="text-center bg-card font-bold">{t("yourValue")}</TableHead>
+                <TableHead className="text-center bg-card font-bold">{t("normalRange")}</TableHead>
+                <TableHead className="text-center bg-card font-bold">{t("status")}</TableHead>
+                <TableHead className="bg-card font-bold">{t("testDate")}</TableHead>
+                <TableHead className="text-center bg-card font-bold">{t("reminder")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
