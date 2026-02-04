@@ -439,7 +439,7 @@ export function AllTestsTable({ tests, isLoading }: AllTestsTableProps) {
                     </TableCell>
                     <TableCell className="text-muted-foreground p-1 text-xs">
                       {test.testDate 
-                        ? format(new Date(test.testDate), "MM/dd", { locale: dateLocale })
+                        ? format(new Date(test.testDate), "MM/dd/yy", { locale: dateLocale })
                         : "-"
                       }
                     </TableCell>

@@ -27,7 +27,8 @@ import { CategoryIcon, CategoryLegend } from "./CategoryIcon";
 import { format } from "date-fns";
 import { arSA, enUS } from "date-fns/locale";
 import type { TestResultWithDefinition, TestCategory, TestStatus } from "@shared/schema";
-import { ArrowUpDown, Filter, Info } from "lucide-react";
+import { ArrowUpDown, Filter, Info, Share2, Check } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 
 interface TestsTableProps {
   tests: TestResultWithDefinition[];
@@ -42,10 +43,105 @@ export function TestsTable({ tests, isLoading }: TestsTableProps) {
   const { t, i18n } = useTranslation();
   const isArabic = i18n.language === "ar";
   const dateLocale = isArabic ? arSA : enUS;
+  const { toast } = useToast();
+  const [copied, setCopied] = useState(false);
 
   const [sortBy, setSortBy] = useState<SortOption>("importance");
   const [filterCategory, setFilterCategory] = useState<FilterCategory>("all");
   const [filterStatus, setFilterStatus] = useState<FilterStatus>("all");
+
+  const generateShareText = () => {
+    if (tests.length === 0) {
+      return isArabic 
+        ? "لا توجد نتائج فحوصات لمشاركتها"
+        : "No test results to share";
+    }
+
+    const header = isArabic 
+      ? "تقرير الفحوصات الطبية\n" + "═".repeat(30) + "\n\n"
+      : "Medical Test Results Report\n" + "═".repeat(30) + "\n\n";
+
+    const abnormalTests = tests.filter(t => t.status === "high" || t.status === "low");
+    const normalTests = tests.filter(t => t.status === "normal");
+
+    let text = header;
+
+    if (abnormalTests.length > 0) {
+      text += isArabic ? "[!] نتائج غير طبيعية:\n" : "[!] Abnormal Results:\n";
+      abnormalTests.forEach(test => {
+        const name = isArabic ? test.testDefinition.nameAr : test.testDefinition.nameEn;
+        const statusText = test.status === "high" 
+          ? (isArabic ? "مرتفع" : "High") 
+          : (isArabic ? "منخفض" : "Low");
+        const range = test.testDefinition.normalRangeMin !== null && test.testDefinition.normalRangeMax !== null
+          ? `${test.testDefinition.normalRangeMin}-${test.testDefinition.normalRangeMax} ${test.testDefinition.unit || ""}`
+          : "";
+        const testDateStr = test.testDate 
+          ? ` | ${isArabic ? "تاريخ الفحص" : "Test Date"}: ${format(new Date(test.testDate), "yyyy-MM-dd")}`
+          : "";
+        text += `- ${name}: ${test.value} ${test.testDefinition.unit || ""} (${statusText})`;
+        if (range) text += ` [${isArabic ? "الطبيعي" : "Normal"}: ${range}]`;
+        text += testDateStr;
+        text += "\n";
+      });
+      text += "\n";
+    }
+
+    if (normalTests.length > 0) {
+      text += isArabic ? "[OK] نتائج طبيعية:\n" : "[OK] Normal Results:\n";
+      normalTests.forEach(test => {
+        const name = isArabic ? test.testDefinition.nameAr : test.testDefinition.nameEn;
+        const range = test.testDefinition.normalRangeMin !== null && test.testDefinition.normalRangeMax !== null
+          ? `${test.testDefinition.normalRangeMin}-${test.testDefinition.normalRangeMax} ${test.testDefinition.unit || ""}`
+          : "";
+        const testDateStr = test.testDate 
+          ? ` | ${isArabic ? "تاريخ الفحص" : "Test Date"}: ${format(new Date(test.testDate), "yyyy-MM-dd")}`
+          : "";
+        text += `- ${name}: ${test.value} ${test.testDefinition.unit || ""}`;
+        if (range) text += ` [${isArabic ? "الطبيعي" : "Normal"}: ${range}]`;
+        text += testDateStr;
+        text += "\n";
+      });
+    }
+
+    const footer = isArabic
+      ? "\nالتاريخ: " + format(new Date(), "PPP", { locale: dateLocale })
+      : "\nDate: " + format(new Date(), "PPP", { locale: dateLocale });
+    text += footer;
+
+    return text;
+  };
+
+  const handleShare = async () => {
+    const shareText = generateShareText();
+
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: isArabic ? "تقرير الفحوصات" : "Test Results Report",
+          text: shareText,
+        });
+        toast({ title: t("shareSuccess") });
+      } catch (error) {
+        if ((error as Error).name !== "AbortError") {
+          await copyToClipboard(shareText);
+        }
+      }
+    } else {
+      await copyToClipboard(shareText);
+    }
+  };
+
+  const copyToClipboard = async (text: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(true);
+      toast({ title: t("copiedToClipboard") });
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      toast({ title: t("error"), description: t("copyFailed"), variant: "destructive" });
+    }
+  };
 
   const categories: TestCategory[] = [
     "vitamins", "minerals", "hormones", "organ_functions",
@@ -108,10 +204,22 @@ export function TestsTable({ tests, isLoading }: TestsTableProps) {
     <Card>
       <CardHeader className="pb-4">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <CardTitle className="flex items-center gap-2">
-            <ArrowUpDown className="h-5 w-5" />
-            {t("myTests")}
-          </CardTitle>
+          <div className="flex items-center gap-2">
+            <CardTitle className="flex items-center gap-2">
+              <ArrowUpDown className="h-5 w-5" />
+              {t("myTests")}
+            </CardTitle>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleShare}
+              className="gap-1"
+              data-testid="button-share-results"
+            >
+              {copied ? <Check className="h-4 w-4" /> : <Share2 className="h-4 w-4" />}
+              <span className="hidden sm:inline">{t("share")}</span>
+            </Button>
+          </div>
           <div className="flex flex-wrap gap-2">
             <Select value={sortBy} onValueChange={(v) => setSortBy(v as SortOption)}>
               <SelectTrigger className="w-[140px]" data-testid="select-sort">
@@ -218,7 +326,7 @@ export function TestsTable({ tests, isLoading }: TestsTableProps) {
                       <TestStatusBadge status={test.status || "normal"} />
                     </TableCell>
                     <TableCell className="text-muted-foreground p-1 text-xs">
-                      {format(new Date(test.testDate), "MM/dd", { locale: dateLocale })}
+                      {format(new Date(test.testDate), "MM/dd/yy", { locale: dateLocale })}
                     </TableCell>
                   </TableRow>
                 ))}
