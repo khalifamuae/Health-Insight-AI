@@ -127,6 +127,18 @@ const resources = {
       reminderError: "Failed to set reminder",
       home: "Home",
       upload: "Upload",
+      
+      // Uploaded Files History
+      uploadedFiles: "Uploaded Files",
+      processed: "Processed",
+      failed: "Failed",
+      testsExtracted: "tests extracted",
+      aiCouldNotRead: "AI could not read this file",
+      fileDeleted: "File deleted successfully",
+      deleteFileFailed: "Failed to delete file",
+      retry: "Retry",
+      retryFailed: "Retry failed. Please try again.",
+      pleaseUploadPdf: "Please upload a PDF file",
     }
   },
   ar: {
@@ -253,6 +265,18 @@ const resources = {
       reminderError: "فشل في تعيين التذكير",
       home: "الرئيسية",
       upload: "رفع",
+      
+      // Uploaded Files History
+      uploadedFiles: "الملفات المرفوعة",
+      processed: "تمت المعالجة",
+      failed: "فشل",
+      testsExtracted: "فحص مستخرج",
+      aiCouldNotRead: "لم يتمكن الذكاء الاصطناعي من قراءة هذا الملف",
+      fileDeleted: "تم حذف الملف بنجاح",
+      deleteFileFailed: "فشل في حذف الملف",
+      retry: "إعادة المحاولة",
+      retryFailed: "فشلت إعادة المحاولة. يرجى المحاولة مرة أخرى.",
+      pleaseUploadPdf: "يرجى رفع ملف PDF",
     }
   }
 };

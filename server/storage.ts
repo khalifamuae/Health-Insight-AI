@@ -198,6 +198,44 @@ export class DatabaseStorage implements IStorage {
       })
       .where(eq(userProfiles.id, userId));
   }
+
+  async getUploadedPdfById(id: string, userId: string): Promise<UploadedPdf | null> {
+    const results = await db
+      .select()
+      .from(uploadedPdfs)
+      .where(and(eq(uploadedPdfs.id, id), eq(uploadedPdfs.userId, userId)));
+    return results[0] || null;
+  }
+
+  async updateUploadedPdfStatus(
+    id: string, 
+    status: "pending" | "processing" | "success" | "failed",
+    testsExtracted?: number,
+    errorMessage?: string
+  ): Promise<UploadedPdf | null> {
+    const updateData: Record<string, unknown> = { status };
+    if (testsExtracted !== undefined) {
+      updateData.testsExtracted = testsExtracted;
+      updateData.processedAt = new Date();
+    }
+    if (errorMessage !== undefined) {
+      updateData.errorMessage = errorMessage;
+    }
+    const [updated] = await db
+      .update(uploadedPdfs)
+      .set(updateData)
+      .where(eq(uploadedPdfs.id, id))
+      .returning();
+    return updated || null;
+  }
+
+  async deleteUploadedPdf(id: string, userId: string): Promise<boolean> {
+    const result = await db
+      .delete(uploadedPdfs)
+      .where(and(eq(uploadedPdfs.id, id), eq(uploadedPdfs.userId, userId)))
+      .returning();
+    return result.length > 0;
+  }
 }
 
 export const storage = new DatabaseStorage();

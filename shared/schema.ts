@@ -22,6 +22,7 @@ export const testCategoryEnum = pgEnum("test_category", [
   "special"
 ]);
 export const genderEnum = pgEnum("gender", ["male", "female"]);
+export const pdfStatusEnum = pgEnum("pdf_status", ["pending", "processing", "success", "failed"]);
 
 // User profiles - extends auth users with health data
 export const userProfiles = pgTable("user_profiles", {
@@ -86,6 +87,8 @@ export const uploadedPdfs = pgTable("uploaded_pdfs", {
   userId: varchar("user_id").notNull(),
   fileName: text("file_name").notNull(),
   filePath: text("file_path").notNull(),
+  status: pdfStatusEnum("status").default("pending"),
+  errorMessage: text("error_message"),
   processedAt: timestamp("processed_at"),
   testsExtracted: integer("tests_extracted").default(0),
   createdAt: timestamp("created_at").defaultNow(),

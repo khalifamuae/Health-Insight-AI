@@ -285,31 +285,42 @@ export async function registerRoutes(
     }
   });
 
-  // PDF upload and analysis
-  app.post("/api/analyze-pdf", isAuthenticated, upload.single("pdf"), async (req: any, res: Response) => {
+  // Get uploaded PDFs list
+  app.get("/api/uploaded-pdfs", isAuthenticated, async (req: any, res: Response) => {
     try {
       const userId = req.user.claims.sub;
-      const file = req.file;
+      const pdfs = await storage.getUploadedPdfsByUser(userId);
+      res.json(pdfs);
+    } catch (error) {
+      console.error("Error fetching uploaded PDFs:", error);
+      res.status(500).json({ error: "Failed to fetch uploaded PDFs" });
+    }
+  });
 
-      if (!file) {
-        return res.status(400).json({ error: "No PDF file uploaded" });
+  // Delete uploaded PDF
+  app.delete("/api/uploaded-pdfs/:id", isAuthenticated, async (req: any, res: Response) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { id } = req.params;
+      const deleted = await storage.deleteUploadedPdf(id, userId);
+      if (!deleted) {
+        return res.status(404).json({ error: "PDF not found" });
       }
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error deleting PDF:", error);
+      res.status(500).json({ error: "Failed to delete PDF" });
+    }
+  });
 
-      // Check subscription limits
-      const profile = await storage.getUserProfile(userId);
-      const plan = profile?.subscriptionPlan || "free";
-      const filesUploaded = profile?.filesUploaded || 0;
-      
-      const limits: Record<string, number> = { free: 3, basic: 20, premium: Infinity };
-      if (filesUploaded >= limits[plan]) {
-        return res.status(403).json({ 
-          error: "Upload limit reached", 
-          message: "Please upgrade your subscription to upload more files"
-        });
-      }
+  // Helper function to process PDF with a given record
+  async function processPdfFromRecord(pdfId: string, userId: string, fileBuffer: Buffer, fileName: string) {
+    // Update status to processing
+    await storage.updateUploadedPdfStatus(pdfId, "processing");
 
+    try {
       // Analyze PDF using AI
-      const extractedTests = await analyzeLabPdf(file.buffer);
+      const extractedTests = await analyzeLabPdf(fileBuffer);
 
       // Get test definitions for matching
       const definitions = await storage.getTestDefinitions();
@@ -338,7 +349,7 @@ export async function registerRoutes(
           valueText: extracted.valueText,
           status,
           testDate,
-          pdfFileName: file.originalname,
+          pdfFileName: fileName,
         });
         testsCreated++;
 
@@ -355,26 +366,114 @@ export async function registerRoutes(
         }
       }
 
-      // Track uploaded PDF
-      await storage.createUploadedPdf({
+      // Update status to success
+      await storage.updateUploadedPdfStatus(pdfId, "success", testsCreated);
+
+      return { success: true, testsExtracted: testsCreated };
+    } catch (error) {
+      // Update status to failed
+      const errorMessage = error instanceof Error ? error.message : "Unknown error";
+      await storage.updateUploadedPdfStatus(pdfId, "failed", undefined, errorMessage);
+      throw error;
+    }
+  }
+
+  // PDF upload and analysis
+  app.post("/api/analyze-pdf", isAuthenticated, upload.single("pdf"), async (req: any, res: Response) => {
+    try {
+      const userId = req.user.claims.sub;
+      const file = req.file;
+
+      if (!file) {
+        return res.status(400).json({ error: "No PDF file uploaded" });
+      }
+
+      // Check subscription limits
+      const profile = await storage.getUserProfile(userId);
+      const plan = profile?.subscriptionPlan || "free";
+      const filesUploaded = profile?.filesUploaded || 0;
+      
+      const limits: Record<string, number> = { free: 3, basic: 20, premium: Infinity };
+      if (filesUploaded >= limits[plan]) {
+        return res.status(403).json({ 
+          error: "Upload limit reached", 
+          message: "Please upgrade your subscription to upload more files"
+        });
+      }
+
+      // Create pending PDF record first
+      const pdfRecord = await storage.createUploadedPdf({
         userId,
         fileName: file.originalname,
         filePath: "",
-        processedAt: new Date(),
-        testsExtracted: testsCreated,
+        status: "pending",
       });
 
       // Increment files uploaded
       await storage.incrementFilesUploaded(userId);
 
-      res.json({ 
-        success: true, 
-        testsExtracted: testsCreated,
-        message: `Successfully extracted ${testsCreated} test results`
-      });
+      try {
+        // Process the PDF
+        const result = await processPdfFromRecord(pdfRecord.id, userId, file.buffer, file.originalname);
+
+        res.json({ 
+          success: true, 
+          testsExtracted: result.testsExtracted,
+          pdfId: pdfRecord.id,
+          message: `Successfully extracted ${result.testsExtracted} test results`
+        });
+      } catch (error) {
+        console.error("Error analyzing PDF:", error);
+        res.status(500).json({ 
+          error: "Failed to analyze PDF",
+          pdfId: pdfRecord.id,
+          message: "The file was saved but could not be processed. You can retry later."
+        });
+      }
     } catch (error) {
-      console.error("Error analyzing PDF:", error);
-      res.status(500).json({ error: "Failed to analyze PDF" });
+      console.error("Error uploading PDF:", error);
+      res.status(500).json({ error: "Failed to upload PDF" });
+    }
+  });
+
+  // Retry processing a failed PDF (requires file to be re-uploaded)
+  app.post("/api/uploaded-pdfs/:id/retry", isAuthenticated, upload.single("pdf"), async (req: any, res: Response) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { id } = req.params;
+      const file = req.file;
+
+      if (!file) {
+        return res.status(400).json({ error: "No PDF file uploaded for retry" });
+      }
+
+      // Get the existing PDF record
+      const pdfRecord = await storage.getUploadedPdfById(id, userId);
+      if (!pdfRecord) {
+        return res.status(404).json({ error: "PDF record not found" });
+      }
+
+      // Reset the record and retry
+      await storage.updateUploadedPdfStatus(id, "pending", undefined, undefined);
+
+      try {
+        const result = await processPdfFromRecord(id, userId, file.buffer, pdfRecord.fileName);
+
+        res.json({ 
+          success: true, 
+          testsExtracted: result.testsExtracted,
+          message: `Successfully extracted ${result.testsExtracted} test results`
+        });
+      } catch (error) {
+        console.error("Error retrying PDF analysis:", error);
+        res.status(500).json({ 
+          error: "Failed to analyze PDF",
+          message: "Retry failed. Please try again later."
+        });
+      }
+    } catch (error) {
+      console.error("Error in retry:", error);
+      res.status(500).json({ error: "Failed to retry PDF processing" });
     }
   });
 
