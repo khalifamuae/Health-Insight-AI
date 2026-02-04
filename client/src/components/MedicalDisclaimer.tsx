@@ -1,14 +1,19 @@
 import { useTranslation } from "react-i18next";
 import { AlertTriangle } from "lucide-react";
-import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 export function MedicalDisclaimer() {
   const { t } = useTranslation();
 
   return (
-    <Alert className="border-amber-500/50 bg-amber-50 dark:bg-amber-950/20">
-      <AlertTriangle className="h-4 w-4 text-amber-600 dark:text-amber-400" />
-      <AlertDescription className="text-amber-800 dark:text-amber-200 text-sm">
+    <Alert className="border-red-500 bg-red-50 dark:bg-red-950/30">
+      <AlertTriangle className="h-5 w-5 text-red-600 dark:text-red-400" />
+      <AlertTitle className="text-red-700 dark:text-red-300 font-bold text-base">
+        {t("warning")}
+      </AlertTitle>
+      <AlertDescription className="text-red-600 dark:text-red-300 font-semibold">
+        {t("appPurpose")}
+        <br />
         {t("medicalDisclaimer")}
       </AlertDescription>
     </Alert>

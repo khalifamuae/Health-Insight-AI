@@ -8,7 +8,9 @@ const resources = {
       // App
       appName: "HealthLab",
       appDescription: "AI-Powered Health Analysis",
-      medicalDisclaimer: "This app is for informational purposes only and does not replace professional medical advice. Always consult a healthcare provider.",
+      warning: "Warning",
+      appPurpose: "This app is for health tracking and awareness purposes only.",
+      medicalDisclaimer: "This app does not replace professional medical advice. Always consult a healthcare provider.",
       
       // Navigation
       dashboard: "Dashboard",
@@ -158,7 +160,9 @@ const resources = {
       // App
       appName: "مختبر الصحة",
       appDescription: "تحليل صحي مدعوم بالذكاء الاصطناعي",
-      medicalDisclaimer: "هذا التطبيق للأغراض التوعوية فقط ولا يغني عن الاستشارة الطبية. استشر طبيبك دائماً.",
+      warning: "تحذير",
+      appPurpose: "هذا التطبيق لمتابعة الصحة ولأغراض التوعوية فقط.",
+      medicalDisclaimer: "لا يغني هذا التطبيق عن الاستشارة الطبية. استشر طبيبك دائماً.",
       
       // Navigation
       dashboard: "لوحة التحكم",
