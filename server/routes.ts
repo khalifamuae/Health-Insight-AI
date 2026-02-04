@@ -104,6 +104,7 @@ export async function registerRoutes(
           testId: def.id,
           nameEn: def.nameEn,
           nameAr: def.nameAr,
+          shortName: def.shortName,
           category: def.category,
           importance: def.level,
           unit: def.unit,

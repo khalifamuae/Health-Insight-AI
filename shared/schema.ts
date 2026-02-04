@@ -45,6 +45,7 @@ export const testDefinitions = pgTable("test_definitions", {
   id: varchar("id").primaryKey(),
   nameEn: text("name_en").notNull(),
   nameAr: text("name_ar").notNull(),
+  shortName: varchar("short_name", { length: 20 }), // Short English abbreviation
   category: testCategoryEnum("category").notNull(),
   level: integer("level").notNull(), // 1-7 importance level
   unit: varchar("unit", { length: 50 }),
@@ -184,6 +185,7 @@ export interface AllTestsData {
   testId: string;
   nameEn: string;
   nameAr: string;
+  shortName: string | null;
   category: TestCategory;
   importance: number;
   unit: string | null;

@@ -405,21 +405,22 @@ export function AllTestsTable({ tests, isLoading }: AllTestsTableProps) {
                     </TableCell>
                     <TableCell className="font-medium p-1">
                       <div className="flex items-center gap-1">
-                        <span className="text-xs">{isArabic ? test.nameAr : test.nameEn}</span>
-                        {(test.descriptionEn || test.descriptionAr) && (
-                          <Popover>
-                            <PopoverTrigger asChild>
-                              <Button variant="ghost" size="icon" className="h-4 w-4 p-0">
-                                <Info className="h-3 w-3 text-blue-500" />
-                              </Button>
-                            </PopoverTrigger>
-                            <PopoverContent side="top" className="max-w-[250px] p-3">
-                              <p className="text-sm">
+                        <span className="text-xs font-mono">{test.shortName || test.nameEn}</span>
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-4 w-4 p-0">
+                              <Info className="h-3 w-3 text-blue-500" />
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent side="top" className="max-w-[280px] p-3">
+                            <div className="space-y-1">
+                              <p className="font-semibold text-sm">{isArabic ? test.nameAr : test.nameEn}</p>
+                              <p className="text-sm text-muted-foreground">
                                 {isArabic ? test.descriptionAr : test.descriptionEn}
                               </p>
-                            </PopoverContent>
-                          </Popover>
-                        )}
+                            </div>
+                          </PopoverContent>
+                        </Popover>
                       </div>
                     </TableCell>
                     <TableCell className="text-center font-mono p-1">
