@@ -326,7 +326,7 @@ export async function registerRoutes(
       const definitions = await storage.getTestDefinitions();
       const defMap = new Map(definitions.map(d => [d.id, d]));
 
-      const testDate = new Date();
+      const defaultTestDate = new Date();
       let testsCreated = 0;
 
       // Create test results and reminders
@@ -340,6 +340,9 @@ export async function registerRoutes(
           if (extracted.value < def.normalRangeMin) status = "low";
           else if (extracted.value > def.normalRangeMax) status = "high";
         }
+
+        // Use extracted date if available, otherwise use current date
+        const testDate = extracted.testDate ? new Date(extracted.testDate) : defaultTestDate;
 
         // Create test result
         await storage.createTestResult({

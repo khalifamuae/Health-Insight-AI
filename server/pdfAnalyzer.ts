@@ -13,6 +13,7 @@ interface ExtractedTest {
   testId: string;
   value: number | null;
   valueText: string | null;
+  testDate: string | null;
 }
 
 const testNameMapping: Record<string, string> = {
@@ -263,35 +264,46 @@ export async function analyzeLabPdf(pdfBuffer: Buffer): Promise<ExtractedTest[]>
       messages: [
         {
           role: "system",
-          content: `You are a medical lab report analyzer specialized in extracting test results from laboratory reports. 
-Your task is to carefully analyze the provided lab report text and extract ALL test results.
+          content: `أنت محلل نتائج تحاليل طبية متخصص. مهمتك استخراج جميع نتائج الفحوصات من التقرير المختبري.
 
-For each test found, provide:
-- testName: The name of the test (in the language it appears, Arabic or English)
-- value: The numeric value if available (as a number)
-- valueText: The text value if not numeric (like "Positive", "Negative", "إيجابي", "سلبي")
-- unit: The unit of measurement
+لكل فحص تجده، استخرج:
+- testName: اسم الفحص (بالعربية أو الإنجليزية كما يظهر)
+- value: القيمة الرقمية (رقم)
+- valueText: القيمة النصية إن لم تكن رقمية (مثل "Positive", "Negative", "إيجابي", "سلبي")
+- unit: وحدة القياس
+- testDate: تاريخ الفحص إن وجد بصيغة YYYY-MM-DD
 
-IMPORTANT GUIDELINES:
-1. Look for common lab tests like: CBC (Complete Blood Count), Lipid Panel, Liver Function, Kidney Function, Thyroid, Vitamins, Minerals, Hormones
-2. Extract ACTUAL values only - ignore reference ranges
-3. Handle both Arabic and English test names
-4. Parse numeric values correctly (e.g., "5.5" should be 5.5)
-5. Include the unit when available
+أنواع الفحوصات التي يجب البحث عنها:
+1. الفيتامينات: Vitamin D, Vitamin B12, Vitamin B1, Vitamin B6, Folic Acid, Vitamin A, Vitamin E, Vitamin K, Vitamin C
+2. المعادن: Calcium, Magnesium, Iron, Zinc, Phosphorus, Sodium, Potassium, Chloride
+3. الهرمونات: TSH, T3, T4, Free T4, Testosterone, Estrogen, Progesterone, FSH, LH, Cortisol, Insulin, DHEA
+4. وظائف الكبد: ALT, AST, ALP, GGT, Bilirubin, Albumin, Total Protein
+5. وظائف الكلى: Creatinine, BUN, Urea, Uric Acid, GFR
+6. الدهون: Cholesterol, LDL, HDL, Triglycerides
+7. السكر: Glucose, Fasting Glucose, HbA1c
+8. صورة الدم: Hemoglobin, RBC, WBC, Platelets, MCV, MCH, MCHC, RDW, ESR, Hematocrit
+9. التخثر: PT, INR, PTT, D-Dimer, Fibrinogen
+10. المناعة: CRP, hs-CRP
 
-Return ONLY a valid JSON array. Example:
+تعليمات مهمة:
+- استخرج القيمة الفعلية فقط، وليس المعدل الطبيعي (Reference Range)
+- القيم تكون عادة في عمود "Result" أو "نتيجة" أو "القيمة"
+- المعدل الطبيعي يكون في عمود "Reference" أو "Normal" أو "المعدل الطبيعي" - لا تستخرجه
+- تعامل مع الأسماء بالعربية والإنجليزية
+- إذا كان الرقم مثل "5.5" حوله إلى 5.5
+
+أرجع JSON array فقط. مثال:
 [
-  {"testName": "Vitamin D", "value": 35.5, "valueText": null, "unit": "ng/mL"},
-  {"testName": "HbA1c", "value": 5.7, "valueText": null, "unit": "%"},
-  {"testName": "فيتامين ب12", "value": 450, "valueText": null, "unit": "pg/mL"},
-  {"testName": "Hemoglobin", "value": 14.5, "valueText": null, "unit": "g/dL"}
+  {"testName": "Vitamin D", "value": 35.5, "valueText": null, "unit": "ng/mL", "testDate": "2026-01-15"},
+  {"testName": "HbA1c", "value": 5.7, "valueText": null, "unit": "%", "testDate": null},
+  {"testName": "فيتامين ب12", "value": 450, "valueText": null, "unit": "pg/mL", "testDate": null}
 ]
 
-If you cannot find any test results, return an empty array: []`
+إذا لم تجد أي نتائج، أرجع: []`
         },
         {
           role: "user",
-          content: `Please analyze this lab report and extract all test results:\n\n${pdfText}`
+          content: `حلل هذا التقرير المختبري واستخرج جميع نتائج الفحوصات:\n\n${pdfText}`
         }
       ],
       max_completion_tokens: 4000,
@@ -326,6 +338,7 @@ If you cannot find any test results, return an empty array: []`
           testId,
           value: !isNaN(numericValue as number) ? numericValue : null,
           valueText: test.valueText || null,
+          testDate: test.testDate || null,
         });
         console.log(`Matched: ${testName} -> ${testId} = ${numericValue}`);
       } else {
