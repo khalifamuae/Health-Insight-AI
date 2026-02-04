@@ -30,7 +30,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { CategoryBadge } from "./CategoryBadge";
+import { CategoryIcon, CategoryLegend } from "./CategoryIcon";
 import { format } from "date-fns";
 import { arSA, enUS } from "date-fns/locale";
 import type { AllTestsData, TestCategory, Reminder } from "@shared/schema";
@@ -376,19 +376,18 @@ export function AllTestsTable({ tests, isLoading }: AllTestsTableProps) {
           </div>
         </div>
       </CardHeader>
-      <CardContent className="p-0">
-        <div className="relative overflow-auto max-h-[70vh]">
-          <Table>
+      <CardContent className="p-2">
+        <CategoryLegend />
+        <div className="relative overflow-auto max-h-[65vh]">
+          <Table className="text-sm">
             <TableHeader className="sticky top-0 z-20">
               <TableRow className="bg-card border-b-2 border-border">
-                <TableHead className="w-[40px] bg-card font-bold">#</TableHead>
-                <TableHead className="bg-card font-bold">{t("testName")}</TableHead>
-                <TableHead className="bg-card font-bold">{t("category")}</TableHead>
-                <TableHead className="text-center bg-card font-bold">{t("yourValue")}</TableHead>
-                <TableHead className="text-center bg-card font-bold">{t("normalRange")}</TableHead>
-                <TableHead className="text-center bg-card font-bold">{t("status")}</TableHead>
-                <TableHead className="bg-card font-bold">{t("testDate")}</TableHead>
-                <TableHead className="text-center bg-card font-bold">{t("reminder")}</TableHead>
+                <TableHead className="w-[28px] bg-card p-1 text-center"></TableHead>
+                <TableHead className="bg-card font-bold p-1">{t("testName")}</TableHead>
+                <TableHead className="text-center bg-card font-bold p-1 whitespace-nowrap">{t("yourValue")}</TableHead>
+                <TableHead className="text-center bg-card font-bold p-1">{t("status")}</TableHead>
+                <TableHead className="bg-card font-bold p-1 whitespace-nowrap">{t("testDate")}</TableHead>
+                <TableHead className="text-center bg-card font-bold p-1">{t("reminder")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -401,17 +400,17 @@ export function AllTestsTable({ tests, isLoading }: AllTestsTableProps) {
                     className={getStatusRowClass(test.status, test.hasResult)}
                     data-testid={`row-test-${test.testId}`}
                   >
-                    <TableCell className="text-muted-foreground text-sm">
-                      {index + 1}
+                    <TableCell className="p-1 text-center">
+                      <CategoryIcon category={test.category} />
                     </TableCell>
-                    <TableCell className="font-medium">
+                    <TableCell className="font-medium p-1">
                       <div className="flex items-center gap-1">
-                        {isArabic ? test.nameAr : test.nameEn}
+                        <span className="text-xs">{isArabic ? test.nameAr : test.nameEn}</span>
                         {(test.descriptionEn || test.descriptionAr) && (
                           <Popover>
                             <PopoverTrigger asChild>
-                              <Button variant="ghost" size="icon" className="h-5 w-5 p-0">
-                                <Info className="h-4 w-4 text-blue-500" />
+                              <Button variant="ghost" size="icon" className="h-4 w-4 p-0">
+                                <Info className="h-3 w-3 text-blue-500" />
                               </Button>
                             </PopoverTrigger>
                             <PopoverContent side="top" className="max-w-[250px] p-3">
@@ -423,49 +422,52 @@ export function AllTestsTable({ tests, isLoading }: AllTestsTableProps) {
                         )}
                       </div>
                     </TableCell>
-                    <TableCell>
-                      <CategoryBadge category={test.category} />
-                    </TableCell>
-                    <TableCell className="text-center font-mono">
+                    <TableCell className="text-center font-mono p-1">
                       {test.hasResult ? (
-                        <span className={test.status !== "normal" && test.status !== "pending" ? "font-bold text-red-600 dark:text-red-400" : ""}>
-                          {test.value} {test.unit || ""}
-                        </span>
+                        <div className="flex flex-col">
+                          <span className={`text-xs ${test.status !== "normal" && test.status !== "pending" ? "font-bold text-red-600 dark:text-red-400" : ""}`}>
+                            {test.value}
+                          </span>
+                          <span className="text-[10px] text-muted-foreground">
+                            ({test.normalRangeMin}-{test.normalRangeMax})
+                          </span>
+                        </div>
                       ) : (
-                        <span className="text-muted-foreground">0</span>
+                        <span className="text-muted-foreground text-xs">-</span>
                       )}
                     </TableCell>
-                    <TableCell className="text-center text-muted-foreground text-sm">
-                      {test.normalRangeMin !== null && test.normalRangeMax !== null
-                        ? `${test.normalRangeMin} - ${test.normalRangeMax} ${test.unit || ""}`
-                        : "-"}
-                    </TableCell>
-                    <TableCell className="text-center">
+                    <TableCell className="text-center p-1">
                       {getStatusBadge(test.status, test.hasResult, test)}
                     </TableCell>
-                    <TableCell className="text-muted-foreground">
+                    <TableCell className="text-muted-foreground p-1 text-xs">
                       {test.testDate 
-                        ? format(new Date(test.testDate), "PP", { locale: dateLocale })
+                        ? format(new Date(test.testDate), "MM/dd", { locale: dateLocale })
                         : "-"
                       }
                     </TableCell>
-                    <TableCell className="text-center">
+                    <TableCell className="text-center p-1">
                       {existingReminder ? (
-                        <div className="flex items-center justify-center gap-1">
-                          <Badge variant="secondary" className="gap-1">
-                            <Bell className="h-3 w-3" />
-                            {format(new Date(existingReminder.dueDate), "PP", { locale: dateLocale })}
-                          </Badge>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-6 w-6"
-                            onClick={() => deleteReminderMutation.mutate(existingReminder.id)}
-                            data-testid={`button-delete-reminder-${test.testId}`}
-                          >
-                            <X className="h-3 w-3" />
-                          </Button>
-                        </div>
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-6 w-6 text-green-600">
+                              <Bell className="h-4 w-4" />
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-auto p-2" align="center">
+                            <div className="flex flex-col gap-2">
+                              <span className="text-sm">{format(new Date(existingReminder.dueDate), "PP", { locale: dateLocale })}</span>
+                              <Button
+                                variant="destructive"
+                                size="sm"
+                                onClick={() => deleteReminderMutation.mutate(existingReminder.id)}
+                                data-testid={`button-delete-reminder-${test.testId}`}
+                              >
+                                <X className="h-3 w-3 me-1" />
+                                {isArabic ? "حذف" : "Delete"}
+                              </Button>
+                            </div>
+                          </PopoverContent>
+                        </Popover>
                       ) : (
                         <Popover 
                           open={openPopover === test.testId} 
@@ -473,13 +475,12 @@ export function AllTestsTable({ tests, isLoading }: AllTestsTableProps) {
                         >
                           <PopoverTrigger asChild>
                             <Button
-                              variant="outline"
-                              size="sm"
-                              className="gap-1"
+                              variant="ghost"
+                              size="icon"
+                              className="h-6 w-6"
                               data-testid={`button-set-reminder-${test.testId}`}
                             >
-                              <CalendarDays className="h-4 w-4" />
-                              {t("setReminder")}
+                              <CalendarDays className="h-4 w-4 text-muted-foreground" />
                             </Button>
                           </PopoverTrigger>
                           <PopoverContent className="w-auto p-0" align="center">
