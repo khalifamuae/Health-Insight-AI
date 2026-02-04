@@ -405,7 +405,7 @@ export function AllTestsTable({ tests, isLoading }: AllTestsTableProps) {
                     </TableCell>
                     <TableCell className="font-medium p-1">
                       <div className="flex items-center gap-1">
-                        <span className="text-xs font-mono">{test.shortName || test.nameEn}</span>
+                        <span className="text-xs">{isArabic ? test.nameAr : test.nameEn}</span>
                         <Popover>
                           <PopoverTrigger asChild>
                             <Button variant="ghost" size="icon" className="h-4 w-4 p-0">
@@ -413,12 +413,9 @@ export function AllTestsTable({ tests, isLoading }: AllTestsTableProps) {
                             </Button>
                           </PopoverTrigger>
                           <PopoverContent side="top" className="max-w-[280px] p-3">
-                            <div className="space-y-1">
-                              <p className="font-semibold text-sm">{isArabic ? test.nameAr : test.nameEn}</p>
-                              <p className="text-sm text-muted-foreground">
-                                {isArabic ? test.descriptionAr : test.descriptionEn}
-                              </p>
-                            </div>
+                            <p className="text-sm">
+                              {isArabic ? test.descriptionAr : test.descriptionEn}
+                            </p>
                           </PopoverContent>
                         </Popover>
                       </div>

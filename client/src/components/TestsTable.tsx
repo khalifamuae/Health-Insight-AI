@@ -23,7 +23,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { TestStatusBadge } from "./TestStatusBadge";
-import { CategoryBadge } from "./CategoryBadge";
+import { CategoryIcon, CategoryLegend } from "./CategoryIcon";
 import { format } from "date-fns";
 import { arSA, enUS } from "date-fns/locale";
 import type { TestResultWithDefinition, TestCategory, TestStatus } from "@shared/schema";
@@ -153,22 +153,22 @@ export function TestsTable({ tests, isLoading }: TestsTableProps) {
           </div>
         </div>
       </CardHeader>
-      <CardContent className="p-0">
+      <CardContent className="p-2">
+        <CategoryLegend />
         {sortedAndFilteredTests.length === 0 ? (
           <div className="text-center py-12 text-muted-foreground">
             {t("noData")}
           </div>
         ) : (
-          <div className="relative overflow-auto max-h-[60vh]">
-            <Table>
+          <div className="relative overflow-auto max-h-[55vh]">
+            <Table className="text-sm">
               <TableHeader className="sticky top-0 z-20">
                 <TableRow className="bg-card border-b-2 border-border">
-                  <TableHead className="bg-card font-bold">{t("testName")}</TableHead>
-                  <TableHead className="bg-card font-bold">{t("category")}</TableHead>
-                  <TableHead className="text-center bg-card font-bold">{t("yourValue")}</TableHead>
-                  <TableHead className="text-center bg-card font-bold">{t("normalRange")}</TableHead>
-                  <TableHead className="text-center bg-card font-bold">{t("status")}</TableHead>
-                  <TableHead className="bg-card font-bold">{t("testDate")}</TableHead>
+                  <TableHead className="w-[28px] bg-card p-1 text-center"></TableHead>
+                  <TableHead className="bg-card font-bold p-1">{t("testName")}</TableHead>
+                  <TableHead className="text-center bg-card font-bold p-1">{t("yourValue")}</TableHead>
+                  <TableHead className="text-center bg-card font-bold p-1">{t("status")}</TableHead>
+                  <TableHead className="bg-card font-bold p-1">{t("testDate")}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -178,14 +178,17 @@ export function TestsTable({ tests, isLoading }: TestsTableProps) {
                     className={getStatusRowClass(test.status)}
                     data-testid={`row-test-${test.id}`}
                   >
-                    <TableCell className="font-medium">
+                    <TableCell className="p-1 text-center">
+                      <CategoryIcon category={test.testDefinition.category} />
+                    </TableCell>
+                    <TableCell className="font-medium p-1">
                       <div className="flex items-center gap-1">
-                        {isArabic ? test.testDefinition.nameAr : test.testDefinition.nameEn}
+                        <span className="text-xs">{isArabic ? test.testDefinition.nameAr : test.testDefinition.nameEn}</span>
                         {(test.testDefinition.descriptionEn || test.testDefinition.descriptionAr) && (
                           <Popover>
                             <PopoverTrigger asChild>
-                              <Button variant="ghost" size="icon" className="h-5 w-5 p-0">
-                                <Info className="h-4 w-4 text-blue-500" />
+                              <Button variant="ghost" size="icon" className="h-4 w-4 p-0">
+                                <Info className="h-3 w-3 text-blue-500" />
                               </Button>
                             </PopoverTrigger>
                             <PopoverContent side="top" className="max-w-[250px] p-3">
@@ -197,28 +200,25 @@ export function TestsTable({ tests, isLoading }: TestsTableProps) {
                         )}
                       </div>
                     </TableCell>
-                    <TableCell>
-                      <CategoryBadge category={test.testDefinition.category} />
-                    </TableCell>
-                    <TableCell className="text-center font-mono">
+                    <TableCell className="text-center font-mono p-1">
                       {test.value !== null ? (
-                        <span className={test.status !== "normal" ? "font-bold text-red-600 dark:text-red-400" : ""}>
-                          {test.value} {test.testDefinition.unit}
-                        </span>
+                        <div className="flex flex-col">
+                          <span className={`text-xs ${test.status !== "normal" ? "font-bold text-red-600 dark:text-red-400" : ""}`}>
+                            {test.value}
+                          </span>
+                          <span className="text-[10px] text-muted-foreground">
+                            ({test.testDefinition.normalRangeMin}-{test.testDefinition.normalRangeMax})
+                          </span>
+                        </div>
                       ) : (
-                        test.valueText || "-"
+                        <span className="text-xs">{test.valueText || "-"}</span>
                       )}
                     </TableCell>
-                    <TableCell className="text-center text-muted-foreground text-sm">
-                      {test.testDefinition.normalRangeMin !== null && test.testDefinition.normalRangeMax !== null
-                        ? `${test.testDefinition.normalRangeMin} - ${test.testDefinition.normalRangeMax} ${test.testDefinition.unit || ""}`
-                        : test.testDefinition.normalRangeText || "-"}
-                    </TableCell>
-                    <TableCell className="text-center">
+                    <TableCell className="text-center p-1">
                       <TestStatusBadge status={test.status || "normal"} />
                     </TableCell>
-                    <TableCell className="text-muted-foreground">
-                      {format(new Date(test.testDate), "PP", { locale: dateLocale })}
+                    <TableCell className="text-muted-foreground p-1 text-xs">
+                      {format(new Date(test.testDate), "MM/dd", { locale: dateLocale })}
                     </TableCell>
                   </TableRow>
                 ))}
