@@ -39,6 +39,8 @@ const resources = {
       normal: "Normal",
       low: "Low",
       high: "High",
+      slightlyHigh: "Slightly High",
+      slightlyLow: "Slightly Low",
       
       // Categories
       vitamins: "Vitamins",
@@ -187,6 +189,8 @@ const resources = {
       normal: "طبيعي",
       low: "منخفض",
       high: "مرتفع",
+      slightlyHigh: "مرتفع بشكل بسيط",
+      slightlyLow: "منخفض بشكل بسيط",
       
       // Categories
       vitamins: "الفيتامينات",

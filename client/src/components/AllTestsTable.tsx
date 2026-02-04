@@ -225,7 +225,7 @@ export function AllTestsTable({ tests, isLoading }: AllTestsTableProps) {
     return "";
   };
 
-  const getStatusBadge = (status: string, hasResult: boolean) => {
+  const getStatusBadge = (status: string, hasResult: boolean, test: AllTestsData) => {
     if (!hasResult) {
       return (
         <Badge variant="outline" className="gap-1 text-muted-foreground">
@@ -244,10 +244,27 @@ export function AllTestsTable({ tests, isLoading }: AllTestsTableProps) {
       );
     }
     
+    // Check if slightly high or slightly low (within 20% of boundary)
+    let isSlightly = false;
+    if (test.value !== null && test.normalRangeMin !== null && test.normalRangeMax !== null) {
+      const range = test.normalRangeMax - test.normalRangeMin;
+      const threshold = range * 0.2; // 20% threshold
+      
+      if (status === "high" && test.value <= test.normalRangeMax + threshold) {
+        isSlightly = true;
+      } else if (status === "low" && test.value >= test.normalRangeMin - threshold) {
+        isSlightly = true;
+      }
+    }
+    
+    const statusText = status === "high" 
+      ? (isSlightly ? t("slightlyHigh") : t("high"))
+      : (isSlightly ? t("slightlyLow") : t("low"));
+    
     return (
-      <Badge variant="destructive" className="gap-1">
+      <Badge variant="destructive" className={`gap-1 ${isSlightly ? "bg-orange-500 hover:bg-orange-600" : ""}`}>
         <XCircle className="h-3 w-3" />
-        {status === "high" ? t("high") : t("low")}
+        {statusText}
       </Badge>
     );
   };
@@ -341,19 +358,19 @@ export function AllTestsTable({ tests, isLoading }: AllTestsTableProps) {
           </div>
         </div>
       </CardHeader>
-      <CardContent>
-        <div className="overflow-x-auto">
+      <CardContent className="p-0">
+        <div className="overflow-x-auto max-h-[70vh] overflow-y-auto">
           <Table>
-            <TableHeader>
+            <TableHeader className="sticky top-0 bg-background z-10 shadow-sm">
               <TableRow>
-                <TableHead className="w-[40px]">#</TableHead>
-                <TableHead>{t("testName")}</TableHead>
-                <TableHead>{t("category")}</TableHead>
-                <TableHead className="text-center">{t("yourValue")}</TableHead>
-                <TableHead className="text-center">{t("normalRange")}</TableHead>
-                <TableHead className="text-center">{t("status")}</TableHead>
-                <TableHead>{t("testDate")}</TableHead>
-                <TableHead className="text-center">{t("reminder")}</TableHead>
+                <TableHead className="w-[40px] bg-background">#</TableHead>
+                <TableHead className="bg-background">{t("testName")}</TableHead>
+                <TableHead className="bg-background">{t("category")}</TableHead>
+                <TableHead className="text-center bg-background">{t("yourValue")}</TableHead>
+                <TableHead className="text-center bg-background">{t("normalRange")}</TableHead>
+                <TableHead className="text-center bg-background">{t("status")}</TableHead>
+                <TableHead className="bg-background">{t("testDate")}</TableHead>
+                <TableHead className="text-center bg-background">{t("reminder")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -390,7 +407,7 @@ export function AllTestsTable({ tests, isLoading }: AllTestsTableProps) {
                         : "-"}
                     </TableCell>
                     <TableCell className="text-center">
-                      {getStatusBadge(test.status, test.hasResult)}
+                      {getStatusBadge(test.status, test.hasResult, test)}
                     </TableCell>
                     <TableCell className="text-muted-foreground">
                       {test.testDate 
