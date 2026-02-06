@@ -609,10 +609,13 @@ export default function DietPlan() {
           <h2 className="text-lg font-bold" data-testid="text-diet-title">{t("dietPlan")}</h2>
         </div>
 
-        <Card className="border-orange-200 dark:border-orange-800/40" data-testid="card-nutrition-disclaimer">
-          <CardContent className="p-4 flex items-start gap-3">
-            <ShieldAlert className="h-5 w-5 text-orange-500 shrink-0 mt-0.5" />
-            <p className="text-sm text-muted-foreground leading-relaxed">
+        <Card className="border-amber-300 dark:border-amber-700/50 bg-amber-50/50 dark:bg-amber-950/20" data-testid="card-nutrition-disclaimer">
+          <CardContent className="p-4 space-y-2">
+            <div className="flex items-center gap-2">
+              <ShieldAlert className="h-5 w-5 text-amber-600 dark:text-amber-400 shrink-0" />
+              <span className="text-sm font-semibold text-amber-800 dark:text-amber-300">{t("disclaimerTitle")}</span>
+            </div>
+            <p className="text-sm text-amber-900/80 dark:text-amber-200/70 leading-relaxed">
               {t("nutritionDisclaimer")}
             </p>
           </CardContent>
