@@ -326,7 +326,9 @@ ${toneInstruction}
 - حلّل نتائج الفحوصات وصمم الوجبات لمعالجة النواقص: إذا كان فيتامين د منخفض أضف أطعمة غنية به، إذا كان الحديد منخفض أضف مصادر حديد طبيعية، وهكذا
 ${hasAllergies && allergyList ? `- ⚠️ حساسية المستخدم: ${allergyList}. يُمنع منعاً باتاً وضع أي مكون يسبب الحساسية في أي وجبة` : ""}
 - قدم وجبات عملية وسهلة التحضير ومتوفرة في المنطقة العربية
-- اذكر السعرات التقريبية لكل وجبة مع القيم الغذائية (بروتين، كارب، دهون) بالجرام
+- ⚠️ قاعدة إلزامية: يجب كتابة كل مكون بالجرامات بدقة في وصف الوجبة لضمان عدم تجاوز السعرات الحرارية المحددة. مثال: "150 جرام صدر دجاج مشوي، 80 جرام أرز بسمتي، 100 جرام خضروات مشكلة، 10 مل زيت زيتون". لا تكتب "قطعة دجاج" أو "طبق أرز" - يجب تحديد الوزن بالجرام لكل مكون
+- تأكد أن مجموع سعرات المكونات بالجرامات يتطابق مع السعرات المعلنة لكل وجبة
+- اذكر القيم الغذائية (بروتين، كارب، دهون) بالجرام لكل وجبة
 - اذكر الفوائد الصحية لكل وجبة وارتباطها بتحسين الفحوصات${supplementInstruction}
 - قدم نصائح غذائية عامة بأسلوب إيجابي ومحفّز بناءً على الحالة الصحية والهدف
 - أضف نصائح مخصصة لكل حالة صحية مكتشفة في "conditionTips" بأسلوب إيجابي (بدون تخويف)
@@ -340,10 +342,10 @@ ${hasAllergies && allergyList ? `- ⚠️ حساسية المستخدم: ${aller
   "deficiencies": [{"name": "اسم النقص", "current": "القيمة الحالية", "target": "القيمة المستهدفة", "foods": ["طعام 1", "طعام 2"]}],
   "supplements": [{"name": "اسم المكمل", "dosage": "الجرعة المقترحة", "reason": "سبب الحاجة", "duration": "مدة الاستخدام"}],
   "mealPlan": {
-    "breakfast": [{"name": "خيار 1", "description": "وصف مع المقادير", "calories": 400, "protein": 30, "carbs": 40, "fats": 12, "benefits": "الفوائد"}, {"name": "خيار 2", ...}, {"name": "خيار 3", ...}],
-    "lunch": [{"name": "خيار 1", "description": "...", "calories": 500, "protein": 35, "carbs": 50, "fats": 15, "benefits": "..."}, ...],
-    "dinner": [{"name": "خيار 1", "description": "...", "calories": 450, "protein": 32, "carbs": 45, "fats": 14, "benefits": "..."}, ...],
-    "snacks": [{"name": "سناك 1", "description": "...", "calories": 150, "protein": 8, "carbs": 15, "fats": 6, "benefits": "..."}, ...]
+    "breakfast": [{"name": "شوفان بالحليب والموز", "description": "60 جرام شوفان، 200 مل حليب قليل الدسم، 1 موزة متوسطة (120 جرام)، 10 جرام عسل، 15 جرام لوز", "calories": 420, "protein": 15, "carbs": 62, "fats": 12, "benefits": "غني بالألياف والطاقة المستدامة"}, ...],
+    "lunch": [{"name": "دجاج مشوي مع أرز", "description": "150 جرام صدر دجاج مشوي، 80 جرام أرز بسمتي مطبوخ، 100 جرام سلطة خضراء، 10 مل زيت زيتون", "calories": 520, "protein": 42, "carbs": 48, "fats": 15, "benefits": "بروتين عالي الجودة مع كربوهيدرات معتدلة"}, ...],
+    "dinner": [{"name": "سمك مشوي مع خضروات", "description": "130 جرام سمك فيليه مشوي، 150 جرام خضروات مشوية (كوسة، فلفل، بصل)، 60 جرام بطاطا حلوة مشوية، 5 مل زيت زيتون", "calories": 380, "protein": 32, "carbs": 30, "fats": 12, "benefits": "غني بأوميغا-3 ومضادات الأكسدة"}, ...],
+    "snacks": [{"name": "زبادي مع فواكه", "description": "150 جرام زبادي يوناني، 80 جرام فراولة طازجة، 10 جرام عسل", "calories": 160, "protein": 12, "carbs": 18, "fats": 4, "benefits": "بروبيوتيك طبيعي لصحة الجهاز الهضمي"}, ...]
   },
   "tips": ["نصيحة إيجابية 1", "نصيحة إيجابية 2"],
   "warnings": ["ننصحك بمتابعة ... مع طبيبك للاطمئنان"],
@@ -376,7 +378,9 @@ Important instructions:
 - Analyze test results and design meals to treat deficiencies: if Vitamin D is low add foods rich in it, if Iron is low add natural iron sources, and so on
 ${hasAllergies && allergyList ? `- ALLERGY WARNING: User is allergic to: ${allergyList}. You MUST NOT include any allergen-containing ingredient in any meal` : ""}
 - Provide practical, easy-to-prepare meals
-- Include approximate calories for each meal along with macronutrient breakdown (protein, carbs, fats) in grams
+- MANDATORY RULE: Every ingredient in the meal description MUST be specified in grams to ensure calories are precise and not exceeded. Example: "150g grilled chicken breast, 80g basmati rice, 100g mixed vegetables, 10ml olive oil". Do NOT write "a piece of chicken" or "a plate of rice" - specify the exact weight in grams for every single ingredient
+- Ensure the total calories from gram-specified ingredients match the declared calories for each meal
+- Include macronutrient breakdown (protein, carbs, fats) in grams for each meal
 - Mention health benefits of each meal and how they improve test results${supplementInstruction}
 - Provide general dietary tips with a positive, encouraging tone based on the health condition and goal
 - Add personalized tips for each detected health condition in "conditionTips" with a positive tone (no scary language)
@@ -390,10 +394,10 @@ Return JSON in this format:
   "deficiencies": [{"name": "Deficiency name", "current": "Current value", "target": "Target value", "foods": ["food 1", "food 2"]}],
   "supplements": [{"name": "Supplement name", "dosage": "Suggested dosage", "reason": "Reason needed", "duration": "Duration of use"}],
   "mealPlan": {
-    "breakfast": [{"name": "Option 1", "description": "Description with portions", "calories": 400, "protein": 30, "carbs": 40, "fats": 12, "benefits": "Benefits"}, ...],
-    "lunch": [{"name": "Option 1", "description": "...", "calories": 500, "protein": 35, "carbs": 50, "fats": 15, "benefits": "..."}, ...],
-    "dinner": [{"name": "Option 1", "description": "...", "calories": 450, "protein": 32, "carbs": 45, "fats": 14, "benefits": "..."}, ...],
-    "snacks": [{"name": "Snack 1", "description": "...", "calories": 150, "protein": 8, "carbs": 15, "fats": 6, "benefits": "..."}, ...]
+    "breakfast": [{"name": "Oatmeal with Banana", "description": "60g oats, 200ml low-fat milk, 1 medium banana (120g), 10g honey, 15g almonds", "calories": 420, "protein": 15, "carbs": 62, "fats": 12, "benefits": "Rich in fiber and sustained energy"}, ...],
+    "lunch": [{"name": "Grilled Chicken with Rice", "description": "150g grilled chicken breast, 80g cooked basmati rice, 100g green salad, 10ml olive oil", "calories": 520, "protein": 42, "carbs": 48, "fats": 15, "benefits": "High-quality protein with moderate carbs"}, ...],
+    "dinner": [{"name": "Grilled Fish with Vegetables", "description": "130g grilled fish fillet, 150g roasted vegetables (zucchini, bell pepper, onion), 60g roasted sweet potato, 5ml olive oil", "calories": 380, "protein": 32, "carbs": 30, "fats": 12, "benefits": "Rich in omega-3 and antioxidants"}, ...],
+    "snacks": [{"name": "Greek Yogurt with Berries", "description": "150g Greek yogurt, 80g fresh strawberries, 10g honey", "calories": 160, "protein": 12, "carbs": 18, "fats": 4, "benefits": "Natural probiotics for digestive health"}, ...]
   },
   "tips": ["positive tip 1", "positive tip 2"],
   "warnings": ["We recommend following up on ... with your doctor for peace of mind"],
