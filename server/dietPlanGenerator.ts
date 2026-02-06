@@ -11,6 +11,10 @@ interface UserHealthData {
   age: number | null;
   gender: string | null;
   fitnessGoal: string | null;
+  activityLevel: string | null;
+  mealPreference: string | null;
+  hasAllergies: boolean | null;
+  allergies: string[] | null;
   language: string;
   testResults: {
     testName: string;
@@ -46,6 +50,7 @@ export interface DietPlanResult {
   };
   tips: string[];
   warnings: string[];
+  conditionTips: { condition: string; advice: string[]; avoidFoods: string[] }[];
 }
 
 function calculateBMR(weight: number, height: number, age: number, gender: string): number {
@@ -55,8 +60,18 @@ function calculateBMR(weight: number, height: number, age: number, gender: strin
   return 10 * weight + 6.25 * height - 5 * age - 161;
 }
 
-function calculateTDEE(bmr: number): number {
-  return Math.round(bmr * 1.55);
+function getActivityMultiplier(level: string): number {
+  switch (level) {
+    case "sedentary": return 1.2;
+    case "lightly_active": return 1.375;
+    case "very_active": return 1.725;
+    case "extremely_active": return 1.9;
+    default: return 1.375;
+  }
+}
+
+function calculateTDEE(bmr: number, activityLevel: string): number {
+  return Math.round(bmr * getActivityMultiplier(activityLevel));
 }
 
 function getTargetCalories(tdee: number, goal: string): { target: number; delta: number } {
@@ -70,21 +85,32 @@ function getTargetCalories(tdee: number, goal: string): { target: number; delta:
   }
 }
 
-function getMacroTargets(targetCalories: number, goal: string, weight: number) {
+function getMacroTargets(targetCalories: number, goal: string, preference: string, weight: number) {
   let proteinPerKg: number, fatPercentage: number;
 
-  switch (goal) {
-    case "weight_loss":
-      proteinPerKg = 2.0;
-      fatPercentage = 0.25;
-      break;
-    case "muscle_gain":
-      proteinPerKg = 2.2;
-      fatPercentage = 0.25;
-      break;
-    default:
-      proteinPerKg = 1.6;
-      fatPercentage = 0.30;
+  if (preference === "high_protein") {
+    proteinPerKg = 2.2;
+    fatPercentage = 0.20;
+  } else if (preference === "low_carb") {
+    proteinPerKg = 1.8;
+    fatPercentage = 0.45;
+  } else if (preference === "vegetarian") {
+    proteinPerKg = 1.4;
+    fatPercentage = 0.30;
+  } else {
+    switch (goal) {
+      case "weight_loss":
+        proteinPerKg = 2.0;
+        fatPercentage = 0.25;
+        break;
+      case "muscle_gain":
+        proteinPerKg = 2.2;
+        fatPercentage = 0.25;
+        break;
+      default:
+        proteinPerKg = 1.6;
+        fatPercentage = 0.30;
+    }
   }
 
   const proteinGrams = Math.round(weight * proteinPerKg);
@@ -92,18 +118,61 @@ function getMacroTargets(targetCalories: number, goal: string, weight: number) {
   const fatCalories = Math.round(targetCalories * fatPercentage);
   const fatGrams = Math.round(fatCalories / 9);
   const carbCalories = targetCalories - proteinCalories - fatCalories;
-  const carbGrams = Math.round(carbCalories / 4);
+  const carbGrams = Math.round(Math.max(carbCalories, 0) / 4);
 
   return {
     protein: { grams: proteinGrams, percentage: Math.round((proteinCalories / targetCalories) * 100) },
-    carbs: { grams: carbGrams, percentage: Math.round((carbCalories / targetCalories) * 100) },
+    carbs: { grams: carbGrams, percentage: Math.round((Math.max(carbCalories, 0) / targetCalories) * 100) },
     fats: { grams: fatGrams, percentage: Math.round((fatCalories / targetCalories) * 100) },
   };
+}
+
+function detectConditions(testResults: UserHealthData["testResults"]): string[] {
+  const conditions: string[] = [];
+  for (const t of testResults) {
+    if (t.value == null) continue;
+    const name = t.testName.toLowerCase();
+    if ((name.includes("glucose") || name.includes("سكر") || name.includes("hba1c")) && t.status === "high") {
+      if (!conditions.includes("diabetes_risk")) conditions.push("diabetes_risk");
+    }
+    if ((name.includes("cholesterol") || name.includes("كوليسترول") || name.includes("ldl")) && t.status === "high") {
+      if (!conditions.includes("high_cholesterol")) conditions.push("high_cholesterol");
+    }
+    if ((name.includes("iron") || name.includes("حديد") || name.includes("ferritin") || name.includes("hemoglobin")) && t.status === "low") {
+      if (!conditions.includes("anemia_risk")) conditions.push("anemia_risk");
+    }
+    if ((name.includes("vitamin d") || name.includes("فيتامين د")) && t.status === "low") {
+      if (!conditions.includes("vitamin_d_deficiency")) conditions.push("vitamin_d_deficiency");
+    }
+    if ((name.includes("uric") || name.includes("يوريك")) && t.status === "high") {
+      if (!conditions.includes("high_uric_acid")) conditions.push("high_uric_acid");
+    }
+    if ((name.includes("creatinine") || name.includes("كرياتينين")) && t.status === "high") {
+      if (!conditions.includes("kidney_concern")) conditions.push("kidney_concern");
+    }
+    if ((name.includes("alt") || name.includes("ast") || name.includes("sgpt") || name.includes("sgot")) && t.status === "high") {
+      if (!conditions.includes("liver_concern")) conditions.push("liver_concern");
+    }
+    if ((name.includes("tsh") || name.includes("thyroid")) && (t.status === "high" || t.status === "low")) {
+      if (!conditions.includes("thyroid_issue")) conditions.push("thyroid_issue");
+    }
+    if ((name.includes("b12") || name.includes("ب12")) && t.status === "low") {
+      if (!conditions.includes("b12_deficiency")) conditions.push("b12_deficiency");
+    }
+    if ((name.includes("triglyceride") || name.includes("دهون ثلاثية")) && t.status === "high") {
+      if (!conditions.includes("high_triglycerides")) conditions.push("high_triglycerides");
+    }
+  }
+  return conditions;
 }
 
 export async function generateDietPlan(userData: UserHealthData): Promise<DietPlanResult> {
   const isArabic = userData.language === "ar";
   const goal = userData.fitnessGoal || "maintain";
+  const activityLevel = userData.activityLevel || "sedentary";
+  const mealPreference = userData.mealPreference || "balanced";
+  const allergies = userData.allergies || [];
+  const hasAllergies = userData.hasAllergies || false;
 
   const abnormalTests = userData.testResults.filter(t => t.status === "low" || t.status === "high");
   const normalTests = userData.testResults.filter(t => t.status === "normal");
@@ -114,11 +183,43 @@ export async function generateDietPlan(userData: UserHealthData): Promise<DietPl
   const gender = userData.gender || "male";
 
   const bmr = Math.round(calculateBMR(weight, height, age, gender));
-  const tdee = calculateTDEE(bmr);
+  const tdee = calculateTDEE(bmr, activityLevel);
   const { target: targetCalories, delta } = getTargetCalories(tdee, goal);
-  const macros = getMacroTargets(targetCalories, goal, weight);
+  const macros = getMacroTargets(targetCalories, goal, mealPreference, weight);
 
   const bmi = (weight / Math.pow(height / 100, 2)).toFixed(1);
+  const detectedConditions = detectConditions(userData.testResults);
+
+  const allergyNames: Record<string, { en: string; ar: string }> = {
+    eggs: { en: "Eggs", ar: "بيض" },
+    dairy: { en: "Dairy", ar: "مشتقات الألبان" },
+    peanuts: { en: "Peanuts", ar: "فول سوداني" },
+    nuts: { en: "Nuts", ar: "مكسرات" },
+    seafood: { en: "Seafood", ar: "مأكولات بحرية" },
+    soy: { en: "Soy", ar: "صويا" },
+    sesame: { en: "Sesame", ar: "سمسم" },
+    wheat: { en: "Wheat", ar: "قمح" },
+    fish: { en: "Fish", ar: "سمك" },
+  };
+
+  const allergyList = hasAllergies && allergies.length > 0
+    ? allergies.map(a => isArabic ? (allergyNames[a]?.ar || a) : (allergyNames[a]?.en || a)).join(", ")
+    : "";
+
+  const activityLabels: Record<string, { en: string; ar: string }> = {
+    sedentary: { en: "Sedentary", ar: "قليل الحركة" },
+    lightly_active: { en: "Lightly Active", ar: "نشيط بشكل خفيف" },
+    very_active: { en: "Very Active", ar: "نشيط بشكل عالي" },
+    extremely_active: { en: "Extremely Active", ar: "نشيط بشكل عالي جداً" },
+  };
+
+  const preferenceLabels: Record<string, { en: string; ar: string }> = {
+    high_protein: { en: "High Protein", ar: "عالية البروتين" },
+    balanced: { en: "Balanced", ar: "متوازنة" },
+    low_carb: { en: "Low Carb", ar: "لو-كارب" },
+    vegetarian: { en: "Vegetarian", ar: "نباتية" },
+    custom_macros: { en: "Custom Macros", ar: "ماكروز مخصصة" },
+  };
 
   const testsDescription = userData.testResults
     .filter(t => t.value != null)
@@ -146,23 +247,43 @@ export async function generateDietPlan(userData: UserHealthData): Promise<DietPl
     },
   };
 
+  const conditionsStr = detectedConditions.length > 0
+    ? detectedConditions.join(", ")
+    : "none detected";
+
+  const allergyInstruction = hasAllergies && allergyList
+    ? isArabic
+      ? `\n- المستخدم لديه حساسية تجاه: ${allergyList}. تجنب هذه المكونات تماماً في جميع الوجبات.`
+      : `\n- User has allergies to: ${allergyList}. Completely avoid these ingredients in all meals.`
+    : "";
+
+  const conditionTipInstruction = isArabic
+    ? `\n- بناءً على التحاليل، تم اكتشاف هذه الحالات: ${conditionsStr}. أضف نصائح مخصصة لكل حالة في "conditionTips" مع ذكر الأطعمة التي يجب تجنبها.`
+    : `\n- Based on lab results, these conditions were detected: ${conditionsStr}. Add personalized tips for each condition in "conditionTips" with foods to avoid.`;
+
   const systemPrompt = isArabic
     ? `أنت خبير تغذية طبية متخصص. مهمتك تصميم نظام غذائي مخصص بناءً على نتائج التحاليل الطبية والبيانات الجسدية للمستخدم.
 
 الهدف: ${goalDescriptions[goal].ar}
+مستوى النشاط: ${activityLabels[activityLevel]?.ar || activityLevel}
+نوع الوجبات المفضل: ${preferenceLabels[mealPreference]?.ar || mealPreference}
 
 السعرات المستهدفة: ${targetCalories} سعرة حرارية يومياً
 البروتين: ${macros.protein.grams}جم | الكاربوهيدرات: ${macros.carbs.grams}جم | الدهون: ${macros.fats.grams}جم
 
 تعليمات مهمة:
 - صمم الوجبات بحيث تتوافق مع السعرات والماكرو المحدد أعلاه
+- قدم 3 خيارات مختلفة ومتنوعة لكل وجبة (فطور، غداء، عشاء) لكي يختار المستخدم ما يناسبه ويغير يومياً
 - ${goal === "weight_loss" ? "ركز على وجبات مشبعة ومنخفضة السعرات وغنية بالبروتين والألياف" : ""}
 - ${goal === "muscle_gain" ? "ركز على مصادر غذاء نظيفة وصحية فقط (لا وجبات سريعة، لا دهون مشبعة مفرطة)" : ""}
 - ${goal === "maintain" ? "ركز على التوازن بين العناصر الغذائية وتعديل النواقص من خلال الطعام" : ""}
+- ${mealPreference === "high_protein" ? "ركز على مصادر بروتين عالية الجودة في كل وجبة" : ""}
+- ${mealPreference === "low_carb" ? "قلل الكربوهيدرات واستبدلها بدهون صحية وبروتين" : ""}
+- ${mealPreference === "vegetarian" ? "جميع الوجبات نباتية - لا لحوم أو دواجن أو أسماك" : ""}
 - ركز على الأطعمة التي تحسّن النواقص الموجودة في التحاليل
 - قدم وجبات عملية وسهلة التحضير ومتوفرة في المنطقة العربية
 - اذكر السعرات التقريبية لكل وجبة
-- اذكر الفوائد الصحية لكل وجبة وارتباطها بتحسين الفحوصات
+- اذكر الفوائد الصحية لكل وجبة وارتباطها بتحسين الفحوصات${allergyInstruction}${conditionTipInstruction}
 - قدم نصائح غذائية عامة بناءً على الحالة الصحية والهدف
 - أضف تحذيرات إذا كانت هناك قيم خطرة تحتاج مراجعة طبيب
 - جميع الردود يجب أن تكون باللغة العربية
@@ -173,30 +294,37 @@ export async function generateDietPlan(userData: UserHealthData): Promise<DietPl
   "goalDescription": "وصف مختصر للهدف والخطة",
   "deficiencies": [{"name": "اسم النقص", "current": "القيمة الحالية", "target": "القيمة المستهدفة", "foods": ["طعام 1", "طعام 2"]}],
   "mealPlan": {
-    "breakfast": [{"name": "اسم الوجبة", "description": "وصف مختصر مع المقادير", "calories": 400, "benefits": "الفوائد الصحية"}],
-    "lunch": [{"name": "اسم الوجبة", "description": "وصف مختصر مع المقادير", "calories": 500, "benefits": "الفوائد الصحية"}],
-    "dinner": [{"name": "اسم الوجبة", "description": "وصف مختصر مع المقادير", "calories": 400, "benefits": "الفوائد الصحية"}],
-    "snacks": [{"name": "اسم الوجبة", "description": "وصف مختصر", "calories": 200, "benefits": "الفوائد الصحية"}]
+    "breakfast": [{"name": "خيار 1", "description": "وصف مع المقادير", "calories": 400, "benefits": "الفوائد"}, {"name": "خيار 2", "description": "...", "calories": 400, "benefits": "..."}, {"name": "خيار 3", "description": "...", "calories": 400, "benefits": "..."}],
+    "lunch": [{"name": "خيار 1", "description": "...", "calories": 500, "benefits": "..."}, {"name": "خيار 2", "description": "...", "calories": 500, "benefits": "..."}, {"name": "خيار 3", "description": "...", "calories": 500, "benefits": "..."}],
+    "dinner": [{"name": "خيار 1", "description": "...", "calories": 400, "benefits": "..."}, {"name": "خيار 2", "description": "...", "calories": 400, "benefits": "..."}, {"name": "خيار 3", "description": "...", "calories": 400, "benefits": "..."}],
+    "snacks": [{"name": "سناك 1", "description": "...", "calories": 200, "benefits": "..."}, {"name": "سناك 2", "description": "...", "calories": 200, "benefits": "..."}]
   },
   "tips": ["نصيحة 1", "نصيحة 2"],
-  "warnings": ["تحذير 1"]
+  "warnings": ["تحذير 1"],
+  "conditionTips": [{"condition": "اسم الحالة", "advice": ["نصيحة 1", "نصيحة 2"], "avoidFoods": ["طعام يجب تجنبه 1"]}]
 }`
     : `You are a medical nutrition expert. Design a personalized diet plan based on the user's lab results and physical data.
 
 Goal: ${goalDescriptions[goal].en}
+Activity Level: ${activityLabels[activityLevel]?.en || activityLevel}
+Meal Preference: ${preferenceLabels[mealPreference]?.en || mealPreference}
 
 Target Calories: ${targetCalories} kcal/day
 Protein: ${macros.protein.grams}g | Carbs: ${macros.carbs.grams}g | Fats: ${macros.fats.grams}g
 
 Important instructions:
 - Design meals that align with the calorie and macro targets above
+- Provide 3 DIFFERENT varied options for each meal (breakfast, lunch, dinner) so the user can choose and rotate daily
 - ${goal === "weight_loss" ? "Focus on satiating, low-calorie meals rich in protein and fiber" : ""}
 - ${goal === "muscle_gain" ? "Focus on clean, healthy food sources ONLY (no fast food, no excessive saturated fats)" : ""}
 - ${goal === "maintain" ? "Focus on balanced nutrition and correcting deficiencies through food" : ""}
+- ${mealPreference === "high_protein" ? "Emphasize high-quality protein sources in every meal" : ""}
+- ${mealPreference === "low_carb" ? "Minimize carbohydrates and replace with healthy fats and protein" : ""}
+- ${mealPreference === "vegetarian" ? "All meals must be vegetarian - no meat, poultry, or fish" : ""}
 - Focus on foods that address deficiencies found in lab results
 - Provide practical, easy-to-prepare meals
 - Include approximate calories for each meal
-- Mention health benefits of each meal and how they improve test results
+- Mention health benefits of each meal and how they improve test results${allergyInstruction}${conditionTipInstruction}
 - Provide general dietary tips based on the health condition and goal
 - Add warnings if there are dangerous values requiring doctor consultation
 - All responses must be in English
@@ -207,13 +335,14 @@ Return JSON in this format:
   "goalDescription": "Brief description of the goal and plan",
   "deficiencies": [{"name": "Deficiency name", "current": "Current value", "target": "Target value", "foods": ["food 1", "food 2"]}],
   "mealPlan": {
-    "breakfast": [{"name": "Meal name", "description": "Brief description with portions", "calories": 400, "benefits": "Health benefits"}],
-    "lunch": [{"name": "Meal name", "description": "Brief description with portions", "calories": 500, "benefits": "Health benefits"}],
-    "dinner": [{"name": "Meal name", "description": "Brief description with portions", "calories": 400, "benefits": "Health benefits"}],
-    "snacks": [{"name": "Meal name", "description": "Brief description", "calories": 200, "benefits": "Health benefits"}]
+    "breakfast": [{"name": "Option 1", "description": "Description with portions", "calories": 400, "benefits": "Benefits"}, {"name": "Option 2", "description": "...", "calories": 400, "benefits": "..."}, {"name": "Option 3", "description": "...", "calories": 400, "benefits": "..."}],
+    "lunch": [{"name": "Option 1", "description": "...", "calories": 500, "benefits": "..."}, {"name": "Option 2", "description": "...", "calories": 500, "benefits": "..."}, {"name": "Option 3", "description": "...", "calories": 500, "benefits": "..."}],
+    "dinner": [{"name": "Option 1", "description": "...", "calories": 400, "benefits": "..."}, {"name": "Option 2", "description": "...", "calories": 400, "benefits": "..."}, {"name": "Option 3", "description": "...", "calories": 400, "benefits": "..."}],
+    "snacks": [{"name": "Snack 1", "description": "...", "calories": 200, "benefits": "..."}, {"name": "Snack 2", "description": "...", "calories": 200, "benefits": "..."}]
   },
   "tips": ["tip 1", "tip 2"],
-  "warnings": ["warning 1"]
+  "warnings": ["warning 1"],
+  "conditionTips": [{"condition": "Condition name", "advice": ["tip 1", "tip 2"], "avoidFoods": ["food to avoid 1"]}]
 }`;
 
   const userContent = isArabic
@@ -224,8 +353,11 @@ Return JSON in this format:
 - الطول: ${height} سم
 - مؤشر كتلة الجسم (BMI): ${bmi}
 - الهدف: ${goalDescriptions[goal].ar}
+- مستوى النشاط: ${activityLabels[activityLevel]?.ar || activityLevel}
+- نوع الوجبات: ${preferenceLabels[mealPreference]?.ar || mealPreference}
 - السعرات المستهدفة: ${targetCalories} سعرة/يوم
 - البروتين: ${macros.protein.grams}جم | الكاربوهيدرات: ${macros.carbs.grams}جم | الدهون: ${macros.fats.grams}جم
+${hasAllergies && allergyList ? `- الحساسيات الغذائية: ${allergyList}` : "- لا يوجد حساسيات غذائية"}
 
 نتائج التحاليل:
 ${testsDescription || "لا توجد نتائج تحاليل متوفرة"}
@@ -233,8 +365,9 @@ ${testsDescription || "لا توجد نتائج تحاليل متوفرة"}
 ملخص:
 - فحوصات طبيعية: ${normalTests.length}
 - فحوصات غير طبيعية: ${abnormalTests.length}
+${detectedConditions.length > 0 ? `- حالات مكتشفة: ${detectedConditions.join(", ")}` : ""}
 
-صمم نظام غذائي مخصص يتناسب مع هدف المستخدم ويحسّن هذه النتائج.`
+صمم نظام غذائي مخصص يتناسب مع هدف المستخدم ويحسّن هذه النتائج. قدم 3 خيارات لكل وجبة.`
     : `User data:
 - Age: ${age} years
 - Gender: ${gender}
@@ -242,8 +375,11 @@ ${testsDescription || "لا توجد نتائج تحاليل متوفرة"}
 - Height: ${height} cm
 - BMI: ${bmi}
 - Goal: ${goalDescriptions[goal].en}
+- Activity Level: ${activityLabels[activityLevel]?.en || activityLevel}
+- Meal Preference: ${preferenceLabels[mealPreference]?.en || mealPreference}
 - Target Calories: ${targetCalories} kcal/day
 - Protein: ${macros.protein.grams}g | Carbs: ${macros.carbs.grams}g | Fats: ${macros.fats.grams}g
+${hasAllergies && allergyList ? `- Food Allergies: ${allergyList}` : "- No food allergies"}
 
 Lab Results:
 ${testsDescription || "No lab results available"}
@@ -251,8 +387,9 @@ ${testsDescription || "No lab results available"}
 Summary:
 - Normal tests: ${normalTests.length}
 - Abnormal tests: ${abnormalTests.length}
+${detectedConditions.length > 0 ? `- Detected conditions: ${detectedConditions.join(", ")}` : ""}
 
-Design a personalized diet plan that matches the user's goal and improves these results.`;
+Design a personalized diet plan that matches the user's goal and improves these results. Provide 3 options for each meal.`;
 
   const response = await openai.chat.completions.create({
     model: "gpt-4o",
@@ -260,7 +397,7 @@ Design a personalized diet plan that matches the user's goal and improves these 
       { role: "system", content: systemPrompt },
       { role: "user", content: userContent },
     ],
-    max_completion_tokens: 4000,
+    max_completion_tokens: 6000,
     temperature: 0.7,
   });
 
@@ -289,6 +426,7 @@ Design a personalized diet plan that matches the user's goal and improves these 
       },
       tips: parsed.tips || [],
       warnings: parsed.warnings || [],
+      conditionTips: parsed.conditionTips || [],
     };
   } catch (error) {
     console.error("Failed to parse diet plan response:", content);
