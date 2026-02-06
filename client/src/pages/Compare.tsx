@@ -3,19 +3,19 @@ import { useTranslation } from "react-i18next";
 import { MedicalDisclaimer } from "@/components/MedicalDisclaimer";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, TrendingUp, TrendingDown, Minus, ArrowUp, ArrowDown, GitCompareArrows } from "lucide-react";
+import { Loader2, TrendingUp, TrendingDown, Minus, ArrowUp, ArrowDown, GitCompareArrows, Pill, Gem, Dna, HeartPulse, Droplets, Shield, Microscope, Syringe, FlaskConical, type LucideIcon } from "lucide-react";
 import type { TestResultWithDefinition, TestCategory } from "@shared/schema";
 
-const categoryIcons: Record<TestCategory, string> = {
-  vitamins: "💊",
-  minerals: "🪨",
-  hormones: "🧬",
-  organ_functions: "🫀",
-  lipids: "🩸",
-  immunity: "🛡️",
-  blood: "🔬",
-  coagulation: "💉",
-  special: "⚗️",
+const categoryIcons: Record<TestCategory, LucideIcon> = {
+  vitamins: Pill,
+  minerals: Gem,
+  hormones: Dna,
+  organ_functions: HeartPulse,
+  lipids: Droplets,
+  immunity: Shield,
+  blood: Microscope,
+  coagulation: Syringe,
+  special: FlaskConical,
 };
 
 interface ComparisonItem {
@@ -178,7 +178,7 @@ export default function Compare() {
                 <CardContent className="p-3">
                   <div className="flex items-center justify-between gap-2 mb-2">
                     <div className="flex items-center gap-2 min-w-0">
-                      <span className="text-sm">{categoryIcons[item.category]}</span>
+                      {(() => { const Icon = categoryIcons[item.category]; return <Icon className="h-4 w-4 text-muted-foreground shrink-0" />; })()}
                       <span className="font-semibold text-sm truncate" data-testid={`text-test-name-${item.testId}`}>
                         {isArabic ? item.nameAr : item.nameEn}
                       </span>
