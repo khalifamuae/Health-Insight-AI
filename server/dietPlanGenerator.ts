@@ -16,6 +16,8 @@ interface UserHealthData {
   hasAllergies: boolean | null;
   allergies: string[] | null;
   proteinPreference: string | null;
+  proteinPreferences: string[] | null;
+  carbPreferences: string[] | null;
   language: string;
   testResults: {
     testName: string;
@@ -148,6 +150,10 @@ export async function generateDietPlan(userData: UserHealthData): Promise<DietPl
   const allergies = userData.allergies || [];
   const hasAllergies = userData.hasAllergies || false;
   const proteinPref = userData.proteinPreference || "mixed";
+  const proteinPrefs = userData.proteinPreferences && userData.proteinPreferences.length > 0
+    ? userData.proteinPreferences
+    : [proteinPref];
+  const carbPrefs = userData.carbPreferences || [];
 
   const abnormalTests = userData.testResults.filter(t => t.status === "low" || t.status === "high");
   const normalTests = userData.testResults.filter(t => t.status === "normal");
@@ -202,6 +208,20 @@ export async function generateDietPlan(userData: UserHealthData): Promise<DietPl
     mixed: { en: "Mixed (all types)", ar: "متنوع (جميع الأنواع)" },
   };
 
+  const carbPrefLabels: Record<string, { en: string; ar: string }> = {
+    rice: { en: "Rice", ar: "أرز" },
+    bread: { en: "Bread", ar: "خبز" },
+    pasta: { en: "Pasta", ar: "معكرونة" },
+    oats: { en: "Oats", ar: "شوفان" },
+    potato: { en: "Potato", ar: "بطاطس" },
+    sweet_potato: { en: "Sweet Potato", ar: "بطاطا حلوة" },
+    quinoa: { en: "Quinoa", ar: "كينوا" },
+    bulgur: { en: "Bulgur", ar: "برغل" },
+    corn: { en: "Corn", ar: "ذرة" },
+    beans: { en: "Beans & Legumes", ar: "بقوليات" },
+    fruits: { en: "Fruits", ar: "فواكه" },
+  };
+
   const testsDescription = userData.testResults
     .filter(t => t.value != null)
     .map(t => {
@@ -234,10 +254,22 @@ export async function generateDietPlan(userData: UserHealthData): Promise<DietPl
       : `\n- User has allergies to: ${allergyList}. Completely avoid these ingredients in all meals.`
     : "";
 
+  const proteinListAr = proteinPrefs.map(p => proteinPrefLabels[p]?.ar || p).join("، ");
+  const proteinListEn = proteinPrefs.map(p => proteinPrefLabels[p]?.en || p).join(", ");
+
   const proteinInstruction = mealPreference !== "vegetarian"
     ? isArabic
-      ? `\n- المستخدم يفضل: ${proteinPrefLabels[proteinPref]?.ar || "متنوع"}. ركّز على هذا النوع من البروتين الحيواني في الوجبات الرئيسية مع التنويع.`
-      : `\n- User prefers: ${proteinPrefLabels[proteinPref]?.en || "Mixed"}. Focus on this protein source in main meals while maintaining variety.`
+      ? `\n- المستخدم يفضل من البروتين: ${proteinListAr}. ركّز على هذه الأنواع من البروتين في الوجبات الرئيسية مع التنويع بينها.`
+      : `\n- User prefers these proteins: ${proteinListEn}. Focus on these protein sources in main meals while rotating between them.`
+    : "";
+
+  const carbListAr = carbPrefs.map(c => carbPrefLabels[c]?.ar || c).join("، ");
+  const carbListEn = carbPrefs.map(c => carbPrefLabels[c]?.en || c).join(", ");
+
+  const carbInstruction = carbPrefs.length > 0
+    ? isArabic
+      ? `\n- المستخدم يفضل من الكربوهيدرات: ${carbListAr}. استخدم هذه المصادر كأساس للكربوهيدرات في الوجبات.`
+      : `\n- User prefers these carb sources: ${carbListEn}. Use these as the primary carbohydrate sources in meals.`
     : "";
 
   const toneInstruction = isArabic
@@ -272,7 +304,8 @@ export async function generateDietPlan(userData: UserHealthData): Promise<DietPl
 الهدف: ${goalDescriptions[goal].ar}
 مستوى النشاط: ${activityLabels[activityLevel]?.ar || activityLevel}
 نوع الوجبات المفضل: ${preferenceLabels[mealPreference]?.ar || mealPreference}
-البروتين المفضل: ${proteinPrefLabels[proteinPref]?.ar || "متنوع"}
+البروتين المفضل: ${proteinListAr}
+${carbPrefs.length > 0 ? `الكربوهيدرات المفضلة: ${carbListAr}` : ""}
 
 السعرات المستهدفة: ${targetCalories} سعرة حرارية يومياً
 البروتين: ${macros.protein.grams}جم | الكاربوهيدرات: ${macros.carbs.grams}جم | الدهون: ${macros.fats.grams}جم
@@ -280,7 +313,7 @@ ${toneInstruction}
 
 تعليمات مهمة:
 - صمم الوجبات بحيث تتوافق مع السعرات والماكرو المحدد أعلاه
-- قدم 3 خيارات مختلفة ومتنوعة لكل وجبة (فطور، غداء، عشاء) لكي يختار المستخدم ما يناسبه ويغير يومياً${proteinInstruction}
+- قدم 3 خيارات مختلفة ومتنوعة لكل وجبة (فطور، غداء، عشاء) لكي يختار المستخدم ما يناسبه ويغير يومياً${proteinInstruction}${carbInstruction}
 - ${goal === "weight_loss" ? "ركز على وجبات مشبعة ومنخفضة السعرات وغنية بالبروتين والألياف" : ""}
 - ${goal === "muscle_gain" ? "ركز على مصادر غذاء نظيفة وصحية فقط (لا وجبات سريعة، لا دهون مشبعة مفرطة)" : ""}
 - ${goal === "maintain" ? "ركز على التوازن بين العناصر الغذائية وتعديل النواقص من خلال الطعام" : ""}
@@ -317,7 +350,8 @@ ${toneInstruction}
 Goal: ${goalDescriptions[goal].en}
 Activity Level: ${activityLabels[activityLevel]?.en || activityLevel}
 Meal Preference: ${preferenceLabels[mealPreference]?.en || mealPreference}
-Protein Preference: ${proteinPrefLabels[proteinPref]?.en || "Mixed"}
+Protein Preferences: ${proteinListEn}
+${carbPrefs.length > 0 ? `Carb Preferences: ${carbListEn}` : ""}
 
 Target Calories: ${targetCalories} kcal/day
 Protein: ${macros.protein.grams}g | Carbs: ${macros.carbs.grams}g | Fats: ${macros.fats.grams}g
@@ -325,7 +359,7 @@ ${toneInstruction}
 
 Important instructions:
 - Design meals that align with the calorie and macro targets above
-- Provide 3 DIFFERENT varied options for each meal (breakfast, lunch, dinner) so the user can choose and rotate daily${proteinInstruction}
+- Provide 3 DIFFERENT varied options for each meal (breakfast, lunch, dinner) so the user can choose and rotate daily${proteinInstruction}${carbInstruction}
 - ${goal === "weight_loss" ? "Focus on satiating, low-calorie meals rich in protein and fiber" : ""}
 - ${goal === "muscle_gain" ? "Focus on clean, healthy food sources ONLY (no fast food, no excessive saturated fats)" : ""}
 - ${goal === "maintain" ? "Focus on balanced nutrition and correcting deficiencies through food" : ""}
@@ -368,7 +402,8 @@ Return JSON in this format:
 - الهدف: ${goalDescriptions[goal].ar}
 - مستوى النشاط: ${activityLabels[activityLevel]?.ar || activityLevel}
 - نوع الوجبات: ${preferenceLabels[mealPreference]?.ar || mealPreference}
-- البروتين المفضل: ${proteinPrefLabels[proteinPref]?.ar || "متنوع"}
+- البروتين المفضل: ${proteinListAr}
+${carbPrefs.length > 0 ? `- الكربوهيدرات المفضلة: ${carbListAr}` : ""}
 - السعرات المستهدفة: ${targetCalories} سعرة/يوم
 - البروتين: ${macros.protein.grams}جم | الكاربوهيدرات: ${macros.carbs.grams}جم | الدهون: ${macros.fats.grams}جم
 ${hasAllergies && allergyList ? `- الحساسيات الغذائية: ${allergyList}` : "- لا يوجد حساسيات غذائية"}
@@ -395,7 +430,8 @@ ${testsDescription || "لا توجد نتائج تحاليل متوفرة"}
 - Goal: ${goalDescriptions[goal].en}
 - Activity Level: ${activityLabels[activityLevel]?.en || activityLevel}
 - Meal Preference: ${preferenceLabels[mealPreference]?.en || mealPreference}
-- Protein Preference: ${proteinPrefLabels[proteinPref]?.en || "Mixed"}
+- Protein Preferences: ${proteinListEn}
+${carbPrefs.length > 0 ? `- Carb Preferences: ${carbListEn}` : ""}
 - Target Calories: ${targetCalories} kcal/day
 - Protein: ${macros.protein.grams}g | Carbs: ${macros.carbs.grams}g | Fats: ${macros.fats.grams}g
 ${hasAllergies && allergyList ? `- Food Allergies: ${allergyList}` : "- No food allergies"}

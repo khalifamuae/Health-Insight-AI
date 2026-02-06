@@ -45,6 +45,9 @@ interface MealItem {
   name: string;
   description: string;
   calories: number;
+  protein: number;
+  carbs: number;
+  fats: number;
   benefits: string;
 }
 
@@ -95,7 +98,7 @@ interface DietPlanData {
   conditionTips: ConditionTip[];
 }
 
-type QuestionnaireStep = "disclaimer" | "activity" | "allergy" | "allergySelect" | "proteinPref" | "preference" | "generating";
+type QuestionnaireStep = "disclaimer" | "activity" | "allergy" | "allergySelect" | "proteinPref" | "carbPref" | "preference" | "generating";
 
 const ALLERGY_OPTIONS = [
   { key: "eggs", labelKey: "allergyEggs" },
@@ -120,7 +123,8 @@ export default function DietPlan() {
   const [hasAllergies, setHasAllergies] = useState<boolean | null>(null);
   const [selectedAllergies, setSelectedAllergies] = useState<string[]>([]);
   const [mealPreference, setMealPreference] = useState<string>("");
-  const [proteinPreference, setProteinPreference] = useState<string>("");
+  const [selectedProteins, setSelectedProteins] = useState<string[]>([]);
+  const [selectedCarbs, setSelectedCarbs] = useState<string[]>([]);
 
   const { data: profile } = useQuery<UserProfile>({
     queryKey: ["/api/profile"],
@@ -143,7 +147,8 @@ export default function DietPlan() {
         mealPreference,
         hasAllergies: hasAllergies || false,
         allergies: hasAllergies ? selectedAllergies : [],
-        proteinPreference: mealPreference === "vegetarian" ? "mixed" : proteinPreference,
+        proteinPreferences: mealPreference === "vegetarian" ? [] : selectedProteins,
+        carbPreferences: selectedCarbs,
       });
       const res = await apiRequest("POST", "/api/diet-plan", {
         language: i18n.language,
@@ -161,7 +166,9 @@ export default function DietPlan() {
     if (profile?.mealPreference) setMealPreference(profile.mealPreference);
     if (profile?.hasAllergies != null) setHasAllergies(profile.hasAllergies);
     if (profile?.allergies) setSelectedAllergies(profile.allergies);
-    if (profile?.proteinPreference) setProteinPreference(profile.proteinPreference);
+    if (profile?.proteinPreferences) setSelectedProteins(profile.proteinPreferences);
+    else if (profile?.proteinPreference && profile.proteinPreference !== "mixed") setSelectedProteins([profile.proteinPreference]);
+    if (profile?.carbPreferences) setSelectedCarbs(profile.carbPreferences);
     setShowQuestionnaire(true);
     setStep("disclaimer");
   };
@@ -188,11 +195,36 @@ export default function DietPlan() {
   ];
 
   const proteinOptions = [
-    { key: "fish", labelKey: "proteinFish", descKey: "proteinFishDesc", icon: Fish },
-    { key: "chicken", labelKey: "proteinChicken", descKey: "proteinChickenDesc", icon: Beef },
-    { key: "meat", labelKey: "proteinMeat", descKey: "proteinMeatDesc", icon: Beef },
-    { key: "mixed", labelKey: "proteinMixed", descKey: "proteinMixedDesc", icon: Salad },
+    { key: "fish", labelKey: "proteinFish" },
+    { key: "chicken", labelKey: "proteinChicken" },
+    { key: "meat", labelKey: "proteinMeat" },
   ];
+
+  const carbOptions = [
+    { key: "rice", labelKey: "carbRice" },
+    { key: "bread", labelKey: "carbBread" },
+    { key: "pasta", labelKey: "carbPasta" },
+    { key: "oats", labelKey: "carbOats" },
+    { key: "potato", labelKey: "carbPotato" },
+    { key: "sweet_potato", labelKey: "carbSweetPotato" },
+    { key: "quinoa", labelKey: "carbQuinoa" },
+    { key: "bulgur", labelKey: "carbBulgur" },
+    { key: "corn", labelKey: "carbCorn" },
+    { key: "beans", labelKey: "carbBeans" },
+    { key: "fruits", labelKey: "carbFruits" },
+  ];
+
+  const handleProteinToggle = (key: string) => {
+    setSelectedProteins(prev =>
+      prev.includes(key) ? prev.filter(p => p !== key) : [...prev, key]
+    );
+  };
+
+  const handleCarbToggle = (key: string) => {
+    setSelectedCarbs(prev =>
+      prev.includes(key) ? prev.filter(c => c !== key) : [...prev, key]
+    );
+  };
 
   const preferenceOptions = [
     { key: "high_protein", labelKey: "prefHighProtein", descKey: "prefHighProteinDesc", icon: Beef, recommended: true, macroRanges: { protein: "40-50%", carbs: "35-40%", fats: "10-25%" } },
@@ -243,7 +275,7 @@ export default function DietPlan() {
               <Button variant="ghost" size="icon" onClick={() => setStep("disclaimer")} data-testid="button-back-activity">
                 <BackArrow className="h-5 w-5" />
               </Button>
-              <span className="text-xs text-muted-foreground">{t("questStep")} 1 {t("questOf")} 4</span>
+              <span className="text-xs text-muted-foreground">{t("questStep")} 1 {t("questOf")} 5</span>
             </div>
             <div className="text-center space-y-1">
               <h2 className="text-xl font-bold" data-testid="text-activity-title">{t("questActivityTitle")}</h2>
@@ -294,7 +326,7 @@ export default function DietPlan() {
               <Button variant="ghost" size="icon" onClick={() => setStep("activity")} data-testid="button-back-allergy">
                 <BackArrow className="h-5 w-5" />
               </Button>
-              <span className="text-xs text-muted-foreground">{t("questStep")} 2 {t("questOf")} 4</span>
+              <span className="text-xs text-muted-foreground">{t("questStep")} 2 {t("questOf")} 5</span>
             </div>
             <div className="text-center space-y-1">
               <h2 className="text-xl font-bold" data-testid="text-allergy-title">{t("questAllergyTitle")}</h2>
@@ -348,7 +380,7 @@ export default function DietPlan() {
               <Button variant="ghost" size="icon" onClick={() => setStep("allergy")} data-testid="button-back-allergySelect">
                 <BackArrow className="h-5 w-5" />
               </Button>
-              <span className="text-xs text-muted-foreground">{t("questStep")} 2 {t("questOf")} 4</span>
+              <span className="text-xs text-muted-foreground">{t("questStep")} 2 {t("questOf")} 5</span>
             </div>
             <div className="text-center space-y-1">
               <h2 className="text-xl font-bold" data-testid="text-allergySelect-title">{t("questAllergyWhich")}</h2>
@@ -388,45 +420,74 @@ export default function DietPlan() {
               <Button variant="ghost" size="icon" onClick={() => setStep(hasAllergies ? "allergySelect" : "allergy")} data-testid="button-back-proteinPref">
                 <BackArrow className="h-5 w-5" />
               </Button>
-              <span className="text-xs text-muted-foreground">{t("questStep")} 3 {t("questOf")} 4</span>
+              <span className="text-xs text-muted-foreground">{t("questStep")} 3 {t("questOf")} 5</span>
             </div>
             <div className="text-center space-y-1">
               <h2 className="text-xl font-bold" data-testid="text-proteinPref-title">{t("questProteinTitle")}</h2>
               <p className="text-sm text-muted-foreground">{t("questProteinSubtitle")}</p>
             </div>
-            <div className="space-y-3">
+            <div className="flex flex-wrap gap-2 justify-center">
               {proteinOptions.map(opt => {
-                const Icon = opt.icon;
-                const isSelected = proteinPreference === opt.key;
+                const isSelected = selectedProteins.includes(opt.key);
                 return (
-                  <Card
+                  <Badge
                     key={opt.key}
-                    className={cn(
-                      "cursor-pointer transition-colors",
-                      isSelected && "border-primary bg-primary/5"
-                    )}
-                    onClick={() => setProteinPreference(opt.key)}
-                    data-testid={`card-protein-${opt.key}`}
+                    variant={isSelected ? "default" : "outline"}
+                    className={cn("cursor-pointer text-sm py-2 px-4", isSelected && "bg-primary")}
+                    onClick={() => handleProteinToggle(opt.key)}
+                    data-testid={`badge-protein-${opt.key}`}
                   >
-                    <CardContent className="p-4 flex items-center gap-4">
-                      <div className={cn("p-2 rounded-lg", isSelected ? "bg-primary/10" : "bg-muted/50")}>
-                        <Icon className={cn("h-6 w-6", isSelected ? "text-primary" : "text-muted-foreground")} />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="font-semibold text-sm">{t(opt.labelKey)}</p>
-                        <p className="text-xs text-muted-foreground mt-0.5">{t(opt.descKey)}</p>
-                      </div>
-                      {isSelected && <Check className="h-5 w-5 text-primary shrink-0" />}
-                    </CardContent>
-                  </Card>
+                    {isSelected && <Check className="h-3 w-3 me-1" />}
+                    {t(opt.labelKey)}
+                  </Badge>
                 );
               })}
             </div>
             <Button
               className="w-full"
-              disabled={!proteinPreference}
-              onClick={() => setStep("preference")}
+              disabled={selectedProteins.length === 0}
+              onClick={() => setStep("carbPref")}
               data-testid="button-next-proteinPref"
+            >
+              {t("questNext")} <NextArrow className="h-4 w-4 ms-1" />
+            </Button>
+          </div>
+        )}
+
+        {step === "carbPref" && (
+          <div className="space-y-4">
+            <div className="flex items-center justify-between gap-2 flex-wrap">
+              <Button variant="ghost" size="icon" onClick={() => setStep("proteinPref")} data-testid="button-back-carbPref">
+                <BackArrow className="h-5 w-5" />
+              </Button>
+              <span className="text-xs text-muted-foreground">{t("questStep")} 4 {t("questOf")} 5</span>
+            </div>
+            <div className="text-center space-y-1">
+              <h2 className="text-xl font-bold" data-testid="text-carbPref-title">{t("questCarbTitle")}</h2>
+              <p className="text-sm text-muted-foreground">{t("questCarbSubtitle")}</p>
+            </div>
+            <div className="flex flex-wrap gap-2 justify-center">
+              {carbOptions.map(opt => {
+                const isSelected = selectedCarbs.includes(opt.key);
+                return (
+                  <Badge
+                    key={opt.key}
+                    variant={isSelected ? "default" : "outline"}
+                    className={cn("cursor-pointer text-sm py-2 px-4", isSelected && "bg-primary")}
+                    onClick={() => handleCarbToggle(opt.key)}
+                    data-testid={`badge-carb-${opt.key}`}
+                  >
+                    {isSelected && <Check className="h-3 w-3 me-1" />}
+                    {t(opt.labelKey)}
+                  </Badge>
+                );
+              })}
+            </div>
+            <Button
+              className="w-full"
+              disabled={selectedCarbs.length === 0}
+              onClick={() => setStep("preference")}
+              data-testid="button-next-carbPref"
             >
               {t("questNext")} <NextArrow className="h-4 w-4 ms-1" />
             </Button>
@@ -436,10 +497,10 @@ export default function DietPlan() {
         {step === "preference" && (
           <div className="space-y-4">
             <div className="flex items-center justify-between gap-2 flex-wrap">
-              <Button variant="ghost" size="icon" onClick={() => setStep(mealPreference === "vegetarian" ? (hasAllergies ? "allergySelect" : "allergy") : "proteinPref")} data-testid="button-back-preference">
+              <Button variant="ghost" size="icon" onClick={() => setStep("carbPref")} data-testid="button-back-preference">
                 <BackArrow className="h-5 w-5" />
               </Button>
-              <span className="text-xs text-muted-foreground">{t("questStep")} 4 {t("questOf")} 4</span>
+              <span className="text-xs text-muted-foreground">{t("questStep")} 5 {t("questOf")} 5</span>
             </div>
             <div className="text-center space-y-1">
               <h2 className="text-xl font-bold" data-testid="text-preference-title">{t("questPreferenceTitle")}</h2>
