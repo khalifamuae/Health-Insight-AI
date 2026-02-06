@@ -259,8 +259,8 @@ export async function generateDietPlan(userData: UserHealthData): Promise<DietPl
 
   const proteinInstruction = mealPreference !== "vegetarian"
     ? isArabic
-      ? `\n- المستخدم يفضل من البروتين: ${proteinListAr}. ركّز على هذه الأنواع من البروتين في الوجبات الرئيسية مع التنويع بينها.`
-      : `\n- User prefers these proteins: ${proteinListEn}. Focus on these protein sources in main meals while rotating between them.`
+      ? `\n- ⚠️ قاعدة صارمة: المستخدم اختار هذه البروتينات فقط: [${proteinListAr}]. يُمنع منعاً باتاً استخدام أي نوع بروتين لم يختره المستخدم. إذا اختار "دجاج" فقط، لا تضع سمك أو لحم. إذا اختار "دجاج ولحم حمراء"، لا تضع سمك. نوّع بين الأنواع المختارة فقط.`
+      : `\n- ⚠️ STRICT RULE: The user selected ONLY these proteins: [${proteinListEn}]. You MUST NOT include any protein source the user did NOT select. If they chose only "Chicken", do NOT include fish or red meat. If they chose "Chicken and Red Meat", do NOT include fish. Rotate ONLY between the selected types.`
     : "";
 
   const carbListAr = carbPrefs.map(c => carbPrefLabels[c]?.ar || c).join("، ");
@@ -268,8 +268,8 @@ export async function generateDietPlan(userData: UserHealthData): Promise<DietPl
 
   const carbInstruction = carbPrefs.length > 0
     ? isArabic
-      ? `\n- المستخدم يفضل من الكربوهيدرات: ${carbListAr}. استخدم هذه المصادر كأساس للكربوهيدرات في الوجبات.`
-      : `\n- User prefers these carb sources: ${carbListEn}. Use these as the primary carbohydrate sources in meals.`
+      ? `\n- ⚠️ قاعدة صارمة: المستخدم اختار هذه الكربوهيدرات فقط: [${carbListAr}]. يُمنع منعاً باتاً استخدام أي مصدر كربوهيدرات لم يختره المستخدم. إذا اختار "شوفان وأرز" فقط، لا تضع خبز أو معكرونة أو بطاطس. استخدم فقط ما اختاره المستخدم.`
+      : `\n- ⚠️ STRICT RULE: The user selected ONLY these carb sources: [${carbListEn}]. You MUST NOT include any carbohydrate source the user did NOT select. If they chose only "Oats and Rice", do NOT include bread, pasta, or potato. Use ONLY the user's selected carb sources.`
     : "";
 
   const toneInstruction = isArabic
@@ -312,18 +312,22 @@ ${carbPrefs.length > 0 ? `الكربوهيدرات المفضلة: ${carbListAr}
 ${toneInstruction}
 
 تعليمات مهمة:
+- هذا النظام الغذائي يجب أن يكون مصمماً خصيصاً لهذا المستخدم بناءً على: الطول (${height}سم)، الوزن (${weight}كجم)، الجنس (${gender === "male" ? "ذكر" : "أنثى"})، العمر (${age})، الهدف (${goalDescriptions[goal].ar})، ونتائج الفحوصات الطبية
 - صمم الوجبات بحيث تتوافق مع السعرات والماكرو المحدد أعلاه
 - قدم 3 خيارات مختلفة ومتنوعة لكل وجبة (فطور، غداء، عشاء) لكي يختار المستخدم ما يناسبه ويغير يومياً${proteinInstruction}${carbInstruction}
+- ⚠️ قاعدة ذهبية: لا تضع أي مكون لم يختره المستخدم. النظام مبني فقط على اختيارات المستخدم من البروتين والكربوهيدرات. إذا لم يختر مصدراً معيناً، لا تدرجه في أي وجبة
 - ${goal === "weight_loss" ? "ركز على وجبات مشبعة ومنخفضة السعرات وغنية بالبروتين والألياف" : ""}
 - ${goal === "muscle_gain" ? "ركز على مصادر غذاء نظيفة وصحية فقط (لا وجبات سريعة، لا دهون مشبعة مفرطة)" : ""}
 - ${goal === "maintain" ? "ركز على التوازن بين العناصر الغذائية وتعديل النواقص من خلال الطعام" : ""}
 - ${mealPreference === "high_protein" ? "ركز على مصادر بروتين عالية الجودة في كل وجبة" : ""}
 - ${mealPreference === "low_carb" ? "قلل الكربوهيدرات واستبدلها بدهون صحية وبروتين" : ""}
 - ${mealPreference === "vegetarian" ? "جميع الوجبات نباتية - لا لحوم أو دواجن أو أسماك" : ""}
-- ركز على الأطعمة التي تحسّن النواقص الموجودة في التحاليل وتساعد على تعويضها طبيعياً
+- ركز على الأطعمة التي تحسّن النواقص الموجودة في التحاليل وتساعد على تعويضها طبيعياً من خلال التغذية
+- حلّل نتائج الفحوصات وصمم الوجبات لمعالجة النواقص: إذا كان فيتامين د منخفض أضف أطعمة غنية به، إذا كان الحديد منخفض أضف مصادر حديد طبيعية، وهكذا
+${hasAllergies && allergyList ? `- ⚠️ حساسية المستخدم: ${allergyList}. يُمنع منعاً باتاً وضع أي مكون يسبب الحساسية في أي وجبة` : ""}
 - قدم وجبات عملية وسهلة التحضير ومتوفرة في المنطقة العربية
 - اذكر السعرات التقريبية لكل وجبة مع القيم الغذائية (بروتين، كارب، دهون) بالجرام
-- اذكر الفوائد الصحية لكل وجبة وارتباطها بتحسين الفحوصات${allergyInstruction}${supplementInstruction}
+- اذكر الفوائد الصحية لكل وجبة وارتباطها بتحسين الفحوصات${supplementInstruction}
 - قدم نصائح غذائية عامة بأسلوب إيجابي ومحفّز بناءً على الحالة الصحية والهدف
 - أضف نصائح مخصصة لكل حالة صحية مكتشفة في "conditionTips" بأسلوب إيجابي (بدون تخويف)
 - إذا كانت هناك قيم تحتاج متابعة طبيب، اذكرها بلطف في "warnings" (مثال: "ننصحك بمتابعة مستوى X مع طبيبك للاطمئنان")
@@ -358,8 +362,10 @@ Protein: ${macros.protein.grams}g | Carbs: ${macros.carbs.grams}g | Fats: ${macr
 ${toneInstruction}
 
 Important instructions:
+- This diet plan MUST be custom-designed for this specific user based on: Height (${height}cm), Weight (${weight}kg), Gender (${gender}), Age (${age}), Goal (${goalDescriptions[goal].en}), and their lab test results
 - Design meals that align with the calorie and macro targets above
 - Provide 3 DIFFERENT varied options for each meal (breakfast, lunch, dinner) so the user can choose and rotate daily${proteinInstruction}${carbInstruction}
+- GOLDEN RULE: Do NOT include any ingredient the user did NOT select. The diet plan is built EXCLUSIVELY from the user's protein and carbohydrate choices. If a source was not selected, it MUST NOT appear in any meal
 - ${goal === "weight_loss" ? "Focus on satiating, low-calorie meals rich in protein and fiber" : ""}
 - ${goal === "muscle_gain" ? "Focus on clean, healthy food sources ONLY (no fast food, no excessive saturated fats)" : ""}
 - ${goal === "maintain" ? "Focus on balanced nutrition and correcting deficiencies through food" : ""}
@@ -367,9 +373,11 @@ Important instructions:
 - ${mealPreference === "low_carb" ? "Minimize carbohydrates and replace with healthy fats and protein" : ""}
 - ${mealPreference === "vegetarian" ? "All meals must be vegetarian - no meat, poultry, or fish" : ""}
 - Focus on foods that address deficiencies found in lab results and compensate naturally through nutrition
+- Analyze test results and design meals to treat deficiencies: if Vitamin D is low add foods rich in it, if Iron is low add natural iron sources, and so on
+${hasAllergies && allergyList ? `- ALLERGY WARNING: User is allergic to: ${allergyList}. You MUST NOT include any allergen-containing ingredient in any meal` : ""}
 - Provide practical, easy-to-prepare meals
 - Include approximate calories for each meal along with macronutrient breakdown (protein, carbs, fats) in grams
-- Mention health benefits of each meal and how they improve test results${allergyInstruction}${supplementInstruction}
+- Mention health benefits of each meal and how they improve test results${supplementInstruction}
 - Provide general dietary tips with a positive, encouraging tone based on the health condition and goal
 - Add personalized tips for each detected health condition in "conditionTips" with a positive tone (no scary language)
 - If there are values that need doctor follow-up, mention them gently in "warnings" (e.g., "We recommend following up on X with your doctor for peace of mind")
@@ -416,11 +424,14 @@ ${testsDescription || "لا توجد نتائج تحاليل متوفرة"}
 - فحوصات غير طبيعية: ${abnormalTests.length}
 
 المطلوب:
-1. صمم نظام غذائي مخصص يتناسب مع هدف المستخدم ويحسّن هذه النتائج
-2. ركّز على تعويض النواقص من خلال الغذاء الطبيعي أولاً
-3. اقترح مكملات غذائية إذا لزم الأمر (مثل فيتامين د، حديد، إلخ)
-4. قدم 3 خيارات لكل وجبة
-5. استخدم أسلوباً إيجابياً ومحفّزاً في جميع النصائح`
+1. صمم نظام غذائي مخصص 100% لهذا المستخدم بناءً على بياناته الجسدية وفحوصاته واختياراته
+2. استخدم فقط البروتينات التي اختارها: [${proteinListAr}] - لا تضع أي بروتين آخر
+3. استخدم فقط الكربوهيدرات التي اختارها: [${carbPrefs.length > 0 ? carbListAr : "لم يحدد"}] - لا تضع أي كارب آخر
+4. عالج النواقص في الفحوصات من خلال الغذاء الطبيعي أولاً (مثلاً: نقص حديد → أطعمة غنية بالحديد من ضمن اختياراته)
+5. اقترح مكملات غذائية فقط إذا لم يكف الغذاء الطبيعي لتعويض النقص
+6. قدم 3 خيارات متنوعة لكل وجبة مع مراعاة السعرات والماكرو
+7. تجنب تماماً أي مسببات حساسية${hasAllergies ? ` (${allergyList})` : ""}
+8. استخدم أسلوباً إيجابياً ومحفّزاً في جميع النصائح`
     : `User data:
 - Age: ${age} years
 - Gender: ${gender}
@@ -444,11 +455,14 @@ Summary:
 - Abnormal tests: ${abnormalTests.length}
 
 Requirements:
-1. Design a personalized diet plan that matches the user's goal and improves these results
-2. Focus on compensating deficiencies through natural food first
-3. Suggest dietary supplements if needed (e.g., Vitamin D, Iron, etc.)
-4. Provide 3 options for each meal
-5. Use a positive, motivating tone in all tips and advice`;
+1. Design a 100% personalized diet plan for this specific user based on their physical data, lab results, and preferences
+2. Use ONLY the proteins they selected: [${proteinListEn}] - do NOT include any other protein source
+3. Use ONLY the carbs they selected: [${carbPrefs.length > 0 ? carbListEn : "not specified"}] - do NOT include any other carb source
+4. Treat lab result deficiencies through natural food first (e.g., low iron → iron-rich foods from their selected choices)
+5. Suggest supplements ONLY if natural food is insufficient to compensate deficiencies
+6. Provide 3 varied options for each meal while respecting calorie and macro targets
+7. Strictly avoid all allergens${hasAllergies ? ` (${allergyList})` : ""}
+8. Use a positive, motivating tone in all tips and advice`;
 
   const response = await openai.chat.completions.create({
     model: "gpt-4o",
