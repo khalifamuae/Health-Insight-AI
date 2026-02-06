@@ -443,7 +443,6 @@ export default function DietPlan() {
             </div>
             <div className="text-center space-y-1">
               <h2 className="text-xl font-bold" data-testid="text-preference-title">{t("questPreferenceTitle")}</h2>
-              <p className="text-sm text-muted-foreground">{t("questPreferenceSubtitle")}</p>
             </div>
             <div className="space-y-3">
               {preferenceOptions.map(opt => {
@@ -723,6 +722,13 @@ export default function DietPlan() {
                     )}
                   </div>
                   <p className="text-xs text-muted-foreground mt-0.5">{item.description}</p>
+                  {(item.protein > 0 || item.carbs > 0 || item.fats > 0) && (
+                    <div className="flex items-center gap-3 mt-1.5 flex-wrap" data-testid={`macros-${section.key}-${i}`}>
+                      <span className="text-[11px] text-blue-600 dark:text-blue-400 font-medium">{t("protein")}: {item.protein}{t("gram")}</span>
+                      <span className="text-[11px] text-amber-600 dark:text-amber-400 font-medium">{t("carbs")}: {item.carbs}{t("gram")}</span>
+                      <span className="text-[11px] text-rose-600 dark:text-rose-400 font-medium">{t("fats")}: {item.fats}{t("gram")}</span>
+                    </div>
+                  )}
                   <p className="text-xs text-green-600 dark:text-green-400 mt-1">{item.benefits}</p>
                 </div>
               ))}

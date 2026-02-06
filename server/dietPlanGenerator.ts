@@ -45,10 +45,10 @@ export interface DietPlanResult {
   deficiencies: { name: string; current: string; target: string; foods: string[] }[];
   supplements: { name: string; dosage: string; reason: string; duration: string }[];
   mealPlan: {
-    breakfast: { name: string; description: string; calories: number; benefits: string }[];
-    lunch: { name: string; description: string; calories: number; benefits: string }[];
-    dinner: { name: string; description: string; calories: number; benefits: string }[];
-    snacks: { name: string; description: string; calories: number; benefits: string }[];
+    breakfast: { name: string; description: string; calories: number; protein: number; carbs: number; fats: number; benefits: string }[];
+    lunch: { name: string; description: string; calories: number; protein: number; carbs: number; fats: number; benefits: string }[];
+    dinner: { name: string; description: string; calories: number; protein: number; carbs: number; fats: number; benefits: string }[];
+    snacks: { name: string; description: string; calories: number; protein: number; carbs: number; fats: number; benefits: string }[];
   };
   tips: string[];
   warnings: string[];
@@ -289,7 +289,7 @@ ${toneInstruction}
 - ${mealPreference === "vegetarian" ? "جميع الوجبات نباتية - لا لحوم أو دواجن أو أسماك" : ""}
 - ركز على الأطعمة التي تحسّن النواقص الموجودة في التحاليل وتساعد على تعويضها طبيعياً
 - قدم وجبات عملية وسهلة التحضير ومتوفرة في المنطقة العربية
-- اذكر السعرات التقريبية لكل وجبة
+- اذكر السعرات التقريبية لكل وجبة مع القيم الغذائية (بروتين، كارب، دهون) بالجرام
 - اذكر الفوائد الصحية لكل وجبة وارتباطها بتحسين الفحوصات${allergyInstruction}${supplementInstruction}
 - قدم نصائح غذائية عامة بأسلوب إيجابي ومحفّز بناءً على الحالة الصحية والهدف
 - أضف نصائح مخصصة لكل حالة صحية مكتشفة في "conditionTips" بأسلوب إيجابي (بدون تخويف)
@@ -303,10 +303,10 @@ ${toneInstruction}
   "deficiencies": [{"name": "اسم النقص", "current": "القيمة الحالية", "target": "القيمة المستهدفة", "foods": ["طعام 1", "طعام 2"]}],
   "supplements": [{"name": "اسم المكمل", "dosage": "الجرعة المقترحة", "reason": "سبب الحاجة", "duration": "مدة الاستخدام"}],
   "mealPlan": {
-    "breakfast": [{"name": "خيار 1", "description": "وصف مع المقادير", "calories": 400, "benefits": "الفوائد"}, {"name": "خيار 2", ...}, {"name": "خيار 3", ...}],
-    "lunch": [{"name": "خيار 1", ...}, {"name": "خيار 2", ...}, {"name": "خيار 3", ...}],
-    "dinner": [{"name": "خيار 1", ...}, {"name": "خيار 2", ...}, {"name": "خيار 3", ...}],
-    "snacks": [{"name": "سناك 1", ...}, {"name": "سناك 2", ...}]
+    "breakfast": [{"name": "خيار 1", "description": "وصف مع المقادير", "calories": 400, "protein": 30, "carbs": 40, "fats": 12, "benefits": "الفوائد"}, {"name": "خيار 2", ...}, {"name": "خيار 3", ...}],
+    "lunch": [{"name": "خيار 1", "description": "...", "calories": 500, "protein": 35, "carbs": 50, "fats": 15, "benefits": "..."}, ...],
+    "dinner": [{"name": "خيار 1", "description": "...", "calories": 450, "protein": 32, "carbs": 45, "fats": 14, "benefits": "..."}, ...],
+    "snacks": [{"name": "سناك 1", "description": "...", "calories": 150, "protein": 8, "carbs": 15, "fats": 6, "benefits": "..."}, ...]
   },
   "tips": ["نصيحة إيجابية 1", "نصيحة إيجابية 2"],
   "warnings": ["ننصحك بمتابعة ... مع طبيبك للاطمئنان"],
@@ -334,7 +334,7 @@ Important instructions:
 - ${mealPreference === "vegetarian" ? "All meals must be vegetarian - no meat, poultry, or fish" : ""}
 - Focus on foods that address deficiencies found in lab results and compensate naturally through nutrition
 - Provide practical, easy-to-prepare meals
-- Include approximate calories for each meal
+- Include approximate calories for each meal along with macronutrient breakdown (protein, carbs, fats) in grams
 - Mention health benefits of each meal and how they improve test results${allergyInstruction}${supplementInstruction}
 - Provide general dietary tips with a positive, encouraging tone based on the health condition and goal
 - Add personalized tips for each detected health condition in "conditionTips" with a positive tone (no scary language)
@@ -348,10 +348,10 @@ Return JSON in this format:
   "deficiencies": [{"name": "Deficiency name", "current": "Current value", "target": "Target value", "foods": ["food 1", "food 2"]}],
   "supplements": [{"name": "Supplement name", "dosage": "Suggested dosage", "reason": "Reason needed", "duration": "Duration of use"}],
   "mealPlan": {
-    "breakfast": [{"name": "Option 1", "description": "Description with portions", "calories": 400, "benefits": "Benefits"}, ...],
-    "lunch": [...],
-    "dinner": [...],
-    "snacks": [...]
+    "breakfast": [{"name": "Option 1", "description": "Description with portions", "calories": 400, "protein": 30, "carbs": 40, "fats": 12, "benefits": "Benefits"}, ...],
+    "lunch": [{"name": "Option 1", "description": "...", "calories": 500, "protein": 35, "carbs": 50, "fats": 15, "benefits": "..."}, ...],
+    "dinner": [{"name": "Option 1", "description": "...", "calories": 450, "protein": 32, "carbs": 45, "fats": 14, "benefits": "..."}, ...],
+    "snacks": [{"name": "Snack 1", "description": "...", "calories": 150, "protein": 8, "carbs": 15, "fats": 6, "benefits": "..."}, ...]
   },
   "tips": ["positive tip 1", "positive tip 2"],
   "warnings": ["We recommend following up on ... with your doctor for peace of mind"],
