@@ -1,5 +1,5 @@
-import { useEffect } from "react";
-import { Switch, Route } from "wouter";
+import { useEffect, useState } from "react";
+import { Switch, Route, useLocation } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
@@ -7,6 +7,14 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { BottomNav } from "@/components/BottomNav";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { LanguageToggle } from "@/components/LanguageToggle";
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
 import NotFound from "@/pages/not-found";
 import LandingPage from "@/pages/LandingPage";
 import Dashboard from "@/pages/Dashboard";
@@ -18,15 +26,79 @@ import Profile from "@/pages/Profile";
 import "./lib/i18n";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "@/hooks/use-auth";
+import { Menu, FlaskConical, GitCompareArrows } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
+
+function HamburgerMenu() {
+  const { t, i18n } = useTranslation();
+  const [location, setLocation] = useLocation();
+  const [open, setOpen] = useState(false);
+  const isRTL = i18n.language === "ar";
+
+  const menuItems = [
+    { path: "/tests", icon: FlaskConical, labelKey: "menuMyTests" },
+    { path: "/compare", icon: GitCompareArrows, labelKey: "menuCompare" },
+  ];
+
+  const handleNav = (path: string) => {
+    setLocation(path);
+    setOpen(false);
+  };
+
+  return (
+    <Sheet open={open} onOpenChange={setOpen}>
+      <SheetTrigger asChild>
+        <Button variant="ghost" size="icon" data-testid="button-hamburger-menu">
+          <Menu className="h-5 w-5" />
+        </Button>
+      </SheetTrigger>
+      <SheetContent side={isRTL ? "right" : "left"} className="w-[280px] p-0">
+        <SheetHeader className="p-4 border-b">
+          <SheetTitle className="text-start">
+            <span className="text-primary font-bold">{t("appName")}</span>
+            <span className="block text-[10px] text-muted-foreground font-normal">{t("companyName")}</span>
+          </SheetTitle>
+          <SheetDescription className="sr-only">Navigation menu</SheetDescription>
+        </SheetHeader>
+        <div className="p-3 space-y-1">
+          {menuItems.map((item) => {
+            const Icon = item.icon;
+            const isActive = location === item.path;
+            return (
+              <button
+                key={item.path}
+                onClick={() => handleNav(item.path)}
+                data-testid={`menu-${item.labelKey}`}
+                className={cn(
+                  "flex items-center gap-3 w-full rounded-md px-3 py-3 text-sm transition-colors",
+                  isActive
+                    ? "bg-primary/10 text-primary font-semibold"
+                    : "text-foreground hover-elevate"
+                )}
+              >
+                <Icon className="h-5 w-5" />
+                <span>{t(item.labelKey)}</span>
+              </button>
+            );
+          })}
+        </div>
+      </SheetContent>
+    </Sheet>
+  );
+}
 
 function AuthenticatedLayout({ children }: { children: React.ReactNode }) {
   const { t } = useTranslation();
   return (
     <div className="flex flex-col min-h-screen w-full">
       <header className="flex items-center justify-between gap-4 p-3 border-b bg-background/95 backdrop-blur shrink-0 sticky top-0 z-40">
-        <div className="flex flex-col">
-          <h1 className="text-lg font-bold text-primary">{t("appName")}</h1>
-          <span className="text-[10px] text-muted-foreground">{t("companyName")}</span>
+        <div className="flex items-center gap-2">
+          <HamburgerMenu />
+          <div className="flex flex-col">
+            <h1 className="text-lg font-bold text-primary">{t("appName")}</h1>
+            <span className="text-[10px] text-muted-foreground">{t("companyName")}</span>
+          </div>
         </div>
         <div className="flex items-center gap-1">
           <LanguageToggle />

@@ -16,10 +16,15 @@ BioTrack AI is a comprehensive health tracking application that analyzes PDF lab
 - **Subscription System**: Free (3 PDFs), Basic (20 PDFs), Premium (unlimited)
 
 ## Recent Changes
-- **AI Diet Plan**: Added personalized diet plan generation using OpenAI based on user's test results, weight, height, age, and gender
-- **Test Comparison Page**: Compare old vs new test results with visual trend indicators (improved/worsened/no change)
-- **Dashboard Shortcuts**: Added quick access cards for Diet Plan and Compare Results on dashboard
-- **Bottom Navigation**: 5-item bottom navigation bar (Home, Tests, Upload, Diet, Profile) with RTL support
+- **Diet Plan Questionnaire**: Multi-step questionnaire before generating diet plan (activity level, allergies, meal preference)
+- **3 Meal Options**: Each meal (breakfast, lunch, dinner) provides 3 varied options for daily rotation
+- **Activity-Based TDEE**: TDEE calculation uses actual activity level (sedentary/light/very/extremely active)
+- **Allergy Support**: 9 common allergens can be excluded from diet plan (eggs, dairy, peanuts, nuts, seafood, soy, sesame, wheat, fish)
+- **Meal Preferences**: High protein, balanced, low carb, vegetarian, custom macros with macro range visualization
+- **Condition-Based Tips**: Personalized health tips based on detected conditions from lab results (diabetes, cholesterol, anemia, etc.)
+- **Navigation Restructure**: Hamburger menu (top-left) with My Tests and Compare; Bottom nav reduced to 4 items (Home, Upload, Diet, Profile)
+- **Nutrition Disclaimer**: Warning disclaimer shown before questionnaire starts
+- **Dashboard Shortcuts**: Quick access cards for Diet Plan and Compare Results on dashboard
 - **Reminder System**: Added calendar date picker in tests table for setting recheck reminders
 - **Tests Table Columns**: 8 columns (#, Test Name, Category, Your Value, Normal Range, Status, Test Date, Reminder)
 - **All 50 Tests Display**: Tests without results show value "0" ensuring complete table view
