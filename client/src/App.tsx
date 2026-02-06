@@ -11,6 +11,7 @@ import NotFound from "@/pages/not-found";
 import LandingPage from "@/pages/LandingPage";
 import Dashboard from "@/pages/Dashboard";
 import MyTests from "@/pages/MyTests";
+import Compare from "@/pages/Compare";
 import Upload from "@/pages/Upload";
 import Profile from "@/pages/Profile";
 import "./lib/i18n";
@@ -65,6 +66,7 @@ function AppContent() {
       <Switch>
         <Route path="/" component={Dashboard} />
         <Route path="/tests" component={MyTests} />
+        <Route path="/compare" component={Compare} />
         <Route path="/upload" component={Upload} />
         <Route path="/profile" component={Profile} />
         <Route path="/reminders" component={Dashboard} />

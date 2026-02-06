@@ -145,6 +145,17 @@ const resources = {
       retryFailed: "Retry failed. Please try again.",
       pleaseUploadPdf: "Please upload a PDF file",
       
+      // Compare
+      compare: "Compare",
+      compareResults: "Compare Results",
+      previousResult: "Previous",
+      latestResult: "Latest",
+      improved: "Improved",
+      worsened: "Worsened",
+      noChange: "No Change",
+      noComparisonData: "No comparison data available",
+      noComparisonHint: "Upload two or more lab reports to compare your results over time",
+
       // Share
       shareResults: "Share Results",
       shareSuccess: "Shared successfully",
@@ -298,6 +309,17 @@ const resources = {
       retryFailed: "فشلت إعادة المحاولة. يرجى المحاولة مرة أخرى.",
       pleaseUploadPdf: "يرجى رفع ملف PDF",
       
+      // Compare
+      compare: "مقارنة",
+      compareResults: "مقارنة النتائج",
+      previousResult: "السابق",
+      latestResult: "الأحدث",
+      improved: "تحسّن",
+      worsened: "تراجع",
+      noChange: "لا تغيير",
+      noComparisonData: "لا توجد بيانات للمقارنة",
+      noComparisonHint: "ارفع تقريرين أو أكثر لمقارنة نتائجك عبر الزمن",
+
       // Share
       shareResults: "مشاركة النتائج",
       shareSuccess: "تمت المشاركة بنجاح",
