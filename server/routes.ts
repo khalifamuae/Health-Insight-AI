@@ -4,6 +4,7 @@ import multer from "multer";
 import { storage } from "./storage";
 import { setupAuth, isAuthenticated, registerAuthRoutes } from "./replit_integrations/auth";
 import { analyzeLabPdf } from "./pdfAnalyzer";
+import { generateDietPlan } from "./dietPlanGenerator";
 import { desc, eq, and, gte, sql } from "drizzle-orm";
 import { db } from "./db";
 
@@ -480,6 +481,53 @@ export async function registerRoutes(
     } catch (error) {
       console.error("Error in retry:", error);
       res.status(500).json({ error: "Failed to retry PDF processing" });
+    }
+  });
+
+  app.post("/api/diet-plan", isAuthenticated, async (req: any, res: Response) => {
+    try {
+      const userId = req.user.claims.sub;
+      const language = req.body.language || "ar";
+
+      const profile = await storage.getUserProfile(userId);
+      const tests = await storage.getTestResultsByUser(userId);
+      const definitions = await storage.getTestDefinitions();
+      const defMap = new Map(definitions.map(d => [d.id, d]));
+
+      const latestByTest = new Map<string, any>();
+      for (const test of tests) {
+        const existing = latestByTest.get(test.testId);
+        if (!existing || (test.testDate && existing.testDate && new Date(test.testDate) > new Date(existing.testDate))) {
+          latestByTest.set(test.testId, test);
+        }
+      }
+
+      const testResults = Array.from(latestByTest.values()).map(t => {
+        const def = defMap.get(t.testId);
+        return {
+          testName: language === "ar" ? (def?.nameAr || t.testId) : (def?.nameEn || t.testId),
+          value: t.value,
+          status: t.status || "normal",
+          normalRangeMin: def?.normalRangeMin ?? null,
+          normalRangeMax: def?.normalRangeMax ?? null,
+          unit: def?.unit ?? null,
+          category: def?.category || "special",
+        };
+      });
+
+      const dietPlan = await generateDietPlan({
+        weight: profile?.weight ?? null,
+        height: profile?.height ?? null,
+        age: profile?.age ?? null,
+        gender: profile?.gender ?? null,
+        language,
+        testResults,
+      });
+
+      res.json(dietPlan);
+    } catch (error) {
+      console.error("Error generating diet plan:", error);
+      res.status(500).json({ error: "Failed to generate diet plan" });
     }
   });
 

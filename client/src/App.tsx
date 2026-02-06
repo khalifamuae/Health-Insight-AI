@@ -13,6 +13,7 @@ import Dashboard from "@/pages/Dashboard";
 import MyTests from "@/pages/MyTests";
 import Compare from "@/pages/Compare";
 import Upload from "@/pages/Upload";
+import DietPlan from "@/pages/DietPlan";
 import Profile from "@/pages/Profile";
 import "./lib/i18n";
 import { useTranslation } from "react-i18next";
@@ -68,6 +69,7 @@ function AppContent() {
         <Route path="/tests" component={MyTests} />
         <Route path="/compare" component={Compare} />
         <Route path="/upload" component={Upload} />
+        <Route path="/diet" component={DietPlan} />
         <Route path="/profile" component={Profile} />
         <Route path="/reminders" component={Dashboard} />
         <Route component={NotFound} />

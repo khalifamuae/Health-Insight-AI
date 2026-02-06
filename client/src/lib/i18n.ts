@@ -156,6 +156,23 @@ const resources = {
       noComparisonData: "No comparison data available",
       noComparisonHint: "Upload two or more lab reports to compare your results over time",
 
+      // Diet Plan
+      dietPlan: "Diet Plan",
+      dietPlanNav: "Diet",
+      dietPlanIntro: "AI-Powered Personalized Diet Plan",
+      dietPlanDescription: "Based on your lab results, weight, and height, our AI will design a nutrition plan to improve your health",
+      generateDietPlan: "Generate Diet Plan",
+      generatingDietPlan: "Analyzing your health data and designing your diet plan...",
+      dietPlanError: "Failed to generate diet plan. Please try again.",
+      regenerateDietPlan: "Generate New Plan",
+      breakfast: "Breakfast",
+      lunch: "Lunch",
+      dinner: "Dinner",
+      snacks: "Snacks",
+      deficiencies: "Deficiencies to Address",
+      dietTips: "Dietary Tips",
+      warnings: "Important Warnings",
+
       // Share
       shareResults: "Share Results",
       shareSuccess: "Shared successfully",
@@ -319,6 +336,23 @@ const resources = {
       noChange: "لا تغيير",
       noComparisonData: "لا توجد بيانات للمقارنة",
       noComparisonHint: "ارفع تقريرين أو أكثر لمقارنة نتائجك عبر الزمن",
+
+      // Diet Plan
+      dietPlan: "النظام الغذائي",
+      dietPlanNav: "التغذية",
+      dietPlanIntro: "نظام غذائي مخصص بالذكاء الاصطناعي",
+      dietPlanDescription: "بناءً على نتائج تحاليلك ووزنك وطولك، سيصمم الذكاء الاصطناعي خطة تغذية لتحسين صحتك",
+      generateDietPlan: "تصميم النظام الغذائي",
+      generatingDietPlan: "جاري تحليل بياناتك الصحية وتصميم نظامك الغذائي...",
+      dietPlanError: "فشل في تصميم النظام الغذائي. يرجى المحاولة مرة أخرى.",
+      regenerateDietPlan: "تصميم نظام جديد",
+      breakfast: "الإفطار",
+      lunch: "الغداء",
+      dinner: "العشاء",
+      snacks: "الوجبات الخفيفة",
+      deficiencies: "النواقص التي يجب معالجتها",
+      dietTips: "نصائح غذائية",
+      warnings: "تحذيرات مهمة",
 
       // Share
       shareResults: "مشاركة النتائج",

@@ -6,6 +6,8 @@ BioTrack AI is a comprehensive health tracking application that analyzes PDF lab
 
 ## Key Features
 - **AI PDF Analysis**: Upload lab results and AI automatically extracts test values
+- **AI Diet Plan**: Personalized nutrition plans based on lab results, weight, height, and deficiencies
+- **Test Comparison**: Side-by-side comparison of old vs new test results with trend indicators
 - **50 Test Types**: Vitamins, minerals, hormones, organ functions, lipids, immunity, blood, coagulation, and special tests
 - **Color-Coded Results**: Red for abnormal (High/Low), green for normal
 - **7 Importance Levels**: Tests organized by clinical importance
@@ -14,7 +16,10 @@ BioTrack AI is a comprehensive health tracking application that analyzes PDF lab
 - **Subscription System**: Free (3 PDFs), Basic (20 PDFs), Premium (unlimited)
 
 ## Recent Changes
-- **Bottom Navigation**: Replaced sidebar with 4-item bottom navigation bar (Home, Tests, Upload, Profile) with RTL support
+- **AI Diet Plan**: Added personalized diet plan generation using OpenAI based on user's test results, weight, height, age, and gender
+- **Test Comparison Page**: Compare old vs new test results with visual trend indicators (improved/worsened/no change)
+- **Dashboard Shortcuts**: Added quick access cards for Diet Plan and Compare Results on dashboard
+- **Bottom Navigation**: 5-item bottom navigation bar (Home, Tests, Upload, Diet, Profile) with RTL support
 - **Reminder System**: Added calendar date picker in tests table for setting recheck reminders
 - **Tests Table Columns**: 8 columns (#, Test Name, Category, Your Value, Normal Range, Status, Test Date, Reminder)
 - **All 50 Tests Display**: Tests without results show value "0" ensuring complete table view

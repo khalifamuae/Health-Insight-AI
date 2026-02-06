@@ -1,13 +1,13 @@
 import { useLocation, Link } from "wouter";
 import { useTranslation } from "react-i18next";
-import { Home, FlaskConical, Upload, User, GitCompareArrows } from "lucide-react";
+import { Home, FlaskConical, Upload, User, Salad } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const navItems = [
   { path: "/", icon: Home, labelKey: "home" },
   { path: "/tests", icon: FlaskConical, labelKey: "myTests" },
-  { path: "/compare", icon: GitCompareArrows, labelKey: "compare" },
   { path: "/upload", icon: Upload, labelKey: "upload" },
+  { path: "/diet", icon: Salad, labelKey: "dietPlanNav" },
   { path: "/profile", icon: User, labelKey: "profile" },
 ];
 
