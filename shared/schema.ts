@@ -25,6 +25,7 @@ export const genderEnum = pgEnum("gender", ["male", "female"]);
 export const fitnessGoalEnum = pgEnum("fitness_goal", ["weight_loss", "maintain", "muscle_gain"]);
 export const activityLevelEnum = pgEnum("activity_level", ["sedentary", "lightly_active", "very_active", "extremely_active"]);
 export const mealPreferenceEnum = pgEnum("meal_preference", ["high_protein", "balanced", "low_carb", "vegetarian", "custom_macros"]);
+export const proteinPreferenceEnum = pgEnum("protein_preference", ["fish", "chicken", "meat", "mixed"]);
 export const pdfStatusEnum = pgEnum("pdf_status", ["pending", "processing", "success", "failed"]);
 
 // User profiles - extends auth users with health data
@@ -40,6 +41,7 @@ export const userProfiles = pgTable("user_profiles", {
   mealPreference: mealPreferenceEnum("meal_preference").default("balanced"),
   hasAllergies: boolean("has_allergies").default(false),
   allergies: text("allergies").array(),
+  proteinPreference: proteinPreferenceEnum("protein_preference").default("mixed"),
   profileImagePath: text("profile_image_path"),
   language: varchar("language", { length: 5 }).default("ar"),
   subscriptionPlan: subscriptionPlanEnum("subscription_plan").default("free"),
@@ -218,3 +220,4 @@ export type Gender = "male" | "female";
 export type FitnessGoal = "weight_loss" | "maintain" | "muscle_gain";
 export type ActivityLevel = "sedentary" | "lightly_active" | "very_active" | "extremely_active";
 export type MealPreference = "high_protein" | "balanced" | "low_carb" | "vegetarian" | "custom_macros";
+export type ProteinPreference = "fish" | "chicken" | "meat" | "mixed";

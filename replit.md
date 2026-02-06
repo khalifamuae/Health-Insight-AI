@@ -16,12 +16,16 @@ BioTrack AI is a comprehensive health tracking application that analyzes PDF lab
 - **Subscription System**: Free (3 PDFs), Basic (20 PDFs), Premium (unlimited)
 
 ## Recent Changes
-- **Diet Plan Questionnaire**: Multi-step questionnaire before generating diet plan (activity level, allergies, meal preference)
+- **Diet Plan Questionnaire**: 4-step questionnaire before generating diet plan (activity level, allergies, protein preference, meal preference)
+- **Protein Preference**: New question asking user if they prefer fish, chicken, red meat, or mixed - AI uses this to customize meals
 - **3 Meal Options**: Each meal (breakfast, lunch, dinner) provides 3 varied options for daily rotation
 - **Activity-Based TDEE**: TDEE calculation uses actual activity level (sedentary/light/very/extremely active)
 - **Allergy Support**: 9 common allergens can be excluded from diet plan (eggs, dairy, peanuts, nuts, seafood, soy, sesame, wheat, fish)
 - **Meal Preferences**: High protein, balanced, low carb, vegetarian, custom macros with macro range visualization
-- **Condition-Based Tips**: Personalized health tips based on detected conditions from lab results (diabetes, cholesterol, anemia, etc.)
+- **Supplement Recommendations**: AI suggests specific supplements (vitamin D, iron, B12, omega-3, etc.) with dosage and duration when food alone isn't enough
+- **Deficiency Compensation**: Focus on compensating deficiencies through natural food first, supplements only when needed
+- **Positive Tone**: All tips use encouraging, supportive language - no scary medical warnings (e.g., "bring sugar to normal range" instead of "risk of diabetes")
+- **Condition-Based Tips**: Personalized health tips based on detected conditions with positive framing
 - **Navigation Restructure**: Hamburger menu (top-left) with My Tests and Compare; Bottom nav reduced to 4 items (Home, Upload, Diet, Profile)
 - **Nutrition Disclaimer**: Warning disclaimer shown before questionnaire starts
 - **Dashboard Shortcuts**: Quick access cards for Diet Plan and Compare Results on dashboard

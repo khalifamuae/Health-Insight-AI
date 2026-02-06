@@ -46,7 +46,7 @@ export async function registerRoutes(
   app.patch("/api/profile", isAuthenticated, async (req: any, res: Response) => {
     try {
       const userId = req.user.claims.sub;
-      const { phone, age, weight, height, gender, fitnessGoal, activityLevel, mealPreference, hasAllergies, allergies } = req.body;
+      const { phone, age, weight, height, gender, fitnessGoal, activityLevel, mealPreference, hasAllergies, allergies, proteinPreference } = req.body;
       
       const profile = await storage.upsertUserProfile({
         id: userId,
@@ -60,6 +60,7 @@ export async function registerRoutes(
         mealPreference,
         hasAllergies,
         allergies,
+        proteinPreference,
       });
       
       res.json(profile);
@@ -530,6 +531,7 @@ export async function registerRoutes(
         mealPreference: profile?.mealPreference ?? "balanced",
         hasAllergies: profile?.hasAllergies ?? false,
         allergies: profile?.allergies ?? [],
+        proteinPreference: profile?.proteinPreference ?? "mixed",
         language,
         testResults,
       });

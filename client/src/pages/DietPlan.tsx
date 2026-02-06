@@ -36,6 +36,8 @@ import {
   BarChart3,
   Scale,
   Ban,
+  Fish,
+  Pill,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -51,6 +53,13 @@ interface Deficiency {
   current: string;
   target: string;
   foods: string[];
+}
+
+interface Supplement {
+  name: string;
+  dosage: string;
+  reason: string;
+  duration: string;
 }
 
 interface ConditionTip {
@@ -74,6 +83,7 @@ interface DietPlanData {
     fats: { grams: number; percentage: number };
   };
   deficiencies: Deficiency[];
+  supplements: Supplement[];
   mealPlan: {
     breakfast: MealItem[];
     lunch: MealItem[];
@@ -85,7 +95,7 @@ interface DietPlanData {
   conditionTips: ConditionTip[];
 }
 
-type QuestionnaireStep = "disclaimer" | "activity" | "allergy" | "allergySelect" | "preference" | "generating";
+type QuestionnaireStep = "disclaimer" | "activity" | "allergy" | "allergySelect" | "proteinPref" | "preference" | "generating";
 
 const ALLERGY_OPTIONS = [
   { key: "eggs", labelKey: "allergyEggs" },
@@ -110,6 +120,7 @@ export default function DietPlan() {
   const [hasAllergies, setHasAllergies] = useState<boolean | null>(null);
   const [selectedAllergies, setSelectedAllergies] = useState<string[]>([]);
   const [mealPreference, setMealPreference] = useState<string>("");
+  const [proteinPreference, setProteinPreference] = useState<string>("");
 
   const { data: profile } = useQuery<UserProfile>({
     queryKey: ["/api/profile"],
@@ -132,6 +143,7 @@ export default function DietPlan() {
         mealPreference,
         hasAllergies: hasAllergies || false,
         allergies: hasAllergies ? selectedAllergies : [],
+        proteinPreference: mealPreference === "vegetarian" ? "mixed" : proteinPreference,
       });
       const res = await apiRequest("POST", "/api/diet-plan", {
         language: i18n.language,
@@ -149,6 +161,7 @@ export default function DietPlan() {
     if (profile?.mealPreference) setMealPreference(profile.mealPreference);
     if (profile?.hasAllergies != null) setHasAllergies(profile.hasAllergies);
     if (profile?.allergies) setSelectedAllergies(profile.allergies);
+    if (profile?.proteinPreference) setProteinPreference(profile.proteinPreference);
     setShowQuestionnaire(true);
     setStep("disclaimer");
   };
@@ -174,6 +187,13 @@ export default function DietPlan() {
     { key: "extremely_active", labelKey: "activityExtreme", descKey: "activityExtremeDesc", icon: Zap },
   ];
 
+  const proteinOptions = [
+    { key: "fish", labelKey: "proteinFish", descKey: "proteinFishDesc", icon: Fish },
+    { key: "chicken", labelKey: "proteinChicken", descKey: "proteinChickenDesc", icon: Beef },
+    { key: "meat", labelKey: "proteinMeat", descKey: "proteinMeatDesc", icon: Beef },
+    { key: "mixed", labelKey: "proteinMixed", descKey: "proteinMixedDesc", icon: Salad },
+  ];
+
   const preferenceOptions = [
     { key: "high_protein", labelKey: "prefHighProtein", descKey: "prefHighProteinDesc", icon: Beef, recommended: true, macroRanges: { protein: "40-50%", carbs: "35-40%", fats: "10-25%" } },
     { key: "balanced", labelKey: "prefBalanced", descKey: "prefBalancedDesc", icon: Scale, recommended: false, macroRanges: { protein: "20-35%", carbs: "40-55%", fats: "20-30%" } },
@@ -186,6 +206,11 @@ export default function DietPlan() {
     weight_loss: t("goalWeightLoss"),
     maintain: t("goalMaintain"),
     muscle_gain: t("goalMuscleGain"),
+  };
+
+  const getNextStepAfterAllergy = () => {
+    if (mealPreference === "vegetarian") return "preference";
+    return "proteinPref";
   };
 
   if (showQuestionnaire && !plan) {
@@ -218,7 +243,7 @@ export default function DietPlan() {
               <Button variant="ghost" size="icon" onClick={() => setStep("disclaimer")} data-testid="button-back-activity">
                 <BackArrow className="h-5 w-5" />
               </Button>
-              <span className="text-xs text-muted-foreground">{t("questStep")} 1 {t("questOf")} 3</span>
+              <span className="text-xs text-muted-foreground">{t("questStep")} 1 {t("questOf")} 4</span>
             </div>
             <div className="text-center space-y-1">
               <h2 className="text-xl font-bold" data-testid="text-activity-title">{t("questActivityTitle")}</h2>
@@ -269,7 +294,7 @@ export default function DietPlan() {
               <Button variant="ghost" size="icon" onClick={() => setStep("activity")} data-testid="button-back-allergy">
                 <BackArrow className="h-5 w-5" />
               </Button>
-              <span className="text-xs text-muted-foreground">{t("questStep")} 2 {t("questOf")} 3</span>
+              <span className="text-xs text-muted-foreground">{t("questStep")} 2 {t("questOf")} 4</span>
             </div>
             <div className="text-center space-y-1">
               <h2 className="text-xl font-bold" data-testid="text-allergy-title">{t("questAllergyTitle")}</h2>
@@ -309,7 +334,7 @@ export default function DietPlan() {
             <Button
               className="w-full"
               disabled={hasAllergies === null}
-              onClick={() => setStep(hasAllergies ? "allergySelect" : "preference")}
+              onClick={() => setStep(hasAllergies ? "allergySelect" : "proteinPref")}
               data-testid="button-next-allergy"
             >
               {t("questNext")} <NextArrow className="h-4 w-4 ms-1" />
@@ -323,7 +348,7 @@ export default function DietPlan() {
               <Button variant="ghost" size="icon" onClick={() => setStep("allergy")} data-testid="button-back-allergySelect">
                 <BackArrow className="h-5 w-5" />
               </Button>
-              <span className="text-xs text-muted-foreground">{t("questStep")} 2 {t("questOf")} 3</span>
+              <span className="text-xs text-muted-foreground">{t("questStep")} 2 {t("questOf")} 4</span>
             </div>
             <div className="text-center space-y-1">
               <h2 className="text-xl font-bold" data-testid="text-allergySelect-title">{t("questAllergyWhich")}</h2>
@@ -349,7 +374,7 @@ export default function DietPlan() {
             </div>
             <Button
               className="w-full"
-              onClick={() => setStep("preference")}
+              onClick={() => setStep("proteinPref")}
               data-testid="button-next-allergySelect"
             >
               {t("questContinue")}
@@ -357,13 +382,64 @@ export default function DietPlan() {
           </div>
         )}
 
+        {step === "proteinPref" && (
+          <div className="space-y-4">
+            <div className="flex items-center justify-between gap-2 flex-wrap">
+              <Button variant="ghost" size="icon" onClick={() => setStep(hasAllergies ? "allergySelect" : "allergy")} data-testid="button-back-proteinPref">
+                <BackArrow className="h-5 w-5" />
+              </Button>
+              <span className="text-xs text-muted-foreground">{t("questStep")} 3 {t("questOf")} 4</span>
+            </div>
+            <div className="text-center space-y-1">
+              <h2 className="text-xl font-bold" data-testid="text-proteinPref-title">{t("questProteinTitle")}</h2>
+              <p className="text-sm text-muted-foreground">{t("questProteinSubtitle")}</p>
+            </div>
+            <div className="space-y-3">
+              {proteinOptions.map(opt => {
+                const Icon = opt.icon;
+                const isSelected = proteinPreference === opt.key;
+                return (
+                  <Card
+                    key={opt.key}
+                    className={cn(
+                      "cursor-pointer transition-colors",
+                      isSelected && "border-primary bg-primary/5"
+                    )}
+                    onClick={() => setProteinPreference(opt.key)}
+                    data-testid={`card-protein-${opt.key}`}
+                  >
+                    <CardContent className="p-4 flex items-center gap-4">
+                      <div className={cn("p-2 rounded-lg", isSelected ? "bg-primary/10" : "bg-muted/50")}>
+                        <Icon className={cn("h-6 w-6", isSelected ? "text-primary" : "text-muted-foreground")} />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-semibold text-sm">{t(opt.labelKey)}</p>
+                        <p className="text-xs text-muted-foreground mt-0.5">{t(opt.descKey)}</p>
+                      </div>
+                      {isSelected && <Check className="h-5 w-5 text-primary shrink-0" />}
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
+            <Button
+              className="w-full"
+              disabled={!proteinPreference}
+              onClick={() => setStep("preference")}
+              data-testid="button-next-proteinPref"
+            >
+              {t("questNext")} <NextArrow className="h-4 w-4 ms-1" />
+            </Button>
+          </div>
+        )}
+
         {step === "preference" && (
           <div className="space-y-4">
             <div className="flex items-center justify-between gap-2 flex-wrap">
-              <Button variant="ghost" size="icon" onClick={() => setStep(hasAllergies ? "allergySelect" : "allergy")} data-testid="button-back-preference">
+              <Button variant="ghost" size="icon" onClick={() => setStep(mealPreference === "vegetarian" ? (hasAllergies ? "allergySelect" : "allergy") : "proteinPref")} data-testid="button-back-preference">
                 <BackArrow className="h-5 w-5" />
               </Button>
-              <span className="text-xs text-muted-foreground">{t("questStep")} 3 {t("questOf")} 3</span>
+              <span className="text-xs text-muted-foreground">{t("questStep")} 4 {t("questOf")} 4</span>
             </div>
             <div className="text-center space-y-1">
               <h2 className="text-xl font-bold" data-testid="text-preference-title">{t("questPreferenceTitle")}</h2>
@@ -545,18 +621,18 @@ export default function DietPlan() {
         </div>
 
         {plan.warnings.length > 0 && (
-          <Card className="border-destructive/50">
+          <Card className="border-orange-200 dark:border-orange-800/40">
             <CardHeader className="pb-2 p-4">
-              <CardTitle className="text-sm flex items-center gap-2 text-destructive">
+              <CardTitle className="text-sm flex items-center gap-2 text-orange-600 dark:text-orange-400">
                 <AlertTriangle className="h-4 w-4" />
-                {t("warnings")}
+                {t("doctorFollowUp")}
               </CardTitle>
             </CardHeader>
             <CardContent className="p-4 pt-0">
               <ul className="space-y-1">
                 {plan.warnings.map((w, i) => (
-                  <li key={i} className="text-sm text-destructive flex items-start gap-2">
-                    <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-destructive shrink-0" />
+                  <li key={i} className="text-sm text-muted-foreground flex items-start gap-2">
+                    <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-orange-500 shrink-0" />
                     {w}
                   </li>
                 ))}
@@ -569,7 +645,7 @@ export default function DietPlan() {
           <Card>
             <CardHeader className="pb-2 p-4">
               <CardTitle className="text-sm flex items-center gap-2">
-                <ArrowDown className="h-4 w-4 text-red-500" />
+                <ArrowDown className="h-4 w-4 text-primary" />
                 {t("deficiencies")}
               </CardTitle>
             </CardHeader>
@@ -589,6 +665,29 @@ export default function DietPlan() {
                       <Badge key={fi} variant="outline" className="text-xs">{food}</Badge>
                     ))}
                   </div>
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+        )}
+
+        {plan.supplements && plan.supplements.length > 0 && (
+          <Card data-testid="section-supplements">
+            <CardHeader className="pb-2 p-4">
+              <CardTitle className="text-sm flex items-center gap-2">
+                <Pill className="h-4 w-4 text-green-600 dark:text-green-400" />
+                {t("supplementsTitle")}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-4 pt-0 space-y-3">
+              {plan.supplements.map((s, i) => (
+                <div key={i} className="rounded-md bg-muted/50 p-3 space-y-1">
+                  <div className="flex items-center justify-between gap-2 flex-wrap">
+                    <p className="font-semibold text-sm">{s.name}</p>
+                    <Badge variant="outline" className="text-xs">{s.dosage}</Badge>
+                  </div>
+                  <p className="text-xs text-muted-foreground">{s.reason}</p>
+                  <p className="text-xs text-green-600 dark:text-green-400">{t("supplementDuration")}: {s.duration}</p>
                 </div>
               ))}
             </CardContent>
@@ -635,7 +734,7 @@ export default function DietPlan() {
           <Card>
             <CardHeader className="pb-2 p-4">
               <CardTitle className="text-sm flex items-center gap-2">
-                <Heart className="h-4 w-4 text-red-500" />
+                <Heart className="h-4 w-4 text-primary" />
                 {t("conditionBasedTips")}
               </CardTitle>
             </CardHeader>
@@ -653,13 +752,13 @@ export default function DietPlan() {
                   </ul>
                   {ct.avoidFoods.length > 0 && (
                     <div>
-                      <p className="text-xs font-medium text-destructive flex items-center gap-1 mb-1">
+                      <p className="text-xs font-medium text-orange-600 dark:text-orange-400 flex items-center gap-1 mb-1">
                         <Ban className="h-3 w-3" />
-                        {t("avoidTheseFoods")}
+                        {t("reduceFoods")}
                       </p>
                       <div className="flex flex-wrap gap-1">
                         {ct.avoidFoods.map((f, fi) => (
-                          <Badge key={fi} variant="destructive" className="text-xs">{f}</Badge>
+                          <Badge key={fi} variant="outline" className="text-xs">{f}</Badge>
                         ))}
                       </div>
                     </div>

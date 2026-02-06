@@ -15,6 +15,7 @@ interface UserHealthData {
   mealPreference: string | null;
   hasAllergies: boolean | null;
   allergies: string[] | null;
+  proteinPreference: string | null;
   language: string;
   testResults: {
     testName: string;
@@ -42,6 +43,7 @@ export interface DietPlanResult {
     fats: { grams: number; percentage: number };
   };
   deficiencies: { name: string; current: string; target: string; foods: string[] }[];
+  supplements: { name: string; dosage: string; reason: string; duration: string }[];
   mealPlan: {
     breakfast: { name: string; description: string; calories: number; benefits: string }[];
     lunch: { name: string; description: string; calories: number; benefits: string }[];
@@ -127,43 +129,15 @@ function getMacroTargets(targetCalories: number, goal: string, preference: strin
   };
 }
 
-function detectConditions(testResults: UserHealthData["testResults"]): string[] {
-  const conditions: string[] = [];
+function detectDeficiencies(testResults: UserHealthData["testResults"]): string[] {
+  const deficiencies: string[] = [];
   for (const t of testResults) {
     if (t.value == null) continue;
-    const name = t.testName.toLowerCase();
-    if ((name.includes("glucose") || name.includes("سكر") || name.includes("hba1c")) && t.status === "high") {
-      if (!conditions.includes("diabetes_risk")) conditions.push("diabetes_risk");
-    }
-    if ((name.includes("cholesterol") || name.includes("كوليسترول") || name.includes("ldl")) && t.status === "high") {
-      if (!conditions.includes("high_cholesterol")) conditions.push("high_cholesterol");
-    }
-    if ((name.includes("iron") || name.includes("حديد") || name.includes("ferritin") || name.includes("hemoglobin")) && t.status === "low") {
-      if (!conditions.includes("anemia_risk")) conditions.push("anemia_risk");
-    }
-    if ((name.includes("vitamin d") || name.includes("فيتامين د")) && t.status === "low") {
-      if (!conditions.includes("vitamin_d_deficiency")) conditions.push("vitamin_d_deficiency");
-    }
-    if ((name.includes("uric") || name.includes("يوريك")) && t.status === "high") {
-      if (!conditions.includes("high_uric_acid")) conditions.push("high_uric_acid");
-    }
-    if ((name.includes("creatinine") || name.includes("كرياتينين")) && t.status === "high") {
-      if (!conditions.includes("kidney_concern")) conditions.push("kidney_concern");
-    }
-    if ((name.includes("alt") || name.includes("ast") || name.includes("sgpt") || name.includes("sgot")) && t.status === "high") {
-      if (!conditions.includes("liver_concern")) conditions.push("liver_concern");
-    }
-    if ((name.includes("tsh") || name.includes("thyroid")) && (t.status === "high" || t.status === "low")) {
-      if (!conditions.includes("thyroid_issue")) conditions.push("thyroid_issue");
-    }
-    if ((name.includes("b12") || name.includes("ب12")) && t.status === "low") {
-      if (!conditions.includes("b12_deficiency")) conditions.push("b12_deficiency");
-    }
-    if ((name.includes("triglyceride") || name.includes("دهون ثلاثية")) && t.status === "high") {
-      if (!conditions.includes("high_triglycerides")) conditions.push("high_triglycerides");
+    if (t.status === "low" || t.status === "high") {
+      deficiencies.push(t.testName);
     }
   }
-  return conditions;
+  return deficiencies;
 }
 
 export async function generateDietPlan(userData: UserHealthData): Promise<DietPlanResult> {
@@ -173,6 +147,7 @@ export async function generateDietPlan(userData: UserHealthData): Promise<DietPl
   const mealPreference = userData.mealPreference || "balanced";
   const allergies = userData.allergies || [];
   const hasAllergies = userData.hasAllergies || false;
+  const proteinPref = userData.proteinPreference || "mixed";
 
   const abnormalTests = userData.testResults.filter(t => t.status === "low" || t.status === "high");
   const normalTests = userData.testResults.filter(t => t.status === "normal");
@@ -188,7 +163,6 @@ export async function generateDietPlan(userData: UserHealthData): Promise<DietPl
   const macros = getMacroTargets(targetCalories, goal, mealPreference, weight);
 
   const bmi = (weight / Math.pow(height / 100, 2)).toFixed(1);
-  const detectedConditions = detectConditions(userData.testResults);
 
   const allergyNames: Record<string, { en: string; ar: string }> = {
     eggs: { en: "Eggs", ar: "بيض" },
@@ -221,6 +195,13 @@ export async function generateDietPlan(userData: UserHealthData): Promise<DietPl
     custom_macros: { en: "Custom Macros", ar: "ماكروز مخصصة" },
   };
 
+  const proteinPrefLabels: Record<string, { en: string; ar: string }> = {
+    fish: { en: "Fish", ar: "أسماك" },
+    chicken: { en: "Chicken", ar: "دجاج" },
+    meat: { en: "Red Meat", ar: "لحوم حمراء" },
+    mixed: { en: "Mixed (all types)", ar: "متنوع (جميع الأنواع)" },
+  };
+
   const testsDescription = userData.testResults
     .filter(t => t.value != null)
     .map(t => {
@@ -247,102 +228,134 @@ export async function generateDietPlan(userData: UserHealthData): Promise<DietPl
     },
   };
 
-  const conditionsStr = detectedConditions.length > 0
-    ? detectedConditions.join(", ")
-    : "none detected";
-
   const allergyInstruction = hasAllergies && allergyList
     ? isArabic
       ? `\n- المستخدم لديه حساسية تجاه: ${allergyList}. تجنب هذه المكونات تماماً في جميع الوجبات.`
       : `\n- User has allergies to: ${allergyList}. Completely avoid these ingredients in all meals.`
     : "";
 
-  const conditionTipInstruction = isArabic
-    ? `\n- بناءً على التحاليل، تم اكتشاف هذه الحالات: ${conditionsStr}. أضف نصائح مخصصة لكل حالة في "conditionTips" مع ذكر الأطعمة التي يجب تجنبها.`
-    : `\n- Based on lab results, these conditions were detected: ${conditionsStr}. Add personalized tips for each condition in "conditionTips" with foods to avoid.`;
+  const proteinInstruction = mealPreference !== "vegetarian"
+    ? isArabic
+      ? `\n- المستخدم يفضل: ${proteinPrefLabels[proteinPref]?.ar || "متنوع"}. ركّز على هذا النوع من البروتين الحيواني في الوجبات الرئيسية مع التنويع.`
+      : `\n- User prefers: ${proteinPrefLabels[proteinPref]?.en || "Mixed"}. Focus on this protein source in main meals while maintaining variety.`
+    : "";
+
+  const toneInstruction = isArabic
+    ? `\n\nأسلوب مهم جداً:
+- لا تخوّف المستخدم! لا تستخدم كلمات مثل "خطورة" أو "خطر الإصابة" أو "مرض".
+- بدلاً من ذلك، استخدم أسلوب إيجابي ومشجع. مثلاً:
+  - بدل "هناك خطورة للإصابة بالسكري" → "هدفنا تخفيض مستوى السكر الصائم للوصول إلى الحد الطبيعي"
+  - بدل "أنت معرض لأمراض القلب" → "نعمل على تحسين مستويات الدهون لصحة قلب أفضل"
+  - بدل "لديك نقص خطير" → "نسعى لرفع مستوى [الفيتامين/المعدن] للوصول إلى المعدل المثالي"
+- الهدف هو مساعدة المستخدم للوصول إلى الصحة المثالية بأسلوب محفّز وإيجابي
+- ركز على ما يمكن فعله وليس على المخاطر
+- استخدم عبارات مثل: "لتحسين"، "للوصول إلى المعدل الطبيعي"، "لتعزيز صحتك"، "خطوة نحو صحة أفضل"`
+    : `\n\nIMPORTANT TONE GUIDELINES:
+- Do NOT scare the user! Never use words like "risk", "danger", "disease risk", or "you are at risk of".
+- Instead, use a positive, encouraging, supportive tone. For example:
+  - Instead of "You are at risk of diabetes" → "Our goal is to bring your fasting sugar to the normal range"
+  - Instead of "You are at risk of heart disease" → "We're working on improving your lipid levels for better heart health"
+  - Instead of "You have a serious deficiency" → "Let's work on raising your [vitamin/mineral] to the optimal level"
+- The goal is to help the user reach optimal health with a motivating, positive approach
+- Focus on what can be done, not on risks
+- Use phrases like: "to improve", "to reach the normal range", "to boost your health", "a step toward better health"`;
+
+  const supplementInstruction = isArabic
+    ? `\n- بناءً على نتائج التحاليل والنواقص، اقترح مكملات غذائية محددة إذا لزم الأمر (مثل فيتامين د، حديد، ب12، أوميغا-3، إلخ). حدد الجرعة المقترحة ومدة الاستخدام وسبب الحاجة. ضعها في "supplements". إذا لم يحتج المستخدم مكملات، اترك المصفوفة فارغة.
+- ركز أولاً على تعويض النواقص من خلال الغذاء الطبيعي، وأضف المكملات فقط عند الحاجة الفعلية.`
+    : `\n- Based on lab results and deficiencies, suggest specific dietary supplements if needed (e.g., Vitamin D, Iron, B12, Omega-3, etc.). Specify suggested dosage, duration, and reason. Put them in "supplements". If the user doesn't need supplements, leave the array empty.
+- Focus first on compensating deficiencies through natural food, and add supplements only when truly needed.`;
 
   const systemPrompt = isArabic
-    ? `أنت خبير تغذية طبية متخصص. مهمتك تصميم نظام غذائي مخصص بناءً على نتائج التحاليل الطبية والبيانات الجسدية للمستخدم.
+    ? `أنت خبير تغذية ودود ومحفّز. مهمتك تصميم نظام غذائي مخصص بناءً على نتائج التحاليل الطبية والبيانات الجسدية للمستخدم لمساعدته في الوصول إلى الصحة المثالية.
 
 الهدف: ${goalDescriptions[goal].ar}
 مستوى النشاط: ${activityLabels[activityLevel]?.ar || activityLevel}
 نوع الوجبات المفضل: ${preferenceLabels[mealPreference]?.ar || mealPreference}
+البروتين المفضل: ${proteinPrefLabels[proteinPref]?.ar || "متنوع"}
 
 السعرات المستهدفة: ${targetCalories} سعرة حرارية يومياً
 البروتين: ${macros.protein.grams}جم | الكاربوهيدرات: ${macros.carbs.grams}جم | الدهون: ${macros.fats.grams}جم
+${toneInstruction}
 
 تعليمات مهمة:
 - صمم الوجبات بحيث تتوافق مع السعرات والماكرو المحدد أعلاه
-- قدم 3 خيارات مختلفة ومتنوعة لكل وجبة (فطور، غداء، عشاء) لكي يختار المستخدم ما يناسبه ويغير يومياً
+- قدم 3 خيارات مختلفة ومتنوعة لكل وجبة (فطور، غداء، عشاء) لكي يختار المستخدم ما يناسبه ويغير يومياً${proteinInstruction}
 - ${goal === "weight_loss" ? "ركز على وجبات مشبعة ومنخفضة السعرات وغنية بالبروتين والألياف" : ""}
 - ${goal === "muscle_gain" ? "ركز على مصادر غذاء نظيفة وصحية فقط (لا وجبات سريعة، لا دهون مشبعة مفرطة)" : ""}
 - ${goal === "maintain" ? "ركز على التوازن بين العناصر الغذائية وتعديل النواقص من خلال الطعام" : ""}
 - ${mealPreference === "high_protein" ? "ركز على مصادر بروتين عالية الجودة في كل وجبة" : ""}
 - ${mealPreference === "low_carb" ? "قلل الكربوهيدرات واستبدلها بدهون صحية وبروتين" : ""}
 - ${mealPreference === "vegetarian" ? "جميع الوجبات نباتية - لا لحوم أو دواجن أو أسماك" : ""}
-- ركز على الأطعمة التي تحسّن النواقص الموجودة في التحاليل
+- ركز على الأطعمة التي تحسّن النواقص الموجودة في التحاليل وتساعد على تعويضها طبيعياً
 - قدم وجبات عملية وسهلة التحضير ومتوفرة في المنطقة العربية
 - اذكر السعرات التقريبية لكل وجبة
-- اذكر الفوائد الصحية لكل وجبة وارتباطها بتحسين الفحوصات${allergyInstruction}${conditionTipInstruction}
-- قدم نصائح غذائية عامة بناءً على الحالة الصحية والهدف
-- أضف تحذيرات إذا كانت هناك قيم خطرة تحتاج مراجعة طبيب
+- اذكر الفوائد الصحية لكل وجبة وارتباطها بتحسين الفحوصات${allergyInstruction}${supplementInstruction}
+- قدم نصائح غذائية عامة بأسلوب إيجابي ومحفّز بناءً على الحالة الصحية والهدف
+- أضف نصائح مخصصة لكل حالة صحية مكتشفة في "conditionTips" بأسلوب إيجابي (بدون تخويف)
+- إذا كانت هناك قيم تحتاج متابعة طبيب، اذكرها بلطف في "warnings" (مثال: "ننصحك بمتابعة مستوى X مع طبيبك للاطمئنان")
 - جميع الردود يجب أن تكون باللغة العربية
 
 أرجع JSON بالشكل التالي:
 {
-  "summary": "ملخص عام عن الحالة الغذائية والهدف",
-  "goalDescription": "وصف مختصر للهدف والخطة",
+  "summary": "ملخص عام إيجابي عن الحالة الغذائية والخطة",
+  "goalDescription": "وصف مختصر للهدف والخطة بأسلوب تحفيزي",
   "deficiencies": [{"name": "اسم النقص", "current": "القيمة الحالية", "target": "القيمة المستهدفة", "foods": ["طعام 1", "طعام 2"]}],
+  "supplements": [{"name": "اسم المكمل", "dosage": "الجرعة المقترحة", "reason": "سبب الحاجة", "duration": "مدة الاستخدام"}],
   "mealPlan": {
-    "breakfast": [{"name": "خيار 1", "description": "وصف مع المقادير", "calories": 400, "benefits": "الفوائد"}, {"name": "خيار 2", "description": "...", "calories": 400, "benefits": "..."}, {"name": "خيار 3", "description": "...", "calories": 400, "benefits": "..."}],
-    "lunch": [{"name": "خيار 1", "description": "...", "calories": 500, "benefits": "..."}, {"name": "خيار 2", "description": "...", "calories": 500, "benefits": "..."}, {"name": "خيار 3", "description": "...", "calories": 500, "benefits": "..."}],
-    "dinner": [{"name": "خيار 1", "description": "...", "calories": 400, "benefits": "..."}, {"name": "خيار 2", "description": "...", "calories": 400, "benefits": "..."}, {"name": "خيار 3", "description": "...", "calories": 400, "benefits": "..."}],
-    "snacks": [{"name": "سناك 1", "description": "...", "calories": 200, "benefits": "..."}, {"name": "سناك 2", "description": "...", "calories": 200, "benefits": "..."}]
+    "breakfast": [{"name": "خيار 1", "description": "وصف مع المقادير", "calories": 400, "benefits": "الفوائد"}, {"name": "خيار 2", ...}, {"name": "خيار 3", ...}],
+    "lunch": [{"name": "خيار 1", ...}, {"name": "خيار 2", ...}, {"name": "خيار 3", ...}],
+    "dinner": [{"name": "خيار 1", ...}, {"name": "خيار 2", ...}, {"name": "خيار 3", ...}],
+    "snacks": [{"name": "سناك 1", ...}, {"name": "سناك 2", ...}]
   },
-  "tips": ["نصيحة 1", "نصيحة 2"],
-  "warnings": ["تحذير 1"],
-  "conditionTips": [{"condition": "اسم الحالة", "advice": ["نصيحة 1", "نصيحة 2"], "avoidFoods": ["طعام يجب تجنبه 1"]}]
+  "tips": ["نصيحة إيجابية 1", "نصيحة إيجابية 2"],
+  "warnings": ["ننصحك بمتابعة ... مع طبيبك للاطمئنان"],
+  "conditionTips": [{"condition": "اسم الحالة (بأسلوب إيجابي)", "advice": ["نصيحة 1", "نصيحة 2"], "avoidFoods": ["طعام يفضل تقليله 1"]}]
 }`
-    : `You are a medical nutrition expert. Design a personalized diet plan based on the user's lab results and physical data.
+    : `You are a friendly and motivating nutrition expert. Your mission is to design a personalized diet plan based on the user's lab results and physical data to help them reach optimal health.
 
 Goal: ${goalDescriptions[goal].en}
 Activity Level: ${activityLabels[activityLevel]?.en || activityLevel}
 Meal Preference: ${preferenceLabels[mealPreference]?.en || mealPreference}
+Protein Preference: ${proteinPrefLabels[proteinPref]?.en || "Mixed"}
 
 Target Calories: ${targetCalories} kcal/day
 Protein: ${macros.protein.grams}g | Carbs: ${macros.carbs.grams}g | Fats: ${macros.fats.grams}g
+${toneInstruction}
 
 Important instructions:
 - Design meals that align with the calorie and macro targets above
-- Provide 3 DIFFERENT varied options for each meal (breakfast, lunch, dinner) so the user can choose and rotate daily
+- Provide 3 DIFFERENT varied options for each meal (breakfast, lunch, dinner) so the user can choose and rotate daily${proteinInstruction}
 - ${goal === "weight_loss" ? "Focus on satiating, low-calorie meals rich in protein and fiber" : ""}
 - ${goal === "muscle_gain" ? "Focus on clean, healthy food sources ONLY (no fast food, no excessive saturated fats)" : ""}
 - ${goal === "maintain" ? "Focus on balanced nutrition and correcting deficiencies through food" : ""}
 - ${mealPreference === "high_protein" ? "Emphasize high-quality protein sources in every meal" : ""}
 - ${mealPreference === "low_carb" ? "Minimize carbohydrates and replace with healthy fats and protein" : ""}
 - ${mealPreference === "vegetarian" ? "All meals must be vegetarian - no meat, poultry, or fish" : ""}
-- Focus on foods that address deficiencies found in lab results
+- Focus on foods that address deficiencies found in lab results and compensate naturally through nutrition
 - Provide practical, easy-to-prepare meals
 - Include approximate calories for each meal
-- Mention health benefits of each meal and how they improve test results${allergyInstruction}${conditionTipInstruction}
-- Provide general dietary tips based on the health condition and goal
-- Add warnings if there are dangerous values requiring doctor consultation
+- Mention health benefits of each meal and how they improve test results${allergyInstruction}${supplementInstruction}
+- Provide general dietary tips with a positive, encouraging tone based on the health condition and goal
+- Add personalized tips for each detected health condition in "conditionTips" with a positive tone (no scary language)
+- If there are values that need doctor follow-up, mention them gently in "warnings" (e.g., "We recommend following up on X with your doctor for peace of mind")
 - All responses must be in English
 
 Return JSON in this format:
 {
-  "summary": "General summary of nutritional status and goal",
-  "goalDescription": "Brief description of the goal and plan",
+  "summary": "Positive general summary of nutritional status and plan",
+  "goalDescription": "Brief motivating description of the goal and plan",
   "deficiencies": [{"name": "Deficiency name", "current": "Current value", "target": "Target value", "foods": ["food 1", "food 2"]}],
+  "supplements": [{"name": "Supplement name", "dosage": "Suggested dosage", "reason": "Reason needed", "duration": "Duration of use"}],
   "mealPlan": {
-    "breakfast": [{"name": "Option 1", "description": "Description with portions", "calories": 400, "benefits": "Benefits"}, {"name": "Option 2", "description": "...", "calories": 400, "benefits": "..."}, {"name": "Option 3", "description": "...", "calories": 400, "benefits": "..."}],
-    "lunch": [{"name": "Option 1", "description": "...", "calories": 500, "benefits": "..."}, {"name": "Option 2", "description": "...", "calories": 500, "benefits": "..."}, {"name": "Option 3", "description": "...", "calories": 500, "benefits": "..."}],
-    "dinner": [{"name": "Option 1", "description": "...", "calories": 400, "benefits": "..."}, {"name": "Option 2", "description": "...", "calories": 400, "benefits": "..."}, {"name": "Option 3", "description": "...", "calories": 400, "benefits": "..."}],
-    "snacks": [{"name": "Snack 1", "description": "...", "calories": 200, "benefits": "..."}, {"name": "Snack 2", "description": "...", "calories": 200, "benefits": "..."}]
+    "breakfast": [{"name": "Option 1", "description": "Description with portions", "calories": 400, "benefits": "Benefits"}, ...],
+    "lunch": [...],
+    "dinner": [...],
+    "snacks": [...]
   },
-  "tips": ["tip 1", "tip 2"],
-  "warnings": ["warning 1"],
-  "conditionTips": [{"condition": "Condition name", "advice": ["tip 1", "tip 2"], "avoidFoods": ["food to avoid 1"]}]
+  "tips": ["positive tip 1", "positive tip 2"],
+  "warnings": ["We recommend following up on ... with your doctor for peace of mind"],
+  "conditionTips": [{"condition": "Condition name (positive framing)", "advice": ["tip 1", "tip 2"], "avoidFoods": ["food to reduce 1"]}]
 }`;
 
   const userContent = isArabic
@@ -355,6 +368,7 @@ Return JSON in this format:
 - الهدف: ${goalDescriptions[goal].ar}
 - مستوى النشاط: ${activityLabels[activityLevel]?.ar || activityLevel}
 - نوع الوجبات: ${preferenceLabels[mealPreference]?.ar || mealPreference}
+- البروتين المفضل: ${proteinPrefLabels[proteinPref]?.ar || "متنوع"}
 - السعرات المستهدفة: ${targetCalories} سعرة/يوم
 - البروتين: ${macros.protein.grams}جم | الكاربوهيدرات: ${macros.carbs.grams}جم | الدهون: ${macros.fats.grams}جم
 ${hasAllergies && allergyList ? `- الحساسيات الغذائية: ${allergyList}` : "- لا يوجد حساسيات غذائية"}
@@ -365,9 +379,13 @@ ${testsDescription || "لا توجد نتائج تحاليل متوفرة"}
 ملخص:
 - فحوصات طبيعية: ${normalTests.length}
 - فحوصات غير طبيعية: ${abnormalTests.length}
-${detectedConditions.length > 0 ? `- حالات مكتشفة: ${detectedConditions.join(", ")}` : ""}
 
-صمم نظام غذائي مخصص يتناسب مع هدف المستخدم ويحسّن هذه النتائج. قدم 3 خيارات لكل وجبة.`
+المطلوب:
+1. صمم نظام غذائي مخصص يتناسب مع هدف المستخدم ويحسّن هذه النتائج
+2. ركّز على تعويض النواقص من خلال الغذاء الطبيعي أولاً
+3. اقترح مكملات غذائية إذا لزم الأمر (مثل فيتامين د، حديد، إلخ)
+4. قدم 3 خيارات لكل وجبة
+5. استخدم أسلوباً إيجابياً ومحفّزاً في جميع النصائح`
     : `User data:
 - Age: ${age} years
 - Gender: ${gender}
@@ -377,6 +395,7 @@ ${detectedConditions.length > 0 ? `- حالات مكتشفة: ${detectedConditio
 - Goal: ${goalDescriptions[goal].en}
 - Activity Level: ${activityLabels[activityLevel]?.en || activityLevel}
 - Meal Preference: ${preferenceLabels[mealPreference]?.en || mealPreference}
+- Protein Preference: ${proteinPrefLabels[proteinPref]?.en || "Mixed"}
 - Target Calories: ${targetCalories} kcal/day
 - Protein: ${macros.protein.grams}g | Carbs: ${macros.carbs.grams}g | Fats: ${macros.fats.grams}g
 ${hasAllergies && allergyList ? `- Food Allergies: ${allergyList}` : "- No food allergies"}
@@ -387,9 +406,13 @@ ${testsDescription || "No lab results available"}
 Summary:
 - Normal tests: ${normalTests.length}
 - Abnormal tests: ${abnormalTests.length}
-${detectedConditions.length > 0 ? `- Detected conditions: ${detectedConditions.join(", ")}` : ""}
 
-Design a personalized diet plan that matches the user's goal and improves these results. Provide 3 options for each meal.`;
+Requirements:
+1. Design a personalized diet plan that matches the user's goal and improves these results
+2. Focus on compensating deficiencies through natural food first
+3. Suggest dietary supplements if needed (e.g., Vitamin D, Iron, etc.)
+4. Provide 3 options for each meal
+5. Use a positive, motivating tone in all tips and advice`;
 
   const response = await openai.chat.completions.create({
     model: "gpt-4o",
@@ -418,6 +441,7 @@ Design a personalized diet plan that matches the user's goal and improves these 
       },
       macros,
       deficiencies: parsed.deficiencies || [],
+      supplements: parsed.supplements || [],
       mealPlan: {
         breakfast: (parsed.mealPlan?.breakfast || []).map((m: any) => ({ ...m, calories: m.calories || 0 })),
         lunch: (parsed.mealPlan?.lunch || []).map((m: any) => ({ ...m, calories: m.calories || 0 })),
