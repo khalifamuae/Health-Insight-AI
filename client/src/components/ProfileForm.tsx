@@ -24,7 +24,7 @@ import {
 } from "@/components/ui/form";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useToast } from "@/hooks/use-toast";
-import { User, Camera, Save, Loader2 } from "lucide-react";
+import { User, Camera, Save, Loader2, Target } from "lucide-react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import type { UserProfile } from "@shared/schema";
@@ -35,6 +35,7 @@ const profileSchema = z.object({
   weight: z.coerce.number().min(1).max(500).optional(),
   height: z.coerce.number().min(30).max(300).optional(),
   gender: z.enum(["male", "female"]).optional(),
+  fitnessGoal: z.enum(["weight_loss", "maintain", "muscle_gain"]).optional(),
 });
 
 type ProfileFormValues = z.infer<typeof profileSchema>;
@@ -81,6 +82,7 @@ export function ProfileForm({ user, profile }: ProfileFormProps) {
       weight: profile?.weight || undefined,
       height: profile?.height || undefined,
       gender: profile?.gender || undefined,
+      fitnessGoal: profile?.fitnessGoal || "maintain",
     },
   });
 
@@ -281,6 +283,32 @@ export function ProfileForm({ user, profile }: ProfileFormProps) {
                       <SelectContent>
                         <SelectItem value="male">{t("male")}</SelectItem>
                         <SelectItem value="female">{t("female")}</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="fitnessGoal"
+                render={({ field }) => (
+                  <FormItem className="md:col-span-2">
+                    <FormLabel className="flex items-center gap-1.5">
+                      <Target className="h-4 w-4" />
+                      {t("fitnessGoal")}
+                    </FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <FormControl>
+                        <SelectTrigger data-testid="select-fitness-goal">
+                          <SelectValue placeholder={t("fitnessGoal")} />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="weight_loss">{t("goalWeightLoss")}</SelectItem>
+                        <SelectItem value="maintain">{t("goalMaintain")}</SelectItem>
+                        <SelectItem value="muscle_gain">{t("goalMuscleGain")}</SelectItem>
                       </SelectContent>
                     </Select>
                     <FormMessage />

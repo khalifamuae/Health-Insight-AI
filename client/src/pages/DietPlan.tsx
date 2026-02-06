@@ -1,11 +1,12 @@
 import { useState } from "react";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { MedicalDisclaimer } from "@/components/MedicalDisclaimer";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { apiRequest } from "@/lib/queryClient";
+import type { UserProfile } from "@shared/schema";
 import {
   Loader2,
   UtensilsCrossed,
@@ -18,11 +19,18 @@ import {
   ArrowDown,
   Salad,
   RefreshCw,
+  Flame,
+  Target,
+  ShieldAlert,
+  Beef,
+  Wheat,
+  Droplets,
 } from "lucide-react";
 
 interface MealItem {
   name: string;
   description: string;
+  calories: number;
   benefits: string;
 }
 
@@ -35,6 +43,18 @@ interface Deficiency {
 
 interface DietPlanData {
   summary: string;
+  goalDescription: string;
+  calories: {
+    bmr: number;
+    tdee: number;
+    target: number;
+    deficit_or_surplus: number;
+  };
+  macros: {
+    protein: { grams: number; percentage: number };
+    carbs: { grams: number; percentage: number };
+    fats: { grams: number; percentage: number };
+  };
   deficiencies: Deficiency[];
   mealPlan: {
     breakfast: MealItem[];
@@ -51,6 +71,10 @@ export default function DietPlan() {
   const isArabic = i18n.language === "ar";
   const [plan, setPlan] = useState<DietPlanData | null>(null);
 
+  const { data: profile } = useQuery<UserProfile>({
+    queryKey: ["/api/profile"],
+  });
+
   const generateMutation = useMutation({
     mutationFn: async () => {
       const res = await apiRequest("POST", "/api/diet-plan", {
@@ -62,6 +86,12 @@ export default function DietPlan() {
       setPlan(data);
     },
   });
+
+  const goalLabels: Record<string, string> = {
+    weight_loss: t("goalWeightLoss"),
+    maintain: t("goalMaintain"),
+    muscle_gain: t("goalMuscleGain"),
+  };
 
   const mealSections = plan
     ? [
@@ -92,6 +122,15 @@ export default function DietPlan() {
               <p className="text-sm text-muted-foreground mt-1">
                 {t("dietPlanDescription")}
               </p>
+              {profile?.fitnessGoal && (
+                <div className="mt-3 flex items-center justify-center gap-2">
+                  <Target className="h-4 w-4 text-primary" />
+                  <span className="text-sm font-medium">{t("fitnessGoal")}:</span>
+                  <Badge variant="secondary" data-testid="badge-current-goal">
+                    {goalLabels[profile.fitnessGoal] || profile.fitnessGoal}
+                  </Badge>
+                </div>
+              )}
             </div>
             <Button
               onClick={() => generateMutation.mutate()}
@@ -123,8 +162,73 @@ export default function DietPlan() {
           <Card>
             <CardContent className="p-4">
               <p className="text-sm leading-relaxed" data-testid="text-diet-summary">{plan.summary}</p>
+              {plan.goalDescription && (
+                <div className="mt-2 flex items-start gap-2">
+                  <Target className="h-4 w-4 text-primary mt-0.5 shrink-0" />
+                  <p className="text-sm text-muted-foreground">{plan.goalDescription}</p>
+                </div>
+              )}
             </CardContent>
           </Card>
+
+          <Card className="border-orange-200 dark:border-orange-800/40" data-testid="card-nutrition-disclaimer">
+            <CardContent className="p-4 flex items-start gap-3">
+              <ShieldAlert className="h-5 w-5 text-orange-500 shrink-0 mt-0.5" />
+              <p className="text-sm text-muted-foreground leading-relaxed">
+                {t("nutritionDisclaimer")}
+              </p>
+            </CardContent>
+          </Card>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3" data-testid="section-calories-macros">
+            <Card>
+              <CardContent className="p-4 text-center">
+                <Flame className="h-5 w-5 text-orange-500 mx-auto mb-1" />
+                <p className="text-xs text-muted-foreground">{t("targetCalories")}</p>
+                <p className="text-xl font-bold" data-testid="text-target-calories">{plan.calories.target}</p>
+                <p className="text-xs text-muted-foreground">{t("kcalPerDay")}</p>
+                {plan.calories.deficit_or_surplus !== 0 && (
+                  <Badge variant={plan.calories.deficit_or_surplus < 0 ? "destructive" : "secondary"} className="mt-1 text-xs">
+                    {plan.calories.deficit_or_surplus > 0 ? "+" : ""}{plan.calories.deficit_or_surplus} {t("kcal")}
+                  </Badge>
+                )}
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardContent className="p-4 text-center">
+                <div className="flex items-center justify-center gap-4">
+                  <div className="text-center">
+                    <Beef className="h-4 w-4 text-red-500 mx-auto mb-0.5" />
+                    <p className="text-xs text-muted-foreground">{t("protein")}</p>
+                    <p className="text-sm font-bold" data-testid="text-protein">{plan.macros.protein.grams}{t("gram")}</p>
+                    <p className="text-[10px] text-muted-foreground">{plan.macros.protein.percentage}%</p>
+                  </div>
+                  <div className="text-center">
+                    <Wheat className="h-4 w-4 text-amber-500 mx-auto mb-0.5" />
+                    <p className="text-xs text-muted-foreground">{t("carbs")}</p>
+                    <p className="text-sm font-bold" data-testid="text-carbs">{plan.macros.carbs.grams}{t("gram")}</p>
+                    <p className="text-[10px] text-muted-foreground">{plan.macros.carbs.percentage}%</p>
+                  </div>
+                  <div className="text-center">
+                    <Droplets className="h-4 w-4 text-blue-500 mx-auto mb-0.5" />
+                    <p className="text-xs text-muted-foreground">{t("fats")}</p>
+                    <p className="text-sm font-bold" data-testid="text-fats">{plan.macros.fats.grams}{t("gram")}</p>
+                    <p className="text-[10px] text-muted-foreground">{plan.macros.fats.percentage}%</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardContent className="p-4 text-center">
+                <Target className="h-5 w-5 text-primary mx-auto mb-1" />
+                <p className="text-xs text-muted-foreground">{t("bmr")}</p>
+                <p className="text-lg font-bold" data-testid="text-bmr">{plan.calories.bmr}</p>
+                <p className="text-xs text-muted-foreground mt-1">{t("tdee")}: {plan.calories.tdee}</p>
+              </CardContent>
+            </Card>
+          </div>
 
           {plan.warnings.length > 0 && (
             <Card className="border-destructive/50">
@@ -188,7 +292,15 @@ export default function DietPlan() {
               <CardContent className="p-4 pt-0 space-y-2">
                 {section.items.map((item, i) => (
                   <div key={i} className="rounded-md bg-muted/50 p-3">
-                    <p className="font-semibold text-sm">{item.name}</p>
+                    <div className="flex items-center justify-between gap-2 flex-wrap">
+                      <p className="font-semibold text-sm">{item.name}</p>
+                      {item.calories > 0 && (
+                        <Badge variant="outline" className="text-xs">
+                          <Flame className="h-3 w-3 me-1 text-orange-500" />
+                          {item.calories} {t("kcal")}
+                        </Badge>
+                      )}
+                    </div>
                     <p className="text-xs text-muted-foreground mt-0.5">{item.description}</p>
                     <p className="text-xs text-green-600 dark:text-green-400 mt-1">{item.benefits}</p>
                   </div>

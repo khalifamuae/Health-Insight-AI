@@ -22,6 +22,7 @@ export const testCategoryEnum = pgEnum("test_category", [
   "special"
 ]);
 export const genderEnum = pgEnum("gender", ["male", "female"]);
+export const fitnessGoalEnum = pgEnum("fitness_goal", ["weight_loss", "maintain", "muscle_gain"]);
 export const pdfStatusEnum = pgEnum("pdf_status", ["pending", "processing", "success", "failed"]);
 
 // User profiles - extends auth users with health data
@@ -32,6 +33,7 @@ export const userProfiles = pgTable("user_profiles", {
   weight: real("weight"),
   height: real("height"),
   gender: genderEnum("gender"),
+  fitnessGoal: fitnessGoalEnum("fitness_goal").default("maintain"),
   profileImagePath: text("profile_image_path"),
   language: varchar("language", { length: 5 }).default("ar"),
   subscriptionPlan: subscriptionPlanEnum("subscription_plan").default("free"),
@@ -207,3 +209,4 @@ export type TestCategory = "vitamins" | "minerals" | "hormones" | "organ_functio
 export type TestStatus = "normal" | "low" | "high";
 export type SubscriptionPlan = "free" | "basic" | "premium";
 export type Gender = "male" | "female";
+export type FitnessGoal = "weight_loss" | "maintain" | "muscle_gain";
