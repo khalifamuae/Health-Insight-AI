@@ -252,6 +252,7 @@ export async function generateDietPlan(userData: UserHealthData): Promise<DietPl
     fish: { en: "Fish", ar: "أسماك" },
     chicken: { en: "Chicken", ar: "دجاج" },
     meat: { en: "Red Meat", ar: "لحوم حمراء" },
+    vegetarian: { en: "Vegetarian (Legumes, Tofu, Lentils)", ar: "نباتي (بقوليات، توفو، عدس)" },
     mixed: { en: "Mixed (all types)", ar: "متنوع (جميع الأنواع)" },
   };
 
@@ -264,6 +265,7 @@ export async function generateDietPlan(userData: UserHealthData): Promise<DietPl
     sweet_potato: { en: "Sweet Potato", ar: "بطاطا حلوة" },
     quinoa: { en: "Quinoa", ar: "كينوا" },
     bulgur: { en: "Bulgur", ar: "برغل" },
+    keto: { en: "Keto (Nuts & Seeds)", ar: "كيتو (مكسرات وبذور)" },
     corn: { en: "Corn", ar: "ذرة" },
     beans: { en: "Beans & Legumes", ar: "بقوليات" },
     fruits: { en: "Fruits", ar: "فواكه" },

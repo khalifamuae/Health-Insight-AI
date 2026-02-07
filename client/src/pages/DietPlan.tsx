@@ -224,6 +224,7 @@ export default function DietPlan() {
     { key: "fish", labelKey: "proteinFish" },
     { key: "chicken", labelKey: "proteinChicken" },
     { key: "meat", labelKey: "proteinMeat" },
+    { key: "vegetarian", labelKey: "proteinVegetarian" },
   ];
 
   const carbOptions = [
@@ -235,6 +236,7 @@ export default function DietPlan() {
     { key: "sweet_potato", labelKey: "carbSweetPotato" },
     { key: "quinoa", labelKey: "carbQuinoa" },
     { key: "bulgur", labelKey: "carbBulgur" },
+    { key: "keto", labelKey: "carbKeto" },
     { key: "corn", labelKey: "carbCorn" },
     { key: "beans", labelKey: "carbBeans" },
     { key: "fruits", labelKey: "carbFruits" },
