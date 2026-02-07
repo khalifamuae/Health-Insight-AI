@@ -510,6 +510,12 @@ export async function registerRoutes(
       const job = await storage.createDietPlanJob(userId, language);
 
       const profile = await storage.getUserProfile(userId);
+      
+      if (!profile?.weight || !profile?.height || !profile?.age || !profile?.gender) {
+        await storage.updateDietPlanJob(job.id, { status: "failed", error: "MISSING_PROFILE_DATA" });
+        return res.status(400).json({ error: "MISSING_PROFILE_DATA", message: language === "ar" ? "يرجى إكمال بيانات الملف الشخصي (الوزن، الطول، العمر، الجنس) قبل إنشاء خطة غذائية" : "Please complete your profile data (weight, height, age, gender) before generating a diet plan" });
+      }
+
       const tests = await storage.getTestResultsByUser(userId);
       const definitions = await storage.getTestDefinitions();
       const defMap = new Map(definitions.map(d => [d.id, d]));

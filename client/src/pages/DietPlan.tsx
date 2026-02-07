@@ -193,13 +193,28 @@ export default function DietPlan() {
         proteinPreferences: mealPreference === "vegetarian" ? [] : selectedProteins,
         carbPreferences: mealPreference === "keto" ? [] : selectedCarbs,
       });
-      const res = await apiRequest("POST", "/api/diet-plan", {
-        language: i18n.language,
+      const res = await fetch("/api/diet-plan", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ language: i18n.language }),
+        credentials: "include",
       });
-      return res.json();
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.message || t("dietPlanError"));
+      }
+      return data;
     },
     onSuccess: (data: { jobId: string; status: string }) => {
       startJob(data.jobId);
+    },
+    onError: (error: Error) => {
+      setShowQuestionnaire(false);
+      setStep("disclaimer");
+      toast({
+        title: error.message || t("dietPlanError"),
+        variant: "destructive",
+      });
     },
   });
 

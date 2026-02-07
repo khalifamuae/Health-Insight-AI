@@ -733,8 +733,11 @@ Requirements:
       conditionTips: parsed.conditionTips || [],
       references: parsed.references && parsed.references.length > 0 ? parsed.references : defaultReferences,
     };
-  } catch (error) {
-    console.error("Failed to parse diet plan response:", content);
+  } catch (error: any) {
+    if (error?.message === "DIET_PLAN_INCOMPLETE") {
+      throw error;
+    }
+    console.error("Failed to parse diet plan response:", content?.slice(0, 500));
     throw new Error("DIET_PLAN_PARSE_ERROR");
   }
 }
