@@ -42,6 +42,7 @@ import {
   TrendingUp,
   BookOpen,
   Save,
+  Info,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
@@ -809,6 +810,11 @@ export default function DietPlan() {
             </CardContent>
           </Card>
         )}
+
+        <div className="flex items-center gap-2 rounded-md bg-primary/10 p-3" data-testid="note-choose-one-meal">
+          <Info className="h-4 w-4 text-primary shrink-0" />
+          <p className="text-xs font-medium text-primary">{t("chooseOneMealNote")}</p>
+        </div>
 
         {mealSections.map((section) => (
           <Card key={section.key}>

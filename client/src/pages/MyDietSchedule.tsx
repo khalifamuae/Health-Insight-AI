@@ -265,6 +265,11 @@ export default function MyDietSchedule() {
           </Card>
         )}
 
+        <div className="flex items-center gap-2 rounded-md bg-primary/10 p-2.5">
+          <Info className="h-3.5 w-3.5 text-primary shrink-0" />
+          <p className="text-[11px] font-medium text-primary">{t("chooseOneMealNote")}</p>
+        </div>
+
         {mealSections.map((section) => (
           <Card key={section.key}>
             <CardHeader className="pb-2 p-3">
