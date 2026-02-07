@@ -108,6 +108,10 @@ function getMacroTargets(targetCalories: number, goal: string, preference: strin
     proteinPerKg = 1.8;
     fatPercentage = 0.50;
     minCarbGrams = Math.round(weight * 1.5);
+  } else if (preference === "keto") {
+    proteinPerKg = 1.6;
+    fatPercentage = 0.70;
+    minCarbGrams = Math.round(weight * 0.3);
   } else if (preference === "vegetarian") {
     proteinPerKg = 1.4;
     fatPercentage = 0.30;
@@ -136,7 +140,7 @@ function getMacroTargets(targetCalories: number, goal: string, preference: strin
   let carbCalories = targetCalories - proteinCalories - fatCalories;
   let carbGrams = Math.round(Math.max(carbCalories, 0) / 4);
 
-  if (preference === "low_carb" && carbGrams < minCarbGrams) {
+  if ((preference === "low_carb" || preference === "keto") && carbGrams < minCarbGrams) {
     carbGrams = minCarbGrams;
     carbCalories = carbGrams * 4;
     const remaining = targetCalories - proteinCalories - carbCalories;
@@ -202,10 +206,12 @@ export async function generateDietPlan(userData: UserHealthData): Promise<DietPl
   const currentProteinPerKg = mealPreference === "high_protein"
     ? (goal === "muscle_gain" ? 2.4 : 2.2)
     : mealPreference === "low_carb" ? 1.8
+    : mealPreference === "keto" ? 1.6
     : mealPreference === "vegetarian" ? 1.4
     : goal === "weight_loss" ? 2.0
     : goal === "muscle_gain" ? 2.2 : 1.6;
-  const currentMinCarbGrams = mealPreference === "low_carb" ? Math.round(weight * 1.5) : 0;
+  const currentMinCarbGrams = mealPreference === "keto" ? Math.round(weight * 0.3)
+    : mealPreference === "low_carb" ? Math.round(weight * 1.5) : 0;
 
   const bmi = (weight / Math.pow(height / 100, 2)).toFixed(1);
   const bmiCategory = parseFloat(bmi) < 18.5 ? "underweight" : parseFloat(bmi) < 25 ? "healthy" : parseFloat(bmi) < 30 ? "overweight" : "obese";
@@ -237,6 +243,7 @@ export async function generateDietPlan(userData: UserHealthData): Promise<DietPl
     high_protein: { en: "High Protein", ar: "عالية البروتين" },
     balanced: { en: "Balanced", ar: "متوازنة" },
     low_carb: { en: "Low Carb", ar: "لو-كارب" },
+    keto: { en: "Keto", ar: "كيتو" },
     vegetarian: { en: "Vegetarian", ar: "نباتية" },
     custom_macros: { en: "Custom Macros", ar: "ماكروز مخصصة" },
   };
@@ -400,7 +407,8 @@ ${toneInstruction}
 - ${goal === "maintain" ? "ركز على التوازن بين العناصر الغذائية وتعديل النواقص من خلال الطعام" : ""}
 - ${mealPreference === "high_protein" ? "⚠️ نظام عالي البروتين: ركز على بروتين بنسبة " + macros.protein.percentage + "% من السعرات (" + macros.protein.grams + " جرام/يوم = " + currentProteinPerKg + " جرام/كجم من وزن الجسم). وزّع البروتين بالتساوي على جميع الوجبات (30-50 جرام لكل وجبة رئيسية)" : ""}
 - ${mealPreference === "low_carb" ? "⚠️ نظام منخفض الكربوهيدرات (لو كارب): الكاربوهيدرات محددة بـ " + macros.carbs.grams + " جرام/يوم فقط وهي أقل نسبة آمنة يحتاجها الجسم (~" + currentMinCarbGrams + " جرام كحد أدنى = 1.5 جرام/كجم). عوّض السعرات المتبقية بالدهون الصحية (" + macros.fats.percentage + "%) والبروتين" : ""}
-- ${mealPreference === "balanced" || mealPreference === "custom_macros" || (!["high_protein", "low_carb", "vegetarian"].includes(mealPreference)) ? "نظام متوازن: وزّع العناصر الغذائية بشكل متوازن - بروتين " + macros.protein.percentage + "%، كربوهيدرات " + macros.carbs.percentage + "%، دهون " + macros.fats.percentage + "%" : ""}
+- ${mealPreference === "keto" ? "⚠️ نظام كيتو: الكربوهيدرات منخفضة جداً " + macros.carbs.grams + " جرام/يوم (~" + macros.carbs.percentage + "% فقط) لإدخال الجسم في حالة الكيتوسيز. الدهون الصحية هي المصدر الرئيسي للطاقة (" + macros.fats.percentage + "% = " + macros.fats.grams + " جرام/يوم). ركز على: زيت الزيتون، الأفوكادو، المكسرات، الزبدة، جبن كامل الدسم. تجنب تماماً: الأرز، الخبز، المعكرونة، البطاطس، السكريات، الفواكه عالية السكر. الخضروات المسموحة: ورقية فقط (سبانخ، خس، بروكلي، كوسا، خيار)" : ""}
+- ${mealPreference === "balanced" || mealPreference === "custom_macros" || (!["high_protein", "low_carb", "keto", "vegetarian"].includes(mealPreference)) ? "نظام متوازن: وزّع العناصر الغذائية بشكل متوازن - بروتين " + macros.protein.percentage + "%، كربوهيدرات " + macros.carbs.percentage + "%، دهون " + macros.fats.percentage + "%" : ""}
 - ${mealPreference === "vegetarian" ? "جميع الوجبات نباتية - لا لحوم أو دواجن أو أسماك. اعتمد على البقوليات والحبوب والمكسرات كمصادر بروتين" : ""}
 - ركز على الأطعمة التي تحسّن النواقص الموجودة في التحاليل وتساعد على تعويضها طبيعياً من خلال التغذية
 - حلّل نتائج الفحوصات وصمم الوجبات لمعالجة النواقص: إذا كان فيتامين د منخفض أضف أطعمة غنية به، إذا كان الحديد منخفض أضف مصادر حديد طبيعية، وهكذا
@@ -487,7 +495,8 @@ Important instructions:
 - ${goal === "maintain" ? "Focus on balanced nutrition and correcting deficiencies through food" : ""}
 - ${mealPreference === "high_protein" ? "HIGH PROTEIN PLAN: Focus on protein at " + macros.protein.percentage + "% of calories (" + macros.protein.grams + "g/day = " + currentProteinPerKg + "g/kg body weight). Distribute protein evenly across all meals (30-50g per main meal)" : ""}
 - ${mealPreference === "low_carb" ? "LOW CARB PLAN: Carbs limited to " + macros.carbs.grams + "g/day - the minimum safe amount (~" + currentMinCarbGrams + "g minimum = 1.5g/kg). Compensate remaining calories with healthy fats (" + macros.fats.percentage + "%) and protein" : ""}
-- ${mealPreference === "balanced" || mealPreference === "custom_macros" || (!["high_protein", "low_carb", "vegetarian"].includes(mealPreference)) ? "BALANCED PLAN: Distribute nutrients evenly - Protein " + macros.protein.percentage + "%, Carbs " + macros.carbs.percentage + "%, Fats " + macros.fats.percentage + "%" : ""}
+- ${mealPreference === "keto" ? "KETO PLAN: Very low carbs at " + macros.carbs.grams + "g/day (~" + macros.carbs.percentage + "% only) to put the body into ketosis. Healthy fats are the primary energy source (" + macros.fats.percentage + "% = " + macros.fats.grams + "g/day). Focus on: olive oil, avocado, nuts, butter, full-fat cheese. STRICTLY AVOID: rice, bread, pasta, potatoes, sugars, high-sugar fruits. Allowed vegetables: leafy only (spinach, lettuce, broccoli, zucchini, cucumber)" : ""}
+- ${mealPreference === "balanced" || mealPreference === "custom_macros" || (!["high_protein", "low_carb", "keto", "vegetarian"].includes(mealPreference)) ? "BALANCED PLAN: Distribute nutrients evenly - Protein " + macros.protein.percentage + "%, Carbs " + macros.carbs.percentage + "%, Fats " + macros.fats.percentage + "%" : ""}
 - ${mealPreference === "vegetarian" ? "All meals must be vegetarian - no meat, poultry, or fish. Rely on legumes, grains, and nuts as protein sources" : ""}
 - Focus on foods that address deficiencies found in lab results and compensate naturally through nutrition
 - Analyze test results and design meals to treat deficiencies: if Vitamin D is low add foods rich in it, if Iron is low add natural iron sources, and so on

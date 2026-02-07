@@ -174,7 +174,7 @@ export default function DietPlan() {
         hasAllergies: hasAllergies || false,
         allergies: hasAllergies ? selectedAllergies : [],
         proteinPreferences: mealPreference === "vegetarian" ? [] : selectedProteins,
-        carbPreferences: selectedCarbs,
+        carbPreferences: mealPreference === "keto" ? [] : selectedCarbs,
       });
       const res = await apiRequest("POST", "/api/diet-plan", {
         language: i18n.language,
@@ -256,6 +256,7 @@ export default function DietPlan() {
     { key: "high_protein", labelKey: "prefHighProtein", descKey: "prefHighProteinDesc", icon: Beef, recommended: true, macroRanges: { protein: "40-50%", carbs: "35-40%", fats: "10-25%" } },
     { key: "balanced", labelKey: "prefBalanced", descKey: "prefBalancedDesc", icon: Scale, recommended: false, macroRanges: { protein: "20-35%", carbs: "40-55%", fats: "20-30%" } },
     { key: "low_carb", labelKey: "prefLowCarb", descKey: "prefLowCarbDesc", icon: Leaf, recommended: false, macroRanges: { protein: "25-35%", carbs: "10-20%", fats: "40-50%" } },
+    { key: "keto", labelKey: "prefKeto", descKey: "prefKetoDesc", icon: Flame, recommended: false, macroRanges: { protein: "20-25%", carbs: "5-10%", fats: "65-75%" } },
     { key: "vegetarian", labelKey: "prefVegetarian", descKey: "prefVegetarianDesc", icon: Leaf, recommended: false, macroRanges: { protein: "15-25%", carbs: "45-55%", fats: "20-30%" } },
     { key: "custom_macros", labelKey: "prefCustomMacros", descKey: "prefCustomMacrosDesc", icon: BarChart3, recommended: false, macroRanges: null },
   ];
