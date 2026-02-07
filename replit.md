@@ -16,6 +16,14 @@ BioTrack AI is a comprehensive health tracking application that analyzes PDF lab
 - **Subscription System**: Free (3 PDFs), Basic (20 PDFs), Premium (unlimited)
 
 ## Recent Changes
+- **Health Verification First**: AI analyzes lab results and prioritizes correcting deficiencies BEFORE recommending calorie deficit/surplus
+- **BMR Safety Floor**: System never suggests diet plans below BMR (minimum safe calorie threshold)
+- **Smart Deficit Adjustment**: If severe deficiencies detected (vitamin D, iron, B12, etc.), calorie deficit is automatically reduced from 500 to 200 kcal
+- **Health Summary Section**: New section showing comprehensive health status from lab results
+- **Intake Alignment Section**: New section explaining how current calories align with goal and health status
+- **Food-Lab Linking**: Every meal's benefits field links to specific lab result improvements
+- **References Section**: Scientific references added at end of each diet plan (NHLBI BMI Calculator, Mifflin-St Jeor equation, WHO guidelines)
+- **Medical Safety**: No diagnosis, no drug supplements, guiding language only ("discuss with your doctor")
 - **Diet Plan Questionnaire**: 4-step questionnaire before generating diet plan (activity level, allergies, protein preference, meal preference)
 - **Protein Preference**: New question asking user if they prefer fish, chicken, red meat, or mixed - AI uses this to customize meals
 - **3 Meal Options**: Each meal (breakfast, lunch, dinner) provides 3 varied options for daily rotation

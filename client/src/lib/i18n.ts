@@ -194,6 +194,11 @@ const resources = {
       supplementsTitle: "Suggested Supplements",
       supplementDuration: "Duration",
       doctorFollowUp: "Doctor Follow-up",
+      healthSummaryTitle: "Health Status Summary",
+      intakeAlignmentTitle: "Intake Alignment with Your Goal",
+      referencesTitle: "References & Sources",
+      bmrSafetyNote: "BMR is your minimum safe calorie threshold",
+      deficitReduced: "Deficit reduced due to nutritional deficiencies",
 
       // Questionnaire
       questStep: "Step",
@@ -461,6 +466,11 @@ const resources = {
       supplementsTitle: "مكملات غذائية مقترحة",
       supplementDuration: "المدة",
       doctorFollowUp: "متابعة مع الطبيب",
+      healthSummaryTitle: "ملخص الحالة الصحية",
+      intakeAlignmentTitle: "مدى توافق الأكل مع الهدف",
+      referencesTitle: "المراجع والمصادر",
+      bmrSafetyNote: "BMR هو الحد الأدنى الآمن للسعرات",
+      deficitReduced: "تم تخفيف العجز الحراري بسبب نواقص غذائية",
 
       // Questionnaire
       questStep: "خطوة",

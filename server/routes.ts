@@ -513,6 +513,7 @@ export async function registerRoutes(
       const testResults = Array.from(latestByTest.values()).map(t => {
         const def = defMap.get(t.testId);
         return {
+          testId: t.testId,
           testName: language === "ar" ? (def?.nameAr || t.testId) : (def?.nameEn || t.testId),
           value: t.value,
           status: t.status || "normal",

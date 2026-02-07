@@ -38,6 +38,9 @@ import {
   Ban,
   Fish,
   Pill,
+  Stethoscope,
+  TrendingUp,
+  BookOpen,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -72,6 +75,7 @@ interface ConditionTip {
 }
 
 interface DietPlanData {
+  healthSummary: string;
   summary: string;
   goalDescription: string;
   calories: {
@@ -85,6 +89,7 @@ interface DietPlanData {
     carbs: { grams: number; percentage: number };
     fats: { grams: number; percentage: number };
   };
+  intakeAlignment: string;
   deficiencies: Deficiency[];
   supplements: Supplement[];
   mealPlan: {
@@ -96,6 +101,7 @@ interface DietPlanData {
   tips: string[];
   warnings: string[];
   conditionTips: ConditionTip[];
+  references: string[];
 }
 
 type QuestionnaireStep = "disclaimer" | "activity" | "allergy" | "allergySelect" | "proteinPref" | "carbPref" | "preference" | "generating";
@@ -621,6 +627,20 @@ export default function DietPlan() {
           </CardContent>
         </Card>
 
+        {plan.healthSummary && (
+          <Card data-testid="section-health-summary">
+            <CardHeader className="pb-2 p-4">
+              <CardTitle className="text-sm flex items-center gap-2">
+                <Stethoscope className="h-4 w-4 text-primary" />
+                {t("healthSummaryTitle")}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-4 pt-0">
+              <p className="text-sm leading-relaxed text-muted-foreground" data-testid="text-health-summary">{plan.healthSummary}</p>
+            </CardContent>
+          </Card>
+        )}
+
         <Card>
           <CardContent className="p-4">
             <p className="text-sm leading-relaxed" data-testid="text-diet-summary">{plan.summary}</p>
@@ -682,6 +702,20 @@ export default function DietPlan() {
             </CardContent>
           </Card>
         </div>
+
+        {plan.intakeAlignment && (
+          <Card data-testid="section-intake-alignment">
+            <CardHeader className="pb-2 p-4">
+              <CardTitle className="text-sm flex items-center gap-2">
+                <TrendingUp className="h-4 w-4 text-primary" />
+                {t("intakeAlignmentTitle")}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-4 pt-0">
+              <p className="text-sm leading-relaxed text-muted-foreground" data-testid="text-intake-alignment">{plan.intakeAlignment}</p>
+            </CardContent>
+          </Card>
+        )}
 
         {plan.warnings.length > 0 && (
           <Card className="border-orange-200 dark:border-orange-800/40">
@@ -853,6 +887,27 @@ export default function DietPlan() {
                   <li key={i} className="text-sm flex items-start gap-2">
                     <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-primary shrink-0" />
                     {tip}
+                  </li>
+                ))}
+              </ul>
+            </CardContent>
+          </Card>
+        )}
+
+        {plan.references && plan.references.length > 0 && (
+          <Card data-testid="section-references">
+            <CardHeader className="pb-2 p-4">
+              <CardTitle className="text-sm flex items-center gap-2 text-muted-foreground">
+                <BookOpen className="h-4 w-4" />
+                {t("referencesTitle")}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-4 pt-0">
+              <ul className="space-y-1">
+                {plan.references.map((ref, i) => (
+                  <li key={i} className="text-xs text-muted-foreground flex items-start gap-2">
+                    <span className="mt-1 text-[10px] font-mono shrink-0">[{i + 1}]</span>
+                    {ref}
                   </li>
                 ))}
               </ul>
