@@ -8,6 +8,7 @@ import {
   reminders,
   uploadedPdfs,
   savedDietPlans,
+  dietPlanJobs,
   type User,
   type UpsertUser,
   type UserProfile,
@@ -21,6 +22,7 @@ import {
   type InsertUploadedPdf,
   type TestResultWithDefinition,
   type SavedDietPlan,
+  type DietPlanJob,
 } from "@shared/schema";
 
 export interface IStorage {
@@ -263,6 +265,45 @@ export class DatabaseStorage implements IStorage {
     await db
       .delete(savedDietPlans)
       .where(and(eq(savedDietPlans.id, id), eq(savedDietPlans.userId, userId)));
+  }
+
+  async createDietPlanJob(userId: string, language: string): Promise<DietPlanJob> {
+    const [job] = await db
+      .insert(dietPlanJobs)
+      .values({ userId, language, status: "pending" })
+      .returning();
+    return job;
+  }
+
+  async getDietPlanJob(id: string, userId: string): Promise<DietPlanJob | null> {
+    const [job] = await db
+      .select()
+      .from(dietPlanJobs)
+      .where(and(eq(dietPlanJobs.id, id), eq(dietPlanJobs.userId, userId)));
+    return job || null;
+  }
+
+  async getLatestPendingJob(userId: string): Promise<DietPlanJob | null> {
+    const [job] = await db
+      .select()
+      .from(dietPlanJobs)
+      .where(and(eq(dietPlanJobs.userId, userId), eq(dietPlanJobs.status, "pending")))
+      .orderBy(desc(dietPlanJobs.createdAt))
+      .limit(1);
+    return job || null;
+  }
+
+  async updateDietPlanJob(id: string, updates: { status?: string; planData?: string; error?: string }): Promise<DietPlanJob | null> {
+    const updateData: Record<string, unknown> = { ...updates };
+    if (updates.status === "completed" || updates.status === "failed") {
+      updateData.completedAt = new Date();
+    }
+    const [updated] = await db
+      .update(dietPlanJobs)
+      .set(updateData)
+      .where(eq(dietPlanJobs.id, id))
+      .returning();
+    return updated || null;
   }
 }
 

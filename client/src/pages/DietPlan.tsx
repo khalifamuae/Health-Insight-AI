@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -46,6 +46,7 @@ import {
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
+import { useDietPlanJob } from "@/context/DietPlanJobContext";
 
 interface MealItem {
   name: string;
@@ -135,6 +136,7 @@ export default function DietPlan() {
   const [mealPreference, setMealPreference] = useState<string>("");
   const [selectedProteins, setSelectedProteins] = useState<string[]>([]);
   const [selectedCarbs, setSelectedCarbs] = useState<string[]>([]);
+  const { isGenerating, completedPlan, startJob, clearCompletedPlan } = useDietPlanJob();
 
   const { data: profile } = useQuery<UserProfile>({
     queryKey: ["/api/profile"],
@@ -166,6 +168,21 @@ export default function DietPlan() {
     },
   });
 
+  useEffect(() => {
+    if (completedPlan) {
+      setPlan(completedPlan);
+      setShowQuestionnaire(false);
+      clearCompletedPlan();
+    }
+  }, [completedPlan, clearCompletedPlan]);
+
+  useEffect(() => {
+    if (isGenerating && !showQuestionnaire) {
+      setShowQuestionnaire(true);
+      setStep("generating");
+    }
+  }, [isGenerating]);
+
   const generateMutation = useMutation({
     mutationFn: async () => {
       await saveMutation.mutateAsync({
@@ -181,9 +198,8 @@ export default function DietPlan() {
       });
       return res.json();
     },
-    onSuccess: (data) => {
-      setPlan(data);
-      setShowQuestionnaire(false);
+    onSuccess: (data: { jobId: string; status: string }) => {
+      startJob(data.jobId);
     },
   });
 
@@ -613,9 +629,15 @@ export default function DietPlan() {
 
         {step === "generating" && (
           <Card>
-            <CardContent className="py-12 text-center space-y-3">
+            <CardContent className="py-12 text-center space-y-4">
               <Loader2 className="h-10 w-10 animate-spin text-primary mx-auto" data-testid="loading-diet" />
               <p className="text-sm text-muted-foreground font-medium">{t("generatingDietPlan")}</p>
+              <div className="flex items-center justify-center gap-2 mt-4 px-4">
+                <Info className="h-4 w-4 text-primary shrink-0" />
+                <p className="text-xs text-muted-foreground" data-testid="text-exit-note">
+                  {t("canExitWhileGenerating")}
+                </p>
+              </div>
             </CardContent>
           </Card>
         )}

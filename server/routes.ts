@@ -497,6 +497,8 @@ export async function registerRoutes(
       const userId = req.user.claims.sub;
       const language = req.body.language || "ar";
 
+      const job = await storage.createDietPlanJob(userId, language);
+
       const profile = await storage.getUserProfile(userId);
       const tests = await storage.getTestResultsByUser(userId);
       const definitions = await storage.getTestDefinitions();
@@ -510,7 +512,7 @@ export async function registerRoutes(
         }
       }
 
-      const testResults = Array.from(latestByTest.values()).map(t => {
+      const testResultsData = Array.from(latestByTest.values()).map(t => {
         const def = defMap.get(t.testId);
         return {
           testId: t.testId,
@@ -524,27 +526,64 @@ export async function registerRoutes(
         };
       });
 
-      const dietPlan = await generateDietPlan({
-        weight: profile?.weight ?? null,
-        height: profile?.height ?? null,
-        age: profile?.age ?? null,
-        gender: profile?.gender ?? null,
-        fitnessGoal: profile?.fitnessGoal ?? "maintain",
-        activityLevel: profile?.activityLevel ?? "sedentary",
-        mealPreference: profile?.mealPreference ?? "balanced",
-        hasAllergies: profile?.hasAllergies ?? false,
-        allergies: profile?.allergies ?? [],
-        proteinPreference: profile?.proteinPreference ?? "mixed",
-        proteinPreferences: profile?.proteinPreferences ?? [],
-        carbPreferences: profile?.carbPreferences ?? [],
-        language,
-        testResults,
-      });
+      (async () => {
+        try {
+          const dietPlan = await generateDietPlan({
+            weight: profile?.weight ?? null,
+            height: profile?.height ?? null,
+            age: profile?.age ?? null,
+            gender: profile?.gender ?? null,
+            fitnessGoal: profile?.fitnessGoal ?? "maintain",
+            activityLevel: profile?.activityLevel ?? "sedentary",
+            mealPreference: profile?.mealPreference ?? "balanced",
+            hasAllergies: profile?.hasAllergies ?? false,
+            allergies: profile?.allergies ?? [],
+            proteinPreference: profile?.proteinPreference ?? "mixed",
+            proteinPreferences: profile?.proteinPreferences ?? [],
+            carbPreferences: profile?.carbPreferences ?? [],
+            language,
+            testResults: testResultsData,
+          });
 
-      res.json(dietPlan);
+          await storage.updateDietPlanJob(job.id, {
+            status: "completed",
+            planData: JSON.stringify(dietPlan),
+          });
+          console.log(`Diet plan job ${job.id} completed successfully`);
+        } catch (error) {
+          console.error(`Diet plan job ${job.id} failed:`, error);
+          await storage.updateDietPlanJob(job.id, {
+            status: "failed",
+            error: error instanceof Error ? error.message : "Unknown error",
+          });
+        }
+      })();
+
+      res.json({ jobId: job.id, status: "pending" });
     } catch (error) {
-      console.error("Error generating diet plan:", error);
-      res.status(500).json({ error: "Failed to generate diet plan" });
+      console.error("Error starting diet plan job:", error);
+      res.status(500).json({ error: "Failed to start diet plan generation" });
+    }
+  });
+
+  app.get("/api/diet-plan/job/:jobId", isAuthenticated, async (req: any, res: Response) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { jobId } = req.params;
+      const job = await storage.getDietPlanJob(jobId, userId);
+      if (!job) {
+        return res.status(404).json({ error: "Job not found" });
+      }
+      if (job.status === "completed" && job.planData) {
+        res.json({ status: "completed", plan: JSON.parse(job.planData) });
+      } else if (job.status === "failed") {
+        res.json({ status: "failed", error: job.error });
+      } else {
+        res.json({ status: "pending" });
+      }
+    } catch (error) {
+      console.error("Error checking diet plan job:", error);
+      res.status(500).json({ error: "Failed to check job status" });
     }
   });
 

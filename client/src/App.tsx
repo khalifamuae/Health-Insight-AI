@@ -7,6 +7,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { BottomNav } from "@/components/BottomNav";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { LanguageToggle } from "@/components/LanguageToggle";
+import { DietPlanJobProvider } from "@/context/DietPlanJobContext";
 import {
   Sheet,
   SheetContent,
@@ -137,19 +138,21 @@ function AppContent() {
   }
 
   return (
-    <AuthenticatedLayout>
-      <Switch>
-        <Route path="/" component={Dashboard} />
-        <Route path="/tests" component={MyTests} />
-        <Route path="/compare" component={Compare} />
-        <Route path="/upload" component={Upload} />
-        <Route path="/diet" component={DietPlan} />
-        <Route path="/my-diet-schedule" component={MyDietSchedule} />
-        <Route path="/profile" component={Profile} />
-        <Route path="/reminders" component={Dashboard} />
-        <Route component={NotFound} />
-      </Switch>
-    </AuthenticatedLayout>
+    <DietPlanJobProvider>
+      <AuthenticatedLayout>
+        <Switch>
+          <Route path="/" component={Dashboard} />
+          <Route path="/tests" component={MyTests} />
+          <Route path="/compare" component={Compare} />
+          <Route path="/upload" component={Upload} />
+          <Route path="/diet" component={DietPlan} />
+          <Route path="/my-diet-schedule" component={MyDietSchedule} />
+          <Route path="/profile" component={Profile} />
+          <Route path="/reminders" component={Dashboard} />
+          <Route component={NotFound} />
+        </Switch>
+      </AuthenticatedLayout>
+    </DietPlanJobProvider>
   );
 }
 
