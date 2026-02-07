@@ -430,32 +430,33 @@ ${hasAllergies && allergyList ? `- ⚠️ حساسية المستخدم: ${aller
 - استخدم لغة إرشادية غير علاجية (مثل: "يمكنك مناقشة مع طبيبك"، "قد يكون من المفيد")
 - جميع الردود يجب أن تكون باللغة العربية
 
+⚠️⚠️⚠️ قاعدة حرجة جداً: يُمنع منعاً باتاً استخدام "..." أو أي اختصار في أي حقل. كل خيار من الـ 28 وجبة يجب أن يحتوي على بيانات كاملة وحقيقية في جميع الحقول (name, description, benefits). لا تختصر أبداً. لا تكتب "..." بدل الوصف أو الفوائد.
+- حقل "name" يجب أن يكون اسم وصفي للوجبة (مثل: "شوفان بالموز والعسل") وليس "خيار 1" أو "خيار 2"
+- حقل "description" يجب أن يحتوي على جميع المكونات بالجرامات
+- حقل "benefits" يجب أن يذكر الفائدة الصحية المرتبطة بالتحاليل
+
 أرجع JSON بالشكل التالي:
 {
-  "healthSummary": "ملخص شامل للحالة الصحية بناءً على التحاليل: ما هو طبيعي، ما يحتاج تحسين، أي ارتباط بين النتائج",
-  "summary": "ملخص عام إيجابي عن الخطة الغذائية وكيف ستساعد في تحسين الصحة",
+  "healthSummary": "ملخص شامل للحالة الصحية بناءً على التحاليل",
+  "summary": "ملخص عام إيجابي عن الخطة الغذائية",
   "goalDescription": "وصف مختصر للهدف والخطة بأسلوب تحفيزي",
-  "intakeAlignment": "شرح مفصل: هل السعرات المستهدفة تتوافق مع الهدف والحالة الصحية؟ ما يحتاج زيادة وما يحتاج تقليل ولماذا",
+  "intakeAlignment": "شرح مفصل: هل السعرات المستهدفة تتوافق مع الهدف والحالة الصحية",
   "deficiencies": [{"name": "اسم النقص", "current": "القيمة الحالية", "target": "القيمة المستهدفة", "foods": ["طعام 1 (وسبب اختياره)", "طعام 2"]}],
-  "supplements": [{"name": "اسم المكمل", "dosage": "الجرعة المقترحة", "reason": "سبب الحاجة مرتبط بنتيجة التحليل", "duration": "مدة الاستخدام"}],
+  "supplements": [{"name": "اسم المكمل", "dosage": "الجرعة المقترحة", "reason": "سبب الحاجة", "duration": "مدة الاستخدام"}],
   "mealPlan": {
     "breakfast": [
-      {"name": "خيار 1", "description": "60 جرام شوفان، 200 مل حليب...", "calories": 420, "protein": 15, "carbs": 62, "fats": 12, "benefits": "غني بالألياف | يساعد في تحسين مستوى [اسم التحليل]"},
-      {"name": "خيار 2", "description": "...", "calories": 400, "protein": 14, "carbs": 55, "fats": 10, "benefits": "..."},
-      {"name": "خيار 3", "description": "...", "calories": 410, "protein": 16, "carbs": 58, "fats": 11, "benefits": "..."},
-      {"name": "خيار 4", "description": "...", "calories": 420, "protein": 15, "carbs": 60, "fats": 12, "benefits": "..."},
-      {"name": "خيار 5", "description": "...", "calories": 400, "protein": 13, "carbs": 57, "fats": 10, "benefits": "..."},
-      {"name": "خيار 6", "description": "...", "calories": 430, "protein": 17, "carbs": 61, "fats": 11, "benefits": "..."},
-      {"name": "خيار 7", "description": "...", "calories": 410, "protein": 14, "carbs": 59, "fats": 12, "benefits": "..."}
+      {"name": "شوفان بالموز والعسل", "description": "60 جرام شوفان، 200 مل حليب قليل الدسم، موزة واحدة، 15 جرام عسل", "calories": 420, "protein": 15, "carbs": 62, "fats": 12, "benefits": "غني بالألياف يساعد في تحسين مستوى الكولسترول"},
+      {"name": "بيض مسلوق مع خبز أسمر", "description": "3 بيضات مسلوقة، شريحتين خبز أسمر، 50 جرام خيار", "calories": 400, "protein": 24, "carbs": 35, "fats": 18, "benefits": "مصدر ممتاز للبروتين لدعم العضلات"},
+      وهكذا لكل الـ 7 خيارات - كل خيار بأسماء ووصف وفوائد كاملة مختلفة
     ],
-    "lunch": [7 خيارات بنفس التنسيق],
-    "dinner": [7 خيارات بنفس التنسيق],
-    "snacks": [7 خيارات بنفس التنسيق]
+    "lunch": [7 خيارات كاملة بنفس التنسيق - كل خيار ببيانات كاملة],
+    "dinner": [7 خيارات كاملة بنفس التنسيق - كل خيار ببيانات كاملة],
+    "snacks": [7 خيارات كاملة بنفس التنسيق - كل خيار ببيانات كاملة]
   },
   "tips": ["نصيحة مع السبب الصحي"],
-  "warnings": ["ننصحك بمتابعة ... مع طبيبك للاطمئنان"],
-  "conditionTips": [{"condition": "اسم الحالة (بأسلوب إيجابي)", "advice": ["نصيحة 1"], "avoidFoods": ["طعام يفضل تقليله"]}],
-  "references": ["معادلة Mifflin-St Jeor لحساب BMR", "NHLBI BMI Calculator (nhlbi.nih.gov)", "مرجع آخر حسب التوصيات"]
+  "warnings": ["ننصحك بمتابعة X مع طبيبك للاطمئنان"],
+  "conditionTips": [{"condition": "اسم الحالة", "advice": ["نصيحة 1"], "avoidFoods": ["طعام يفضل تقليله"]}],
+  "references": ["معادلة Mifflin-St Jeor لحساب BMR", "NHLBI BMI Calculator", "مرجع آخر"]
 }`
     : `You are a friendly, motivating nutrition expert who works with a medical methodology. Your mission is to design a personalized diet plan based on the user's lab results and physical data.
 
