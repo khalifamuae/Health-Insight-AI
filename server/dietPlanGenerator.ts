@@ -430,12 +430,15 @@ ${hasAllergies && allergyList ? `- ⚠️ حساسية المستخدم: ${aller
 - استخدم لغة إرشادية غير علاجية (مثل: "يمكنك مناقشة مع طبيبك"، "قد يكون من المفيد")
 - جميع الردود يجب أن تكون باللغة العربية
 
-⚠️⚠️⚠️ قاعدة حرجة جداً: يُمنع منعاً باتاً استخدام "..." أو أي اختصار في أي حقل. كل خيار من الـ 28 وجبة يجب أن يحتوي على بيانات كاملة وحقيقية في جميع الحقول (name, description, benefits). لا تختصر أبداً. لا تكتب "..." بدل الوصف أو الفوائد.
-- حقل "name" يجب أن يكون اسم وصفي للوجبة (مثل: "شوفان بالموز والعسل") وليس "خيار 1" أو "خيار 2"
-- حقل "description" يجب أن يحتوي على جميع المكونات بالجرامات
-- حقل "benefits" يجب أن يذكر الفائدة الصحية المرتبطة بالتحاليل
+⚠️⚠️⚠️ قاعدة حرجة جداً:
+1. يُمنع منعاً باتاً استخدام "..." أو أي اختصار في أي حقل
+2. كل خيار من الـ 28 وجبة يجب أن يحتوي على بيانات كاملة في جميع الحقول (name, description, benefits)
+3. حقل "name" = اسم وصفي للوجبة (مثل: "شوفان بالموز والعسل"). يُمنع استخدام "خيار 1" أو "خيار 2"
+4. حقل "description" = جميع المكونات بالجرامات (مثل: "60 جرام شوفان، 200 مل حليب")
+5. حقل "benefits" = الفائدة الصحية المرتبطة بالتحاليل (مثل: "يساعد في تحسين الكولسترول")
+6. المثال أدناه يعرض خيارين فقط للاختصار، لكن يجب كتابة 7 خيارات كاملة لكل وجبة
 
-أرجع JSON بالشكل التالي:
+أرجع JSON بالشكل التالي (المثال يعرض 2 من 7 خيارات - اكتب 7 كاملة):
 {
   "healthSummary": "ملخص شامل للحالة الصحية بناءً على التحاليل",
   "summary": "ملخص عام إيجابي عن الخطة الغذائية",
@@ -446,12 +449,11 @@ ${hasAllergies && allergyList ? `- ⚠️ حساسية المستخدم: ${aller
   "mealPlan": {
     "breakfast": [
       {"name": "شوفان بالموز والعسل", "description": "60 جرام شوفان، 200 مل حليب قليل الدسم، موزة واحدة، 15 جرام عسل", "calories": 420, "protein": 15, "carbs": 62, "fats": 12, "benefits": "غني بالألياف يساعد في تحسين مستوى الكولسترول"},
-      {"name": "بيض مسلوق مع خبز أسمر", "description": "3 بيضات مسلوقة، شريحتين خبز أسمر، 50 جرام خيار", "calories": 400, "protein": 24, "carbs": 35, "fats": 18, "benefits": "مصدر ممتاز للبروتين لدعم العضلات"},
-      وهكذا لكل الـ 7 خيارات - كل خيار بأسماء ووصف وفوائد كاملة مختلفة
+      {"name": "بيض مسلوق مع خبز أسمر", "description": "3 بيضات مسلوقة، شريحتين خبز أسمر، 50 جرام خيار", "calories": 400, "protein": 24, "carbs": 35, "fats": 18, "benefits": "مصدر ممتاز للبروتين لدعم العضلات"}
     ],
-    "lunch": [7 خيارات كاملة بنفس التنسيق - كل خيار ببيانات كاملة],
-    "dinner": [7 خيارات كاملة بنفس التنسيق - كل خيار ببيانات كاملة],
-    "snacks": [7 خيارات كاملة بنفس التنسيق - كل خيار ببيانات كاملة]
+    "lunch": [{"name": "اسم وصفي", "description": "مكونات بالجرامات", "calories": 0, "protein": 0, "carbs": 0, "fats": 0, "benefits": "فائدة صحية"}],
+    "dinner": [{"name": "اسم وصفي", "description": "مكونات بالجرامات", "calories": 0, "protein": 0, "carbs": 0, "fats": 0, "benefits": "فائدة صحية"}],
+    "snacks": [{"name": "اسم وصفي", "description": "مكونات بالجرامات", "calories": 0, "protein": 0, "carbs": 0, "fats": 0, "benefits": "فائدة صحية"}]
   },
   "tips": ["نصيحة مع السبب الصحي"],
   "warnings": ["ننصحك بمتابعة X مع طبيبك للاطمئنان"],
@@ -527,30 +529,33 @@ ${hasAllergies && allergyList ? `- ALLERGY WARNING: User is allergic to: ${aller
 - Use guiding, non-therapeutic language (e.g., "you may discuss with your doctor", "it may be helpful to consider")
 - All responses must be in English
 
-Return JSON in this format:
+CRITICAL RULES:
+1. You MUST NOT use "..." or any abbreviation in any field
+2. Every single one of the 28 meal options MUST have COMPLETE data in ALL fields (name, description, benefits)
+3. "name" = descriptive meal name (e.g., "Oatmeal with Banana and Honey"). NEVER use "Option 1" or "Option 2"
+4. "description" = ALL ingredients with gram weights (e.g., "60g oats, 200ml low-fat milk")
+5. "benefits" = health benefit linked to lab results (e.g., "Helps improve cholesterol levels")
+6. The example below shows only 2 options for brevity, but you MUST write 7 COMPLETE options for each meal
+
+Return JSON in this format (example shows 2 of 7 options - write all 7 complete):
 {
-  "healthSummary": "Comprehensive health status based on lab results: what's normal, what needs improvement, any correlations",
-  "summary": "Positive summary of the diet plan and how it will help improve health",
+  "healthSummary": "Comprehensive health status based on lab results",
+  "summary": "Positive summary of the diet plan",
   "goalDescription": "Brief motivating description of the goal and plan",
-  "intakeAlignment": "Detailed explanation: do target calories align with the goal and health status? What needs to increase/decrease and why",
-  "deficiencies": [{"name": "Deficiency name", "current": "Current value", "target": "Target value", "foods": ["food 1 (reason for choice)", "food 2"]}],
+  "intakeAlignment": "Detailed explanation of calorie alignment with goal and health",
+  "deficiencies": [{"name": "Deficiency name", "current": "Current value", "target": "Target value", "foods": ["food 1 (reason)", "food 2"]}],
   "supplements": [{"name": "Supplement name", "dosage": "Suggested dosage", "reason": "Reason linked to lab result", "duration": "Duration"}],
   "mealPlan": {
     "breakfast": [
-      {"name": "Option 1", "description": "60g oats, 200ml milk...", "calories": 420, "protein": 15, "carbs": 62, "fats": 12, "benefits": "Rich in fiber | Helps improve [specific test name] levels"},
-      {"name": "Option 2", "description": "...", "calories": 400, "protein": 14, "carbs": 55, "fats": 10, "benefits": "..."},
-      {"name": "Option 3", "description": "...", "calories": 410, "protein": 16, "carbs": 58, "fats": 11, "benefits": "..."},
-      {"name": "Option 4", "description": "...", "calories": 420, "protein": 15, "carbs": 60, "fats": 12, "benefits": "..."},
-      {"name": "Option 5", "description": "...", "calories": 400, "protein": 13, "carbs": 57, "fats": 10, "benefits": "..."},
-      {"name": "Option 6", "description": "...", "calories": 430, "protein": 17, "carbs": 61, "fats": 11, "benefits": "..."},
-      {"name": "Option 7", "description": "...", "calories": 410, "protein": 14, "carbs": 59, "fats": 12, "benefits": "..."}
+      {"name": "Oatmeal with Banana and Honey", "description": "60g oats, 200ml low-fat milk, 1 banana, 15g honey", "calories": 420, "protein": 15, "carbs": 62, "fats": 12, "benefits": "Rich in fiber, helps improve cholesterol levels"},
+      {"name": "Boiled Eggs with Brown Toast", "description": "3 boiled eggs, 2 slices brown bread, 50g cucumber", "calories": 400, "protein": 24, "carbs": 35, "fats": 18, "benefits": "Excellent protein source for muscle support"}
     ],
-    "lunch": [7 options in same format],
-    "dinner": [7 options in same format],
-    "snacks": [7 options in same format]
+    "lunch": [{"name": "Descriptive meal name", "description": "ingredients with grams", "calories": 0, "protein": 0, "carbs": 0, "fats": 0, "benefits": "health benefit"}],
+    "dinner": [{"name": "Descriptive meal name", "description": "ingredients with grams", "calories": 0, "protein": 0, "carbs": 0, "fats": 0, "benefits": "health benefit"}],
+    "snacks": [{"name": "Descriptive meal name", "description": "ingredients with grams", "calories": 0, "protein": 0, "carbs": 0, "fats": 0, "benefits": "health benefit"}]
   },
   "tips": ["tip with health reason"],
-  "warnings": ["We recommend following up on ... with your doctor for peace of mind"],
+  "warnings": ["We recommend following up on X with your doctor for peace of mind"],
   "conditionTips": [{"condition": "Condition (positive framing)", "advice": ["tip 1"], "avoidFoods": ["food to reduce"]}],
   "references": ["Mifflin-St Jeor equation for BMR calculation", "NHLBI BMI Calculator (nhlbi.nih.gov)", "other relevant references"]
 }`;
@@ -641,7 +646,7 @@ Requirements:
       { role: "system", content: systemPrompt },
       { role: "user", content: userContent },
     ],
-    max_completion_tokens: 16000,
+    max_completion_tokens: 20000,
     temperature: 0.7,
   });
   console.log(`OpenAI response received in ${((Date.now() - callStart) / 1000).toFixed(1)}s`);
@@ -665,6 +670,49 @@ Requirements:
         "WHO Dietary Guidelines",
       ];
 
+    const isPlaceholder = (val: string) => !val || val === "..." || val === "…" || val.trim().length < 3;
+
+    const cleanMeal = (m: any) => ({
+      name: m.name || "",
+      description: m.description || "",
+      calories: m.calories || 0,
+      protein: m.protein || 0,
+      carbs: m.carbs || 0,
+      fats: m.fats || 0,
+      benefits: m.benefits || "",
+    });
+
+    const sanitizedMealPlan = {
+      breakfast: (parsed.mealPlan?.breakfast || []).map(cleanMeal),
+      lunch: (parsed.mealPlan?.lunch || []).map(cleanMeal),
+      dinner: (parsed.mealPlan?.dinner || []).map(cleanMeal),
+      snacks: (parsed.mealPlan?.snacks || []).map(cleanMeal),
+    };
+
+    let incompleteMeals = 0;
+    for (const [section, meals] of Object.entries(sanitizedMealPlan)) {
+      for (const meal of meals as any[]) {
+        if (isPlaceholder(meal.name) || isPlaceholder(meal.description) || isPlaceholder(meal.benefits)) {
+          incompleteMeals++;
+          console.warn(`Incomplete meal in ${section}: name="${meal.name}", desc="${(meal.description || "").slice(0, 30)}", benefits="${(meal.benefits || "").slice(0, 30)}"`);
+        }
+      }
+    }
+
+    for (const [section, meals] of Object.entries(sanitizedMealPlan)) {
+      if ((meals as any[]).length < 3) {
+        console.error(`REJECTED: ${section} has only ${(meals as any[]).length} options (minimum 3 required)`);
+        throw new Error("DIET_PLAN_INCOMPLETE");
+      }
+    }
+
+    if (incompleteMeals > 7) {
+      console.error(`REJECTED: ${incompleteMeals} out of 28 meal options have incomplete data`);
+      throw new Error("DIET_PLAN_INCOMPLETE");
+    } else if (incompleteMeals > 0) {
+      console.warn(`WARNING: ${incompleteMeals} meal options have incomplete data but within acceptable threshold`);
+    }
+
     return {
       healthSummary: parsed.healthSummary || "",
       summary: parsed.summary || "",
@@ -679,12 +727,7 @@ Requirements:
       intakeAlignment: parsed.intakeAlignment || "",
       deficiencies: parsed.deficiencies || [],
       supplements: parsed.supplements || [],
-      mealPlan: {
-        breakfast: (parsed.mealPlan?.breakfast || []).map((m: any) => ({ ...m, calories: m.calories || 0 })),
-        lunch: (parsed.mealPlan?.lunch || []).map((m: any) => ({ ...m, calories: m.calories || 0 })),
-        dinner: (parsed.mealPlan?.dinner || []).map((m: any) => ({ ...m, calories: m.calories || 0 })),
-        snacks: (parsed.mealPlan?.snacks || []).map((m: any) => ({ ...m, calories: m.calories || 0 })),
-      },
+      mealPlan: sanitizedMealPlan,
       tips: parsed.tips || [],
       warnings: parsed.warnings || [],
       conditionTips: parsed.conditionTips || [],
