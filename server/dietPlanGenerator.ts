@@ -402,7 +402,7 @@ ${toneInstruction}
 تعليمات مهمة:
 - هذا النظام الغذائي يجب أن يكون مصمماً خصيصاً لهذا المستخدم بناءً على: الطول (${height}سم)، الوزن (${weight}كجم)، الجنس (${gender === "male" ? "ذكر" : "أنثى"})، العمر (${age})، الهدف (${goalDescriptions[goal].ar})، ونتائج الفحوصات الطبية
 - صمم الوجبات بحيث تتوافق مع السعرات والماكرو المحدد أعلاه
-- ⚠️⚠️ قاعدة إلزامية: يجب تقديم بالضبط 7 خيارات مختلفة ومتنوعة لكل وجبة (فطور = 7 خيارات، غداء = 7 خيارات، عشاء = 7 خيارات، وجبات خفيفة = 7 خيارات). المجموع = 28 خيار وجبة. هذا شرط أساسي لا يمكن تجاوزه. لكي يختار المستخدم ما يناسبه ويغير يومياً لمدة أسبوع كامل${proteinInstruction}${carbInstruction}
+- ⚠️⚠️ قاعدة إلزامية: يجب تقديم بالضبط 5 خيارات مختلفة ومتنوعة لكل وجبة (فطور = 5 خيارات، غداء = 5 خيارات، عشاء = 5 خيارات، وجبات خفيفة = 5 خيارات). المجموع = 20 خيار وجبة. هذا شرط أساسي لا يمكن تجاوزه. لكي يختار المستخدم ما يناسبه ويغير يومياً${proteinInstruction}${carbInstruction}
 - ⚠️ قاعدة ذهبية: لا تضع أي مكون لم يختره المستخدم. النظام مبني فقط على اختيارات المستخدم من البروتين والكربوهيدرات. إذا لم يختر مصدراً معيناً، لا تدرجه في أي وجبة
 - ${goal === "weight_loss" ? "ركز على وجبات مشبعة ومنخفضة السعرات وغنية بالبروتين والألياف" : ""}
 - ${goal === "muscle_gain" ? "ركز على مصادر غذاء نظيفة وصحية فقط (لا وجبات سريعة، لا دهون مشبعة مفرطة)" : ""}
@@ -432,13 +432,13 @@ ${hasAllergies && allergyList ? `- ⚠️ حساسية المستخدم: ${aller
 
 ⚠️⚠️⚠️ قاعدة حرجة جداً:
 1. يُمنع منعاً باتاً استخدام "..." أو أي اختصار في أي حقل
-2. كل خيار من الـ 28 وجبة يجب أن يحتوي على بيانات كاملة في جميع الحقول (name, description, benefits)
+2. كل خيار من الـ 20 وجبة يجب أن يحتوي على بيانات كاملة في جميع الحقول (name, description, benefits)
 3. حقل "name" = اسم وصفي للوجبة (مثل: "شوفان بالموز والعسل"). يُمنع استخدام "خيار 1" أو "خيار 2"
 4. حقل "description" = جميع المكونات بالجرامات (مثل: "60 جرام شوفان، 200 مل حليب")
 5. حقل "benefits" = الفائدة الصحية المرتبطة بالتحاليل (مثل: "يساعد في تحسين الكولسترول")
-6. المثال أدناه يعرض خيارين فقط للاختصار، لكن يجب كتابة 7 خيارات كاملة لكل وجبة
+6. المثال أدناه يعرض خيارين فقط للاختصار، لكن يجب كتابة 5 خيارات كاملة لكل وجبة
 
-أرجع JSON بالشكل التالي (المثال يعرض 2 من 7 خيارات - اكتب 7 كاملة):
+أرجع JSON بالشكل التالي (المثال يعرض 2 من 5 خيارات - اكتب 5 كاملة):
 {
   "healthSummary": "ملخص شامل للحالة الصحية بناءً على التحاليل",
   "summary": "ملخص عام إيجابي عن الخطة الغذائية",
@@ -501,7 +501,7 @@ ${toneInstruction}
 Important instructions:
 - This diet plan MUST be custom-designed for this specific user based on: Height (${height}cm), Weight (${weight}kg), Gender (${gender}), Age (${age}), Goal (${goalDescriptions[goal].en}), and their lab test results
 - Design meals that align with the calorie and macro targets above
-- MANDATORY: Provide EXACTLY 7 different varied options for each meal (breakfast = 7 options, lunch = 7 options, dinner = 7 options, snacks = 7 options). Total = 28 meal options. This is a NON-NEGOTIABLE requirement. The user needs to choose and rotate daily for an entire week${proteinInstruction}${carbInstruction}
+- MANDATORY: Provide EXACTLY 5 different varied options for each meal (breakfast = 5 options, lunch = 5 options, dinner = 5 options, snacks = 5 options). Total = 20 meal options. This is a NON-NEGOTIABLE requirement. The user needs to choose and rotate daily${proteinInstruction}${carbInstruction}
 - GOLDEN RULE: Do NOT include any ingredient the user did NOT select. The diet plan is built EXCLUSIVELY from the user's protein and carbohydrate choices. If a source was not selected, it MUST NOT appear in any meal
 - ${goal === "weight_loss" ? "Focus on satiating, low-calorie meals rich in protein and fiber" : ""}
 - ${goal === "muscle_gain" ? "Focus on clean, healthy food sources ONLY (no fast food, no excessive saturated fats)" : ""}
@@ -531,13 +531,13 @@ ${hasAllergies && allergyList ? `- ALLERGY WARNING: User is allergic to: ${aller
 
 CRITICAL RULES:
 1. You MUST NOT use "..." or any abbreviation in any field
-2. Every single one of the 28 meal options MUST have COMPLETE data in ALL fields (name, description, benefits)
+2. Every single one of the 20 meal options MUST have COMPLETE data in ALL fields (name, description, benefits)
 3. "name" = descriptive meal name (e.g., "Oatmeal with Banana and Honey"). NEVER use "Option 1" or "Option 2"
 4. "description" = ALL ingredients with gram weights (e.g., "60g oats, 200ml low-fat milk")
 5. "benefits" = health benefit linked to lab results (e.g., "Helps improve cholesterol levels")
-6. The example below shows only 2 options for brevity, but you MUST write 7 COMPLETE options for each meal
+6. The example below shows only 2 options for brevity, but you MUST write 5 COMPLETE options for each meal
 
-Return JSON in this format (example shows 2 of 7 options - write all 7 complete):
+Return JSON in this format (example shows 2 of 5 options - write all 5 complete):
 {
   "healthSummary": "Comprehensive health status based on lab results",
   "summary": "Positive summary of the diet plan",
@@ -706,8 +706,8 @@ Requirements:
       }
     }
 
-    if (incompleteMeals > 7) {
-      console.error(`REJECTED: ${incompleteMeals} out of 28 meal options have incomplete data`);
+    if (incompleteMeals > 4) {
+      console.error(`REJECTED: ${incompleteMeals} out of 20 meal options have incomplete data`);
       throw new Error("DIET_PLAN_INCOMPLETE");
     } else if (incompleteMeals > 0) {
       console.warn(`WARNING: ${incompleteMeals} meal options have incomplete data but within acceptable threshold`);
