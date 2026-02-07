@@ -32,6 +32,8 @@ import {
   AlertTriangle,
   ArrowDown,
   Loader2,
+  Beaker,
+  UtensilsCrossed,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -69,7 +71,7 @@ interface DietPlanData {
   };
   intakeAlignment: string;
   deficiencies: { name: string; current: string; target: string; foods: string[] }[];
-  supplements: { name: string; dosage: string; reason: string; duration: string }[];
+  supplements: { name: string; dosage: string; reason: string; duration: string; foodSources?: string[]; targetLabValue?: string; scientificBasis?: string }[];
   mealPlan: {
     breakfast: MealItem[];
     lunch: MealItem[];
@@ -250,15 +252,45 @@ export default function MyDietSchedule() {
                 <Pill className="h-3.5 w-3.5 text-green-600 dark:text-green-400" />
                 {t("supplementsTitle")}
               </CardTitle>
+              <p className="text-[10px] text-muted-foreground mt-1">{t("supplementsDisclaimer")}</p>
             </CardHeader>
             <CardContent className="p-3 pt-0 space-y-2">
               {plan.supplements.map((s, i) => (
-                <div key={i} className="rounded-md bg-muted/50 p-2 space-y-0.5">
+                <div key={i} className="rounded-md bg-muted/50 p-2.5 space-y-1.5">
                   <div className="flex items-center justify-between gap-2 flex-wrap">
                     <p className="font-semibold text-xs">{s.name}</p>
                     <Badge variant="outline" className="text-[10px]">{s.dosage}</Badge>
                   </div>
                   <p className="text-[10px] text-muted-foreground">{s.reason}</p>
+                  {s.targetLabValue && (
+                    <div className="flex items-center gap-1.5">
+                      <Target className="h-3 w-3 text-blue-500 shrink-0" />
+                      <p className="text-[10px] text-blue-600 dark:text-blue-400">{t("supplementTarget")}: {s.targetLabValue}</p>
+                    </div>
+                  )}
+                  <div className="flex items-center gap-1.5">
+                    <Pill className="h-3 w-3 text-green-500 shrink-0" />
+                    <p className="text-[10px] text-green-600 dark:text-green-400">{t("supplementDuration")}: {s.duration}</p>
+                  </div>
+                  {s.foodSources && s.foodSources.length > 0 && (
+                    <div className="mt-1 space-y-0.5">
+                      <div className="flex items-center gap-1.5">
+                        <UtensilsCrossed className="h-3 w-3 text-orange-500 shrink-0" />
+                        <p className="text-[10px] font-medium">{t("supplementFoodSources")}</p>
+                      </div>
+                      <div className="ps-5 space-y-0.5">
+                        {s.foodSources.map((food, fi) => (
+                          <p key={fi} className="text-[10px] text-muted-foreground">- {food}</p>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  {s.scientificBasis && (
+                    <div className="flex items-center gap-1.5 mt-1">
+                      <Beaker className="h-3 w-3 text-purple-500 shrink-0" />
+                      <p className="text-[10px] text-purple-600 dark:text-purple-400">{s.scientificBasis}</p>
+                    </div>
+                  )}
                 </div>
               ))}
             </CardContent>

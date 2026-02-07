@@ -43,6 +43,8 @@ import {
   BookOpen,
   Save,
   Info,
+  Beaker,
+  UtensilsCrossed,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
@@ -70,6 +72,9 @@ interface Supplement {
   dosage: string;
   reason: string;
   duration: string;
+  foodSources: string[];
+  targetLabValue: string;
+  scientificBasis: string;
 }
 
 interface ConditionTip {
@@ -835,16 +840,45 @@ export default function DietPlan() {
                 <Pill className="h-4 w-4 text-green-600 dark:text-green-400" />
                 {t("supplementsTitle")}
               </CardTitle>
+              <p className="text-[11px] text-muted-foreground mt-1">{t("supplementsDisclaimer")}</p>
             </CardHeader>
             <CardContent className="p-4 pt-0 space-y-3">
               {plan.supplements.map((s, i) => (
-                <div key={i} className="rounded-md bg-muted/50 p-3 space-y-1">
+                <div key={i} className="rounded-md bg-muted/50 p-3 space-y-2" data-testid={`supplement-item-${i}`}>
                   <div className="flex items-center justify-between gap-2 flex-wrap">
                     <p className="font-semibold text-sm">{s.name}</p>
                     <Badge variant="outline" className="text-xs">{s.dosage}</Badge>
                   </div>
                   <p className="text-xs text-muted-foreground">{s.reason}</p>
-                  <p className="text-xs text-green-600 dark:text-green-400">{t("supplementDuration")}: {s.duration}</p>
+                  {s.targetLabValue && (
+                    <div className="flex items-center gap-1.5">
+                      <Target className="h-3 w-3 text-blue-500 shrink-0" />
+                      <p className="text-xs text-blue-600 dark:text-blue-400">{t("supplementTarget")}: {s.targetLabValue}</p>
+                    </div>
+                  )}
+                  <div className="flex items-center gap-1.5">
+                    <Pill className="h-3 w-3 text-green-500 shrink-0" />
+                    <p className="text-xs text-green-600 dark:text-green-400">{t("supplementDuration")}: {s.duration}</p>
+                  </div>
+                  {s.foodSources && s.foodSources.length > 0 && (
+                    <div className="mt-1 space-y-1">
+                      <div className="flex items-center gap-1.5">
+                        <UtensilsCrossed className="h-3 w-3 text-orange-500 shrink-0" />
+                        <p className="text-xs font-medium">{t("supplementFoodSources")}</p>
+                      </div>
+                      <div className="ps-5 space-y-0.5">
+                        {s.foodSources.map((food, fi) => (
+                          <p key={fi} className="text-[11px] text-muted-foreground">- {food}</p>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  {s.scientificBasis && (
+                    <div className="flex items-center gap-1.5 mt-1">
+                      <Beaker className="h-3 w-3 text-purple-500 shrink-0" />
+                      <p className="text-[11px] text-purple-600 dark:text-purple-400">{s.scientificBasis}</p>
+                    </div>
+                  )}
                 </div>
               ))}
             </CardContent>

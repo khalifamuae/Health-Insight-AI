@@ -48,7 +48,7 @@ export interface DietPlanResult {
   };
   intakeAlignment: string;
   deficiencies: { name: string; current: string; target: string; foods: string[] }[];
-  supplements: { name: string; dosage: string; reason: string; duration: string }[];
+  supplements: { name: string; dosage: string; reason: string; duration: string; foodSources: string[]; targetLabValue: string; scientificBasis: string }[];
   mealPlan: {
     breakfast: { name: string; description: string; calories: number; protein: number; carbs: number; fats: number; benefits: string }[];
     lunch: { name: string; description: string; calories: number; protein: number; carbs: number; fats: number; benefits: string }[];
@@ -336,11 +336,27 @@ export async function generateDietPlan(userData: UserHealthData): Promise<DietPl
 - Use phrases like: "to improve", "to reach the normal range", "to boost your health", "a step toward better health"`;
 
   const supplementInstruction = isArabic
-    ? `\n- بناءً على نتائج التحاليل والنواقص، اقترح مكملات غذائية محددة إذا لزم الأمر (مثل فيتامين د، حديد، ب12، أوميغا-3، إلخ). حدد الجرعة المقترحة ومدة الاستخدام وسبب الحاجة. ضعها في "supplements". إذا لم يحتج المستخدم مكملات، اترك المصفوفة فارغة.
-- ركز أولاً على تعويض النواقص من خلال الغذاء الطبيعي، وأضف المكملات فقط عند الحاجة الفعلية.
-- ⚠️ لا تقدم تشخيصاً طبياً. لا توصي بأدوية أو مكملات دوائية بجرعات علاجية. استخدم لغة إرشادية مثل "يمكنك مناقشة مع طبيبك" أو "قد يكون من المفيد".`
-    : `\n- Based on lab results and deficiencies, suggest specific dietary supplements if needed (e.g., Vitamin D, Iron, B12, Omega-3, etc.). Specify suggested dosage, duration, and reason. Put them in "supplements". If the user doesn't need supplements, leave the array empty.
-- Focus first on compensating deficiencies through natural food, and add supplements only when truly needed.
+    ? `\n- بناءً على نتائج التحاليل والنواقص، اقترح مكملات غذائية محددة إذا لزم الأمر (مثل فيتامين د، حديد، ب12، أوميغا-3، إلخ). لكل مكمل حدد:
+  * "name": اسم المكمل
+  * "dosage": الجرعة المقترحة (مثال: "1000 وحدة دولية يومياً")
+  * "reason": سبب الحاجة مرتبط بنتيجة التحليل
+  * "duration": مدة الاستخدام المقترحة
+  * "foodSources": قائمة بـ 3-5 أطعمة طبيعية غنية بهذا العنصر مع الكمية (مثل: "100 جرام سلمون = 600 وحدة دولية فيتامين د")
+  * "targetLabValue": القيمة المستهدفة للتحليل المرتبط (مثال: "فيتامين د: 30-50 نانوجرام/مل")
+  * "scientificBasis": مرجع علمي مختصر يدعم التوصية (مثال: "NIH Office of Dietary Supplements - توصيات الجرعة اليومية")
+- ركز أولاً على تعويض النواقص من خلال الغذاء الطبيعي، وأضف المكملات فقط عند الحاجة الفعلية
+- اذكر المصادر الغذائية الطبيعية لكل مكمل حتى يمكن الحصول عليه من الطعام أيضاً
+- ⚠️ لا تقدم تشخيصاً طبياً. لا توصي بأدوية أو مكملات دوائية بجرعات علاجية. استخدم لغة إرشادية مثل "يمكنك مناقشة مع طبيبك" أو "قد يكون من المفيد"`
+    : `\n- Based on lab results and deficiencies, suggest specific dietary supplements if needed (e.g., Vitamin D, Iron, B12, Omega-3, etc.). For each supplement provide:
+  * "name": Supplement name
+  * "dosage": Suggested dosage (e.g., "1000 IU daily")
+  * "reason": Reason linked to specific lab result
+  * "duration": Suggested duration of use
+  * "foodSources": List of 3-5 natural foods rich in this nutrient with amounts (e.g., "100g salmon = 600 IU vitamin D")
+  * "targetLabValue": Target value for the related lab test (e.g., "Vitamin D: 30-50 ng/mL")
+  * "scientificBasis": Brief scientific reference supporting the recommendation (e.g., "NIH Office of Dietary Supplements - daily intake recommendations")
+- Focus first on compensating deficiencies through natural food, and add supplements only when truly needed
+- List natural food sources for each supplement so the user can also get it from food
 - Do NOT provide medical diagnosis. Do NOT recommend pharmaceutical drugs or therapeutic dosages. Use guiding language like "you may discuss with your doctor" or "it may be helpful to consider".`;
 
   const deficiencyCalorieNote = hasSevereDeficiency
@@ -445,7 +461,7 @@ ${hasAllergies && allergyList ? `- ⚠️ حساسية المستخدم: ${aller
   "goalDescription": "وصف مختصر للهدف والخطة بأسلوب تحفيزي",
   "intakeAlignment": "شرح مفصل: هل السعرات المستهدفة تتوافق مع الهدف والحالة الصحية",
   "deficiencies": [{"name": "اسم النقص", "current": "القيمة الحالية", "target": "القيمة المستهدفة", "foods": ["طعام 1 (وسبب اختياره)", "طعام 2"]}],
-  "supplements": [{"name": "اسم المكمل", "dosage": "الجرعة المقترحة", "reason": "سبب الحاجة", "duration": "مدة الاستخدام"}],
+  "supplements": [{"name": "اسم المكمل", "dosage": "الجرعة المقترحة", "reason": "سبب الحاجة مرتبط بالتحليل", "duration": "مدة الاستخدام", "foodSources": ["100 جرام سلمون = 600 وحدة دولية", "كوب حليب مدعم = 400 وحدة دولية", "بيضة واحدة = 40 وحدة دولية"], "targetLabValue": "فيتامين د: 30-50 نانوجرام/مل", "scientificBasis": "NIH Office of Dietary Supplements"}],
   "mealPlan": {
     "breakfast": [
       {"name": "شوفان بالموز والعسل", "description": "60 جرام شوفان، 200 مل حليب قليل الدسم، موزة واحدة، 15 جرام عسل", "calories": 420, "protein": 15, "carbs": 62, "fats": 12, "benefits": "غني بالألياف يساعد في تحسين مستوى الكولسترول"},
@@ -544,7 +560,7 @@ Return JSON in this format (example shows 2 of 5 options - write all 5 complete)
   "goalDescription": "Brief motivating description of the goal and plan",
   "intakeAlignment": "Detailed explanation of calorie alignment with goal and health",
   "deficiencies": [{"name": "Deficiency name", "current": "Current value", "target": "Target value", "foods": ["food 1 (reason)", "food 2"]}],
-  "supplements": [{"name": "Supplement name", "dosage": "Suggested dosage", "reason": "Reason linked to lab result", "duration": "Duration"}],
+  "supplements": [{"name": "Supplement name", "dosage": "Suggested dosage", "reason": "Reason linked to lab result", "duration": "Duration", "foodSources": ["100g salmon = 600 IU vitamin D", "1 cup fortified milk = 400 IU", "1 egg = 40 IU"], "targetLabValue": "Vitamin D: 30-50 ng/mL", "scientificBasis": "NIH Office of Dietary Supplements"}],
   "mealPlan": {
     "breakfast": [
       {"name": "Oatmeal with Banana and Honey", "description": "60g oats, 200ml low-fat milk, 1 banana, 15g honey", "calories": 420, "protein": 15, "carbs": 62, "fats": 12, "benefits": "Rich in fiber, helps improve cholesterol levels"},
@@ -597,7 +613,7 @@ ${testsDescription || "لا توجد نتائج تحاليل متوفرة"}
 6. اربط كل وجبة وتوصية بسبب صحي واضح من التحاليل
 7. عالج النواقص من خلال الغذاء الطبيعي أولاً
 8. اقترح مكملات فقط عند الحاجة الفعلية (بلغة إرشادية)
-9. قدم بالضبط 7 خيارات متنوعة لكل وجبة (فطور = 7، غداء = 7، عشاء = 7، وجبات خفيفة = 7) المجموع 28 خيار - لا تقدم أقل من 7
+9. قدم بالضبط 5 خيارات متنوعة لكل وجبة (فطور = 5، غداء = 5، عشاء = 5، وجبات خفيفة = 5) المجموع 20 خيار - لا تقدم أقل من 5
 10. أضف المراجع العلمية في "references"`
     : `User data:
 - Age: ${age} years
@@ -663,11 +679,17 @@ Requirements:
         "معادلة Mifflin-St Jeor لحساب معدل الأيض الأساسي (BMR)",
         "حاسبة مؤشر كتلة الجسم - المعهد الوطني للقلب والرئة والدم (NHLBI) - nhlbi.nih.gov",
         "إرشادات التغذية - منظمة الصحة العالمية (WHO)",
+        "NIH Office of Dietary Supplements - ods.od.nih.gov",
+        "PubMed - المكتبة الوطنية للطب - pubmed.ncbi.nlm.nih.gov",
+        "Open Food Facts - قاعدة بيانات الملصقات الغذائية - openfoodfacts.org",
       ]
       : [
         "Mifflin-St Jeor equation for Basal Metabolic Rate (BMR) calculation",
         "NHLBI BMI Calculator - National Heart, Lung, and Blood Institute - nhlbi.nih.gov",
         "WHO Dietary Guidelines",
+        "NIH Office of Dietary Supplements - ods.od.nih.gov",
+        "PubMed - National Library of Medicine - pubmed.ncbi.nlm.nih.gov",
+        "Open Food Facts - Food nutrition database - openfoodfacts.org",
       ];
 
     const isPlaceholder = (val: string) => !val || val === "..." || val === "…" || val.trim().length < 3;
@@ -726,7 +748,15 @@ Requirements:
       macros,
       intakeAlignment: parsed.intakeAlignment || "",
       deficiencies: parsed.deficiencies || [],
-      supplements: parsed.supplements || [],
+      supplements: (parsed.supplements || []).map((s: any) => ({
+        name: s.name || "",
+        dosage: s.dosage || "",
+        reason: s.reason || "",
+        duration: s.duration || "",
+        foodSources: Array.isArray(s.foodSources) ? s.foodSources : [],
+        targetLabValue: s.targetLabValue || "",
+        scientificBasis: s.scientificBasis || "",
+      })),
       mealPlan: sanitizedMealPlan,
       tips: parsed.tips || [],
       warnings: parsed.warnings || [],

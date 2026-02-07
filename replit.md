@@ -30,8 +30,9 @@ BioTrack AI is a comprehensive health tracking application that analyzes PDF lab
 - **Activity-Based TDEE**: TDEE calculation uses actual activity level (sedentary/light/very/extremely active)
 - **Allergy Support**: 9 common allergens can be excluded from diet plan (eggs, dairy, peanuts, nuts, seafood, soy, sesame, wheat, fish)
 - **Meal Preferences**: High protein, balanced, low carb, vegetarian, custom macros with macro range visualization
-- **Supplement Recommendations**: AI suggests specific supplements (vitamin D, iron, B12, omega-3, etc.) with dosage and duration when food alone isn't enough
+- **Enhanced Supplement Recommendations**: AI suggests specific supplements with dosage, duration, natural food sources (with gram amounts), target lab values, and scientific references (NIH, PubMed, Open Food Facts). Displayed with detailed cards showing food alternatives and scientific basis
 - **Deficiency Compensation**: Focus on compensating deficiencies through natural food first, supplements only when needed
+- **5 Meal Options**: Each meal section provides exactly 5 varied options (20 total) for daily rotation
 - **Positive Tone**: All tips use encouraging, supportive language - no scary medical warnings (e.g., "bring sugar to normal range" instead of "risk of diabetes")
 - **Condition-Based Tips**: Personalized health tips based on detected conditions with positive framing
 - **Navigation Restructure**: Hamburger menu (top-left) with My Tests and Compare; Bottom nav reduced to 4 items (Home, Upload, Diet, Profile)
