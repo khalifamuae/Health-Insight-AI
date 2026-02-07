@@ -646,7 +646,7 @@ Requirements:
       { role: "system", content: systemPrompt },
       { role: "user", content: userContent },
     ],
-    max_completion_tokens: 20000,
+    max_completion_tokens: 16384,
     temperature: 0.7,
   });
   console.log(`OpenAI response received in ${((Date.now() - callStart) / 1000).toFixed(1)}s`);
