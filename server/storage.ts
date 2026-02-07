@@ -297,13 +297,13 @@ export class DatabaseStorage implements IStorage {
   }
 
   async failStaleJobs(): Promise<number> {
-    const threeMinutesAgo = new Date(Date.now() - 3 * 60 * 1000);
+    const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
     const staleJobs = await db
       .update(dietPlanJobs)
       .set({ status: "failed", error: "Server restarted during generation", completedAt: new Date() })
       .where(and(
         sql`${dietPlanJobs.status} IN ('pending', 'processing')`,
-        sql`${dietPlanJobs.createdAt} < ${threeMinutesAgo}`
+        sql`${dietPlanJobs.createdAt} < ${fiveMinutesAgo}`
       ))
       .returning();
     return staleJobs.length;

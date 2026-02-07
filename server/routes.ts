@@ -596,10 +596,10 @@ export async function registerRoutes(
         res.json({ status: "failed", error: job.error });
       } else if (job.status === "processing") {
         const elapsed = job.createdAt ? Math.round((Date.now() - new Date(job.createdAt).getTime()) / 1000) : 0;
-        if (elapsed > 180) {
+        if (elapsed > 300) {
           await storage.updateDietPlanJob(jobId, {
             status: "failed",
-            error: "Generation timed out after 3 minutes",
+            error: "Generation timed out after 5 minutes",
           });
           res.json({ status: "failed", error: "Generation timed out" });
         } else {

@@ -402,7 +402,7 @@ ${toneInstruction}
 تعليمات مهمة:
 - هذا النظام الغذائي يجب أن يكون مصمماً خصيصاً لهذا المستخدم بناءً على: الطول (${height}سم)، الوزن (${weight}كجم)، الجنس (${gender === "male" ? "ذكر" : "أنثى"})، العمر (${age})، الهدف (${goalDescriptions[goal].ar})، ونتائج الفحوصات الطبية
 - صمم الوجبات بحيث تتوافق مع السعرات والماكرو المحدد أعلاه
-- قدم 7 خيارات مختلفة ومتنوعة لكل وجبة (فطور، غداء، عشاء، وجبات خفيفة) لكي يختار المستخدم ما يناسبه ويغير يومياً لمدة أسبوع كامل${proteinInstruction}${carbInstruction}
+- ⚠️⚠️ قاعدة إلزامية: يجب تقديم بالضبط 7 خيارات مختلفة ومتنوعة لكل وجبة (فطور = 7 خيارات، غداء = 7 خيارات، عشاء = 7 خيارات، وجبات خفيفة = 7 خيارات). المجموع = 28 خيار وجبة. هذا شرط أساسي لا يمكن تجاوزه. لكي يختار المستخدم ما يناسبه ويغير يومياً لمدة أسبوع كامل${proteinInstruction}${carbInstruction}
 - ⚠️ قاعدة ذهبية: لا تضع أي مكون لم يختره المستخدم. النظام مبني فقط على اختيارات المستخدم من البروتين والكربوهيدرات. إذا لم يختر مصدراً معيناً، لا تدرجه في أي وجبة
 - ${goal === "weight_loss" ? "ركز على وجبات مشبعة ومنخفضة السعرات وغنية بالبروتين والألياف" : ""}
 - ${goal === "muscle_gain" ? "ركز على مصادر غذاء نظيفة وصحية فقط (لا وجبات سريعة، لا دهون مشبعة مفرطة)" : ""}
@@ -439,10 +439,18 @@ ${hasAllergies && allergyList ? `- ⚠️ حساسية المستخدم: ${aller
   "deficiencies": [{"name": "اسم النقص", "current": "القيمة الحالية", "target": "القيمة المستهدفة", "foods": ["طعام 1 (وسبب اختياره)", "طعام 2"]}],
   "supplements": [{"name": "اسم المكمل", "dosage": "الجرعة المقترحة", "reason": "سبب الحاجة مرتبط بنتيجة التحليل", "duration": "مدة الاستخدام"}],
   "mealPlan": {
-    "breakfast": [{"name": "اسم الوجبة", "description": "60 جرام شوفان، 200 مل حليب...", "calories": 420, "protein": 15, "carbs": 62, "fats": 12, "benefits": "غني بالألياف | يساعد في تحسين مستوى [اسم التحليل]"}, ...],
-    "lunch": [...],
-    "dinner": [...],
-    "snacks": [...]
+    "breakfast": [
+      {"name": "خيار 1", "description": "60 جرام شوفان، 200 مل حليب...", "calories": 420, "protein": 15, "carbs": 62, "fats": 12, "benefits": "غني بالألياف | يساعد في تحسين مستوى [اسم التحليل]"},
+      {"name": "خيار 2", "description": "...", "calories": 400, "protein": 14, "carbs": 55, "fats": 10, "benefits": "..."},
+      {"name": "خيار 3", "description": "...", "calories": 410, "protein": 16, "carbs": 58, "fats": 11, "benefits": "..."},
+      {"name": "خيار 4", "description": "...", "calories": 420, "protein": 15, "carbs": 60, "fats": 12, "benefits": "..."},
+      {"name": "خيار 5", "description": "...", "calories": 400, "protein": 13, "carbs": 57, "fats": 10, "benefits": "..."},
+      {"name": "خيار 6", "description": "...", "calories": 430, "protein": 17, "carbs": 61, "fats": 11, "benefits": "..."},
+      {"name": "خيار 7", "description": "...", "calories": 410, "protein": 14, "carbs": 59, "fats": 12, "benefits": "..."}
+    ],
+    "lunch": [7 خيارات بنفس التنسيق],
+    "dinner": [7 خيارات بنفس التنسيق],
+    "snacks": [7 خيارات بنفس التنسيق]
   },
   "tips": ["نصيحة مع السبب الصحي"],
   "warnings": ["ننصحك بمتابعة ... مع طبيبك للاطمئنان"],
@@ -490,7 +498,7 @@ ${toneInstruction}
 Important instructions:
 - This diet plan MUST be custom-designed for this specific user based on: Height (${height}cm), Weight (${weight}kg), Gender (${gender}), Age (${age}), Goal (${goalDescriptions[goal].en}), and their lab test results
 - Design meals that align with the calorie and macro targets above
-- Provide 7 DIFFERENT varied options for each meal (breakfast, lunch, dinner, snacks) so the user can choose and rotate daily for an entire week${proteinInstruction}${carbInstruction}
+- MANDATORY: Provide EXACTLY 7 different varied options for each meal (breakfast = 7 options, lunch = 7 options, dinner = 7 options, snacks = 7 options). Total = 28 meal options. This is a NON-NEGOTIABLE requirement. The user needs to choose and rotate daily for an entire week${proteinInstruction}${carbInstruction}
 - GOLDEN RULE: Do NOT include any ingredient the user did NOT select. The diet plan is built EXCLUSIVELY from the user's protein and carbohydrate choices. If a source was not selected, it MUST NOT appear in any meal
 - ${goal === "weight_loss" ? "Focus on satiating, low-calorie meals rich in protein and fiber" : ""}
 - ${goal === "muscle_gain" ? "Focus on clean, healthy food sources ONLY (no fast food, no excessive saturated fats)" : ""}
@@ -527,10 +535,18 @@ Return JSON in this format:
   "deficiencies": [{"name": "Deficiency name", "current": "Current value", "target": "Target value", "foods": ["food 1 (reason for choice)", "food 2"]}],
   "supplements": [{"name": "Supplement name", "dosage": "Suggested dosage", "reason": "Reason linked to lab result", "duration": "Duration"}],
   "mealPlan": {
-    "breakfast": [{"name": "Meal name", "description": "60g oats, 200ml milk...", "calories": 420, "protein": 15, "carbs": 62, "fats": 12, "benefits": "Rich in fiber | Helps improve [specific test name] levels"}, ...],
-    "lunch": [...],
-    "dinner": [...],
-    "snacks": [...]
+    "breakfast": [
+      {"name": "Option 1", "description": "60g oats, 200ml milk...", "calories": 420, "protein": 15, "carbs": 62, "fats": 12, "benefits": "Rich in fiber | Helps improve [specific test name] levels"},
+      {"name": "Option 2", "description": "...", "calories": 400, "protein": 14, "carbs": 55, "fats": 10, "benefits": "..."},
+      {"name": "Option 3", "description": "...", "calories": 410, "protein": 16, "carbs": 58, "fats": 11, "benefits": "..."},
+      {"name": "Option 4", "description": "...", "calories": 420, "protein": 15, "carbs": 60, "fats": 12, "benefits": "..."},
+      {"name": "Option 5", "description": "...", "calories": 400, "protein": 13, "carbs": 57, "fats": 10, "benefits": "..."},
+      {"name": "Option 6", "description": "...", "calories": 430, "protein": 17, "carbs": 61, "fats": 11, "benefits": "..."},
+      {"name": "Option 7", "description": "...", "calories": 410, "protein": 14, "carbs": 59, "fats": 12, "benefits": "..."}
+    ],
+    "lunch": [7 options in same format],
+    "dinner": [7 options in same format],
+    "snacks": [7 options in same format]
   },
   "tips": ["tip with health reason"],
   "warnings": ["We recommend following up on ... with your doctor for peace of mind"],
@@ -575,7 +591,7 @@ ${testsDescription || "لا توجد نتائج تحاليل متوفرة"}
 6. اربط كل وجبة وتوصية بسبب صحي واضح من التحاليل
 7. عالج النواقص من خلال الغذاء الطبيعي أولاً
 8. اقترح مكملات فقط عند الحاجة الفعلية (بلغة إرشادية)
-9. قدم 7 خيارات متنوعة لكل وجبة (فطور، غداء، عشاء، وجبات خفيفة) لتغطية أسبوع كامل
+9. قدم بالضبط 7 خيارات متنوعة لكل وجبة (فطور = 7، غداء = 7، عشاء = 7، وجبات خفيفة = 7) المجموع 28 خيار - لا تقدم أقل من 7
 10. أضف المراجع العلمية في "references"`
     : `User data:
 - Age: ${age} years
@@ -613,7 +629,7 @@ Requirements:
 6. Link every meal and recommendation to a clear health reason from lab results
 7. Treat deficiencies through natural food first
 8. Suggest supplements ONLY when truly needed (use guiding language)
-9. Provide 7 varied options for each meal (breakfast, lunch, dinner, snacks) to cover a full week
+9. Provide EXACTLY 7 varied options for each meal (breakfast = 7, lunch = 7, dinner = 7, snacks = 7) Total 28 options - do NOT provide fewer than 7
 10. Add scientific references in "references"`;
 
   console.log("Calling OpenAI for diet plan generation...");
@@ -624,7 +640,7 @@ Requirements:
       { role: "system", content: systemPrompt },
       { role: "user", content: userContent },
     ],
-    max_completion_tokens: 12000,
+    max_completion_tokens: 16000,
     temperature: 0.7,
   });
   console.log(`OpenAI response received in ${((Date.now() - callStart) / 1000).toFixed(1)}s`);
