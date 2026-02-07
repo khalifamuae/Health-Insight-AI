@@ -21,6 +21,16 @@ export async function registerRoutes(
   await setupAuth(app);
   registerAuthRoutes(app);
 
+  // Clean up stale diet plan jobs from previous server instances
+  try {
+    const staleCount = await storage.failStaleJobs();
+    if (staleCount > 0) {
+      console.log(`Cleaned up ${staleCount} stale diet plan job(s)`);
+    }
+  } catch (e) {
+    console.error("Failed to clean up stale jobs:", e);
+  }
+
   // Profile routes
   app.get("/api/profile", isAuthenticated, async (req: any, res: Response) => {
     try {
@@ -527,7 +537,11 @@ export async function registerRoutes(
       });
 
       (async () => {
+        const startTime = Date.now();
         try {
+          await storage.updateDietPlanJob(job.id, { status: "processing" });
+          console.log(`Diet plan job ${job.id} started processing...`);
+
           const dietPlan = await generateDietPlan({
             weight: profile?.weight ?? null,
             height: profile?.height ?? null,
@@ -545,13 +559,15 @@ export async function registerRoutes(
             testResults: testResultsData,
           });
 
+          const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
           await storage.updateDietPlanJob(job.id, {
             status: "completed",
             planData: JSON.stringify(dietPlan),
           });
-          console.log(`Diet plan job ${job.id} completed successfully`);
+          console.log(`Diet plan job ${job.id} completed in ${elapsed}s`);
         } catch (error) {
-          console.error(`Diet plan job ${job.id} failed:`, error);
+          const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
+          console.error(`Diet plan job ${job.id} failed after ${elapsed}s:`, error);
           await storage.updateDietPlanJob(job.id, {
             status: "failed",
             error: error instanceof Error ? error.message : "Unknown error",
@@ -578,6 +594,17 @@ export async function registerRoutes(
         res.json({ status: "completed", plan: JSON.parse(job.planData) });
       } else if (job.status === "failed") {
         res.json({ status: "failed", error: job.error });
+      } else if (job.status === "processing") {
+        const elapsed = job.createdAt ? Math.round((Date.now() - new Date(job.createdAt).getTime()) / 1000) : 0;
+        if (elapsed > 180) {
+          await storage.updateDietPlanJob(jobId, {
+            status: "failed",
+            error: "Generation timed out after 3 minutes",
+          });
+          res.json({ status: "failed", error: "Generation timed out" });
+        } else {
+          res.json({ status: "processing", elapsed });
+        }
       } else {
         res.json({ status: "pending" });
       }

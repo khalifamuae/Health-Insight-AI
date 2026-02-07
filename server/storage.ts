@@ -287,10 +287,26 @@ export class DatabaseStorage implements IStorage {
     const [job] = await db
       .select()
       .from(dietPlanJobs)
-      .where(and(eq(dietPlanJobs.userId, userId), eq(dietPlanJobs.status, "pending")))
+      .where(and(
+        eq(dietPlanJobs.userId, userId),
+        sql`${dietPlanJobs.status} IN ('pending', 'processing')`
+      ))
       .orderBy(desc(dietPlanJobs.createdAt))
       .limit(1);
     return job || null;
+  }
+
+  async failStaleJobs(): Promise<number> {
+    const threeMinutesAgo = new Date(Date.now() - 3 * 60 * 1000);
+    const staleJobs = await db
+      .update(dietPlanJobs)
+      .set({ status: "failed", error: "Server restarted during generation", completedAt: new Date() })
+      .where(and(
+        sql`${dietPlanJobs.status} IN ('pending', 'processing')`,
+        sql`${dietPlanJobs.createdAt} < ${threeMinutesAgo}`
+      ))
+      .returning();
+    return staleJobs.length;
   }
 
   async updateDietPlanJob(id: string, updates: { status?: string; planData?: string; error?: string }): Promise<DietPlanJob | null> {

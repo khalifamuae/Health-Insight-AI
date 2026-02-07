@@ -75,12 +75,12 @@ export function DietPlanJobProvider({ children }: { children: React.ReactNode })
           setActiveJobId(null);
           localStorage.removeItem(STORAGE_KEY);
           const isAr = i18n.language === "ar";
-          sendNotification(
-            "BioTrack AI",
-            isAr ? "فشل في تصميم النظام الغذائي" : "Diet plan generation failed"
-          );
+          const errorMsg = data.error?.includes("timed out")
+            ? (isAr ? "انتهت المهلة الزمنية. يرجى المحاولة مرة أخرى" : "Generation timed out. Please try again")
+            : (isAr ? "فشل في تصميم النظام الغذائي. يرجى المحاولة مرة أخرى" : "Diet plan generation failed. Please try again");
+          sendNotification("BioTrack AI", errorMsg);
           toast({
-            title: isAr ? "فشل في تصميم النظام الغذائي" : "Diet plan generation failed",
+            title: errorMsg,
             variant: "destructive",
           });
         }

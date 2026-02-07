@@ -616,6 +616,8 @@ Requirements:
 9. Provide 7 varied options for each meal (breakfast, lunch, dinner, snacks) to cover a full week
 10. Add scientific references in "references"`;
 
+  console.log("Calling OpenAI for diet plan generation...");
+  const callStart = Date.now();
   const response = await openai.chat.completions.create({
     model: "gpt-4o",
     messages: [
@@ -625,6 +627,7 @@ Requirements:
     max_completion_tokens: 12000,
     temperature: 0.7,
   });
+  console.log(`OpenAI response received in ${((Date.now() - callStart) / 1000).toFixed(1)}s`);
 
   const content = response.choices[0]?.message?.content || "{}";
 
