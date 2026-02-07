@@ -107,6 +107,18 @@ export const uploadedPdfs = pgTable("uploaded_pdfs", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+// Diet plan background jobs
+export const dietPlanJobs = pgTable("diet_plan_jobs", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull(),
+  status: varchar("status").notNull().default("pending"), // pending, completed, failed
+  planData: text("plan_data"),
+  error: text("error"),
+  language: varchar("language").default("ar"),
+  createdAt: timestamp("created_at").defaultNow(),
+  completedAt: timestamp("completed_at"),
+});
+
 // Saved diet plans
 export const savedDietPlans = pgTable("saved_diet_plans", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -209,6 +221,8 @@ export type InsertUploadedPdf = z.infer<typeof insertUploadedPdfSchema>;
 
 export type SavedDietPlan = typeof savedDietPlans.$inferSelect;
 export type InsertSavedDietPlan = z.infer<typeof insertSavedDietPlanSchema>;
+
+export type DietPlanJob = typeof dietPlanJobs.$inferSelect;
 
 // Extended types for frontend
 export type TestResultWithDefinition = TestResult & {
