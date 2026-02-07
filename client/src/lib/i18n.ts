@@ -263,6 +263,23 @@ const resources = {
       // Sidebar menu
       menuMyTests: "My Tests",
       menuCompare: "Compare Results",
+      menuMyDietSchedule: "My Diet Schedule",
+
+      // My Diet Schedule
+      myDietSchedule: "My Diet Schedule",
+      noSavedPlans: "No saved diet plans yet",
+      noSavedPlansDesc: "Generate a diet plan and export it here for easy access anytime",
+      savedOn: "Saved on",
+      deletePlan: "Delete",
+      deleteConfirm: "Are you sure you want to delete this saved plan?",
+      exportToDietSchedule: "Export to My Diet Schedule",
+      exportSuccess: "Diet plan saved to My Diet Schedule successfully",
+      exportError: "Failed to save diet plan",
+      viewPlan: "View Plan",
+      hidePlan: "Hide Plan",
+      dietScheduleNote: "The diet schedule should be changed every 3 weeks to 1 month for best results",
+      plateauNote: "If your weight plateaus for about 2 weeks, take a free/cheat meal to break the plateau and restart your metabolism",
+      dietScheduleNotesTitle: "Important Notes",
 
       // Share
       shareResults: "Share Results",
@@ -535,6 +552,23 @@ const resources = {
       // Sidebar menu
       menuMyTests: "فحوصاتي",
       menuCompare: "مقارنة النتائج",
+      menuMyDietSchedule: "جدولي الغذائي",
+
+      // My Diet Schedule
+      myDietSchedule: "جدولي الغذائي",
+      noSavedPlans: "لا توجد خطط غذائية محفوظة",
+      noSavedPlansDesc: "قم بتوليد نظام غذائي وتصديره هنا للوصول إليه في أي وقت",
+      savedOn: "تم الحفظ في",
+      deletePlan: "حذف",
+      deleteConfirm: "هل أنت متأكد من حذف هذه الخطة المحفوظة؟",
+      exportToDietSchedule: "تصدير إلى جدولي الغذائي",
+      exportSuccess: "تم حفظ النظام الغذائي في جدولي الغذائي بنجاح",
+      exportError: "فشل في حفظ النظام الغذائي",
+      viewPlan: "عرض الخطة",
+      hidePlan: "إخفاء الخطة",
+      dietScheduleNote: "يتم تغيير الجدول الغذائي كل ٣ أسابيع إلى شهر للحصول على أفضل النتائج",
+      plateauNote: "عند ثبات الوزن لمدة أسبوعين تقريباً، يجب أخذ وجبة مفتوحة (شيت ميل) لكسر هذا الثبات وتنشيط عملية الأيض",
+      dietScheduleNotesTitle: "ملاحظات مهمة",
 
       // Share
       shareResults: "مشاركة النتائج",

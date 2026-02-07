@@ -107,11 +107,20 @@ export const uploadedPdfs = pgTable("uploaded_pdfs", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+// Saved diet plans
+export const savedDietPlans = pgTable("saved_diet_plans", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull(),
+  planData: text("plan_data").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 // Relations
 export const userProfilesRelations = relations(userProfiles, ({ many }) => ({
   testResults: many(testResults),
   reminders: many(reminders),
   uploadedPdfs: many(uploadedPdfs),
+  savedDietPlans: many(savedDietPlans),
 }));
 
 export const testDefinitionsRelations = relations(testDefinitions, ({ many }) => ({
@@ -148,6 +157,13 @@ export const uploadedPdfsRelations = relations(uploadedPdfs, ({ one }) => ({
   }),
 }));
 
+export const savedDietPlansRelations = relations(savedDietPlans, ({ one }) => ({
+  user: one(userProfiles, {
+    fields: [savedDietPlans.userId],
+    references: [userProfiles.id],
+  }),
+}));
+
 // Insert schemas
 export const insertUserProfileSchema = createInsertSchema(userProfiles).omit({
   createdAt: true,
@@ -171,6 +187,11 @@ export const insertUploadedPdfSchema = createInsertSchema(uploadedPdfs).omit({
   createdAt: true,
 });
 
+export const insertSavedDietPlanSchema = createInsertSchema(savedDietPlans).omit({
+  id: true,
+  createdAt: true,
+});
+
 // Types
 export type UserProfile = typeof userProfiles.$inferSelect;
 export type InsertUserProfile = z.infer<typeof insertUserProfileSchema>;
@@ -185,6 +206,9 @@ export type InsertReminder = z.infer<typeof insertReminderSchema>;
 
 export type UploadedPdf = typeof uploadedPdfs.$inferSelect;
 export type InsertUploadedPdf = z.infer<typeof insertUploadedPdfSchema>;
+
+export type SavedDietPlan = typeof savedDietPlans.$inferSelect;
+export type InsertSavedDietPlan = z.infer<typeof insertSavedDietPlanSchema>;
 
 // Extended types for frontend
 export type TestResultWithDefinition = TestResult & {

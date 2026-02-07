@@ -548,5 +548,43 @@ export async function registerRoutes(
     }
   });
 
+  app.get("/api/saved-diet-plans", isAuthenticated, async (req: any, res: Response) => {
+    try {
+      const userId = req.user.claims.sub;
+      const plans = await storage.getSavedDietPlans(userId);
+      res.json(plans);
+    } catch (error) {
+      console.error("Error fetching saved diet plans:", error);
+      res.status(500).json({ error: "Failed to fetch saved diet plans" });
+    }
+  });
+
+  app.post("/api/saved-diet-plans", isAuthenticated, async (req: any, res: Response) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { planData } = req.body;
+      if (!planData) {
+        return res.status(400).json({ error: "Plan data is required" });
+      }
+      const saved = await storage.saveDietPlan(userId, typeof planData === "string" ? planData : JSON.stringify(planData));
+      res.json(saved);
+    } catch (error) {
+      console.error("Error saving diet plan:", error);
+      res.status(500).json({ error: "Failed to save diet plan" });
+    }
+  });
+
+  app.delete("/api/saved-diet-plans/:id", isAuthenticated, async (req: any, res: Response) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { id } = req.params;
+      await storage.deleteSavedDietPlan(id, userId);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error deleting saved diet plan:", error);
+      res.status(500).json({ error: "Failed to delete saved diet plan" });
+    }
+  });
+
   return httpServer;
 }

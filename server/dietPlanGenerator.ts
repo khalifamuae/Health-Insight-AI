@@ -393,7 +393,7 @@ ${toneInstruction}
 تعليمات مهمة:
 - هذا النظام الغذائي يجب أن يكون مصمماً خصيصاً لهذا المستخدم بناءً على: الطول (${height}سم)، الوزن (${weight}كجم)، الجنس (${gender === "male" ? "ذكر" : "أنثى"})، العمر (${age})، الهدف (${goalDescriptions[goal].ar})، ونتائج الفحوصات الطبية
 - صمم الوجبات بحيث تتوافق مع السعرات والماكرو المحدد أعلاه
-- قدم 3 خيارات مختلفة ومتنوعة لكل وجبة (فطور، غداء، عشاء) لكي يختار المستخدم ما يناسبه ويغير يومياً${proteinInstruction}${carbInstruction}
+- قدم 7 خيارات مختلفة ومتنوعة لكل وجبة (فطور، غداء، عشاء، وجبات خفيفة) لكي يختار المستخدم ما يناسبه ويغير يومياً لمدة أسبوع كامل${proteinInstruction}${carbInstruction}
 - ⚠️ قاعدة ذهبية: لا تضع أي مكون لم يختره المستخدم. النظام مبني فقط على اختيارات المستخدم من البروتين والكربوهيدرات. إذا لم يختر مصدراً معيناً، لا تدرجه في أي وجبة
 - ${goal === "weight_loss" ? "ركز على وجبات مشبعة ومنخفضة السعرات وغنية بالبروتين والألياف" : ""}
 - ${goal === "muscle_gain" ? "ركز على مصادر غذاء نظيفة وصحية فقط (لا وجبات سريعة، لا دهون مشبعة مفرطة)" : ""}
@@ -480,7 +480,7 @@ ${toneInstruction}
 Important instructions:
 - This diet plan MUST be custom-designed for this specific user based on: Height (${height}cm), Weight (${weight}kg), Gender (${gender}), Age (${age}), Goal (${goalDescriptions[goal].en}), and their lab test results
 - Design meals that align with the calorie and macro targets above
-- Provide 3 DIFFERENT varied options for each meal (breakfast, lunch, dinner) so the user can choose and rotate daily${proteinInstruction}${carbInstruction}
+- Provide 7 DIFFERENT varied options for each meal (breakfast, lunch, dinner, snacks) so the user can choose and rotate daily for an entire week${proteinInstruction}${carbInstruction}
 - GOLDEN RULE: Do NOT include any ingredient the user did NOT select. The diet plan is built EXCLUSIVELY from the user's protein and carbohydrate choices. If a source was not selected, it MUST NOT appear in any meal
 - ${goal === "weight_loss" ? "Focus on satiating, low-calorie meals rich in protein and fiber" : ""}
 - ${goal === "muscle_gain" ? "Focus on clean, healthy food sources ONLY (no fast food, no excessive saturated fats)" : ""}
@@ -564,7 +564,7 @@ ${testsDescription || "لا توجد نتائج تحاليل متوفرة"}
 6. اربط كل وجبة وتوصية بسبب صحي واضح من التحاليل
 7. عالج النواقص من خلال الغذاء الطبيعي أولاً
 8. اقترح مكملات فقط عند الحاجة الفعلية (بلغة إرشادية)
-9. قدم 3 خيارات متنوعة لكل وجبة
+9. قدم 7 خيارات متنوعة لكل وجبة (فطور، غداء، عشاء، وجبات خفيفة) لتغطية أسبوع كامل
 10. أضف المراجع العلمية في "references"`
     : `User data:
 - Age: ${age} years
@@ -602,7 +602,7 @@ Requirements:
 6. Link every meal and recommendation to a clear health reason from lab results
 7. Treat deficiencies through natural food first
 8. Suggest supplements ONLY when truly needed (use guiding language)
-9. Provide 3 varied options for each meal
+9. Provide 7 varied options for each meal (breakfast, lunch, dinner, snacks) to cover a full week
 10. Add scientific references in "references"`;
 
   const response = await openai.chat.completions.create({
@@ -611,7 +611,7 @@ Requirements:
       { role: "system", content: systemPrompt },
       { role: "user", content: userContent },
     ],
-    max_completion_tokens: 6000,
+    max_completion_tokens: 12000,
     temperature: 0.7,
   });
 

@@ -7,6 +7,7 @@ import {
   testResults,
   reminders,
   uploadedPdfs,
+  savedDietPlans,
   type User,
   type UpsertUser,
   type UserProfile,
@@ -19,6 +20,7 @@ import {
   type UploadedPdf,
   type InsertUploadedPdf,
   type TestResultWithDefinition,
+  type SavedDietPlan,
 } from "@shared/schema";
 
 export interface IStorage {
@@ -44,6 +46,10 @@ export interface IStorage {
   getUploadedPdfsByUser(userId: string): Promise<UploadedPdf[]>;
   createUploadedPdf(pdf: InsertUploadedPdf): Promise<UploadedPdf>;
   incrementFilesUploaded(userId: string): Promise<void>;
+  
+  getSavedDietPlans(userId: string): Promise<SavedDietPlan[]>;
+  saveDietPlan(userId: string, planData: string): Promise<SavedDietPlan>;
+  deleteSavedDietPlan(id: string, userId: string): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -235,6 +241,28 @@ export class DatabaseStorage implements IStorage {
       .where(and(eq(uploadedPdfs.id, id), eq(uploadedPdfs.userId, userId)))
       .returning();
     return result.length > 0;
+  }
+
+  async getSavedDietPlans(userId: string): Promise<SavedDietPlan[]> {
+    return db
+      .select()
+      .from(savedDietPlans)
+      .where(eq(savedDietPlans.userId, userId))
+      .orderBy(desc(savedDietPlans.createdAt));
+  }
+
+  async saveDietPlan(userId: string, planData: string): Promise<SavedDietPlan> {
+    const [created] = await db
+      .insert(savedDietPlans)
+      .values({ userId, planData })
+      .returning();
+    return created;
+  }
+
+  async deleteSavedDietPlan(id: string, userId: string): Promise<void> {
+    await db
+      .delete(savedDietPlans)
+      .where(and(eq(savedDietPlans.id, id), eq(savedDietPlans.userId, userId)));
   }
 }
 

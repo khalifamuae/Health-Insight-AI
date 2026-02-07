@@ -41,7 +41,9 @@ import {
   Stethoscope,
   TrendingUp,
   BookOpen,
+  Save,
 } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 
 interface MealItem {
@@ -124,6 +126,7 @@ export default function DietPlan() {
   const [plan, setPlan] = useState<DietPlanData | null>(null);
   const [step, setStep] = useState<QuestionnaireStep>("disclaimer");
   const [showQuestionnaire, setShowQuestionnaire] = useState(false);
+  const { toast } = useToast();
 
   const [activityLevel, setActivityLevel] = useState<string>("");
   const [hasAllergies, setHasAllergies] = useState<boolean | null>(null);
@@ -134,6 +137,22 @@ export default function DietPlan() {
 
   const { data: profile } = useQuery<UserProfile>({
     queryKey: ["/api/profile"],
+  });
+
+  const exportMutation = useMutation({
+    mutationFn: async (planData: DietPlanData) => {
+      const res = await apiRequest("POST", "/api/saved-diet-plans", {
+        planData: JSON.stringify(planData),
+      });
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/saved-diet-plans"] });
+      toast({ title: t("exportSuccess") });
+    },
+    onError: () => {
+      toast({ title: t("exportError"), variant: "destructive" });
+    },
   });
 
   const saveMutation = useMutation({
@@ -915,7 +934,20 @@ export default function DietPlan() {
           </Card>
         )}
 
-        <div className="flex justify-center pb-4">
+        <div className="flex flex-col items-center gap-2 pb-4">
+          <Button
+            onClick={() => plan && exportMutation.mutate(plan)}
+            disabled={exportMutation.isPending}
+            className="w-full max-w-xs"
+            data-testid="button-export-diet"
+          >
+            {exportMutation.isPending ? (
+              <Loader2 className="h-4 w-4 me-2 animate-spin" />
+            ) : (
+              <Save className="h-4 w-4 me-2" />
+            )}
+            {t("exportToDietSchedule")}
+          </Button>
           <Button
             variant="outline"
             onClick={() => {
@@ -923,6 +955,7 @@ export default function DietPlan() {
               startQuestionnaire();
             }}
             disabled={generateMutation.isPending}
+            className="w-full max-w-xs"
             data-testid="button-regenerate-diet"
           >
             <RefreshCw className="h-4 w-4 me-2" />
