@@ -50,6 +50,10 @@ BioTrack AI is a comprehensive health tracking application that analyzes PDF lab
 - Implemented PDF upload and AI analysis using Replit AI Integrations
 - Set up Replit Auth for user authentication
 - Created responsive UI with dark mode support
+- **Knowledge Base - Real Sources**: Rebuilt knowledge engine to fetch from REAL scientific sources (PubMed API + NIH ODS fact sheets). AI only summarizes fetched content, never generates from scratch. Every entry has verified source URL.
+- Knowledge engine fetches 3 topics per domain daily from PubMed (research abstracts) and NIH (fact sheets)
+- 5 domains: nutrition, aerobic training, resistance training, vitamins/minerals, hormones
+- All knowledge entries include real PubMed PMID links and NIH fact sheet URLs
 
 ## Project Architecture
 
@@ -82,6 +86,8 @@ BioTrack AI is a comprehensive health tracking application that analyzes PDF lab
 - `test_results` - User's test values
 - `reminders` - Recheck reminders
 - `uploaded_pdfs` - PDF upload tracking
+- `knowledge_base` - Scientific knowledge from PubMed/NIH (real sources only)
+- `knowledge_learning_log` - Tracks daily learning progress per domain
 
 ## User Preferences
 - Default language: Arabic
