@@ -5,8 +5,10 @@ import { storage } from "./storage";
 import { setupAuth, isAuthenticated, registerAuthRoutes } from "./replit_integrations/auth";
 import { analyzeLabPdf } from "./pdfAnalyzer";
 import { generateDietPlan } from "./dietPlanGenerator";
+import { dailyLearningJob, learnDomain } from "./knowledgeEngine";
 import { desc, eq, and, gte, sql } from "drizzle-orm";
 import { db } from "./db";
+import type { KnowledgeDomain } from "@shared/schema";
 
 const upload = multer({ 
   storage: multer.memoryStorage(),
@@ -655,6 +657,64 @@ export async function registerRoutes(
     } catch (error) {
       console.error("Error deleting saved diet plan:", error);
       res.status(500).json({ error: "Failed to delete saved diet plan" });
+    }
+  });
+
+  app.get("/api/knowledge", isAuthenticated, async (req: any, res: Response) => {
+    try {
+      const domain = req.query.domain as KnowledgeDomain | undefined;
+      const entries = await storage.getAllKnowledge(domain || undefined);
+      res.json(entries);
+    } catch (error) {
+      console.error("Error fetching knowledge:", error);
+      res.status(500).json({ error: "Failed to fetch knowledge" });
+    }
+  });
+
+  app.get("/api/knowledge/stats", isAuthenticated, async (req: any, res: Response) => {
+    try {
+      const counts = await storage.getKnowledgeCount();
+      const domains: KnowledgeDomain[] = ["nutrition", "aerobic_training", "resistance_training", "vitamins_minerals", "hormones"];
+      const lastLearned: Record<string, string | null> = {};
+      for (const d of domains) {
+        const log = await storage.getLastLearningLog(d);
+        lastLearned[d] = log?.createdAt ? new Date(log.createdAt).toISOString() : null;
+      }
+      res.json({ counts, lastLearned, totalEntries: Object.values(counts).reduce((a, b) => a + b, 0) });
+    } catch (error) {
+      console.error("Error fetching knowledge stats:", error);
+      res.status(500).json({ error: "Failed to fetch knowledge stats" });
+    }
+  });
+
+  app.post("/api/knowledge/learn", isAuthenticated, async (req: any, res: Response) => {
+    try {
+      const { domain } = req.body;
+      if (domain) {
+        const validDomains: KnowledgeDomain[] = ["nutrition", "aerobic_training", "resistance_training", "vitamins_minerals", "hormones"];
+        if (!validDomains.includes(domain)) {
+          return res.status(400).json({ error: "Invalid domain" });
+        }
+        const count = await learnDomain(domain);
+        res.json({ success: true, entriesAdded: count, domain });
+      } else {
+        dailyLearningJob().catch(err => console.error("Manual learning job failed:", err));
+        res.json({ success: true, message: "Learning job started for all domains" });
+      }
+    } catch (error) {
+      console.error("Error triggering learning:", error);
+      res.status(500).json({ error: "Failed to trigger learning" });
+    }
+  });
+
+  app.delete("/api/knowledge/:id", isAuthenticated, async (req: any, res: Response) => {
+    try {
+      const { id } = req.params;
+      await storage.deleteKnowledgeEntry(id);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error deleting knowledge entry:", error);
+      res.status(500).json({ error: "Failed to delete knowledge entry" });
     }
   });
 

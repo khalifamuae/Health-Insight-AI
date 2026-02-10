@@ -127,6 +127,38 @@ export const savedDietPlans = pgTable("saved_diet_plans", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+// Knowledge domains
+export const knowledgeDomainEnum = pgEnum("knowledge_domain", [
+  "nutrition",
+  "aerobic_training", 
+  "resistance_training",
+  "vitamins_minerals",
+  "hormones"
+]);
+
+// Knowledge base - stores scientific knowledge from trusted sources
+export const knowledgeBase = pgTable("knowledge_base", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  domain: knowledgeDomainEnum("domain").notNull(),
+  topic: text("topic").notNull(),
+  content: text("content").notNull(),
+  contentAr: text("content_ar"),
+  source: text("source").notNull(),
+  sourceUrl: text("source_url"),
+  tags: text("tags").array(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Knowledge learning log - tracks when the system last learned
+export const knowledgeLearningLog = pgTable("knowledge_learning_log", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  domain: knowledgeDomainEnum("domain").notNull(),
+  topicsSearched: text("topics_searched").array(),
+  entriesAdded: integer("entries_added").default(0),
+  status: varchar("status").notNull().default("completed"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 // Relations
 export const userProfilesRelations = relations(userProfiles, ({ many }) => ({
   testResults: many(testResults),
@@ -175,6 +207,11 @@ export const savedDietPlansRelations = relations(savedDietPlans, ({ one }) => ({
     references: [userProfiles.id],
   }),
 }));
+
+export const insertKnowledgeBaseSchema = createInsertSchema(knowledgeBase).omit({
+  id: true,
+  createdAt: true,
+});
 
 // Insert schemas
 export const insertUserProfileSchema = createInsertSchema(userProfiles).omit({
@@ -261,3 +298,8 @@ export type FitnessGoal = "weight_loss" | "maintain" | "muscle_gain";
 export type ActivityLevel = "sedentary" | "lightly_active" | "very_active" | "extremely_active";
 export type MealPreference = "high_protein" | "balanced" | "low_carb" | "vegetarian" | "custom_macros";
 export type ProteinPreference = "fish" | "chicken" | "meat" | "mixed";
+export type KnowledgeDomain = "nutrition" | "aerobic_training" | "resistance_training" | "vitamins_minerals" | "hormones";
+
+export type KnowledgeEntry = typeof knowledgeBase.$inferSelect;
+export type InsertKnowledgeEntry = z.infer<typeof insertKnowledgeBaseSchema>;
+export type KnowledgeLearningLogEntry = typeof knowledgeLearningLog.$inferSelect;

@@ -273,6 +273,7 @@ const resources = {
       menuMyTests: "My Tests",
       menuCompare: "Compare Results",
       menuMyDietSchedule: "My Diet Schedule",
+      menuKnowledge: "Knowledge Base",
 
       // My Diet Schedule
       myDietSchedule: "My Diet Schedule",
@@ -571,6 +572,7 @@ const resources = {
       menuMyTests: "فحوصاتي",
       menuCompare: "مقارنة النتائج",
       menuMyDietSchedule: "جدولي الغذائي",
+      menuKnowledge: "قاعدة المعرفة",
 
       // My Diet Schedule
       myDietSchedule: "جدولي الغذائي",

@@ -9,6 +9,8 @@ import {
   uploadedPdfs,
   savedDietPlans,
   dietPlanJobs,
+  knowledgeBase,
+  knowledgeLearningLog,
   type User,
   type UpsertUser,
   type UserProfile,
@@ -23,6 +25,10 @@ import {
   type TestResultWithDefinition,
   type SavedDietPlan,
   type DietPlanJob,
+  type KnowledgeEntry,
+  type InsertKnowledgeEntry,
+  type KnowledgeDomain,
+  type KnowledgeLearningLogEntry,
 } from "@shared/schema";
 
 export interface IStorage {
@@ -52,6 +58,15 @@ export interface IStorage {
   getSavedDietPlans(userId: string): Promise<SavedDietPlan[]>;
   saveDietPlan(userId: string, planData: string): Promise<SavedDietPlan>;
   deleteSavedDietPlan(id: string, userId: string): Promise<void>;
+
+  addKnowledgeEntry(entry: InsertKnowledgeEntry): Promise<KnowledgeEntry>;
+  addKnowledgeEntries(entries: InsertKnowledgeEntry[]): Promise<KnowledgeEntry[]>;
+  searchKnowledge(domain: KnowledgeDomain, searchTerms: string[]): Promise<KnowledgeEntry[]>;
+  getAllKnowledge(domain?: KnowledgeDomain): Promise<KnowledgeEntry[]>;
+  getKnowledgeCount(): Promise<Record<string, number>>;
+  deleteKnowledgeEntry(id: string): Promise<void>;
+  getLastLearningLog(domain: KnowledgeDomain): Promise<KnowledgeLearningLogEntry | null>;
+  addLearningLog(domain: KnowledgeDomain, topicsSearched: string[], entriesAdded: number): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -320,6 +335,76 @@ export class DatabaseStorage implements IStorage {
       .where(eq(dietPlanJobs.id, id))
       .returning();
     return updated || null;
+  }
+
+  async addKnowledgeEntry(entry: InsertKnowledgeEntry): Promise<KnowledgeEntry> {
+    const [created] = await db.insert(knowledgeBase).values(entry).returning();
+    return created;
+  }
+
+  async addKnowledgeEntries(entries: InsertKnowledgeEntry[]): Promise<KnowledgeEntry[]> {
+    if (entries.length === 0) return [];
+    const created = await db.insert(knowledgeBase).values(entries).returning();
+    return created;
+  }
+
+  async searchKnowledge(domain: KnowledgeDomain, searchTerms: string[]): Promise<KnowledgeEntry[]> {
+    if (searchTerms.length === 0) {
+      return db.select().from(knowledgeBase)
+        .where(eq(knowledgeBase.domain, domain))
+        .orderBy(desc(knowledgeBase.createdAt))
+        .limit(20);
+    }
+    const searchPattern = searchTerms.map(t => t.toLowerCase()).join("|");
+    return db.select().from(knowledgeBase)
+      .where(and(
+        eq(knowledgeBase.domain, domain),
+        sql`(LOWER(${knowledgeBase.topic}) ~* ${searchPattern} OR LOWER(${knowledgeBase.content}) ~* ${searchPattern} OR EXISTS (SELECT 1 FROM unnest(${knowledgeBase.tags}) tag WHERE LOWER(tag) ~* ${searchPattern}))`
+      ))
+      .orderBy(desc(knowledgeBase.createdAt))
+      .limit(30);
+  }
+
+  async getAllKnowledge(domain?: KnowledgeDomain): Promise<KnowledgeEntry[]> {
+    if (domain) {
+      return db.select().from(knowledgeBase)
+        .where(eq(knowledgeBase.domain, domain))
+        .orderBy(desc(knowledgeBase.createdAt));
+    }
+    return db.select().from(knowledgeBase).orderBy(desc(knowledgeBase.createdAt));
+  }
+
+  async getKnowledgeCount(): Promise<Record<string, number>> {
+    const results = await db
+      .select({ domain: knowledgeBase.domain, count: sql<number>`count(*)::int` })
+      .from(knowledgeBase)
+      .groupBy(knowledgeBase.domain);
+    const counts: Record<string, number> = {};
+    for (const r of results) {
+      counts[r.domain] = r.count;
+    }
+    return counts;
+  }
+
+  async deleteKnowledgeEntry(id: string): Promise<void> {
+    await db.delete(knowledgeBase).where(eq(knowledgeBase.id, id));
+  }
+
+  async getLastLearningLog(domain: KnowledgeDomain): Promise<KnowledgeLearningLogEntry | null> {
+    const [log] = await db.select().from(knowledgeLearningLog)
+      .where(eq(knowledgeLearningLog.domain, domain))
+      .orderBy(desc(knowledgeLearningLog.createdAt))
+      .limit(1);
+    return log || null;
+  }
+
+  async addLearningLog(domain: KnowledgeDomain, topicsSearched: string[], entriesAdded: number): Promise<void> {
+    await db.insert(knowledgeLearningLog).values({
+      domain,
+      topicsSearched,
+      entriesAdded,
+      status: "completed",
+    });
   }
 }
 

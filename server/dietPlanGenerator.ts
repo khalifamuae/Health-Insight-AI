@@ -1,4 +1,5 @@
 import OpenAI from "openai";
+import { searchRelevantKnowledge, learnFromDietPlanGeneration } from "./knowledgeEngine";
 
 const openai = new OpenAI({
   apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
@@ -651,8 +652,33 @@ Requirements:
 6. Link every meal and recommendation to a clear health reason from lab results
 7. Treat deficiencies through natural food first
 8. Suggest supplements ONLY when truly needed (use guiding language)
-9. Provide EXACTLY 7 varied options for each meal (breakfast = 7, lunch = 7, dinner = 7, snacks = 7) Total 28 options - do NOT provide fewer than 7
+9. Provide EXACTLY 5 varied options for each meal (breakfast = 5, lunch = 5, dinner = 5, snacks = 5) Total 20 options - do NOT provide fewer than 5
 10. Add scientific references in "references"`;
+
+  let knowledgeContext = "";
+  try {
+    knowledgeContext = await searchRelevantKnowledge(
+      userData.testResults.map(t => ({
+        testName: t.testName,
+        status: t.status,
+        category: t.category,
+      })),
+      goal
+    );
+    if (knowledgeContext) {
+      console.log(`[KnowledgeEngine] Found relevant knowledge context (${knowledgeContext.length} chars)`);
+    }
+  } catch (err) {
+    console.warn("[KnowledgeEngine] Failed to fetch knowledge context:", err);
+  }
+
+  const knowledgeSection = knowledgeContext
+    ? isArabic
+      ? `\n\n--- معلومات علمية من قاعدة المعرفة (استخدمها لتحسين التوصيات) ---\n${knowledgeContext}`
+      : `\n\n--- Scientific Knowledge from Knowledge Base (use to enhance recommendations) ---\n${knowledgeContext}`
+    : "";
+
+  const finalUserContent = userContent + knowledgeSection;
 
   console.log("Calling OpenAI for diet plan generation...");
   const callStart = Date.now();
@@ -660,7 +686,7 @@ Requirements:
     model: "gpt-4o",
     messages: [
       { role: "system", content: systemPrompt },
-      { role: "user", content: userContent },
+      { role: "user", content: finalUserContent },
     ],
     max_completion_tokens: 16384,
     temperature: 0.7,
@@ -735,7 +761,7 @@ Requirements:
       console.warn(`WARNING: ${incompleteMeals} meal options have incomplete data but within acceptable threshold`);
     }
 
-    return {
+    const result: DietPlanResult = {
       healthSummary: parsed.healthSummary || "",
       summary: parsed.summary || "",
       goalDescription: parsed.goalDescription || "",
@@ -763,6 +789,18 @@ Requirements:
       conditionTips: parsed.conditionTips || [],
       references: parsed.references && parsed.references.length > 0 ? parsed.references : defaultReferences,
     };
+
+    learnFromDietPlanGeneration(
+      userData.testResults.map(t => ({
+        testName: t.testName,
+        status: t.status,
+        value: t.value,
+        unit: t.unit,
+      })),
+      result
+    ).catch(err => console.warn("[KnowledgeEngine] Failed to learn from generation:", err));
+
+    return result;
   } catch (error: any) {
     if (error?.message === "DIET_PLAN_INCOMPLETE") {
       throw error;
