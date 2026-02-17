@@ -59,6 +59,13 @@ export interface IStorage {
   saveDietPlan(userId: string, planData: string): Promise<SavedDietPlan>;
   deleteSavedDietPlan(id: string, userId: string): Promise<void>;
 
+  updateSubscription(userId: string, data: {
+    subscription: string;
+    subscriptionExpiresAt: string | null;
+    subscriptionProductId: string | null;
+    subscriptionPlatform: string | null;
+  }): Promise<void>;
+  
   addKnowledgeEntry(entry: InsertKnowledgeEntry): Promise<KnowledgeEntry>;
   addKnowledgeEntries(entries: InsertKnowledgeEntry[]): Promise<KnowledgeEntry[]>;
   searchKnowledge(domain: KnowledgeDomain, searchTerms: string[]): Promise<KnowledgeEntry[]>;
@@ -210,6 +217,24 @@ export class DatabaseStorage implements IStorage {
   async createUploadedPdf(pdf: InsertUploadedPdf): Promise<UploadedPdf> {
     const [created] = await db.insert(uploadedPdfs).values(pdf).returning();
     return created;
+  }
+
+  async updateSubscription(userId: string, data: {
+    subscription: string;
+    subscriptionExpiresAt: string | null;
+    subscriptionProductId: string | null;
+    subscriptionPlatform: string | null;
+  }): Promise<void> {
+    await db
+      .update(userProfiles)
+      .set({
+        subscriptionPlan: data.subscription as any,
+        subscriptionExpiresAt: data.subscriptionExpiresAt ? new Date(data.subscriptionExpiresAt) : null,
+        subscriptionProductId: data.subscriptionProductId,
+        subscriptionPlatform: data.subscriptionPlatform,
+        updatedAt: new Date(),
+      })
+      .where(eq(userProfiles.id, userId));
   }
 
   async incrementFilesUploaded(userId: string): Promise<void> {

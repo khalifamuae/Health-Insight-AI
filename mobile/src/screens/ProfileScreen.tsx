@@ -27,7 +27,7 @@ interface UserProfile {
   pdfCount: number;
 }
 
-export default function ProfileScreen() {
+export default function ProfileScreen({ navigation }: { navigation: any }) {
   const { t, i18n } = useTranslation();
   const queryClient = useQueryClient();
   const isArabic = i18n.language === 'ar';
@@ -119,7 +119,11 @@ export default function ProfileScreen() {
             : `${Math.max(0, subInfo.remaining)} ${t('subscription.remaining')}`}
         </Text>
         {profile?.subscription !== 'premium' && (
-          <TouchableOpacity style={styles.upgradeButton} testID="button-upgrade">
+          <TouchableOpacity
+            style={styles.upgradeButton}
+            onPress={() => navigation.navigate('Subscription', { currentPlan: profile?.subscription || 'free' })}
+            testID="button-upgrade"
+          >
             <Text style={styles.upgradeButtonText}>{t('subscription.upgrade')}</Text>
           </TouchableOpacity>
         )}

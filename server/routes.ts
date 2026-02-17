@@ -707,6 +707,149 @@ export async function registerRoutes(
     }
   });
 
+  // ===== Subscription / In-App Purchase Endpoints =====
+
+  app.get("/api/subscription/status", isAuthenticated, async (req: any, res: Response) => {
+    try {
+      const userId = req.user?.claims?.sub;
+      if (!userId) return res.status(401).json({ error: "Not authenticated" });
+
+      const userProfile = await storage.getUserProfile(userId);
+      const plan = userProfile?.subscriptionPlan || 'free';
+      const expiresAt = userProfile?.subscriptionExpiresAt || null;
+      const isActive = plan !== 'free' && (!expiresAt || new Date(expiresAt) > new Date());
+
+      res.json({ plan, expiresAt: expiresAt ? new Date(expiresAt).toISOString() : null, isActive });
+    } catch (error) {
+      console.error("Error fetching subscription status:", error);
+      res.status(500).json({ error: "Failed to fetch subscription status" });
+    }
+  });
+
+  app.post("/api/subscription/purchase", isAuthenticated, async (req: any, res: Response) => {
+    try {
+      const userId = req.user?.claims?.sub;
+      if (!userId) return res.status(401).json({ error: "Not authenticated" });
+
+      const { productId, plan, period, platform, receiptData } = req.body;
+
+      if (!productId || !plan || !period || !platform) {
+        return res.status(400).json({ error: "Missing required fields" });
+      }
+
+      if (!['basic', 'premium'].includes(plan)) {
+        return res.status(400).json({ error: "Invalid plan" });
+      }
+
+      console.log(`[IAP] Purchase request: user=${userId}, product=${productId}, plan=${plan}, period=${period}, platform=${platform}`);
+
+      // TODO: In production, validate receipt with Apple/Google servers
+      // Apple: https://buy.itunes.apple.com/verifyReceipt
+      // Google: Google Play Developer API - purchases.subscriptions.get
+
+      const expiresAt = new Date();
+      if (period === 'yearly') {
+        expiresAt.setFullYear(expiresAt.getFullYear() + 1);
+      } else {
+        expiresAt.setMonth(expiresAt.getMonth() + 1);
+      }
+
+      await storage.updateSubscription(userId, {
+        subscription: plan,
+        subscriptionExpiresAt: expiresAt.toISOString(),
+        subscriptionProductId: productId,
+        subscriptionPlatform: platform,
+      });
+
+      res.json({ success: true, plan, expiresAt: expiresAt.toISOString() });
+    } catch (error) {
+      console.error("Error processing purchase:", error);
+      res.status(500).json({ error: "Failed to process purchase" });
+    }
+  });
+
+  app.post("/api/subscription/restore", isAuthenticated, async (req: any, res: Response) => {
+    try {
+      const userId = req.user?.claims?.sub;
+      if (!userId) return res.status(401).json({ error: "Not authenticated" });
+
+      const { platform } = req.body;
+
+      // TODO: In production, query Apple/Google for active subscriptions
+      // For now, check if user has an existing active subscription in the database
+      const userProfile = await storage.getUserProfile(userId);
+      if (userProfile?.subscriptionPlan && userProfile.subscriptionPlan !== 'free') {
+        const expiresAt = userProfile.subscriptionExpiresAt;
+        if (expiresAt && new Date(expiresAt) > new Date()) {
+          res.json({ success: true, plan: userProfile.subscriptionPlan, expiresAt: new Date(expiresAt).toISOString() });
+          return;
+        }
+      }
+
+      res.json({ success: false, message: "No active subscription found" });
+    } catch (error) {
+      console.error("Error restoring purchases:", error);
+      res.status(500).json({ error: "Failed to restore purchases" });
+    }
+  });
+
+  app.post("/api/subscription/webhook", async (req: Request, res: Response) => {
+    try {
+      // TODO: PRODUCTION SECURITY - Verify webhook signature before processing
+      // Apple: Verify JWS signature from App Store Server Notifications V2
+      // Google: Verify RTDN (Real-Time Developer Notifications) via Cloud Pub/Sub
+      const webhookSecret = process.env.IAP_WEBHOOK_SECRET;
+      const providedSecret = req.headers['x-webhook-secret'];
+      if (webhookSecret && providedSecret !== webhookSecret) {
+        console.warn('[IAP Webhook] Unauthorized webhook attempt');
+        return res.status(403).json({ error: "Unauthorized" });
+      }
+
+      const { event, platform, userId, productId, plan } = req.body;
+
+      if (!event || !platform || !userId) {
+        return res.status(400).json({ error: "Missing required fields" });
+      }
+
+      console.log(`[IAP Webhook] ${platform} event: ${event} for user ${userId}`);
+
+      switch (event) {
+        case 'SUBSCRIPTION_RENEWED':
+        case 'SUBSCRIPTION_PURCHASED': {
+          const expiresAt = new Date();
+          const period = productId?.includes('yearly') ? 'yearly' : 'monthly';
+          if (period === 'yearly') {
+            expiresAt.setFullYear(expiresAt.getFullYear() + 1);
+          } else {
+            expiresAt.setMonth(expiresAt.getMonth() + 1);
+          }
+          await storage.updateSubscription(userId, {
+            subscription: plan,
+            subscriptionExpiresAt: expiresAt.toISOString(),
+            subscriptionProductId: productId,
+            subscriptionPlatform: platform,
+          });
+          break;
+        }
+        case 'SUBSCRIPTION_CANCELLED':
+        case 'SUBSCRIPTION_EXPIRED': {
+          await storage.updateSubscription(userId, {
+            subscription: 'free',
+            subscriptionExpiresAt: null,
+            subscriptionProductId: null,
+            subscriptionPlatform: null,
+          });
+          break;
+        }
+      }
+
+      res.json({ received: true });
+    } catch (error) {
+      console.error("Error processing webhook:", error);
+      res.status(500).json({ error: "Webhook processing failed" });
+    }
+  });
+
   app.delete("/api/knowledge/:id", isAuthenticated, async (req: any, res: Response) => {
     try {
       const { id } = req.params;

@@ -16,6 +16,13 @@ BioTrack AI is a comprehensive health tracking application that analyzes PDF lab
 - **Subscription System**: Free (3 PDFs), Basic (20 PDFs), Premium (unlimited)
 
 ## Recent Changes
+- **In-App Purchase (IAP) System**: Full subscription purchase infrastructure for Apple App Store and Google Play
+  - Server-side endpoints: GET /api/subscription/status, POST /api/subscription/purchase, POST /api/subscription/restore, POST /api/subscription/webhook
+  - Database schema: Added subscription_expires_at, subscription_product_id, subscription_platform columns to user_profiles
+  - Mobile SubscriptionScreen: Monthly/yearly toggle, plan cards (Basic/Premium), purchase flow, restore purchases, bilingual
+  - IAP product IDs: com.alshira.biotrack.{basic,premium}.{monthly,yearly}
+  - Webhook security: x-webhook-secret header verification (set IAP_WEBHOOK_SECRET env var)
+  - PRODUCTION TODO: Integrate react-native-iap SDK for real App Store/Play Store transactions and server-side receipt validation
 - **Health Verification First**: AI analyzes lab results and prioritizes correcting deficiencies BEFORE recommending calorie deficit/surplus
 - **BMR Safety Floor**: System never suggests diet plans below BMR (minimum safe calorie threshold)
 - **Smart Deficit Adjustment**: If severe deficiencies detected (vitamin D, iron, B12, etc.), calorie deficit is automatically reduced from 500 to 200 kcal
