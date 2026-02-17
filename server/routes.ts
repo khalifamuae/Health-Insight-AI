@@ -8,7 +8,7 @@ import { generateDietPlan } from "./dietPlanGenerator";
 import { dailyLearningJob, learnDomain } from "./knowledgeEngine";
 import { desc, eq, and, gte, sql } from "drizzle-orm";
 import { db } from "./db";
-import type { KnowledgeDomain } from "@shared/schema";
+import { type KnowledgeDomain, userProfiles } from "@shared/schema";
 
 const upload = multer({ 
   storage: multer.memoryStorage(),
@@ -40,11 +40,16 @@ export async function registerRoutes(
       let profile = await storage.getUserProfile(userId);
       
       if (!profile) {
+        const trialEnd = new Date();
+        trialEnd.setDate(trialEnd.getDate() + 30);
         profile = await storage.upsertUserProfile({
           id: userId,
           subscriptionPlan: "free",
           filesUploaded: 0,
+          dietPlansGenerated: 0,
           language: "ar",
+          trialStartedAt: new Date(),
+          trialEndsAt: trialEnd,
         });
       }
       
@@ -509,9 +514,46 @@ export async function registerRoutes(
       const userId = req.user.claims.sub;
       const language = req.body.language || "ar";
 
-      const job = await storage.createDietPlanJob(userId, language);
-
       const profile = await storage.getUserProfile(userId);
+
+      // Check subscription / trial access
+      const plan = profile?.subscriptionPlan || 'free';
+      const trialEndsAt = profile?.trialEndsAt;
+      const isTrialActive = plan === 'free' && trialEndsAt && new Date(trialEndsAt) > new Date();
+      const subExpiresAt = profile?.subscriptionExpiresAt;
+      const isSubActive = plan !== 'free' && (!subExpiresAt || new Date(subExpiresAt) > new Date());
+
+      if (plan === 'free' && !isTrialActive) {
+        return res.status(403).json({
+          error: "SUBSCRIPTION_REQUIRED",
+          message: language === "ar"
+            ? "انتهت الفترة التجريبية. يرجى الاشتراك للاستمرار."
+            : "Your free trial has expired. Please subscribe to continue."
+        });
+      }
+
+      // Check diet plan limits for basic plan (4/month)
+      if (plan === 'basic' && isSubActive) {
+        let dietCount = profile?.dietPlansGenerated || 0;
+        const resetAt = profile?.dietPlansResetAt;
+        if (resetAt && new Date(resetAt) <= new Date()) {
+          dietCount = 0;
+          await db.update(userProfiles).set({
+            dietPlansGenerated: 0,
+            dietPlansResetAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+          }).where(eq(userProfiles.id, userId));
+        }
+        if (dietCount >= 4) {
+          return res.status(403).json({
+            error: "DIET_PLAN_LIMIT",
+            message: language === "ar"
+              ? "وصلت للحد الأقصى (٤ خطط غذائية شهرياً). قم بالترقية للمتقدم للحصول على خطط غير محدودة."
+              : "You've reached your limit (4 diet plans/month). Upgrade to Premium for unlimited plans."
+          });
+        }
+      }
+
+      const job = await storage.createDietPlanJob(userId, language);
       
       if (!profile?.weight || !profile?.height || !profile?.age || !profile?.gender) {
         await storage.updateDietPlanJob(job.id, { status: "failed", error: "MISSING_PROFILE_DATA" });
@@ -572,6 +614,18 @@ export async function registerRoutes(
             status: "completed",
             planData: JSON.stringify(dietPlan),
           });
+
+          // Increment diet plan count for basic plan limits
+          const currentProfile = await storage.getUserProfile(userId);
+          if (currentProfile?.subscriptionPlan === 'basic') {
+            const newCount = (currentProfile.dietPlansGenerated || 0) + 1;
+            const resetAt = currentProfile.dietPlansResetAt || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+            await db.update(userProfiles).set({
+              dietPlansGenerated: newCount,
+              dietPlansResetAt: resetAt,
+            }).where(eq(userProfiles.id, userId));
+          }
+
           console.log(`Diet plan job ${job.id} completed in ${elapsed}s`);
         } catch (error) {
           const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
@@ -719,7 +773,18 @@ export async function registerRoutes(
       const expiresAt = userProfile?.subscriptionExpiresAt || null;
       const isActive = plan !== 'free' && (!expiresAt || new Date(expiresAt) > new Date());
 
-      res.json({ plan, expiresAt: expiresAt ? new Date(expiresAt).toISOString() : null, isActive });
+      const trialEndsAt = userProfile?.trialEndsAt || null;
+      const isTrialActive = plan === 'free' && trialEndsAt && new Date(trialEndsAt) > new Date();
+
+      res.json({
+        plan,
+        expiresAt: expiresAt ? new Date(expiresAt).toISOString() : null,
+        isActive,
+        trialEndsAt: trialEndsAt ? new Date(trialEndsAt).toISOString() : null,
+        isTrialActive: !!isTrialActive,
+        dietPlansGenerated: userProfile?.dietPlansGenerated || 0,
+        dietPlansResetAt: userProfile?.dietPlansResetAt ? new Date(userProfile.dietPlansResetAt).toISOString() : null,
+      });
     } catch (error) {
       console.error("Error fetching subscription status:", error);
       res.status(500).json({ error: "Failed to fetch subscription status" });
@@ -733,7 +798,7 @@ export async function registerRoutes(
 
       const { productId, plan, period, platform, receiptData } = req.body;
 
-      if (!productId || !plan || !period || !platform) {
+      if (!productId || !plan || !platform) {
         return res.status(400).json({ error: "Missing required fields" });
       }
 
@@ -741,18 +806,14 @@ export async function registerRoutes(
         return res.status(400).json({ error: "Invalid plan" });
       }
 
-      console.log(`[IAP] Purchase request: user=${userId}, product=${productId}, plan=${plan}, period=${period}, platform=${platform}`);
+      console.log(`[IAP] Purchase request: user=${userId}, product=${productId}, plan=${plan}, platform=${platform}`);
 
       // TODO: In production, validate receipt with Apple/Google servers
       // Apple: https://buy.itunes.apple.com/verifyReceipt
       // Google: Google Play Developer API - purchases.subscriptions.get
 
       const expiresAt = new Date();
-      if (period === 'yearly') {
-        expiresAt.setFullYear(expiresAt.getFullYear() + 1);
-      } else {
-        expiresAt.setMonth(expiresAt.getMonth() + 1);
-      }
+      expiresAt.setMonth(expiresAt.getMonth() + 1);
 
       await storage.updateSubscription(userId, {
         subscription: plan,

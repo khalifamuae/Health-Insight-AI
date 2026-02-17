@@ -14,6 +14,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { Ionicons } from '@expo/vector-icons';
 import {
   SUBSCRIPTION_PRODUCTS,
+  FREE_TRIAL_DAYS,
   purchaseSubscription,
   restorePurchases,
   type SubscriptionProduct,
@@ -21,7 +22,7 @@ import {
 
 interface Props {
   navigation: any;
-  route?: { params?: { currentPlan?: string } };
+  route?: { params?: { currentPlan?: string; trialEndsAt?: string; isTrialActive?: boolean } };
 }
 
 export default function SubscriptionScreen({ navigation, route }: Props) {
@@ -29,12 +30,19 @@ export default function SubscriptionScreen({ navigation, route }: Props) {
   const queryClient = useQueryClient();
   const isArabic = i18n.language === 'ar';
   const currentPlan = route?.params?.currentPlan || 'free';
+  const trialEndsAt = route?.params?.trialEndsAt;
+  const isTrialActive = route?.params?.isTrialActive || false;
 
-  const [selectedPeriod, setSelectedPeriod] = useState<'monthly' | 'yearly'>('monthly');
   const [purchasing, setPurchasing] = useState(false);
   const [restoring, setRestoring] = useState(false);
 
-  const filteredProducts = SUBSCRIPTION_PRODUCTS.filter(p => p.period === selectedPeriod);
+  const getTrialDaysRemaining = () => {
+    if (!trialEndsAt) return 0;
+    const diff = new Date(trialEndsAt).getTime() - Date.now();
+    return Math.max(0, Math.ceil(diff / (1000 * 60 * 60 * 24)));
+  };
+
+  const trialDaysLeft = getTrialDaysRemaining();
 
   const handlePurchase = async (product: SubscriptionProduct) => {
     if (currentPlan === product.plan) return;
@@ -122,6 +130,38 @@ export default function SubscriptionScreen({ navigation, route }: Props) {
         <View style={{ width: 40 }} />
       </View>
 
+      {isTrialActive && trialDaysLeft > 0 && (
+        <View style={styles.trialBanner}>
+          <Ionicons name="time-outline" size={22} color="#f59e0b" />
+          <View style={styles.trialTextContainer}>
+            <Text style={styles.trialTitle}>
+              {isArabic ? 'الفترة التجريبية المجانية' : 'Free Trial Period'}
+            </Text>
+            <Text style={styles.trialSubtitle}>
+              {isArabic
+                ? `متبقي ${trialDaysLeft} يوم - اشترك قبل انتهاء الفترة التجريبية`
+                : `${trialDaysLeft} days remaining - Subscribe before your trial ends`}
+            </Text>
+          </View>
+        </View>
+      )}
+
+      {!isTrialActive && currentPlan === 'free' && (
+        <View style={[styles.trialBanner, { backgroundColor: '#fef2f2', borderColor: '#fca5a5' }]}>
+          <Ionicons name="alert-circle" size={22} color="#ef4444" />
+          <View style={styles.trialTextContainer}>
+            <Text style={[styles.trialTitle, { color: '#dc2626' }]}>
+              {isArabic ? 'انتهت الفترة التجريبية' : 'Trial Expired'}
+            </Text>
+            <Text style={[styles.trialSubtitle, { color: '#b91c1c' }]}>
+              {isArabic
+                ? 'اشترك الآن للاستمرار في استخدام التطبيق'
+                : 'Subscribe now to continue using the app'}
+            </Text>
+          </View>
+        </View>
+      )}
+
       <View style={styles.currentPlanBadge}>
         <Ionicons name={getPlanIcon(currentPlan)} size={20} color={getPlanColor(currentPlan)} />
         <Text style={[styles.currentPlanText, { color: getPlanColor(currentPlan) }]}>
@@ -130,33 +170,7 @@ export default function SubscriptionScreen({ navigation, route }: Props) {
         </Text>
       </View>
 
-      <View style={styles.periodToggle}>
-        <TouchableOpacity
-          style={[styles.periodButton, selectedPeriod === 'monthly' && styles.periodButtonActive]}
-          onPress={() => setSelectedPeriod('monthly')}
-          testID="button-monthly"
-        >
-          <Text style={[styles.periodText, selectedPeriod === 'monthly' && styles.periodTextActive]}>
-            {isArabic ? 'شهري' : 'Monthly'}
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.periodButton, selectedPeriod === 'yearly' && styles.periodButtonActive]}
-          onPress={() => setSelectedPeriod('yearly')}
-          testID="button-yearly"
-        >
-          <Text style={[styles.periodText, selectedPeriod === 'yearly' && styles.periodTextActive]}>
-            {isArabic ? 'سنوي' : 'Yearly'}
-          </Text>
-          <View style={styles.saveBadge}>
-            <Text style={styles.saveBadgeText}>
-              {isArabic ? 'وفّر ٣٣٪' : 'Save 33%'}
-            </Text>
-          </View>
-        </TouchableOpacity>
-      </View>
-
-      {filteredProducts.map((product) => {
+      {SUBSCRIPTION_PRODUCTS.map((product) => {
         const isCurrent = currentPlan === product.plan;
         const isUpgrade = (currentPlan === 'free') ||
           (currentPlan === 'basic' && product.plan === 'premium');
@@ -208,7 +222,7 @@ export default function SubscriptionScreen({ navigation, route }: Props) {
               ]}
               onPress={() => handlePurchase(product)}
               disabled={isCurrent || purchasing || !isUpgrade}
-              testID={`button-purchase-${product.plan}-${product.period}`}
+              testID={`button-purchase-${product.plan}`}
             >
               {purchasing ? (
                 <ActivityIndicator color="#fff" size="small" />
@@ -242,6 +256,14 @@ export default function SubscriptionScreen({ navigation, route }: Props) {
       </TouchableOpacity>
 
       <View style={styles.footer}>
+        <View style={styles.freeTrialInfo}>
+          <Ionicons name="gift-outline" size={18} color="#22c55e" />
+          <Text style={styles.freeTrialInfoText}>
+            {isArabic
+              ? `شهر واحد مجاني عند التسجيل لأول مرة (${FREE_TRIAL_DAYS} يوم)`
+              : `${FREE_TRIAL_DAYS}-day free trial for new users`}
+          </Text>
+        </View>
         <Text style={styles.footerText}>
           {isArabic
             ? 'يتم الدفع عبر حساب Apple أو Google الخاص بك. يتجدد الاشتراك تلقائياً ما لم يتم إلغاؤه قبل ٢٤ ساعة من نهاية الفترة الحالية.'
@@ -292,6 +314,31 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#1e293b',
   },
+  trialBanner: {
+    flexDirection: I18nManager.isRTL ? 'row-reverse' : 'row',
+    alignItems: 'center',
+    backgroundColor: '#fffbeb',
+    borderWidth: 1,
+    borderColor: '#fcd34d',
+    borderRadius: 12,
+    padding: 14,
+    marginBottom: 16,
+    gap: 12,
+  },
+  trialTextContainer: {
+    flex: 1,
+    alignItems: I18nManager.isRTL ? 'flex-end' : 'flex-start',
+  },
+  trialTitle: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#b45309',
+    marginBottom: 2,
+  },
+  trialSubtitle: {
+    fontSize: 13,
+    color: '#92400e',
+  },
   currentPlanBadge: {
     flexDirection: I18nManager.isRTL ? 'row-reverse' : 'row',
     alignItems: 'center',
@@ -312,50 +359,6 @@ const styles = StyleSheet.create({
   currentPlanText: {
     fontSize: 15,
     fontWeight: '600',
-  },
-  periodToggle: {
-    flexDirection: I18nManager.isRTL ? 'row-reverse' : 'row',
-    backgroundColor: '#e2e8f0',
-    borderRadius: 12,
-    padding: 4,
-    marginBottom: 24,
-  },
-  periodButton: {
-    flex: 1,
-    paddingVertical: 12,
-    borderRadius: 10,
-    alignItems: 'center',
-    flexDirection: 'row',
-    justifyContent: 'center',
-    gap: 6,
-  },
-  periodButtonActive: {
-    backgroundColor: '#fff',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
-  },
-  periodText: {
-    fontSize: 15,
-    fontWeight: '500',
-    color: '#64748b',
-  },
-  periodTextActive: {
-    color: '#1e293b',
-    fontWeight: '600',
-  },
-  saveBadge: {
-    backgroundColor: '#22c55e',
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 10,
-  },
-  saveBadgeText: {
-    color: '#fff',
-    fontSize: 11,
-    fontWeight: '700',
   },
   planCard: {
     backgroundColor: '#fff',
@@ -459,6 +462,22 @@ const styles = StyleSheet.create({
     paddingTop: 16,
     borderTopWidth: 1,
     borderTopColor: '#e2e8f0',
+  },
+  freeTrialInfo: {
+    flexDirection: I18nManager.isRTL ? 'row-reverse' : 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    marginBottom: 12,
+    backgroundColor: '#f0fdf4',
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 10,
+  },
+  freeTrialInfoText: {
+    fontSize: 13,
+    color: '#16a34a',
+    fontWeight: '600',
   },
   footerText: {
     fontSize: 12,

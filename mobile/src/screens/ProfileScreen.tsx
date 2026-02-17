@@ -121,7 +121,11 @@ export default function ProfileScreen({ navigation }: { navigation: any }) {
         {profile?.subscription !== 'premium' && (
           <TouchableOpacity
             style={styles.upgradeButton}
-            onPress={() => navigation.navigate('Subscription', { currentPlan: profile?.subscription || 'free' })}
+            onPress={() => navigation.navigate('Subscription', {
+              currentPlan: profile?.subscription || 'free',
+              trialEndsAt: (profile as any)?.trialEndsAt,
+              isTrialActive: (profile as any)?.isTrialActive,
+            })}
             testID="button-upgrade"
           >
             <Text style={styles.upgradeButtonText}>{t('subscription.upgrade')}</Text>

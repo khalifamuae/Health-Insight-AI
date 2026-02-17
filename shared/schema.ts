@@ -50,7 +50,11 @@ export const userProfiles = pgTable("user_profiles", {
   subscriptionExpiresAt: timestamp("subscription_expires_at"),
   subscriptionProductId: varchar("subscription_product_id"),
   subscriptionPlatform: varchar("subscription_platform", { length: 10 }),
+  trialStartedAt: timestamp("trial_started_at"),
+  trialEndsAt: timestamp("trial_ends_at"),
   filesUploaded: integer("files_uploaded").default(0),
+  dietPlansGenerated: integer("diet_plans_generated").default(0),
+  dietPlansResetAt: timestamp("diet_plans_reset_at"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });

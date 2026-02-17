@@ -9,15 +9,15 @@ import { api } from '../lib/api';
 
 export const PRODUCT_IDS = {
   BASIC_MONTHLY: 'com.alshira.biotrack.basic.monthly',
-  BASIC_YEARLY: 'com.alshira.biotrack.basic.yearly',
   PREMIUM_MONTHLY: 'com.alshira.biotrack.premium.monthly',
-  PREMIUM_YEARLY: 'com.alshira.biotrack.premium.yearly',
 };
+
+export const FREE_TRIAL_DAYS = 30;
 
 export interface SubscriptionProduct {
   productId: string;
   plan: 'basic' | 'premium';
-  period: 'monthly' | 'yearly';
+  period: 'monthly';
   title: string;
   titleAr: string;
   price: string;
@@ -31,45 +31,23 @@ export const SUBSCRIPTION_PRODUCTS: SubscriptionProduct[] = [
     productId: PRODUCT_IDS.BASIC_MONTHLY,
     plan: 'basic',
     period: 'monthly',
-    title: 'Basic Monthly',
-    titleAr: 'الأساسي - شهري',
+    title: 'Basic',
+    titleAr: 'الأساسي',
     price: '$4.99/mo',
     priceAr: '٤.٩٩$/شهرياً',
-    features: ['20 PDF uploads', 'Detailed analysis', 'Priority support'],
-    featuresAr: ['٢٠ ملف PDF', 'تحليل تفصيلي', 'دعم متقدم'],
-  },
-  {
-    productId: PRODUCT_IDS.BASIC_YEARLY,
-    plan: 'basic',
-    period: 'yearly',
-    title: 'Basic Yearly',
-    titleAr: 'الأساسي - سنوي',
-    price: '$39.99/yr',
-    priceAr: '٣٩.٩٩$/سنوياً',
-    features: ['20 PDF uploads', 'Detailed analysis', 'Priority support', 'Save 33%'],
-    featuresAr: ['٢٠ ملف PDF', 'تحليل تفصيلي', 'دعم متقدم', 'وفّر ٣٣٪'],
+    features: ['20 PDF uploads/month', '4 AI diet plans/month', 'Detailed analysis', 'Test tracking'],
+    featuresAr: ['٢٠ ملف PDF شهرياً', '٤ خطط غذائية بالذكاء الاصطناعي شهرياً', 'تحليل تفصيلي', 'متابعة الفحوصات'],
   },
   {
     productId: PRODUCT_IDS.PREMIUM_MONTHLY,
     plan: 'premium',
     period: 'monthly',
-    title: 'Premium Monthly',
-    titleAr: 'المتقدم - شهري',
+    title: 'Premium',
+    titleAr: 'المتقدم',
     price: '$9.99/mo',
     priceAr: '٩.٩٩$/شهرياً',
-    features: ['Unlimited uploads', 'AI diet plans', 'AI recommendations', 'Phone reminders', 'Data export'],
-    featuresAr: ['رفع غير محدود', 'خطط غذائية بالذكاء الاصطناعي', 'توصيات ذكية', 'تذكيرات هاتفية', 'تصدير البيانات'],
-  },
-  {
-    productId: PRODUCT_IDS.PREMIUM_YEARLY,
-    plan: 'premium',
-    period: 'yearly',
-    title: 'Premium Yearly',
-    titleAr: 'المتقدم - سنوي',
-    price: '$79.99/yr',
-    priceAr: '٧٩.٩٩$/سنوياً',
-    features: ['Unlimited uploads', 'AI diet plans', 'AI recommendations', 'Phone reminders', 'Data export', 'Save 33%'],
-    featuresAr: ['رفع غير محدود', 'خطط غذائية بالذكاء الاصطناعي', 'توصيات ذكية', 'تذكيرات هاتفية', 'تصدير البيانات', 'وفّر ٣٣٪'],
+    features: ['Unlimited PDF uploads', 'Unlimited AI diet plans', 'AI recommendations', 'Phone reminders', 'Data export', 'Priority support'],
+    featuresAr: ['رفع غير محدود للملفات', 'خطط غذائية غير محدودة', 'توصيات ذكية', 'تذكيرات هاتفية', 'تصدير البيانات', 'دعم أولوية'],
   },
 ];
 
@@ -109,10 +87,12 @@ export async function getSubscriptionStatus(): Promise<{
   plan: 'free' | 'basic' | 'premium';
   expiresAt: string | null;
   isActive: boolean;
+  trialEndsAt: string | null;
+  isTrialActive: boolean;
 }> {
   try {
     return await api.get('/api/subscription/status');
   } catch {
-    return { plan: 'free', expiresAt: null, isActive: false };
+    return { plan: 'free', expiresAt: null, isActive: false, trialEndsAt: null, isTrialActive: false };
   }
 }

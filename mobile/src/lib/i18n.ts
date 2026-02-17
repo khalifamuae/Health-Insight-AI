@@ -59,8 +59,6 @@ const resources = {
         plans: 'خطط الاشتراك',
         currentPlan: 'خطتك الحالية',
         monthly: 'شهري',
-        yearly: 'سنوي',
-        save33: 'وفّر ٣٣٪',
         subscribe: 'اشترك الآن',
         restore: 'استعادة المشتريات السابقة',
         terms: 'شروط الاستخدام',
@@ -70,7 +68,11 @@ const resources = {
         error: 'فشل في إتمام عملية الشراء',
         noRestored: 'لم يتم العثور على مشتريات سابقة',
         restored: 'تم استعادة مشترياتك بنجاح',
-        mostPopular: 'الأكثر شعبية'
+        mostPopular: 'الأكثر شعبية',
+        freeTrial: 'الفترة التجريبية المجانية',
+        trialExpired: 'انتهت الفترة التجريبية',
+        trialDaysLeft: 'يوم متبقي',
+        dietPlansLeft: 'خطط غذائية متبقية'
       },
       reminders: {
         title: 'التذكيرات',
@@ -173,8 +175,6 @@ const resources = {
         plans: 'Subscription Plans',
         currentPlan: 'Current Plan',
         monthly: 'Monthly',
-        yearly: 'Yearly',
-        save33: 'Save 33%',
         subscribe: 'Subscribe Now',
         restore: 'Restore Previous Purchases',
         terms: 'Terms of Use',
@@ -184,7 +184,11 @@ const resources = {
         error: 'Failed to complete purchase',
         noRestored: 'No previous purchases found',
         restored: 'Your purchases have been restored',
-        mostPopular: 'Most Popular'
+        mostPopular: 'Most Popular',
+        freeTrial: 'Free Trial Period',
+        trialExpired: 'Trial Expired',
+        trialDaysLeft: 'days remaining',
+        dietPlansLeft: 'diet plans remaining'
       },
       reminders: {
         title: 'Reminders',
