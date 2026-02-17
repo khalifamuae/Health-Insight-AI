@@ -12,7 +12,7 @@ export const PRODUCT_IDS = {
   PRO_YEARLY: 'com.alshira.biotrack.pro.yearly',
 };
 
-export const FREE_TRIAL_DAYS = 30;
+export const FREE_TRIAL_DAYS = 7;
 
 export interface SubscriptionProduct {
   productId: string;

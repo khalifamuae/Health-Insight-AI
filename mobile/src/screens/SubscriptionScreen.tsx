@@ -265,7 +265,7 @@ export default function SubscriptionScreen({ navigation, route }: Props) {
           <Ionicons name="gift-outline" size={18} color="#22c55e" />
           <Text style={styles.freeTrialInfoText}>
             {isArabic
-              ? `شهر واحد مجاني عند التسجيل لأول مرة (${FREE_TRIAL_DAYS} يوم)`
+              ? `أسبوع واحد مجاني عند التسجيل لأول مرة (${FREE_TRIAL_DAYS} يوم)`
               : `${FREE_TRIAL_DAYS}-day free trial for new users`}
           </Text>
         </View>

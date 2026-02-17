@@ -41,7 +41,7 @@ export async function registerRoutes(
       
       if (!profile) {
         const trialEnd = new Date();
-        trialEnd.setDate(trialEnd.getDate() + 30);
+        trialEnd.setDate(trialEnd.getDate() + 7);
         profile = await storage.upsertUserProfile({
           id: userId,
           subscriptionPlan: "free",
@@ -89,10 +89,39 @@ export async function registerRoutes(
     }
   });
 
+  // Helper: check if user has active subscription or trial
+  async function checkSubscriptionAccess(userId: string): Promise<{ hasAccess: boolean; reason?: string; reasonAr?: string }> {
+    const profile = await storage.getUserProfile(userId);
+    const rawPlan = profile?.subscriptionPlan || 'free';
+    const plan = (rawPlan === 'basic' || rawPlan === 'premium') ? 'pro' : rawPlan;
+    
+    if (plan !== 'free') {
+      const expiresAt = profile?.subscriptionExpiresAt;
+      if (!expiresAt || new Date(expiresAt) > new Date()) {
+        return { hasAccess: true };
+      }
+    }
+    
+    const trialEndsAt = profile?.trialEndsAt;
+    if (trialEndsAt && new Date(trialEndsAt) > new Date()) {
+      return { hasAccess: true };
+    }
+    
+    return {
+      hasAccess: false,
+      reason: "Your free trial has expired. Please subscribe to view your data.",
+      reasonAr: "انتهت الفترة التجريبية المجانية. يرجى الاشتراك لعرض بياناتك."
+    };
+  }
+
   // Test results routes - returns only user's actual test results
   app.get("/api/tests", isAuthenticated, async (req: any, res: Response) => {
     try {
       const userId = req.user.claims.sub;
+      const access = await checkSubscriptionAccess(userId);
+      if (!access.hasAccess) {
+        return res.status(403).json({ error: "SUBSCRIPTION_REQUIRED", message: access.reason, messageAr: access.reasonAr });
+      }
       const tests = await storage.getTestResultsByUser(userId);
       res.json(tests);
     } catch (error) {
@@ -106,6 +135,10 @@ export async function registerRoutes(
   app.get("/api/tests/all", isAuthenticated, async (req: any, res: Response) => {
     try {
       const userId = req.user.claims.sub;
+      const access = await checkSubscriptionAccess(userId);
+      if (!access.hasAccess) {
+        return res.status(403).json({ error: "SUBSCRIPTION_REQUIRED", message: access.reason, messageAr: access.reasonAr });
+      }
       
       // Get all test definitions (ordered by importance and category)
       const definitions = await storage.getTestDefinitions();
@@ -171,6 +204,10 @@ export async function registerRoutes(
   app.get("/api/reminders", isAuthenticated, async (req: any, res: Response) => {
     try {
       const userId = req.user.claims.sub;
+      const access = await checkSubscriptionAccess(userId);
+      if (!access.hasAccess) {
+        return res.status(403).json({ error: "SUBSCRIPTION_REQUIRED", message: access.reason, messageAr: access.reasonAr });
+      }
       const userReminders = await storage.getRemindersByUser(userId);
       res.json(userReminders);
     } catch (error) {
@@ -183,6 +220,10 @@ export async function registerRoutes(
   app.get("/api/stats", isAuthenticated, async (req: any, res: Response) => {
     try {
       const userId = req.user.claims.sub;
+      const access = await checkSubscriptionAccess(userId);
+      if (!access.hasAccess) {
+        return res.status(403).json({ error: "SUBSCRIPTION_REQUIRED", message: access.reason, messageAr: access.reasonAr });
+      }
       const tests = await storage.getTestResultsByUser(userId);
       const userReminders = await storage.getRemindersByUser(userId);
       const pdfs = await storage.getUploadedPdfsByUser(userId);
@@ -318,6 +359,10 @@ export async function registerRoutes(
   app.get("/api/uploaded-pdfs", isAuthenticated, async (req: any, res: Response) => {
     try {
       const userId = req.user.claims.sub;
+      const access = await checkSubscriptionAccess(userId);
+      if (!access.hasAccess) {
+        return res.status(403).json({ error: "SUBSCRIPTION_REQUIRED", message: access.reason, messageAr: access.reasonAr });
+      }
       const pdfs = await storage.getUploadedPdfsByUser(userId);
       res.json(pdfs);
     } catch (error) {
@@ -646,6 +691,10 @@ export async function registerRoutes(
   app.get("/api/saved-diet-plans", isAuthenticated, async (req: any, res: Response) => {
     try {
       const userId = req.user.claims.sub;
+      const access = await checkSubscriptionAccess(userId);
+      if (!access.hasAccess) {
+        return res.status(403).json({ error: "SUBSCRIPTION_REQUIRED", message: access.reason, messageAr: access.reasonAr });
+      }
       const plans = await storage.getSavedDietPlans(userId);
       res.json(plans);
     } catch (error) {
