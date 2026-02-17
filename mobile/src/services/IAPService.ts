@@ -8,46 +8,82 @@ import { api } from '../lib/api';
 // that must be sent to the server for verification before activating subscription
 
 export const PRODUCT_IDS = {
-  BASIC_MONTHLY: 'com.alshira.biotrack.basic.monthly',
-  PREMIUM_MONTHLY: 'com.alshira.biotrack.premium.monthly',
+  PRO_MONTHLY: 'com.alshira.biotrack.pro.monthly',
+  PRO_YEARLY: 'com.alshira.biotrack.pro.yearly',
 };
 
 export const FREE_TRIAL_DAYS = 30;
 
 export interface SubscriptionProduct {
   productId: string;
-  plan: 'basic' | 'premium';
-  period: 'monthly';
+  plan: 'pro';
+  period: 'monthly' | 'yearly';
   title: string;
   titleAr: string;
   price: string;
   priceAr: string;
+  savings?: string;
+  savingsAr?: string;
   features: string[];
   featuresAr: string[];
 }
 
 export const SUBSCRIPTION_PRODUCTS: SubscriptionProduct[] = [
   {
-    productId: PRODUCT_IDS.BASIC_MONTHLY,
-    plan: 'basic',
+    productId: PRODUCT_IDS.PRO_MONTHLY,
+    plan: 'pro',
     period: 'monthly',
-    title: 'Basic',
-    titleAr: 'الأساسي',
-    price: '$4.99/mo',
-    priceAr: '٤.٩٩$/شهرياً',
-    features: ['20 PDF uploads/month', '4 AI diet plans/month', 'Detailed analysis', 'Test tracking'],
-    featuresAr: ['٢٠ ملف PDF شهرياً', '٤ خطط غذائية بالذكاء الاصطناعي شهرياً', 'تحليل تفصيلي', 'متابعة الفحوصات'],
+    title: 'Monthly',
+    titleAr: 'شهري',
+    price: '$14.99/mo',
+    priceAr: '١٤.٩٩$/شهرياً',
+    features: [
+      'Unlimited PDF uploads',
+      'Unlimited AI diet plans',
+      'AI-powered lab analysis',
+      'Personalized health insights',
+      'Test tracking & comparison',
+      'Recheck reminders',
+      'Priority support',
+    ],
+    featuresAr: [
+      'رفع غير محدود للملفات',
+      'خطط غذائية غير محدودة بالذكاء الاصطناعي',
+      'تحليل ذكي لنتائج المختبر',
+      'رؤى صحية مخصصة',
+      'متابعة ومقارنة الفحوصات',
+      'تذكيرات إعادة الفحص',
+      'دعم أولوية',
+    ],
   },
   {
-    productId: PRODUCT_IDS.PREMIUM_MONTHLY,
-    plan: 'premium',
-    period: 'monthly',
-    title: 'Premium',
-    titleAr: 'المتقدم',
-    price: '$9.99/mo',
-    priceAr: '٩.٩٩$/شهرياً',
-    features: ['Unlimited PDF uploads', 'Unlimited AI diet plans', 'AI recommendations', 'Phone reminders', 'Data export', 'Priority support'],
-    featuresAr: ['رفع غير محدود للملفات', 'خطط غذائية غير محدودة', 'توصيات ذكية', 'تذكيرات هاتفية', 'تصدير البيانات', 'دعم أولوية'],
+    productId: PRODUCT_IDS.PRO_YEARLY,
+    plan: 'pro',
+    period: 'yearly',
+    title: 'Yearly',
+    titleAr: 'سنوي',
+    price: '$139/year',
+    priceAr: '١٣٩$/سنوياً',
+    savings: 'Save $40.88 (23% off)',
+    savingsAr: 'وفّر ٤٠.٨٨$ (خصم ٢٣٪)',
+    features: [
+      'Unlimited PDF uploads',
+      'Unlimited AI diet plans',
+      'AI-powered lab analysis',
+      'Personalized health insights',
+      'Test tracking & comparison',
+      'Recheck reminders',
+      'Priority support',
+    ],
+    featuresAr: [
+      'رفع غير محدود للملفات',
+      'خطط غذائية غير محدودة بالذكاء الاصطناعي',
+      'تحليل ذكي لنتائج المختبر',
+      'رؤى صحية مخصصة',
+      'متابعة ومقارنة الفحوصات',
+      'تذكيرات إعادة الفحص',
+      'دعم أولوية',
+    ],
   },
 ];
 
@@ -84,7 +120,7 @@ export async function restorePurchases(): Promise<boolean> {
 }
 
 export async function getSubscriptionStatus(): Promise<{
-  plan: 'free' | 'basic' | 'premium';
+  plan: 'free' | 'pro';
   expiresAt: string | null;
   isActive: boolean;
   trialEndsAt: string | null;

@@ -517,11 +517,10 @@ export async function registerRoutes(
       const profile = await storage.getUserProfile(userId);
 
       // Check subscription / trial access
-      const plan = profile?.subscriptionPlan || 'free';
+      const rawPlan = profile?.subscriptionPlan || 'free';
+      const plan = (rawPlan === 'basic' || rawPlan === 'premium') ? 'pro' : rawPlan;
       const trialEndsAt = profile?.trialEndsAt;
       const isTrialActive = plan === 'free' && trialEndsAt && new Date(trialEndsAt) > new Date();
-      const subExpiresAt = profile?.subscriptionExpiresAt;
-      const isSubActive = plan !== 'free' && (!subExpiresAt || new Date(subExpiresAt) > new Date());
 
       if (plan === 'free' && !isTrialActive) {
         return res.status(403).json({
@@ -530,27 +529,6 @@ export async function registerRoutes(
             ? "انتهت الفترة التجريبية. يرجى الاشتراك للاستمرار."
             : "Your free trial has expired. Please subscribe to continue."
         });
-      }
-
-      // Check diet plan limits for basic plan (4/month)
-      if (plan === 'basic' && isSubActive) {
-        let dietCount = profile?.dietPlansGenerated || 0;
-        const resetAt = profile?.dietPlansResetAt;
-        if (resetAt && new Date(resetAt) <= new Date()) {
-          dietCount = 0;
-          await db.update(userProfiles).set({
-            dietPlansGenerated: 0,
-            dietPlansResetAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
-          }).where(eq(userProfiles.id, userId));
-        }
-        if (dietCount >= 4) {
-          return res.status(403).json({
-            error: "DIET_PLAN_LIMIT",
-            message: language === "ar"
-              ? "وصلت للحد الأقصى (٤ خطط غذائية شهرياً). قم بالترقية للمتقدم للحصول على خطط غير محدودة."
-              : "You've reached your limit (4 diet plans/month). Upgrade to Premium for unlimited plans."
-          });
-        }
       }
 
       const job = await storage.createDietPlanJob(userId, language);
@@ -614,17 +592,6 @@ export async function registerRoutes(
             status: "completed",
             planData: JSON.stringify(dietPlan),
           });
-
-          // Increment diet plan count for basic plan limits
-          const currentProfile = await storage.getUserProfile(userId);
-          if (currentProfile?.subscriptionPlan === 'basic') {
-            const newCount = (currentProfile.dietPlansGenerated || 0) + 1;
-            const resetAt = currentProfile.dietPlansResetAt || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
-            await db.update(userProfiles).set({
-              dietPlansGenerated: newCount,
-              dietPlansResetAt: resetAt,
-            }).where(eq(userProfiles.id, userId));
-          }
 
           console.log(`Diet plan job ${job.id} completed in ${elapsed}s`);
         } catch (error) {
@@ -769,7 +736,8 @@ export async function registerRoutes(
       if (!userId) return res.status(401).json({ error: "Not authenticated" });
 
       const userProfile = await storage.getUserProfile(userId);
-      const plan = userProfile?.subscriptionPlan || 'free';
+      const rawPlan = userProfile?.subscriptionPlan || 'free';
+      const plan = (rawPlan === 'basic' || rawPlan === 'premium') ? 'pro' : rawPlan;
       const expiresAt = userProfile?.subscriptionExpiresAt || null;
       const isActive = plan !== 'free' && (!expiresAt || new Date(expiresAt) > new Date());
 
@@ -796,24 +764,30 @@ export async function registerRoutes(
       const userId = req.user?.claims?.sub;
       if (!userId) return res.status(401).json({ error: "Not authenticated" });
 
-      const { productId, plan, period, platform, receiptData } = req.body;
+      const { productId, plan, platform, receiptData } = req.body;
 
       if (!productId || !plan || !platform) {
         return res.status(400).json({ error: "Missing required fields" });
       }
 
-      if (!['basic', 'premium'].includes(plan)) {
+      if (plan !== 'pro') {
         return res.status(400).json({ error: "Invalid plan" });
       }
 
-      console.log(`[IAP] Purchase request: user=${userId}, product=${productId}, plan=${plan}, platform=${platform}`);
+      const period = req.body.period || 'monthly';
+
+      console.log(`[IAP] Purchase request: user=${userId}, product=${productId}, plan=${plan}, period=${period}, platform=${platform}`);
 
       // TODO: In production, validate receipt with Apple/Google servers
       // Apple: https://buy.itunes.apple.com/verifyReceipt
       // Google: Google Play Developer API - purchases.subscriptions.get
 
       const expiresAt = new Date();
-      expiresAt.setMonth(expiresAt.getMonth() + 1);
+      if (period === 'yearly') {
+        expiresAt.setFullYear(expiresAt.getFullYear() + 1);
+      } else {
+        expiresAt.setMonth(expiresAt.getMonth() + 1);
+      }
 
       await storage.updateSubscription(userId, {
         subscription: plan,
@@ -877,16 +851,16 @@ export async function registerRoutes(
       switch (event) {
         case 'SUBSCRIPTION_RENEWED':
         case 'SUBSCRIPTION_PURCHASED': {
-          const expiresAt = new Date();
-          const period = productId?.includes('yearly') ? 'yearly' : 'monthly';
-          if (period === 'yearly') {
-            expiresAt.setFullYear(expiresAt.getFullYear() + 1);
+          const webhookExpiresAt = new Date();
+          const webhookPeriod = productId?.includes('yearly') ? 'yearly' : 'monthly';
+          if (webhookPeriod === 'yearly') {
+            webhookExpiresAt.setFullYear(webhookExpiresAt.getFullYear() + 1);
           } else {
-            expiresAt.setMonth(expiresAt.getMonth() + 1);
+            webhookExpiresAt.setMonth(webhookExpiresAt.getMonth() + 1);
           }
           await storage.updateSubscription(userId, {
-            subscription: plan,
-            subscriptionExpiresAt: expiresAt.toISOString(),
+            subscription: plan || 'pro',
+            subscriptionExpiresAt: webhookExpiresAt.toISOString(),
             subscriptionProductId: productId,
             subscriptionPlatform: platform,
           });

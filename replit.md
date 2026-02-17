@@ -13,14 +13,17 @@ BioTrack AI is a comprehensive health tracking application that analyzes PDF lab
 - **7 Importance Levels**: Tests organized by clinical importance
 - **Bilingual**: Full Arabic and English support with RTL
 - **Recheck Reminders**: Automated alerts based on recommended intervals
-- **Subscription System**: Free (3 PDFs), Basic (20 PDFs), Premium (unlimited)
+- **Subscription System**: Single "Pro" plan - $14.99/month or $139/year (23% savings). 30-day free trial for new users.
 
 ## Recent Changes
-- **In-App Purchase (IAP) System**: Full subscription purchase infrastructure for Apple App Store and Google Play
+- **In-App Purchase (IAP) System**: Single "Pro" plan subscription for Apple App Store and Google Play
+  - Pricing: $14.99/month or $139/year (23% savings)
+  - 30-day free trial auto-starts on new user registration
   - Server-side endpoints: GET /api/subscription/status, POST /api/subscription/purchase, POST /api/subscription/restore, POST /api/subscription/webhook
-  - Database schema: Added subscription_expires_at, subscription_product_id, subscription_platform columns to user_profiles
-  - Mobile SubscriptionScreen: Monthly/yearly toggle, plan cards (Basic/Premium), purchase flow, restore purchases, bilingual
-  - IAP product IDs: com.alshira.biotrack.{basic,premium}.{monthly,yearly}
+  - Database schema: subscription_expires_at, subscription_product_id, subscription_platform, trial_started_at, trial_ends_at
+  - Mobile SubscriptionScreen: Monthly/yearly toggle with savings badge, purchase flow, restore purchases, bilingual
+  - IAP product IDs: com.alshira.biotrack.pro.{monthly,yearly}
+  - Server enforces trial expiration (blocks features after 30 days if no subscription)
   - Webhook security: x-webhook-secret header verification (set IAP_WEBHOOK_SECRET env var)
   - PRODUCTION TODO: Integrate react-native-iap SDK for real App Store/Play Store transactions and server-side receipt validation
 - **Health Verification First**: AI analyzes lab results and prioritizes correcting deficiencies BEFORE recommending calorie deficit/surplus

@@ -33,6 +33,7 @@ export default function SubscriptionScreen({ navigation, route }: Props) {
   const trialEndsAt = route?.params?.trialEndsAt;
   const isTrialActive = route?.params?.isTrialActive || false;
 
+  const [selectedPeriod, setSelectedPeriod] = useState<'monthly' | 'yearly'>('yearly');
   const [purchasing, setPurchasing] = useState(false);
   const [restoring, setRestoring] = useState(false);
 
@@ -44,17 +45,19 @@ export default function SubscriptionScreen({ navigation, route }: Props) {
 
   const trialDaysLeft = getTrialDaysRemaining();
 
-  const handlePurchase = async (product: SubscriptionProduct) => {
-    if (currentPlan === product.plan) return;
+  const selectedProduct = SUBSCRIPTION_PRODUCTS.find(p => p.period === selectedPeriod)!;
+
+  const handlePurchase = async () => {
+    if (currentPlan === 'pro') return;
 
     setPurchasing(true);
     try {
-      const success = await purchaseSubscription(product.productId);
+      const success = await purchaseSubscription(selectedProduct.productId);
       if (success) {
         await queryClient.invalidateQueries({ queryKey: ['user'] });
         Alert.alert(
           isArabic ? 'تم بنجاح' : 'Success',
-          isArabic ? 'تم ترقية اشتراكك بنجاح!' : 'Your subscription has been upgraded!',
+          isArabic ? 'تم تفعيل اشتراكك بنجاح!' : 'Your subscription has been activated!',
           [{ text: isArabic ? 'حسناً' : 'OK', onPress: () => navigation.goBack() }]
         );
       } else {
@@ -98,22 +101,6 @@ export default function SubscriptionScreen({ navigation, route }: Props) {
     setRestoring(false);
   };
 
-  const getPlanIcon = (plan: string) => {
-    switch (plan) {
-      case 'basic': return 'star';
-      case 'premium': return 'diamond';
-      default: return 'document-text';
-    }
-  };
-
-  const getPlanColor = (plan: string) => {
-    switch (plan) {
-      case 'basic': return '#3b82f6';
-      case 'premium': return '#a855f7';
-      default: return '#64748b';
-    }
-  };
-
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       <View style={styles.header}>
@@ -125,7 +112,7 @@ export default function SubscriptionScreen({ navigation, route }: Props) {
           <Ionicons name={isArabic ? 'arrow-forward' : 'arrow-back'} size={24} color="#1e293b" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>
-          {isArabic ? 'خطط الاشتراك' : 'Subscription Plans'}
+          {isArabic ? 'الاشتراك' : 'Subscribe'}
         </Text>
         <View style={{ width: 40 }} />
       </View>
@@ -162,83 +149,101 @@ export default function SubscriptionScreen({ navigation, route }: Props) {
         </View>
       )}
 
-      <View style={styles.currentPlanBadge}>
-        <Ionicons name={getPlanIcon(currentPlan)} size={20} color={getPlanColor(currentPlan)} />
-        <Text style={[styles.currentPlanText, { color: getPlanColor(currentPlan) }]}>
-          {isArabic ? 'خطتك الحالية: ' : 'Current Plan: '}
-          {t(`subscription.${currentPlan}`)}
-        </Text>
+      {currentPlan === 'pro' && (
+        <View style={[styles.trialBanner, { backgroundColor: '#f0fdf4', borderColor: '#86efac' }]}>
+          <Ionicons name="checkmark-circle" size={22} color="#22c55e" />
+          <View style={styles.trialTextContainer}>
+            <Text style={[styles.trialTitle, { color: '#16a34a' }]}>
+              {isArabic ? 'اشتراكك فعّال' : 'Subscription Active'}
+            </Text>
+            <Text style={[styles.trialSubtitle, { color: '#15803d' }]}>
+              {isArabic
+                ? 'أنت مشترك حالياً وتتمتع بجميع المميزات'
+                : 'You are currently subscribed with full access'}
+            </Text>
+          </View>
+        </View>
+      )}
+
+      <View style={styles.periodToggle}>
+        <TouchableOpacity
+          style={[styles.periodOption, selectedPeriod === 'monthly' && styles.periodOptionActive]}
+          onPress={() => setSelectedPeriod('monthly')}
+          testID="button-period-monthly"
+        >
+          <Text style={[styles.periodText, selectedPeriod === 'monthly' && styles.periodTextActive]}>
+            {isArabic ? 'شهري' : 'Monthly'}
+          </Text>
+          <Text style={[styles.periodPrice, selectedPeriod === 'monthly' && styles.periodPriceActive]}>
+            {isArabic ? '١٤.٩٩$' : '$14.99'}
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.periodOption, selectedPeriod === 'yearly' && styles.periodOptionActive]}
+          onPress={() => setSelectedPeriod('yearly')}
+          testID="button-period-yearly"
+        >
+          <View style={styles.savingsBadge}>
+            <Text style={styles.savingsText}>
+              {isArabic ? 'خصم ٢٣٪' : '23% OFF'}
+            </Text>
+          </View>
+          <Text style={[styles.periodText, selectedPeriod === 'yearly' && styles.periodTextActive]}>
+            {isArabic ? 'سنوي' : 'Yearly'}
+          </Text>
+          <Text style={[styles.periodPrice, selectedPeriod === 'yearly' && styles.periodPriceActive]}>
+            {isArabic ? '١٣٩$' : '$139'}
+          </Text>
+          <Text style={[styles.periodSub, selectedPeriod === 'yearly' && styles.periodSubActive]}>
+            {isArabic ? '≈ ١١.٥٨$/شهرياً' : '≈ $11.58/mo'}
+          </Text>
+        </TouchableOpacity>
       </View>
 
-      {SUBSCRIPTION_PRODUCTS.map((product) => {
-        const isCurrent = currentPlan === product.plan;
-        const isUpgrade = (currentPlan === 'free') ||
-          (currentPlan === 'basic' && product.plan === 'premium');
-
-        return (
-          <View
-            key={product.productId}
-            style={[
-              styles.planCard,
-              product.plan === 'premium' && styles.premiumCard,
-              isCurrent && styles.currentCard,
-            ]}
-          >
-            {product.plan === 'premium' && (
-              <View style={styles.recommendedBadge}>
-                <Text style={styles.recommendedText}>
-                  {isArabic ? 'الأكثر شعبية' : 'Most Popular'}
-                </Text>
-              </View>
-            )}
-
-            <View style={styles.planHeader}>
-              <View style={[styles.planIconContainer, { backgroundColor: getPlanColor(product.plan) + '20' }]}>
-                <Ionicons name={getPlanIcon(product.plan)} size={28} color={getPlanColor(product.plan)} />
-              </View>
-              <View style={styles.planTitleGroup}>
-                <Text style={styles.planTitle}>
-                  {isArabic ? product.titleAr : product.title}
-                </Text>
-                <Text style={[styles.planPrice, { color: getPlanColor(product.plan) }]}>
-                  {isArabic ? product.priceAr : product.price}
-                </Text>
-              </View>
-            </View>
-
-            <View style={styles.featuresList}>
-              {(isArabic ? product.featuresAr : product.features).map((feature, idx) => (
-                <View key={idx} style={styles.featureRow}>
-                  <Ionicons name="checkmark-circle" size={18} color={getPlanColor(product.plan)} />
-                  <Text style={styles.featureText}>{feature}</Text>
-                </View>
-              ))}
-            </View>
-
-            <TouchableOpacity
-              style={[
-                styles.purchaseButton,
-                { backgroundColor: isCurrent ? '#94a3b8' : getPlanColor(product.plan) },
-              ]}
-              onPress={() => handlePurchase(product)}
-              disabled={isCurrent || purchasing || !isUpgrade}
-              testID={`button-purchase-${product.plan}`}
-            >
-              {purchasing ? (
-                <ActivityIndicator color="#fff" size="small" />
-              ) : (
-                <Text style={styles.purchaseButtonText}>
-                  {isCurrent
-                    ? (isArabic ? 'خطتك الحالية' : 'Current Plan')
-                    : isUpgrade
-                      ? (isArabic ? 'اشترك الآن' : 'Subscribe Now')
-                      : (isArabic ? 'غير متاح' : 'Not Available')}
-                </Text>
-              )}
-            </TouchableOpacity>
+      <View style={styles.planCard}>
+        <View style={styles.planHeader}>
+          <View style={styles.planIconContainer}>
+            <Ionicons name="diamond" size={28} color="#7c3aed" />
           </View>
-        );
-      })}
+          <View style={styles.planTitleGroup}>
+            <Text style={styles.planTitle}>
+              {isArabic ? 'BioTrack Pro' : 'BioTrack Pro'}
+            </Text>
+            <Text style={styles.planPrice}>
+              {isArabic ? selectedProduct.priceAr : selectedProduct.price}
+            </Text>
+          </View>
+        </View>
+
+        <View style={styles.featuresList}>
+          {(isArabic ? selectedProduct.featuresAr : selectedProduct.features).map((feature, idx) => (
+            <View key={idx} style={styles.featureRow}>
+              <Ionicons name="checkmark-circle" size={18} color="#7c3aed" />
+              <Text style={styles.featureText}>{feature}</Text>
+            </View>
+          ))}
+        </View>
+
+        <TouchableOpacity
+          style={[
+            styles.purchaseButton,
+            currentPlan === 'pro' && { backgroundColor: '#94a3b8' },
+          ]}
+          onPress={handlePurchase}
+          disabled={currentPlan === 'pro' || purchasing}
+          testID="button-purchase-pro"
+        >
+          {purchasing ? (
+            <ActivityIndicator color="#fff" size="small" />
+          ) : (
+            <Text style={styles.purchaseButtonText}>
+              {currentPlan === 'pro'
+                ? (isArabic ? 'مشترك حالياً' : 'Currently Subscribed')
+                : (isArabic ? 'اشترك الآن' : 'Subscribe Now')}
+            </Text>
+          )}
+        </TouchableOpacity>
+      </View>
 
       <TouchableOpacity
         style={styles.restoreButton}
@@ -286,6 +291,8 @@ export default function SubscriptionScreen({ navigation, route }: Props) {
     </ScrollView>
   );
 }
+
+const BRAND_COLOR = '#7c3aed';
 
 const styles = StyleSheet.create({
   container: {
@@ -339,26 +346,67 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: '#92400e',
   },
-  currentPlanBadge: {
+  periodToggle: {
     flexDirection: I18nManager.isRTL ? 'row-reverse' : 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#fff',
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-    borderRadius: 20,
+    backgroundColor: '#e2e8f0',
+    borderRadius: 14,
+    padding: 4,
     marginBottom: 20,
-    alignSelf: 'center',
-    gap: 8,
+    gap: 4,
+  },
+  periodOption: {
+    flex: 1,
+    alignItems: 'center',
+    paddingVertical: 12,
+    borderRadius: 12,
+    position: 'relative',
+  },
+  periodOptionActive: {
+    backgroundColor: '#fff',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 1,
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 2,
   },
-  currentPlanText: {
+  periodText: {
     fontSize: 15,
     fontWeight: '600',
+    color: '#64748b',
+  },
+  periodTextActive: {
+    color: '#1e293b',
+  },
+  periodPrice: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: '#94a3b8',
+    marginTop: 2,
+  },
+  periodPriceActive: {
+    color: BRAND_COLOR,
+  },
+  periodSub: {
+    fontSize: 12,
+    color: '#94a3b8',
+    marginTop: 2,
+  },
+  periodSubActive: {
+    color: '#64748b',
+  },
+  savingsBadge: {
+    position: 'absolute',
+    top: -6,
+    right: 8,
+    backgroundColor: '#22c55e',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 8,
+  },
+  savingsText: {
+    color: '#fff',
+    fontSize: 10,
+    fontWeight: '800',
   },
   planCard: {
     backgroundColor: '#fff',
@@ -366,33 +414,12 @@ const styles = StyleSheet.create({
     padding: 20,
     marginBottom: 16,
     borderWidth: 2,
-    borderColor: '#e2e8f0',
+    borderColor: BRAND_COLOR,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  premiumCard: {
-    borderColor: '#a855f7',
-    backgroundColor: '#faf5ff',
-  },
-  currentCard: {
-    borderColor: '#22c55e',
-    backgroundColor: '#f0fdf4',
-  },
-  recommendedBadge: {
-    backgroundColor: '#a855f7',
-    paddingHorizontal: 12,
-    paddingVertical: 4,
-    borderRadius: 10,
-    alignSelf: 'center',
-    marginBottom: 12,
-  },
-  recommendedText: {
-    color: '#fff',
-    fontSize: 12,
-    fontWeight: '700',
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
+    elevation: 3,
   },
   planHeader: {
     flexDirection: I18nManager.isRTL ? 'row-reverse' : 'row',
@@ -406,13 +433,14 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     justifyContent: 'center',
     alignItems: 'center',
+    backgroundColor: BRAND_COLOR + '15',
   },
   planTitleGroup: {
     flex: 1,
     alignItems: I18nManager.isRTL ? 'flex-end' : 'flex-start',
   },
   planTitle: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: 'bold',
     color: '#1e293b',
     marginBottom: 2,
@@ -420,10 +448,11 @@ const styles = StyleSheet.create({
   planPrice: {
     fontSize: 16,
     fontWeight: '600',
+    color: BRAND_COLOR,
   },
   featuresList: {
     marginBottom: 16,
-    gap: 8,
+    gap: 10,
   },
   featureRow: {
     flexDirection: I18nManager.isRTL ? 'row-reverse' : 'row',
@@ -440,6 +469,7 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     borderRadius: 12,
     alignItems: 'center',
+    backgroundColor: BRAND_COLOR,
   },
   purchaseButtonText: {
     color: '#fff',

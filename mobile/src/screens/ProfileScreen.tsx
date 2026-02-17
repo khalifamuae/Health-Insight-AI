@@ -23,7 +23,7 @@ interface UserProfile {
   height?: number;
   weight?: number;
   bloodType?: string;
-  subscription: 'free' | 'basic' | 'premium';
+  subscription: 'free' | 'pro';
   pdfCount: number;
 }
 
@@ -84,14 +84,10 @@ export default function ProfileScreen({ navigation }: { navigation: any }) {
 
   const getSubscriptionInfo = () => {
     if (!profile) return { color: '#64748b', remaining: 0 };
-    switch (profile.subscription) {
-      case 'premium':
-        return { color: '#a855f7', remaining: Infinity };
-      case 'basic':
-        return { color: '#3b82f6', remaining: 20 - profile.pdfCount };
-      default:
-        return { color: '#64748b', remaining: 3 - profile.pdfCount };
+    if (profile.subscription === 'pro') {
+      return { color: '#7c3aed', remaining: Infinity };
     }
+    return { color: '#64748b', remaining: 3 - profile.pdfCount };
   };
 
   const subInfo = getSubscriptionInfo();
@@ -118,7 +114,7 @@ export default function ProfileScreen({ navigation }: { navigation: any }) {
             ? '∞' 
             : `${Math.max(0, subInfo.remaining)} ${t('subscription.remaining')}`}
         </Text>
-        {profile?.subscription !== 'premium' && (
+        {profile?.subscription !== 'pro' && (
           <TouchableOpacity
             style={styles.upgradeButton}
             onPress={() => navigation.navigate('Subscription', {

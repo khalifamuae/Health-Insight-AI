@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
-import { Crown, Zap, Star, FileText } from "lucide-react";
+import { Crown, Zap, FileText } from "lucide-react";
 import type { SubscriptionPlan } from "@shared/schema";
 
 interface SubscriptionCardProps {
@@ -20,25 +20,19 @@ const planConfig = {
     color: "bg-slate-100 text-slate-800 dark:bg-slate-900/30 dark:text-slate-400",
     features: ["3 PDF uploads", "Basic analysis", "Email reminders"],
   },
-  basic: {
-    name: "basicPlan",
-    icon: Star,
-    limit: 20,
-    color: "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400",
-    features: ["20 PDF uploads", "Detailed analysis", "Priority support"],
-  },
-  premium: {
-    name: "premiumPlan",
+  pro: {
+    name: "proPlan",
     icon: Crown,
     limit: Infinity,
-    color: "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400",
-    features: ["Unlimited uploads", "AI recommendations", "Phone reminders", "Data export"],
+    color: "bg-violet-100 text-violet-800 dark:bg-violet-900/30 dark:text-violet-400",
+    features: ["Unlimited uploads", "Unlimited AI diet plans", "AI recommendations", "Phone reminders", "Data export", "Priority support"],
   },
 };
 
 export function SubscriptionCard({ currentPlan, filesUsed, onUpgrade }: SubscriptionCardProps) {
   const { t } = useTranslation();
-  const config = planConfig[currentPlan];
+  const planKey = currentPlan === 'pro' ? 'pro' : 'free';
+  const config = planConfig[planKey];
   const Icon = config.icon;
   const isUnlimited = config.limit === Infinity;
   const usagePercent = isUnlimited ? 0 : (filesUsed / config.limit) * 100;
@@ -46,7 +40,7 @@ export function SubscriptionCard({ currentPlan, filesUsed, onUpgrade }: Subscrip
   return (
     <Card>
       <CardHeader>
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between gap-2 flex-wrap">
           <CardTitle className="flex items-center gap-2">
             <Zap className="h-5 w-5" />
             {t("subscription")}
@@ -62,7 +56,7 @@ export function SubscriptionCard({ currentPlan, filesUsed, onUpgrade }: Subscrip
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="space-y-2">
-          <div className="flex justify-between text-sm">
+          <div className="flex justify-between gap-2 text-sm">
             <span>{t("filesUsed")}</span>
             <span className="font-medium">
               {filesUsed} / {isUnlimited ? t("unlimited") : config.limit}
@@ -88,7 +82,7 @@ export function SubscriptionCard({ currentPlan, filesUsed, onUpgrade }: Subscrip
           </ul>
         </div>
 
-        {currentPlan !== "premium" && (
+        {planKey !== "pro" && (
           <Button onClick={onUpgrade} className="w-full" data-testid="button-upgrade">
             <Crown className="h-4 w-4 me-2" />
             {t("upgrade")}
