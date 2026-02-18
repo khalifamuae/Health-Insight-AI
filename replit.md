@@ -26,13 +26,28 @@ BioTrack AI is a comprehensive health tracking application that analyzes PDF lab
   - Server enforces trial expiration (blocks all data access after 7 days if no subscription - tests, PDFs, reminders, diet plans)
   - Webhook security: x-webhook-secret header verification (set IAP_WEBHOOK_SECRET env var)
   - PRODUCTION TODO: Integrate react-native-iap SDK for real App Store/Play Store transactions and server-side receipt validation
+- **Professor-Level Clinical Nutrition System**: Upgraded diet plan AI to Evidence-Based Medicine methodology
+  - 5-Phase Clinical Protocol: Clinical Assessment, Advanced Energy Calculations, Metabolic Assessment, Bioavailability Optimization, Dietary Protocol Design
+  - TEF (Thermic Effect of Food) calculation: protein 25%, carbs 8%, fats 3%
+  - Fiber targets: 14g/1000 kcal (Academy of Nutrition and Dietetics)
+  - Water intake: 33ml/kg body weight + activity adjustment (EFSA)
+  - Bioavailability optimization: iron+vitC synergy, calcium+vitD, fat-soluble vitamin absorption, mineral interaction avoidance
+  - Each meal includes: fiber content, preparation tips for nutrient preservation
+  - Each deficiency includes: absorption optimization tips
+  - Each supplement includes: timing advice, nutrient interactions
+  - Each condition tip includes: scientific reasoning with references
+  - Meal timing science (Chrononutrition): protein distribution, carb timing for sleep
+  - Nutrient interaction warnings (e.g., calcium reduces iron absorption 50%)
+  - Clinical-grade QC: macro-calorie verification, total calorie deviation checks
+  - Scientific references: Mifflin-St Jeor (1990), ACSM, ASPEN, ISSN, Hallberg (1991), Cook & Reddy (2001), EFSA, DRI
+  - Temperature reduced to 0.4 for consistent, professional output
 - **Health Verification First**: AI analyzes lab results and prioritizes correcting deficiencies BEFORE recommending calorie deficit/surplus
 - **BMR Safety Floor**: System never suggests diet plans below BMR (minimum safe calorie threshold)
 - **Smart Deficit Adjustment**: If severe deficiencies detected (vitamin D, iron, B12, etc.), calorie deficit is automatically reduced from 500 to 200 kcal
 - **Health Summary Section**: New section showing comprehensive health status from lab results
 - **Intake Alignment Section**: New section explaining how current calories align with goal and health status
 - **Food-Lab Linking**: Every meal's benefits field links to specific lab result improvements
-- **References Section**: Scientific references added at end of each diet plan (NHLBI BMI Calculator, Mifflin-St Jeor equation, WHO guidelines)
+- **References Section**: Scientific references added at end of each diet plan (Mifflin-St Jeor 1990, NHLBI, DRI, EFSA, NIH ODS, ISSN, Hallberg 1991)
 - **Medical Safety**: No diagnosis, no drug supplements, guiding language only ("discuss with your doctor")
 - **Diet Plan Questionnaire**: 4-step questionnaire before generating diet plan (activity level, allergies, protein preference, meal preference)
 - **Protein Preference**: New question asking user if they prefer fish, chicken, red meat, or mixed - AI uses this to customize meals
