@@ -25,11 +25,10 @@ import Upload from "@/pages/Upload";
 import DietPlan from "@/pages/DietPlan";
 import MyDietSchedule from "@/pages/MyDietSchedule";
 import Profile from "@/pages/Profile";
-import KnowledgeBase from "@/pages/KnowledgeBase";
 import "./lib/i18n";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "@/hooks/use-auth";
-import { Menu, FlaskConical, GitCompareArrows, CalendarDays, Brain } from "lucide-react";
+import { Menu, FlaskConical, GitCompareArrows, CalendarDays } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -43,7 +42,6 @@ function HamburgerMenu() {
     { path: "/tests", icon: FlaskConical, labelKey: "menuMyTests" },
     { path: "/compare", icon: GitCompareArrows, labelKey: "menuCompare" },
     { path: "/my-diet-schedule", icon: CalendarDays, labelKey: "menuMyDietSchedule" },
-    { path: "/knowledge", icon: Brain, labelKey: "menuKnowledge" },
   ];
 
   const handleNav = (path: string) => {
@@ -149,7 +147,6 @@ function AppContent() {
           <Route path="/upload" component={Upload} />
           <Route path="/diet" component={DietPlan} />
           <Route path="/my-diet-schedule" component={MyDietSchedule} />
-          <Route path="/knowledge" component={KnowledgeBase} />
           <Route path="/profile" component={Profile} />
           <Route path="/reminders" component={Dashboard} />
           <Route component={NotFound} />
