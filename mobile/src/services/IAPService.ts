@@ -1,12 +1,6 @@
 import { Platform } from 'react-native';
 import { api } from '../lib/api';
 
-// PRODUCTION NOTE: Replace this stub with real IAP SDK integration
-// For iOS: Use StoreKit 2 via react-native-iap or expo-in-app-purchases
-// For Android: Use Google Play Billing via react-native-iap
-// The real SDK will handle payment UI and return receipts/tokens
-// that must be sent to the server for verification before activating subscription
-
 export const PRODUCT_IDS = {
   PRO_MONTHLY: 'com.biotrack.ai.pro.monthly',
   PRO_YEARLY: 'com.biotrack.ai.pro.yearly',
@@ -87,34 +81,183 @@ export const SUBSCRIPTION_PRODUCTS: SubscriptionProduct[] = [
   },
 ];
 
-export async function purchaseSubscription(productId: string): Promise<boolean> {
+let iapModule: any = null;
+let purchaseUpdateSubscription: any = null;
+let purchaseErrorSubscription: any = null;
+let cachedSubscriptions: any[] = [];
+
+async function getIAP() {
+  if (!iapModule) {
+    try {
+      iapModule = await import('react-native-iap');
+    } catch (e) {
+      console.warn('[IAP] react-native-iap not available - using server-only mode');
+      return null;
+    }
+  }
+  return iapModule;
+}
+
+export async function initIAP(): Promise<boolean> {
   try {
-    const product = SUBSCRIPTION_PRODUCTS.find(p => p.productId === productId);
+    const RNIap = await getIAP();
+    if (!RNIap) return false;
+
+    await RNIap.initConnection();
+
+    purchaseUpdateSubscription = RNIap.purchaseUpdatedListener(
+      async (purchase: any) => {
+        const receipt = purchase.transactionReceipt;
+        if (receipt) {
+          try {
+            const product = SUBSCRIPTION_PRODUCTS.find(
+              (p) => p.productId === purchase.productId
+            );
+            await api.post('/api/subscription/purchase', {
+              productId: purchase.productId,
+              plan: product?.plan || 'pro',
+              period: product?.period || 'monthly',
+              platform: Platform.OS,
+              receiptData: receipt,
+              transactionId: purchase.transactionId,
+            });
+
+            if (Platform.OS === 'ios') {
+              await RNIap.finishTransaction({ purchase, isConsumable: false });
+            } else {
+              await RNIap.acknowledgePurchaseAndroid({
+                token: purchase.purchaseToken,
+              });
+            }
+          } catch (err) {
+            console.error('[IAP] Error processing purchase:', err);
+          }
+        }
+      }
+    );
+
+    purchaseErrorSubscription = RNIap.purchaseErrorListener(
+      (error: any) => {
+        console.warn('[IAP] Purchase error:', error);
+      }
+    );
+
+    return true;
+  } catch (err) {
+    console.error('[IAP] Init error:', err);
+    return false;
+  }
+}
+
+export async function endIAP(): Promise<void> {
+  if (purchaseUpdateSubscription) {
+    purchaseUpdateSubscription.remove();
+    purchaseUpdateSubscription = null;
+  }
+  if (purchaseErrorSubscription) {
+    purchaseErrorSubscription.remove();
+    purchaseErrorSubscription = null;
+  }
+  try {
+    const RNIap = await getIAP();
+    if (RNIap) await RNIap.endConnection();
+  } catch (e) {
+    console.warn('[IAP] End connection error:', e);
+  }
+}
+
+export async function getAvailableProducts(): Promise<any[]> {
+  try {
+    const RNIap = await getIAP();
+    if (!RNIap) return [];
+    const subscriptions = await RNIap.getSubscriptions({
+      skus: [PRODUCT_IDS.PRO_MONTHLY, PRODUCT_IDS.PRO_YEARLY],
+    });
+    cachedSubscriptions = subscriptions;
+    return subscriptions;
+  } catch (err) {
+    console.error('[IAP] Get products error:', err);
+    return [];
+  }
+}
+
+export async function purchaseSubscription(
+  productId: string
+): Promise<boolean> {
+  try {
+    const RNIap = await getIAP();
+    if (RNIap) {
+      if (Platform.OS === 'android') {
+        if (cachedSubscriptions.length === 0) {
+          await getAvailableProducts();
+        }
+        const sub = cachedSubscriptions.find(
+          (s: any) => s.productId === productId
+        );
+        const offerToken =
+          sub?.subscriptionOfferDetails?.[0]?.offerToken || '';
+        await RNIap.requestSubscription({
+          sku: productId,
+          subscriptionOffers: [{ sku: productId, offerToken }],
+        });
+      } else {
+        await RNIap.requestSubscription({ sku: productId });
+      }
+      return true;
+    }
+
+    const product = SUBSCRIPTION_PRODUCTS.find(
+      (p) => p.productId === productId
+    );
     if (!product) throw new Error('Product not found');
 
-    const result = await api.post<{ success: boolean; plan: string }>('/api/subscription/purchase', {
-      productId,
-      plan: product.plan,
-      period: product.period,
-      platform: Platform.OS,
-      receiptData: `${Platform.OS}_receipt_${Date.now()}`,
-    });
-
+    const result = await api.post<{ success: boolean; plan: string }>(
+      '/api/subscription/purchase',
+      {
+        productId,
+        plan: product.plan,
+        period: product.period,
+        platform: Platform.OS,
+        receiptData: `${Platform.OS}_receipt_${Date.now()}`,
+      }
+    );
     return result.success;
   } catch (error) {
-    console.error('Purchase error:', error);
+    console.error('[IAP] Purchase error:', error);
     return false;
   }
 }
 
 export async function restorePurchases(): Promise<boolean> {
   try {
-    const result = await api.post<{ success: boolean; plan: string }>('/api/subscription/restore', {
-      platform: Platform.OS,
-    });
+    const RNIap = await getIAP();
+    if (RNIap) {
+      const purchases = await RNIap.getAvailablePurchases();
+      if (purchases && purchases.length > 0) {
+        const latestPurchase = purchases.sort(
+          (a: any, b: any) =>
+            (b.transactionDate || 0) - (a.transactionDate || 0)
+        )[0];
+        const result = await api.post<{ success: boolean; plan: string }>(
+          '/api/subscription/restore',
+          {
+            platform: Platform.OS,
+            receiptData: latestPurchase.transactionReceipt,
+            productId: latestPurchase.productId,
+          }
+        );
+        return result.success;
+      }
+      return false;
+    }
+
+    const result = await api.post<{ success: boolean; plan: string }>(
+      '/api/subscription/restore',
+      { platform: Platform.OS }
+    );
     return result.success;
   } catch (error) {
-    console.error('Restore error:', error);
+    console.error('[IAP] Restore error:', error);
     return false;
   }
 }
@@ -129,6 +272,12 @@ export async function getSubscriptionStatus(): Promise<{
   try {
     return await api.get('/api/subscription/status');
   } catch {
-    return { plan: 'free', expiresAt: null, isActive: false, trialEndsAt: null, isTrialActive: false };
+    return {
+      plan: 'free',
+      expiresAt: null,
+      isActive: false,
+      trialEndsAt: null,
+      isTrialActive: false,
+    };
   }
 }

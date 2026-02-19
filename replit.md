@@ -24,7 +24,8 @@ BioTrack AI is a comprehensive health tracking application that analyzes PDF lab
   - IAP product IDs: com.biotrack.ai.pro.{monthly,yearly}
   - Server enforces trial expiration (blocks all data access after 7 days if no subscription - tests, PDFs, reminders, diet plans)
   - Webhook security: x-webhook-secret header verification (set IAP_WEBHOOK_SECRET env var)
-  - PRODUCTION TODO: Integrate react-native-iap SDK for real App Store/Play Store transactions and server-side receipt validation
+  - react-native-iap SDK integrated with purchase listeners, receipt validation, and restore flow
+  - Graceful fallback to server-only mode when native IAP module unavailable (dev/testing)
 - **Professor-Level Clinical Nutrition System**: Upgraded diet plan AI to Evidence-Based Medicine methodology
   - 5-Phase Clinical Protocol: Clinical Assessment, Advanced Energy Calculations, Metabolic Assessment, Bioavailability Optimization, Dietary Protocol Design
   - TEF (Thermic Effect of Food) calculation: protein 25%, carbs 8%, fats 3%
@@ -78,6 +79,12 @@ BioTrack AI is a comprehensive health tracking application that analyzes PDF lab
 - Knowledge engine fetches 3 topics per domain daily from PubMed (research abstracts) and NIH (fact sheets)
 - 5 domains: nutrition, aerobic training, resistance training, vitamins/minerals, hormones
 - All knowledge entries include real PubMed PMID links and NIH fact sheet URLs
+- **App Store Readiness**: Legal compliance pages, app icons, privacy manifest, and store metadata
+  - Legal pages: /privacy, /terms, /support, /account-deletion (English + Arabic)
+  - iOS Privacy Manifest with collected data types declarations
+  - App icons generated (icon, adaptive icon, splash, favicon)
+  - Store listing metadata: STORE_LISTING.md with descriptions, keywords, age rating, data safety
+  - EAS build configured with app-bundle for production, auto-increment versioning
 
 ## Project Architecture
 

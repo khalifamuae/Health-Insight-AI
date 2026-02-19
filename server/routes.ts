@@ -5,6 +5,7 @@ import { storage } from "./storage";
 import { setupAuth, isAuthenticated, registerAuthRoutes } from "./replit_integrations/auth";
 import { analyzeLabPdf } from "./pdfAnalyzer";
 import { generateDietPlan } from "./dietPlanGenerator";
+import { getPrivacyPolicyHTML, getPrivacyPolicyArabicHTML, getTermsOfServiceHTML, getTermsOfServiceArabicHTML, getSupportPageHTML, getAccountDeletionHTML } from "./legalPages";
 import { desc, eq, and, gte, sql } from "drizzle-orm";
 import { db } from "./db";
 import { userProfiles } from "@shared/schema";
@@ -21,6 +22,24 @@ export async function registerRoutes(
   // Setup Replit Auth
   await setupAuth(app);
   registerAuthRoutes(app);
+
+  app.get("/privacy", (req: Request, res: Response) => {
+    const lang = req.query.lang as string;
+    res.type("html").send(lang === "ar" ? getPrivacyPolicyArabicHTML() : getPrivacyPolicyHTML());
+  });
+
+  app.get("/terms", (req: Request, res: Response) => {
+    const lang = req.query.lang as string;
+    res.type("html").send(lang === "ar" ? getTermsOfServiceArabicHTML() : getTermsOfServiceHTML());
+  });
+
+  app.get("/support", (_req: Request, res: Response) => {
+    res.type("html").send(getSupportPageHTML());
+  });
+
+  app.get("/account-deletion", (_req: Request, res: Response) => {
+    res.type("html").send(getAccountDeletionHTML());
+  });
 
   // Clean up stale diet plan jobs from previous server instances
   try {

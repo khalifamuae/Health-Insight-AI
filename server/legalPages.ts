@@ -1,0 +1,485 @@
+export function getPrivacyPolicyHTML(): string {
+  return `<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BioTrack AI - Privacy Policy</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.7; color: #1a1a2e; background: #f8f9fa; padding: 20px; }
+    .container { max-width: 800px; margin: 0 auto; background: #fff; border-radius: 12px; padding: 40px; box-shadow: 0 2px 10px rgba(0,0,0,0.08); }
+    h1 { font-size: 28px; margin-bottom: 8px; color: #3b82f6; }
+    h2 { font-size: 20px; margin-top: 32px; margin-bottom: 12px; color: #1e3a5f; }
+    p, li { font-size: 15px; margin-bottom: 10px; color: #374151; }
+    ul { padding-left: 24px; margin-bottom: 16px; }
+    .date { font-size: 13px; color: #6b7280; margin-bottom: 24px; }
+    .lang-toggle { text-align: right; margin-bottom: 20px; }
+    .lang-toggle a { color: #3b82f6; text-decoration: none; font-size: 14px; }
+    a { color: #3b82f6; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="lang-toggle"><a href="/privacy?lang=ar">العربية</a></div>
+    <h1>Privacy Policy</h1>
+    <p class="date">Last updated: February 2026</p>
+
+    <h2>1. Introduction</h2>
+    <p>BioTrack AI ("we", "our", "the app") is committed to protecting your privacy. This Privacy Policy explains how we collect, use, store, and protect your personal information when you use our mobile application.</p>
+
+    <h2>2. Information We Collect</h2>
+    <p>We collect the following types of information:</p>
+    <ul>
+      <li><strong>Account Information:</strong> Name, email address, and authentication data when you create an account.</li>
+      <li><strong>Health Data:</strong> Lab test results, medical test values, and health metrics (weight, height, age, gender) that you voluntarily upload or enter.</li>
+      <li><strong>PDF Documents:</strong> Lab result PDF files that you upload for AI analysis.</li>
+      <li><strong>Diet Plan Data:</strong> Information about your dietary preferences, allergies, activity level, and generated diet plans.</li>
+      <li><strong>Subscription Data:</strong> Purchase history and subscription status (payment processing is handled by Apple App Store or Google Play Store).</li>
+    </ul>
+
+    <h2>3. How We Use Your Information</h2>
+    <ul>
+      <li>To analyze your lab results using AI and provide health insights.</li>
+      <li>To generate personalized diet and nutrition plans based on your health data.</li>
+      <li>To track your health progress over time and provide test comparisons.</li>
+      <li>To send recheck reminders for medical tests.</li>
+      <li>To manage your subscription and provide customer support.</li>
+    </ul>
+
+    <h2>4. Data Storage and Security</h2>
+    <p>Your data is stored on secure servers with encryption. We use industry-standard security measures including:</p>
+    <ul>
+      <li>HTTPS encryption for all data transmission.</li>
+      <li>Secure session management and authentication.</li>
+      <li>Encrypted database storage for sensitive health information.</li>
+      <li>Regular security audits and updates.</li>
+    </ul>
+
+    <h2>5. AI Processing</h2>
+    <p>We use artificial intelligence to analyze your lab results and generate diet plans. Your health data is processed by our AI systems to provide personalized recommendations. AI-generated content is for informational purposes only and does not constitute medical advice.</p>
+
+    <h2>6. Data Sharing</h2>
+    <p>We do NOT sell, trade, or share your personal health data with third parties, except:</p>
+    <ul>
+      <li>When required by law or legal processes.</li>
+      <li>With AI processing services to analyze your lab results (data is processed securely and not retained by third-party AI providers).</li>
+      <li>With payment processors (Apple/Google) for subscription management (they do not receive your health data).</li>
+    </ul>
+
+    <h2>7. Your Rights</h2>
+    <p>You have the right to:</p>
+    <ul>
+      <li>Access your personal data stored in the app.</li>
+      <li>Request deletion of your account and all associated data.</li>
+      <li>Export your health data.</li>
+      <li>Opt out of non-essential communications.</li>
+    </ul>
+
+    <h2>8. Data Retention</h2>
+    <p>We retain your data for as long as your account is active. Upon account deletion, all personal data including health records, uploaded PDFs, and diet plans are permanently deleted within 30 days.</p>
+
+    <h2>9. Children's Privacy</h2>
+    <p>BioTrack AI is not intended for use by individuals under the age of 13. We do not knowingly collect data from children under 13.</p>
+
+    <h2>10. Changes to This Policy</h2>
+    <p>We may update this Privacy Policy from time to time. We will notify you of significant changes through the app or via email.</p>
+
+    <h2>11. Contact Us</h2>
+    <p>If you have questions about this Privacy Policy, please contact us at: <a href="mailto:support@biotrack-ai.com">support@biotrack-ai.com</a></p>
+  </div>
+</body>
+</html>`;
+}
+
+export function getPrivacyPolicyArabicHTML(): string {
+  return `<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BioTrack AI - سياسة الخصوصية</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Noto Sans Arabic', sans-serif; line-height: 1.9; color: #1a1a2e; background: #f8f9fa; padding: 20px; }
+    .container { max-width: 800px; margin: 0 auto; background: #fff; border-radius: 12px; padding: 40px; box-shadow: 0 2px 10px rgba(0,0,0,0.08); }
+    h1 { font-size: 28px; margin-bottom: 8px; color: #3b82f6; }
+    h2 { font-size: 20px; margin-top: 32px; margin-bottom: 12px; color: #1e3a5f; }
+    p, li { font-size: 15px; margin-bottom: 10px; color: #374151; }
+    ul { padding-right: 24px; margin-bottom: 16px; }
+    .date { font-size: 13px; color: #6b7280; margin-bottom: 24px; }
+    .lang-toggle { text-align: left; margin-bottom: 20px; }
+    .lang-toggle a { color: #3b82f6; text-decoration: none; font-size: 14px; }
+    a { color: #3b82f6; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="lang-toggle"><a href="/privacy?lang=en">English</a></div>
+    <h1>سياسة الخصوصية</h1>
+    <p class="date">آخر تحديث: فبراير 2026</p>
+
+    <h2>1. المقدمة</h2>
+    <p>يلتزم تطبيق BioTrack AI ("نحن"، "التطبيق") بحماية خصوصيتك. توضح سياسة الخصوصية هذه كيفية جمع واستخدام وتخزين وحماية معلوماتك الشخصية عند استخدام تطبيقنا.</p>
+
+    <h2>2. المعلومات التي نجمعها</h2>
+    <ul>
+      <li><strong>معلومات الحساب:</strong> الاسم والبريد الإلكتروني وبيانات المصادقة عند إنشاء حسابك.</li>
+      <li><strong>البيانات الصحية:</strong> نتائج الفحوصات المخبرية والقيم الطبية والمؤشرات الصحية (الوزن، الطول، العمر، الجنس) التي تقوم بإدخالها طوعاً.</li>
+      <li><strong>ملفات PDF:</strong> ملفات نتائج الفحوصات التي ترفعها للتحليل بالذكاء الاصطناعي.</li>
+      <li><strong>بيانات النظام الغذائي:</strong> تفضيلاتك الغذائية والحساسية ومستوى النشاط وخطط الغذاء المولدة.</li>
+      <li><strong>بيانات الاشتراك:</strong> سجل المشتريات وحالة الاشتراك (تتم معالجة الدفع عبر App Store أو Google Play).</li>
+    </ul>
+
+    <h2>3. كيف نستخدم معلوماتك</h2>
+    <ul>
+      <li>لتحليل نتائج فحوصاتك باستخدام الذكاء الاصطناعي وتقديم رؤى صحية.</li>
+      <li>لتوليد خطط غذائية مخصصة بناءً على بياناتك الصحية.</li>
+      <li>لتتبع تقدمك الصحي ومقارنة نتائج الفحوصات.</li>
+      <li>لإرسال تذكيرات إعادة الفحص.</li>
+      <li>لإدارة اشتراكك وتقديم الدعم.</li>
+    </ul>
+
+    <h2>4. تخزين البيانات والأمان</h2>
+    <p>يتم تخزين بياناتك على خوادم آمنة مع التشفير. نستخدم إجراءات أمان معيارية تشمل:</p>
+    <ul>
+      <li>تشفير HTTPS لجميع البيانات المنقولة.</li>
+      <li>إدارة جلسات آمنة ومصادقة محمية.</li>
+      <li>تشفير قاعدة البيانات للمعلومات الصحية الحساسة.</li>
+      <li>مراجعات أمنية وتحديثات دورية.</li>
+    </ul>
+
+    <h2>5. المعالجة بالذكاء الاصطناعي</h2>
+    <p>نستخدم الذكاء الاصطناعي لتحليل نتائج فحوصاتك وتوليد خطط غذائية. المحتوى المولد بالذكاء الاصطناعي لأغراض توعوية فقط ولا يشكل نصيحة طبية.</p>
+
+    <h2>6. مشاركة البيانات</h2>
+    <p>نحن لا نبيع أو نتاجر أو نشارك بياناتك الصحية مع أطراف ثالثة، باستثناء:</p>
+    <ul>
+      <li>عندما يتطلب القانون ذلك.</li>
+      <li>مع خدمات معالجة الذكاء الاصطناعي لتحليل نتائجك (تتم المعالجة بأمان ولا يتم الاحتفاظ بالبيانات).</li>
+      <li>مع معالجي الدفع (Apple/Google) لإدارة الاشتراك (لا يحصلون على بياناتك الصحية).</li>
+    </ul>
+
+    <h2>7. حقوقك</h2>
+    <ul>
+      <li>الوصول إلى بياناتك الشخصية المخزنة في التطبيق.</li>
+      <li>طلب حذف حسابك وجميع البيانات المرتبطة.</li>
+      <li>تصدير بياناتك الصحية.</li>
+      <li>إلغاء الاشتراك في الاتصالات غير الضرورية.</li>
+    </ul>
+
+    <h2>8. الاحتفاظ بالبيانات</h2>
+    <p>نحتفظ ببياناتك طالما حسابك نشط. عند حذف الحساب، يتم حذف جميع البيانات الشخصية بما في ذلك السجلات الصحية وملفات PDF وخطط الغذاء خلال 30 يوماً.</p>
+
+    <h2>9. خصوصية الأطفال</h2>
+    <p>تطبيق BioTrack AI غير مخصص للأشخاص دون سن 13 عاماً. لا نجمع بيانات من الأطفال دون 13 عاماً عن قصد.</p>
+
+    <h2>10. التغييرات على هذه السياسة</h2>
+    <p>قد نقوم بتحديث سياسة الخصوصية من وقت لآخر. سنخطرك بالتغييرات المهمة عبر التطبيق أو البريد الإلكتروني.</p>
+
+    <h2>11. اتصل بنا</h2>
+    <p>إذا كانت لديك أسئلة حول سياسة الخصوصية، تواصل معنا عبر: <a href="mailto:support@biotrack-ai.com">support@biotrack-ai.com</a></p>
+  </div>
+</body>
+</html>`;
+}
+
+export function getTermsOfServiceHTML(): string {
+  return `<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BioTrack AI - Terms of Service</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.7; color: #1a1a2e; background: #f8f9fa; padding: 20px; }
+    .container { max-width: 800px; margin: 0 auto; background: #fff; border-radius: 12px; padding: 40px; box-shadow: 0 2px 10px rgba(0,0,0,0.08); }
+    h1 { font-size: 28px; margin-bottom: 8px; color: #3b82f6; }
+    h2 { font-size: 20px; margin-top: 32px; margin-bottom: 12px; color: #1e3a5f; }
+    p, li { font-size: 15px; margin-bottom: 10px; color: #374151; }
+    ul { padding-left: 24px; margin-bottom: 16px; }
+    .date { font-size: 13px; color: #6b7280; margin-bottom: 24px; }
+    .lang-toggle { text-align: right; margin-bottom: 20px; }
+    .lang-toggle a { color: #3b82f6; text-decoration: none; font-size: 14px; }
+    a { color: #3b82f6; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="lang-toggle"><a href="/terms?lang=ar">العربية</a></div>
+    <h1>Terms of Service</h1>
+    <p class="date">Last updated: February 2026</p>
+
+    <h2>1. Acceptance of Terms</h2>
+    <p>By downloading, installing, or using BioTrack AI ("the app"), you agree to be bound by these Terms of Service. If you do not agree, please do not use the app.</p>
+
+    <h2>2. Description of Service</h2>
+    <p>BioTrack AI is a health tracking application that uses artificial intelligence to analyze lab results, track medical tests, and provide personalized diet and nutrition plans. The app is designed for informational and educational purposes only.</p>
+
+    <h2>3. Medical Disclaimer</h2>
+    <p><strong>BioTrack AI is NOT a medical device and does NOT provide medical advice, diagnosis, or treatment.</strong></p>
+    <ul>
+      <li>All AI-generated analysis and recommendations are for informational purposes only.</li>
+      <li>Always consult a qualified healthcare professional before making health decisions.</li>
+      <li>Do not disregard professional medical advice based on information from this app.</li>
+      <li>In case of a medical emergency, contact emergency services immediately.</li>
+      <li>The app does not prescribe medications or supplements as treatment.</li>
+    </ul>
+
+    <h2>4. User Accounts</h2>
+    <ul>
+      <li>You must be at least 13 years old to use this app.</li>
+      <li>You are responsible for maintaining the security of your account.</li>
+      <li>You are responsible for all activity under your account.</li>
+      <li>You must provide accurate information when creating your account.</li>
+    </ul>
+
+    <h2>5. Subscription and Payments</h2>
+    <ul>
+      <li>BioTrack AI offers a "Pro" subscription plan at $14.99/month or $139/year.</li>
+      <li>New users receive a 7-day free trial.</li>
+      <li>Subscriptions are processed through the Apple App Store or Google Play Store.</li>
+      <li>Subscriptions automatically renew unless cancelled at least 24 hours before the current period ends.</li>
+      <li>Refunds are subject to Apple's or Google's refund policies.</li>
+      <li>You can manage or cancel your subscription through your device's app store settings.</li>
+    </ul>
+
+    <h2>6. Acceptable Use</h2>
+    <p>You agree NOT to:</p>
+    <ul>
+      <li>Use the app for any unlawful purpose.</li>
+      <li>Upload false or misleading health data.</li>
+      <li>Attempt to reverse-engineer or modify the app.</li>
+      <li>Share your account credentials with others.</li>
+      <li>Use the app to provide medical services to others.</li>
+    </ul>
+
+    <h2>7. Intellectual Property</h2>
+    <p>All content, features, and functionality of BioTrack AI are owned by us and are protected by intellectual property laws. You may not copy, modify, or distribute any part of the app without our written consent.</p>
+
+    <h2>8. Limitation of Liability</h2>
+    <p>To the maximum extent permitted by law:</p>
+    <ul>
+      <li>BioTrack AI is provided "as is" without warranties of any kind.</li>
+      <li>We are not liable for any health decisions made based on the app's output.</li>
+      <li>We are not responsible for the accuracy of AI-generated analysis or recommendations.</li>
+      <li>Our total liability shall not exceed the amount you paid for the subscription in the past 12 months.</li>
+    </ul>
+
+    <h2>9. Termination</h2>
+    <p>We may suspend or terminate your account if you violate these terms. Upon termination, your right to use the app ceases immediately. You may delete your account at any time through the app settings.</p>
+
+    <h2>10. Changes to Terms</h2>
+    <p>We may update these Terms from time to time. Continued use of the app after changes constitutes acceptance of the updated terms.</p>
+
+    <h2>11. Governing Law</h2>
+    <p>These Terms are governed by applicable laws. Any disputes will be resolved through appropriate legal channels.</p>
+
+    <h2>12. Contact Us</h2>
+    <p>For questions about these Terms, contact us at: <a href="mailto:support@biotrack-ai.com">support@biotrack-ai.com</a></p>
+  </div>
+</body>
+</html>`;
+}
+
+export function getTermsOfServiceArabicHTML(): string {
+  return `<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BioTrack AI - شروط الاستخدام</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Noto Sans Arabic', sans-serif; line-height: 1.9; color: #1a1a2e; background: #f8f9fa; padding: 20px; }
+    .container { max-width: 800px; margin: 0 auto; background: #fff; border-radius: 12px; padding: 40px; box-shadow: 0 2px 10px rgba(0,0,0,0.08); }
+    h1 { font-size: 28px; margin-bottom: 8px; color: #3b82f6; }
+    h2 { font-size: 20px; margin-top: 32px; margin-bottom: 12px; color: #1e3a5f; }
+    p, li { font-size: 15px; margin-bottom: 10px; color: #374151; }
+    ul { padding-right: 24px; margin-bottom: 16px; }
+    .date { font-size: 13px; color: #6b7280; margin-bottom: 24px; }
+    .lang-toggle { text-align: left; margin-bottom: 20px; }
+    .lang-toggle a { color: #3b82f6; text-decoration: none; font-size: 14px; }
+    a { color: #3b82f6; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="lang-toggle"><a href="/terms?lang=en">English</a></div>
+    <h1>شروط الاستخدام</h1>
+    <p class="date">آخر تحديث: فبراير 2026</p>
+
+    <h2>1. قبول الشروط</h2>
+    <p>بتحميل أو تثبيت أو استخدام تطبيق BioTrack AI ("التطبيق")، فإنك توافق على الالتزام بشروط الاستخدام هذه. إذا كنت لا توافق، يرجى عدم استخدام التطبيق.</p>
+
+    <h2>2. وصف الخدمة</h2>
+    <p>BioTrack AI هو تطبيق لتتبع الصحة يستخدم الذكاء الاصطناعي لتحليل نتائج الفحوصات وتتبع 50 فحصاً طبياً وتقديم خطط غذائية مخصصة. التطبيق مصمم لأغراض توعوية وتعليمية فقط.</p>
+
+    <h2>3. إخلاء المسؤولية الطبية</h2>
+    <p><strong>BioTrack AI ليس جهازاً طبياً ولا يقدم نصيحة طبية أو تشخيصاً أو علاجاً.</strong></p>
+    <ul>
+      <li>جميع التحليلات والتوصيات المولدة بالذكاء الاصطناعي لأغراض توعوية فقط.</li>
+      <li>استشر دائماً طبيباً مختصاً قبل اتخاذ قرارات صحية.</li>
+      <li>لا تتجاهل النصيحة الطبية المتخصصة بناءً على معلومات من هذا التطبيق.</li>
+      <li>في حالة الطوارئ الطبية، اتصل بخدمات الطوارئ فوراً.</li>
+      <li>لا يصف التطبيق أدوية أو مكملات كعلاج.</li>
+    </ul>
+
+    <h2>4. حسابات المستخدمين</h2>
+    <ul>
+      <li>يجب أن يكون عمرك 13 سنة على الأقل لاستخدام هذا التطبيق.</li>
+      <li>أنت مسؤول عن الحفاظ على أمان حسابك.</li>
+      <li>أنت مسؤول عن جميع الأنشطة تحت حسابك.</li>
+      <li>يجب تقديم معلومات دقيقة عند إنشاء حسابك.</li>
+    </ul>
+
+    <h2>5. الاشتراك والدفع</h2>
+    <ul>
+      <li>يقدم BioTrack AI خطة اشتراك "Pro" بسعر $14.99/شهرياً أو $139/سنوياً.</li>
+      <li>يحصل المستخدمون الجدد على فترة تجريبية مجانية لمدة 7 أيام.</li>
+      <li>تتم معالجة الاشتراكات عبر Apple App Store أو Google Play Store.</li>
+      <li>يتجدد الاشتراك تلقائياً ما لم يتم الإلغاء قبل 24 ساعة على الأقل من نهاية الفترة الحالية.</li>
+      <li>تخضع عمليات الاسترداد لسياسات Apple أو Google.</li>
+      <li>يمكنك إدارة أو إلغاء اشتراكك من إعدادات متجر التطبيقات على جهازك.</li>
+    </ul>
+
+    <h2>6. الاستخدام المقبول</h2>
+    <p>توافق على عدم:</p>
+    <ul>
+      <li>استخدام التطبيق لأي غرض غير قانوني.</li>
+      <li>رفع بيانات صحية كاذبة أو مضللة.</li>
+      <li>محاولة الهندسة العكسية أو تعديل التطبيق.</li>
+      <li>مشاركة بيانات حسابك مع آخرين.</li>
+      <li>استخدام التطبيق لتقديم خدمات طبية للآخرين.</li>
+    </ul>
+
+    <h2>7. الملكية الفكرية</h2>
+    <p>جميع المحتويات والميزات والوظائف في BioTrack AI مملوكة لنا ومحمية بقوانين الملكية الفكرية. لا يجوز لك نسخ أو تعديل أو توزيع أي جزء من التطبيق دون موافقتنا الخطية.</p>
+
+    <h2>8. تحديد المسؤولية</h2>
+    <ul>
+      <li>يُقدم BioTrack AI "كما هو" بدون ضمانات من أي نوع.</li>
+      <li>نحن غير مسؤولين عن أي قرارات صحية تُتخذ بناءً على مخرجات التطبيق.</li>
+      <li>نحن غير مسؤولين عن دقة التحليلات أو التوصيات المولدة بالذكاء الاصطناعي.</li>
+      <li>لا تتجاوز مسؤوليتنا الإجمالية المبلغ الذي دفعته للاشتراك في الأشهر الـ 12 الماضية.</li>
+    </ul>
+
+    <h2>9. الإنهاء</h2>
+    <p>يجوز لنا تعليق أو إنهاء حسابك إذا انتهكت هذه الشروط. عند الإنهاء، ينتهي حقك في استخدام التطبيق فوراً. يمكنك حذف حسابك في أي وقت من إعدادات التطبيق.</p>
+
+    <h2>10. التغييرات على الشروط</h2>
+    <p>قد نقوم بتحديث هذه الشروط من وقت لآخر. يعتبر الاستمرار في استخدام التطبيق بعد التغييرات قبولاً للشروط المحدثة.</p>
+
+    <h2>11. القانون الحاكم</h2>
+    <p>تخضع هذه الشروط للقوانين المعمول بها. يتم حل أي نزاعات من خلال القنوات القانونية المناسبة.</p>
+
+    <h2>12. اتصل بنا</h2>
+    <p>لأي أسئلة حول هذه الشروط، تواصل معنا عبر: <a href="mailto:support@biotrack-ai.com">support@biotrack-ai.com</a></p>
+  </div>
+</body>
+</html>`;
+}
+
+export function getSupportPageHTML(): string {
+  return `<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BioTrack AI - Support</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.7; color: #1a1a2e; background: #f8f9fa; padding: 20px; }
+    .container { max-width: 800px; margin: 0 auto; background: #fff; border-radius: 12px; padding: 40px; box-shadow: 0 2px 10px rgba(0,0,0,0.08); }
+    h1 { font-size: 28px; margin-bottom: 8px; color: #3b82f6; }
+    h2 { font-size: 20px; margin-top: 32px; margin-bottom: 12px; color: #1e3a5f; }
+    p, li { font-size: 15px; margin-bottom: 10px; color: #374151; }
+    ul { padding-left: 24px; margin-bottom: 16px; }
+    a { color: #3b82f6; }
+    .support-card { background: #f0f7ff; border-radius: 8px; padding: 20px; margin: 16px 0; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>BioTrack AI Support</h1>
+
+    <div class="support-card">
+      <h2 style="margin-top:0">Contact Us</h2>
+      <p>Email: <a href="mailto:support@biotrack-ai.com">support@biotrack-ai.com</a></p>
+    </div>
+
+    <h2>Frequently Asked Questions</h2>
+
+    <h2>How do I upload my lab results?</h2>
+    <p>Tap the "Upload" button in the bottom navigation, select your PDF file, and the AI will automatically analyze and extract your test values.</p>
+
+    <h2>How accurate is the AI analysis?</h2>
+    <p>Our AI provides high-accuracy extraction of lab values. However, always verify results with your healthcare provider. The app is for informational purposes only.</p>
+
+    <h2>How do I cancel my subscription?</h2>
+    <p>You can manage or cancel your subscription through your device's app store settings (Apple App Store or Google Play Store).</p>
+
+    <h2>How do I delete my account?</h2>
+    <p>Go to Profile and select the delete account option. All your data will be permanently removed within 30 days.</p>
+
+    <h2>Is my health data secure?</h2>
+    <p>Yes. We use encryption for all data transmission and storage. We do not sell or share your health data. See our <a href="/privacy">Privacy Policy</a> for details.</p>
+  </div>
+</body>
+</html>`;
+}
+
+export function getAccountDeletionHTML(): string {
+  return `<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BioTrack AI - Account Deletion</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.7; color: #1a1a2e; background: #f8f9fa; padding: 20px; }
+    .container { max-width: 800px; margin: 0 auto; background: #fff; border-radius: 12px; padding: 40px; box-shadow: 0 2px 10px rgba(0,0,0,0.08); }
+    h1 { font-size: 28px; margin-bottom: 8px; color: #3b82f6; }
+    h2 { font-size: 20px; margin-top: 24px; margin-bottom: 12px; color: #1e3a5f; }
+    p, li { font-size: 15px; margin-bottom: 10px; color: #374151; }
+    ul { padding-left: 24px; margin-bottom: 16px; }
+    a { color: #3b82f6; }
+    .warning { background: #fef3c7; border: 1px solid #f59e0b; border-radius: 8px; padding: 16px; margin: 16px 0; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Account Deletion</h1>
+    <p>BioTrack AI allows you to delete your account and all associated data.</p>
+
+    <h2>How to Delete Your Account</h2>
+    <p>You can delete your account directly from the app:</p>
+    <ul>
+      <li>Open BioTrack AI</li>
+      <li>Go to the Profile tab</li>
+      <li>Scroll down and tap "Delete Account"</li>
+      <li>Confirm the deletion</li>
+    </ul>
+
+    <p>Alternatively, you can request account deletion by emailing <a href="mailto:support@biotrack-ai.com">support@biotrack-ai.com</a> with your registered email address.</p>
+
+    <h2>What Data Gets Deleted</h2>
+    <p>Upon account deletion, the following data is permanently removed within 30 days:</p>
+    <ul>
+      <li>Your account profile and authentication data</li>
+      <li>All uploaded lab result PDFs</li>
+      <li>All test results and health records</li>
+      <li>All generated diet plans</li>
+      <li>All reminders and preferences</li>
+      <li>Subscription history (active subscriptions must be cancelled separately through your app store)</li>
+    </ul>
+
+    <div class="warning">
+      <strong>Important:</strong> If you have an active subscription, please cancel it through your device's app store settings before deleting your account. Deleting your account does not automatically cancel your subscription billing.
+    </div>
+  </div>
+</body>
+</html>`;
+}
