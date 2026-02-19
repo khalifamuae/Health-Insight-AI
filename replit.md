@@ -1,5 +1,4 @@
 # BioTrack AI - AI-Powered Health Analysis Application
-**by Alshira company**
 
 ## Overview
 BioTrack AI is a comprehensive health tracking application that analyzes PDF lab results using AI and helps users track 50 different medical tests. The app supports Arabic (default) and English languages with RTL support.
@@ -22,7 +21,7 @@ BioTrack AI is a comprehensive health tracking application that analyzes PDF lab
   - Server-side endpoints: GET /api/subscription/status, POST /api/subscription/purchase, POST /api/subscription/restore, POST /api/subscription/webhook
   - Database schema: subscription_expires_at, subscription_product_id, subscription_platform, trial_started_at, trial_ends_at
   - Mobile SubscriptionScreen: Monthly/yearly toggle with savings badge, purchase flow, restore purchases, bilingual
-  - IAP product IDs: com.alshira.biotrack.pro.{monthly,yearly}
+  - IAP product IDs: com.biotrack.ai.pro.{monthly,yearly}
   - Server enforces trial expiration (blocks all data access after 7 days if no subscription - tests, PDFs, reminders, diet plans)
   - Webhook security: x-webhook-secret header verification (set IAP_WEBHOOK_SECRET env var)
   - PRODUCTION TODO: Integrate react-native-iap SDK for real App Store/Play Store transactions and server-side receipt validation

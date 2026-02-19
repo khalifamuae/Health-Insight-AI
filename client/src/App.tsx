@@ -60,7 +60,6 @@ function HamburgerMenu() {
         <SheetHeader className="p-4 border-b">
           <SheetTitle className="text-start">
             <span className="text-primary font-bold">{t("appName")}</span>
-            <span className="block text-[10px] text-muted-foreground font-normal">{t("companyName")}</span>
           </SheetTitle>
           <SheetDescription className="sr-only">Navigation menu</SheetDescription>
         </SheetHeader>
@@ -100,7 +99,6 @@ function AuthenticatedLayout({ children }: { children: React.ReactNode }) {
           <HamburgerMenu />
           <div className="flex flex-col">
             <h1 className="text-lg font-bold text-primary">{t("appName")}</h1>
-            <span className="text-[10px] text-muted-foreground">{t("companyName")}</span>
           </div>
         </div>
         <div className="flex items-center gap-1">

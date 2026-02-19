@@ -6,7 +6,6 @@ const resources = {
   ar: {
     translation: {
       appName: 'BioTrack AI',
-      companyName: 'by Alshira company',
       home: 'الرئيسية',
       tests: 'الفحوصات',
       upload: 'رفع PDF',
@@ -121,7 +120,6 @@ const resources = {
   en: {
     translation: {
       appName: 'BioTrack AI',
-      companyName: 'by Alshira company',
       home: 'Home',
       tests: 'Tests',
       upload: 'Upload PDF',

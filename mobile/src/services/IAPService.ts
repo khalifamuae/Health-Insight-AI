@@ -8,8 +8,8 @@ import { api } from '../lib/api';
 // that must be sent to the server for verification before activating subscription
 
 export const PRODUCT_IDS = {
-  PRO_MONTHLY: 'com.alshira.biotrack.pro.monthly',
-  PRO_YEARLY: 'com.alshira.biotrack.pro.yearly',
+  PRO_MONTHLY: 'com.biotrack.ai.pro.monthly',
+  PRO_YEARLY: 'com.biotrack.ai.pro.yearly',
 };
 
 export const FREE_TRIAL_DAYS = 7;

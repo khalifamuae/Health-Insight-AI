@@ -1,6 +1,5 @@
 # BioTrack AI - تطبيق الهاتف
 # BioTrack AI - Mobile App
-**by Alshira company**
 
 تطبيق React Native/Expo لتحليل نتائج الفحوصات الطبية بالذكاء الاصطناعي.
 

@@ -14,7 +14,7 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.alshira.biotrack",
+      "bundleIdentifier": "com.biotrack.ai",
       "buildNumber": "1",
       "infoPlist": {
         "SKAdNetworkItems": []
@@ -27,7 +27,7 @@
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
-      "package": "com.alshira.biotrack",
+      "package": "com.biotrack.ai",
       "versionCode": 1
     },
     "web": {

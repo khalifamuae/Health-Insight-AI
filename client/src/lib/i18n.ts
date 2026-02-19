@@ -8,7 +8,6 @@ const resources = {
       // App
       appName: "BioTrack AI",
       appDescription: "AI-Powered Health Analysis",
-      companyName: "by Alshira company",
       warning: "Warning",
       appPurpose: "This app is for health tracking and awareness purposes only.",
       medicalDisclaimer: "This app does not replace professional medical advice. Always consult a healthcare provider.",
@@ -187,7 +186,7 @@ const resources = {
       goalMaintain: "Maintain Weight",
       goalMuscleGain: "Muscle Gain (Lean)",
       disclaimerTitle: "Important Notice",
-      nutritionDisclaimer: "This diet plan is provided for educational and awareness purposes only and does not constitute medical advice, diagnosis, or treatment. BioTrack AI and Alshira company bear no responsibility for any decisions made based on this information. Always consult your physician or a certified nutritionist before making any changes to your diet, especially if you have chronic conditions or take medications. Your health and safety are your top priority.",
+      nutritionDisclaimer: "This diet plan is provided for educational and awareness purposes only and does not constitute medical advice, diagnosis, or treatment. BioTrack AI bears no responsibility for any decisions made based on this information. Always consult your physician or a certified nutritionist before making any changes to your diet, especially if you have chronic conditions or take medications. Your health and safety are your top priority.",
       conditionBasedTips: "Health-Specific Tips",
       avoidTheseFoods: "Foods to Avoid",
       reduceFoods: "Consider reducing",
@@ -307,7 +306,6 @@ const resources = {
       // App
       appName: "BioTrack AI",
       appDescription: "تحليل صحي مدعوم بالذكاء الاصطناعي",
-      companyName: "by Alshira company",
       warning: "تحذير",
       appPurpose: "هذا التطبيق لمتابعة الصحة ولأغراض التوعوية فقط.",
       medicalDisclaimer: "لا يغني هذا التطبيق عن الاستشارة الطبية. استشر طبيبك دائماً.",
