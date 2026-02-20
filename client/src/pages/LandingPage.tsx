@@ -1,7 +1,6 @@
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { MedicalDisclaimer } from "@/components/MedicalDisclaimer";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { LanguageToggle } from "@/components/LanguageToggle";
 import { 
@@ -11,7 +10,12 @@ import {
   Shield, 
   Pill,
   ChevronRight,
-  LogIn
+  LogIn,
+  ShieldCheck,
+  FlaskConical,
+  Sparkles,
+  Salad,
+  Info
 } from "lucide-react";
 
 export default function LandingPage() {
@@ -34,18 +38,18 @@ export default function LandingPage() {
         : "Covering vitamins, minerals, hormones, organ functions, and more",
     },
     {
+      icon: Salad,
+      title: isArabic ? "خطة غذائية بالذكاء الاصطناعي" : "AI Diet Plan",
+      description: isArabic 
+        ? "خطة غذائية مخصصة بناءً على نتائج فحوصاتك وبيانات جسمك" 
+        : "Personalized nutrition plan based on your lab results and body data",
+    },
+    {
       icon: Bell,
       title: isArabic ? "تذكيرات إعادة الفحص" : "Recheck Reminders",
       description: isArabic 
         ? "تنبيهات تلقائية لإعادة الفحوصات بناءً على المدة الموصى بها" 
         : "Automatic alerts for retesting based on recommended intervals",
-    },
-    {
-      icon: Shield,
-      title: isArabic ? "حماية البيانات" : "Data Security",
-      description: isArabic 
-        ? "بياناتك الصحية مشفرة ومحمية بأعلى معايير الأمان" 
-        : "Your health data is encrypted and protected with highest security standards",
     },
   ];
 
@@ -73,10 +77,6 @@ export default function LandingPage() {
       </header>
 
       <main className="container mx-auto px-4 py-12">
-        <div className="mb-6">
-          <MedicalDisclaimer />
-        </div>
-
         <section className="text-center py-16 space-y-6">
           <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
             {t("appDescription")}
@@ -87,6 +87,22 @@ export default function LandingPage() {
               : "Easily analyze your medical lab results and track your health with smart reminders"
             }
           </p>
+
+          <div className="flex flex-wrap gap-3 justify-center pt-2" data-testid="trust-badges-landing">
+            <div className="flex items-center gap-1.5 bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400 px-3 py-1.5 rounded-full text-xs font-semibold">
+              <ShieldCheck className="h-3.5 w-3.5" />
+              {isArabic ? "آمن وخاص" : "Secure & Private"}
+            </div>
+            <div className="flex items-center gap-1.5 bg-blue-50 dark:bg-blue-950/30 text-blue-700 dark:text-blue-400 px-3 py-1.5 rounded-full text-xs font-semibold">
+              <FlaskConical className="h-3.5 w-3.5" />
+              {isArabic ? "+50 مؤشر حيوي" : "50+ Biomarkers"}
+            </div>
+            <div className="flex items-center gap-1.5 bg-purple-50 dark:bg-purple-950/30 text-purple-700 dark:text-purple-400 px-3 py-1.5 rounded-full text-xs font-semibold">
+              <Sparkles className="h-3.5 w-3.5" />
+              {isArabic ? "تحليل ذكي" : "AI Insights"}
+            </div>
+          </div>
+
           <div className="flex flex-col sm:flex-row gap-4 justify-center pt-4">
             <Button size="lg" asChild data-testid="button-get-started">
               <a href="/api/login">
@@ -95,6 +111,9 @@ export default function LandingPage() {
               </a>
             </Button>
           </div>
+          <p className="text-sm font-semibold text-emerald-600 dark:text-emerald-400">
+            {isArabic ? "7 أيام تجربة مجانية" : "7-day free trial"}
+          </p>
         </section>
 
         <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 py-12">
@@ -134,10 +153,26 @@ export default function LandingPage() {
       </main>
 
       <footer className="border-t py-8">
-        <div className="container mx-auto px-4 text-center text-sm text-muted-foreground">
-          <p>{t("medicalDisclaimer")}</p>
-          <p className="mt-4 font-semibold text-foreground">{t("appName")}</p>
-          <p className="mt-2">© 2024 {t("appName")}. All rights reserved.</p>
+        <div className="container mx-auto px-4 text-center space-y-3">
+          <div className="flex items-center justify-center gap-1.5 text-xs text-muted-foreground">
+            <Info className="h-3.5 w-3.5" />
+            <span>{t("medicalDisclaimer")}</span>
+          </div>
+          <div className="flex items-center justify-center gap-4 text-xs text-muted-foreground">
+            <a href="https://health-insight-ai.replit.app/privacy" className="hover:text-foreground transition-colors" data-testid="link-privacy">
+              {isArabic ? "الخصوصية" : "Privacy"}
+            </a>
+            <span>|</span>
+            <a href="https://health-insight-ai.replit.app/terms" className="hover:text-foreground transition-colors" data-testid="link-terms">
+              {isArabic ? "الشروط" : "Terms"}
+            </a>
+            <span>|</span>
+            <a href="https://health-insight-ai.replit.app/support" className="hover:text-foreground transition-colors" data-testid="link-support">
+              {isArabic ? "الدعم" : "Support"}
+            </a>
+          </div>
+          <p className="text-sm font-semibold text-foreground">{t("appName")}</p>
+          <p className="text-xs text-muted-foreground">© 2024 {t("appName")}. All rights reserved.</p>
         </div>
       </footer>
     </div>

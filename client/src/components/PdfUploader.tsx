@@ -4,8 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
-import { Upload, FileText, CheckCircle, Loader2, AlertTriangle } from "lucide-react";
-import { MedicalDisclaimer } from "./MedicalDisclaimer";
+import { Upload, FileText, CheckCircle, Loader2, AlertTriangle, Lock } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 
 interface PdfUploaderProps {
@@ -13,7 +12,7 @@ interface PdfUploaderProps {
 }
 
 export function PdfUploader({ onUploadComplete }: PdfUploaderProps) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { toast } = useToast();
   const [isDragging, setIsDragging] = useState(false);
   const [file, setFile] = useState<File | null>(null);
@@ -108,10 +107,10 @@ export function PdfUploader({ onUploadComplete }: PdfUploaderProps) {
     setTestsFound(null);
   };
 
+  const isArabic = i18n.language === "ar";
+
   return (
     <div className="space-y-4">
-      <MedicalDisclaimer />
-      
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -121,6 +120,10 @@ export function PdfUploader({ onUploadComplete }: PdfUploaderProps) {
           <CardDescription>
             {t("uploadDescription")}
           </CardDescription>
+          <div className="flex items-center gap-1.5 bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400 px-3 py-1 rounded-full text-xs font-semibold w-fit mt-2" data-testid="badge-security">
+            <Lock className="h-3 w-3" />
+            {isArabic ? "PDF فقط – مشفر وآمن" : "PDF Only – Encrypted & Secure"}
+          </div>
         </CardHeader>
         <CardContent className="space-y-4">
           {testsFound !== null ? (

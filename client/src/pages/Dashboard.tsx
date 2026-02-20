@@ -7,7 +7,7 @@ import { RemindersCard } from "@/components/RemindersCard";
 import { MedicalDisclaimer } from "@/components/MedicalDisclaimer";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Salad, GitCompareArrows } from "lucide-react";
+import { Salad, GitCompareArrows, ShieldCheck, FlaskConical, Sparkles } from "lucide-react";
 import type { TestResultWithDefinition, Reminder, TestDefinition } from "@shared/schema";
 
 interface DashboardStats {
@@ -23,7 +23,7 @@ interface ReminderWithDefinition extends Reminder {
 }
 
 export default function Dashboard() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [, setLocation] = useLocation();
 
   const { data: tests = [], isLoading: testsLoading } = useQuery<TestResultWithDefinition[]>({
@@ -41,9 +41,24 @@ export default function Dashboard() {
   const normalTests = tests.filter(t => t.status === "normal").length;
   const abnormalTests = tests.filter(t => t.status === "low" || t.status === "high").length;
 
+  const isArabic = i18n.language === "ar";
+
   return (
     <div className="space-y-6">
-      <MedicalDisclaimer />
+      <div className="flex flex-wrap gap-3 justify-center" data-testid="trust-badges">
+        <div className="flex items-center gap-1.5 bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400 px-3 py-1.5 rounded-full text-xs font-semibold">
+          <ShieldCheck className="h-3.5 w-3.5" />
+          {isArabic ? "آمن وخاص" : "Secure & Private"}
+        </div>
+        <div className="flex items-center gap-1.5 bg-blue-50 dark:bg-blue-950/30 text-blue-700 dark:text-blue-400 px-3 py-1.5 rounded-full text-xs font-semibold">
+          <FlaskConical className="h-3.5 w-3.5" />
+          {isArabic ? "+50 مؤشر حيوي" : "50+ Biomarkers"}
+        </div>
+        <div className="flex items-center gap-1.5 bg-purple-50 dark:bg-purple-950/30 text-purple-700 dark:text-purple-400 px-3 py-1.5 rounded-full text-xs font-semibold">
+          <Sparkles className="h-3.5 w-3.5" />
+          {isArabic ? "تحليل ذكي" : "AI Insights"}
+        </div>
+      </div>
 
       <DashboardStats
         totalTests={stats?.totalTests ?? tests.length}
@@ -95,6 +110,8 @@ export default function Dashboard() {
           />
         </div>
       </div>
+
+      <MedicalDisclaimer />
     </div>
   );
 }
