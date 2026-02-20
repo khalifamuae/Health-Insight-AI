@@ -40,6 +40,52 @@ export async function registerRoutes(
     });
   });
 
+  app.post("/api/demo-login", async (req: any, res: Response) => {
+    const { email, password } = req.body || {};
+    const demoEmail = "demo@biotrack.ai";
+    const demoPassword = process.env.DEMO_ACCOUNT_PASSWORD || "BioTrack2025!Review";
+    
+    if (email !== demoEmail || password !== demoPassword) {
+      return res.status(401).json({ error: "Invalid credentials" });
+    }
+
+    const demoUserId = "demo_reviewer_001";
+    let profile = await storage.getUserProfile(demoUserId);
+    if (!profile) {
+      const trialEnd = new Date();
+      trialEnd.setFullYear(trialEnd.getFullYear() + 1);
+      profile = await storage.upsertUserProfile({
+        id: demoUserId,
+        email: demoEmail,
+        firstName: "App",
+        lastName: "Reviewer",
+        age: 30,
+        weight: 75,
+        height: 170,
+        gender: "male",
+        fitnessGoal: "maintain",
+        subscriptionPlan: "pro",
+        subscriptionExpiresAt: trialEnd,
+        subscriptionProductId: "demo_review",
+        subscriptionPlatform: "demo",
+        trialStartedAt: new Date(),
+        trialEndsAt: trialEnd,
+      });
+    }
+
+    const user = {
+      claims: { sub: demoUserId, email: demoEmail, first_name: "App", last_name: "Reviewer", exp: Math.floor(Date.now()/1000) + 86400 },
+      expires_at: Math.floor(Date.now()/1000) + 86400,
+      access_token: "demo_review_token",
+      refresh_token: "demo_review_refresh"
+    };
+
+    req.login(user, (err: any) => {
+      if (err) return res.status(500).json({ error: 'Login failed' });
+      res.json({ success: true, message: "Demo login successful" });
+    });
+  });
+
   app.get("/privacy", (req: Request, res: Response) => {
     const lang = req.query.lang as string;
     res.type("html").send(lang === "ar" ? getPrivacyPolicyArabicHTML() : getPrivacyPolicyHTML());
