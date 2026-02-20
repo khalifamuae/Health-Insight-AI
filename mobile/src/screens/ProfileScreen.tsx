@@ -302,6 +302,11 @@ export default function ProfileScreen({ navigation }: { navigation: any }) {
           <Ionicons name="chevron-forward" size={20} color="#ef4444" />
         </TouchableOpacity>
       </View>
+
+      <View style={styles.disclaimerSmall}>
+        <Ionicons name="information-circle-outline" size={16} color="#94a3b8" />
+        <Text style={styles.disclaimerSmallText}>{t('disclaimer.text')}</Text>
+      </View>
     </ScrollView>
   );
 }
@@ -502,6 +507,20 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#64748b',
     marginTop: 2,
+    textAlign: I18nManager.isRTL ? 'right' : 'left',
+  },
+  disclaimerSmall: {
+    flexDirection: I18nManager.isRTL ? 'row-reverse' : 'row',
+    alignItems: 'flex-start',
+    paddingHorizontal: 4,
+    paddingTop: 16,
+    gap: 6,
+  },
+  disclaimerSmallText: {
+    flex: 1,
+    fontSize: 11,
+    color: '#94a3b8',
+    lineHeight: 16,
     textAlign: I18nManager.isRTL ? 'right' : 'left',
   },
 });

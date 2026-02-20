@@ -142,6 +142,11 @@ export default function UploadScreen({ navigation }: any) {
             </Text>
           </View>
         </View>
+
+        <View style={styles.disclaimerSmall}>
+          <Ionicons name="information-circle-outline" size={16} color="#94a3b8" />
+          <Text style={styles.disclaimerSmallText}>{t('disclaimer.text')}</Text>
+        </View>
       </View>
     </View>
   );
@@ -280,6 +285,20 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 14,
     color: '#475569',
+    textAlign: I18nManager.isRTL ? 'right' : 'left',
+  },
+  disclaimerSmall: {
+    flexDirection: I18nManager.isRTL ? 'row-reverse' : 'row',
+    alignItems: 'flex-start',
+    paddingHorizontal: 4,
+    paddingTop: 16,
+    gap: 6,
+  },
+  disclaimerSmallText: {
+    flex: 1,
+    fontSize: 11,
+    color: '#94a3b8',
+    lineHeight: 16,
     textAlign: I18nManager.isRTL ? 'right' : 'left',
   },
 });

@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { useLocation } from "wouter";
 import { AllTestsTable } from "@/components/AllTestsTable";
-
+import { MedicalDisclaimer } from "@/components/MedicalDisclaimer";
 import { Button } from "@/components/ui/button";
 import { GitCompareArrows } from "lucide-react";
 import type { AllTestsData } from "@shared/schema";
@@ -16,6 +16,7 @@ export default function MyTests() {
 
   return (
     <div className="space-y-4">
+      <MedicalDisclaimer />
       <div className="flex items-center justify-between gap-2 flex-wrap">
         <div />
         <Button

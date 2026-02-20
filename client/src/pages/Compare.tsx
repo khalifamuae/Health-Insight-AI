@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
-
+import { MedicalDisclaimer } from "@/components/MedicalDisclaimer";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Loader2, TrendingUp, TrendingDown, Minus, ArrowUp, ArrowDown, GitCompareArrows, Pill, Gem, Dna, HeartPulse, Droplets, Shield, Microscope, Syringe, FlaskConical, type LucideIcon } from "lucide-react";
@@ -145,6 +145,7 @@ export default function Compare() {
 
   return (
     <div className="space-y-4">
+      <MedicalDisclaimer />
       <div className="flex items-center gap-2">
         <GitCompareArrows className="h-5 w-5 text-primary" />
         <h2 className="text-lg font-bold" data-testid="text-compare-title">{t("compareResults")}</h2>

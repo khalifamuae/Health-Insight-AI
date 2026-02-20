@@ -123,6 +123,10 @@ export default function RemindersScreen() {
           }
         />
       )}
+      <View style={styles.disclaimerSmall}>
+        <Ionicons name="information-circle-outline" size={16} color="#94a3b8" />
+        <Text style={styles.disclaimerSmallText}>{t('disclaimer.text')}</Text>
+      </View>
     </View>
   );
 }
@@ -227,5 +231,19 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#94a3b8',
     marginTop: 16
-  }
+  },
+  disclaimerSmall: {
+    flexDirection: I18nManager.isRTL ? 'row-reverse' : 'row',
+    alignItems: 'flex-start',
+    paddingHorizontal: 16,
+    paddingBottom: 12,
+    gap: 6,
+  },
+  disclaimerSmallText: {
+    flex: 1,
+    fontSize: 11,
+    color: '#94a3b8',
+    lineHeight: 16,
+    textAlign: I18nManager.isRTL ? 'right' : 'left',
+  },
 });

@@ -12,7 +12,7 @@ import { useTranslation } from 'react-i18next';
 import { Ionicons } from '@expo/vector-icons';
 
 export default function DietScreen({ navigation }: any) {
-  const { i18n } = useTranslation();
+  const { t, i18n } = useTranslation();
   const isArabic = i18n.language === 'ar';
 
   const sampleMeals = isArabic ? [
@@ -132,6 +132,11 @@ export default function DietScreen({ navigation }: any) {
           {isArabic ? 'ابدأ خطتك الغذائية' : 'Start Your Diet Plan'}
         </Text>
       </TouchableOpacity>
+
+      <View style={styles.disclaimerSmall}>
+        <Ionicons name="information-circle-outline" size={16} color="#94a3b8" />
+        <Text style={styles.disclaimerSmallText}>{t('disclaimer.text')}</Text>
+      </View>
 
       <View style={styles.trustRow}>
         <View style={styles.trustItem}>
@@ -334,5 +339,18 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#64748b',
     fontWeight: '500',
+  },
+  disclaimerSmall: {
+    flexDirection: I18nManager.isRTL ? 'row-reverse' : 'row',
+    alignItems: 'flex-start',
+    paddingHorizontal: 4,
+    gap: 6,
+  },
+  disclaimerSmallText: {
+    flex: 1,
+    fontSize: 11,
+    color: '#94a3b8',
+    lineHeight: 16,
+    textAlign: I18nManager.isRTL ? 'right' : 'left',
   },
 });
