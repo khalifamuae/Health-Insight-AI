@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
-import { Crown, Zap, FileText } from "lucide-react";
+import { Crown, Zap, FileText, Check, Sparkles, Star } from "lucide-react";
 import type { SubscriptionPlan } from "@shared/schema";
 
 interface SubscriptionCardProps {
@@ -11,6 +11,21 @@ interface SubscriptionCardProps {
   filesUsed: number;
   onUpgrade?: () => void;
 }
+
+const proFeatureKeys = [
+  "proFeature1",
+  "proFeature2",
+  "proFeature3",
+  "proFeature4",
+  "proFeature5",
+  "proFeature6",
+  "proFeature7",
+  "proFeature8",
+  "proFeature9",
+  "proFeature10",
+  "proFeature11",
+  "proFeature12",
+];
 
 const planConfig = {
   free: {
@@ -70,23 +85,58 @@ export function SubscriptionCard({ currentPlan, filesUsed, onUpgrade }: Subscrip
           )}
         </div>
 
-        <div className="border-t pt-4">
-          <h4 className="font-medium mb-2 text-sm">{t("features")}</h4>
-          <ul className="space-y-1">
-            {config.features.map((feature, i) => (
-              <li key={i} className="text-sm text-muted-foreground flex items-center gap-2">
-                <div className="h-1.5 w-1.5 rounded-full bg-primary" />
-                {feature}
-              </li>
-            ))}
-          </ul>
-        </div>
-
         {planKey !== "pro" && (
-          <Button onClick={onUpgrade} className="w-full" data-testid="button-upgrade">
-            <Crown className="h-4 w-4 me-2" />
-            {t("upgrade")}
-          </Button>
+          <div className="border-t pt-4 space-y-4">
+            <div className="flex items-center gap-2">
+              <Sparkles className="h-5 w-5 text-yellow-500" />
+              <h4 className="font-semibold text-base">{t("whyUpgrade")}</h4>
+            </div>
+
+            <div className="space-y-2.5">
+              {proFeatureKeys.map((key, i) => (
+                <div key={i} className="flex items-start gap-2.5" data-testid={`pro-feature-${i + 1}`}>
+                  <div className="mt-0.5 flex-shrink-0 h-5 w-5 rounded-full bg-emerald-500/20 flex items-center justify-center">
+                    <Check className="h-3 w-3 text-emerald-500" />
+                  </div>
+                  <span className="text-sm">{t(key)}</span>
+                </div>
+              ))}
+            </div>
+
+            <div className="rounded-lg bg-gradient-to-r from-violet-500/10 to-blue-500/10 dark:from-violet-500/20 dark:to-blue-500/20 p-3 space-y-1">
+              <div className="flex items-center gap-2">
+                <Star className="h-4 w-4 text-yellow-500 fill-yellow-500" />
+                <span className="text-sm font-semibold">{t("proPrice")}</span>
+              </div>
+              <p className="text-xs text-muted-foreground">{t("proSavings")}</p>
+            </div>
+
+            <Button 
+              onClick={onUpgrade} 
+              className="w-full bg-gradient-to-r from-violet-600 to-blue-600 hover:from-violet-700 hover:to-blue-700 text-white shadow-lg" 
+              size="lg"
+              data-testid="button-upgrade"
+            >
+              <Crown className="h-5 w-5 me-2" />
+              {t("upgrade")}
+            </Button>
+
+            <p className="text-xs text-center text-muted-foreground">{t("freeTrial")}</p>
+          </div>
+        )}
+
+        {planKey === "pro" && (
+          <div className="border-t pt-4">
+            <h4 className="font-medium mb-2 text-sm">{t("features")}</h4>
+            <ul className="space-y-1">
+              {config.features.map((feature, i) => (
+                <li key={i} className="text-sm text-muted-foreground flex items-center gap-2">
+                  <div className="h-1.5 w-1.5 rounded-full bg-primary" />
+                  {feature}
+                </li>
+              ))}
+            </ul>
+          </div>
         )}
       </CardContent>
     </Card>
