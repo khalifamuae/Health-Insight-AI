@@ -36,6 +36,7 @@ export const userProfiles = pgTable("user_profiles", {
   firstName: varchar("first_name"),
   lastName: varchar("last_name"),
   phone: varchar("phone"),
+  dateOfBirth: timestamp("date_of_birth"),
   age: integer("age"),
   weight: real("weight"),
   height: real("height"),
