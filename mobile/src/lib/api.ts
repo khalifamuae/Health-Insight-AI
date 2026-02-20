@@ -2,37 +2,65 @@ import * as SecureStore from 'expo-secure-store';
 
 const API_BASE_URL = 'https://health-insight-ai.replit.app';
 
-let authToken: string | null = null;
+let sessionCookie: string | null = null;
+
+export const setSessionCookie = async (cookie: string) => {
+  sessionCookie = cookie;
+  await SecureStore.setItemAsync('sessionCookie', cookie);
+};
+
+export const getSessionCookie = async () => {
+  if (!sessionCookie) {
+    sessionCookie = await SecureStore.getItemAsync('sessionCookie');
+  }
+  return sessionCookie;
+};
+
+export const clearSessionCookie = async () => {
+  sessionCookie = null;
+  await SecureStore.deleteItemAsync('sessionCookie');
+};
 
 export const setAuthToken = async (token: string) => {
-  authToken = token;
   await SecureStore.setItemAsync('authToken', token);
 };
 
 export const getAuthToken = async () => {
-  if (!authToken) {
-    authToken = await SecureStore.getItemAsync('authToken');
-  }
-  return authToken;
+  return await SecureStore.getItemAsync('authToken');
 };
 
 export const clearAuthToken = async () => {
-  authToken = null;
   await SecureStore.deleteItemAsync('authToken');
 };
 
 const getHeaders = async () => {
+  const cookie = await getSessionCookie();
   const token = await getAuthToken();
   return {
     'Content-Type': 'application/json',
-    ...(token ? { Authorization: `Bearer ${token}` } : {})
+    ...(cookie ? { Cookie: cookie } : {}),
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
   };
+};
+
+const extractAndSaveCookie = async (response: Response) => {
+  const setCookieHeader = response.headers.get('set-cookie');
+  if (setCookieHeader) {
+    const sessionMatch = setCookieHeader.match(/connect\.sid=[^;]+/);
+    if (sessionMatch) {
+      await setSessionCookie(sessionMatch[0]);
+    }
+  }
 };
 
 export const api = {
   async get<T>(endpoint: string): Promise<T> {
     const headers = await getHeaders();
-    const response = await fetch(`${API_BASE_URL}${endpoint}`, { headers });
+    const response = await fetch(`${API_BASE_URL}${endpoint}`, { 
+      headers,
+      credentials: 'include',
+    });
+    await extractAndSaveCookie(response);
     if (!response.ok) {
       throw new Error(`API Error: ${response.status}`);
     }
@@ -44,8 +72,10 @@ export const api = {
     const response = await fetch(`${API_BASE_URL}${endpoint}`, {
       method: 'POST',
       headers,
-      body: JSON.stringify(data)
+      body: JSON.stringify(data),
+      credentials: 'include',
     });
+    await extractAndSaveCookie(response);
     if (!response.ok) {
       throw new Error(`API Error: ${response.status}`);
     }
@@ -57,8 +87,10 @@ export const api = {
     const response = await fetch(`${API_BASE_URL}${endpoint}`, {
       method: 'PATCH',
       headers,
-      body: JSON.stringify(data)
+      body: JSON.stringify(data),
+      credentials: 'include',
     });
+    await extractAndSaveCookie(response);
     if (!response.ok) {
       throw new Error(`API Error: ${response.status}`);
     }
@@ -69,14 +101,17 @@ export const api = {
     const headers = await getHeaders();
     const response = await fetch(`${API_BASE_URL}${endpoint}`, {
       method: 'DELETE',
-      headers
+      headers,
+      credentials: 'include',
     });
+    await extractAndSaveCookie(response);
     if (!response.ok) {
       throw new Error(`API Error: ${response.status}`);
     }
   },
 
   async uploadPdf(file: { uri: string; name: string; type: string }): Promise<any> {
+    const cookie = await getSessionCookie();
     const token = await getAuthToken();
     const formData = new FormData();
     formData.append('pdf', {
@@ -88,11 +123,14 @@ export const api = {
     const response = await fetch(`${API_BASE_URL}/api/analyze-pdf`, {
       method: 'POST',
       headers: {
-        ...(token ? { Authorization: `Bearer ${token}` } : {})
+        ...(cookie ? { Cookie: cookie } : {}),
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
       },
-      body: formData
+      body: formData,
+      credentials: 'include',
     });
 
+    await extractAndSaveCookie(response);
     if (!response.ok) {
       throw new Error(`Upload Error: ${response.status}`);
     }

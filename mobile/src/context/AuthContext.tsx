@@ -1,18 +1,21 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import * as SecureStore from 'expo-secure-store';
+import { clearSessionCookie } from '../lib/api';
 
 interface User {
-  id: number;
-  name: string;
+  id: string;
   email: string;
-  subscription: 'free' | 'basic' | 'premium';
+  firstName: string;
+  lastName: string;
+  name: string;
+  subscription: string;
 }
 
 interface AuthContextType {
   user: User | null;
   isLoading: boolean;
   isAuthenticated: boolean;
-  login: (userData: User, token: string) => Promise<void>;
+  login: (userData: any, token: string) => Promise<void>;
   logout: () => Promise<void>;
 }
 
@@ -42,15 +45,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const login = async (userData: User, token: string) => {
+  const login = async (userData: any, token: string) => {
+    const normalizedUser: User = {
+      id: userData.id || userData.sub || '',
+      email: userData.email || '',
+      firstName: userData.firstName || userData.first_name || '',
+      lastName: userData.lastName || userData.last_name || '',
+      name: `${userData.firstName || userData.first_name || ''} ${userData.lastName || userData.last_name || ''}`.trim(),
+      subscription: userData.subscription || 'free',
+    };
     await SecureStore.setItemAsync('authToken', token);
-    await SecureStore.setItemAsync('userData', JSON.stringify(userData));
-    setUser(userData);
+    await SecureStore.setItemAsync('userData', JSON.stringify(normalizedUser));
+    setUser(normalizedUser);
   };
 
   const logout = async () => {
     await SecureStore.deleteItemAsync('authToken');
     await SecureStore.deleteItemAsync('userData');
+    await clearSessionCookie();
     setUser(null);
   };
 

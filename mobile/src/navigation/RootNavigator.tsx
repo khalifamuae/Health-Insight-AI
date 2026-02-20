@@ -20,11 +20,8 @@ export default function RootNavigator() {
     );
   }
 
-  const handleLogin = () => {
-    login(
-      { id: 1, name: 'User', email: 'user@example.com', subscription: 'free' },
-      'demo-token'
-    );
+  const handleLogin = async (userData: any, token: string) => {
+    await login(userData, token);
   };
 
   return (

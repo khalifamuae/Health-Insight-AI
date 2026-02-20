@@ -31,6 +31,10 @@ export const pdfStatusEnum = pgEnum("pdf_status", ["pending", "processing", "suc
 // User profiles - extends auth users with health data
 export const userProfiles = pgTable("user_profiles", {
   id: varchar("id").primaryKey(),
+  email: varchar("email"),
+  passwordHash: text("password_hash"),
+  firstName: varchar("first_name"),
+  lastName: varchar("last_name"),
   phone: varchar("phone"),
   age: integer("age"),
   weight: real("weight"),

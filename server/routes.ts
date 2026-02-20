@@ -1,6 +1,7 @@
 import type { Express, Request, Response, RequestHandler } from "express";
 import { createServer, type Server } from "http";
 import multer from "multer";
+import bcrypt from "bcryptjs";
 import { storage } from "./storage";
 import { setupAuth, isAuthenticated, registerAuthRoutes } from "./replit_integrations/auth";
 import { analyzeLabPdf } from "./pdfAnalyzer";
@@ -9,6 +10,7 @@ import { getPrivacyPolicyHTML, getPrivacyPolicyArabicHTML, getTermsOfServiceHTML
 import { desc, eq, and, gte, sql } from "drizzle-orm";
 import { db } from "./db";
 import { userProfiles } from "@shared/schema";
+import crypto from "crypto";
 
 const upload = multer({ 
   storage: multer.memoryStorage(),
@@ -40,50 +42,101 @@ export async function registerRoutes(
     });
   });
 
-  app.post("/api/demo-login", async (req: any, res: Response) => {
-    const { email, password } = req.body || {};
-    const demoEmail = "demo@biotrack.ai";
-    const demoPassword = process.env.DEMO_ACCOUNT_PASSWORD || "BioTrack2025!Review";
-    
-    if (email !== demoEmail || password !== demoPassword) {
-      return res.status(401).json({ error: "Invalid credentials" });
-    }
+  app.post("/api/auth/register", async (req: any, res: Response) => {
+    try {
+      const { password, firstName, lastName } = req.body || {};
+      const email = (req.body?.email || '').trim().toLowerCase();
+      if (!email || !password) {
+        return res.status(400).json({ error: "Email and password are required" });
+      }
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email)) {
+        return res.status(400).json({ error: "Invalid email format" });
+      }
+      if (password.length < 6) {
+        return res.status(400).json({ error: "Password must be at least 6 characters" });
+      }
 
-    const demoUserId = "demo_reviewer_001";
-    let profile = await storage.getUserProfile(demoUserId);
-    if (!profile) {
+      const existingUsers = await db.select().from(userProfiles).where(eq(userProfiles.email, email)).limit(1);
+      if (existingUsers.length > 0) {
+        return res.status(409).json({ error: "Email already registered" });
+      }
+
+      const userId = crypto.randomUUID();
+      const passwordHash = await bcrypt.hash(password, 10);
       const trialEnd = new Date();
-      trialEnd.setFullYear(trialEnd.getFullYear() + 1);
-      profile = await storage.upsertUserProfile({
-        id: demoUserId,
-        email: demoEmail,
-        firstName: "App",
-        lastName: "Reviewer",
-        age: 30,
-        weight: 75,
-        height: 170,
-        gender: "male",
-        fitnessGoal: "maintain",
-        subscriptionPlan: "pro",
-        subscriptionExpiresAt: trialEnd,
-        subscriptionProductId: "demo_review",
-        subscriptionPlatform: "demo",
+      trialEnd.setDate(trialEnd.getDate() + 7);
+
+      const profile = await storage.upsertUserProfile({
+        id: userId,
+        email,
+        passwordHash,
+        firstName: firstName || "",
+        lastName: lastName || "",
+        subscriptionPlan: "free",
         trialStartedAt: new Date(),
         trialEndsAt: trialEnd,
       });
+
+      const user = {
+        claims: { sub: userId, email, first_name: firstName || "", last_name: lastName || "", exp: Math.floor(Date.now()/1000) + 86400 * 30 },
+        expires_at: Math.floor(Date.now()/1000) + 86400 * 30,
+        access_token: `token_${userId}`,
+        refresh_token: `refresh_${userId}`
+      };
+
+      req.login(user, (err: any) => {
+        if (err) return res.status(500).json({ error: "Registration failed" });
+        res.json({ 
+          success: true, 
+          token: `token_${userId}`,
+          user: { id: userId, email, firstName: firstName || "", lastName: lastName || "", subscription: profile.subscriptionPlan }
+        });
+      });
+    } catch (err) {
+      console.error("Register error:", err);
+      res.status(500).json({ error: "Registration failed" });
     }
+  });
 
-    const user = {
-      claims: { sub: demoUserId, email: demoEmail, first_name: "App", last_name: "Reviewer", exp: Math.floor(Date.now()/1000) + 86400 },
-      expires_at: Math.floor(Date.now()/1000) + 86400,
-      access_token: "demo_review_token",
-      refresh_token: "demo_review_refresh"
-    };
+  app.post("/api/auth/login", async (req: any, res: Response) => {
+    try {
+      const { password } = req.body || {};
+      const email = (req.body?.email || '').trim().toLowerCase();
+      if (!email || !password) {
+        return res.status(400).json({ error: "Email and password are required" });
+      }
 
-    req.login(user, (err: any) => {
-      if (err) return res.status(500).json({ error: 'Login failed' });
-      res.json({ success: true, message: "Demo login successful" });
-    });
+      const users = await db.select().from(userProfiles).where(eq(userProfiles.email, email)).limit(1);
+      if (users.length === 0 || !users[0].passwordHash) {
+        return res.status(401).json({ error: "Invalid email or password" });
+      }
+
+      const profile = users[0];
+      const validPassword = await bcrypt.compare(password, profile.passwordHash!);
+      if (!validPassword) {
+        return res.status(401).json({ error: "Invalid email or password" });
+      }
+
+      const user = {
+        claims: { sub: profile.id, email: profile.email, first_name: profile.firstName || "", last_name: profile.lastName || "", exp: Math.floor(Date.now()/1000) + 86400 * 30 },
+        expires_at: Math.floor(Date.now()/1000) + 86400 * 30,
+        access_token: `token_${profile.id}`,
+        refresh_token: `refresh_${profile.id}`
+      };
+
+      req.login(user, (err: any) => {
+        if (err) return res.status(500).json({ error: "Login failed" });
+        res.json({
+          success: true,
+          token: `token_${profile.id}`,
+          user: { id: profile.id, email: profile.email, firstName: profile.firstName || "", lastName: profile.lastName || "", subscription: profile.subscriptionPlan }
+        });
+      });
+    } catch (err) {
+      console.error("Login error:", err);
+      res.status(500).json({ error: "Login failed" });
+    }
   });
 
   app.get("/privacy", (req: Request, res: Response) => {

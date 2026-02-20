@@ -94,8 +94,30 @@ export default function SubscriptionScreen({ navigation, route }: Props) {
     : ['7-day free trial', 'View basic tests', 'Limited access'];
 
   const proFeatures = isArabic
-    ? ['تحليل PDF غير محدود', '+50 مؤشر حيوي', 'خطة غذائية بالذكاء الاصطناعي', 'مقارنة النتائج', 'تذكيرات إعادة الفحص', 'دعم أولوية']
-    : ['Unlimited PDF analysis', '50+ biomarkers tracked', 'AI diet plan', 'Results comparison', 'Recheck reminders', 'Priority support'];
+    ? [
+        'رفع تقارير تحاليل PDF بلا حدود',
+        'تحليل نتائج التحاليل بالذكاء الاصطناعي',
+        'خطط غذائية مخصصة بالذكاء الاصطناعي',
+        'تتبع أكثر من 50 مؤشر حيوي',
+        'مقارنة النتائج القديمة بالجديدة مع الاتجاهات',
+        'تذكيرات إعادة الفحص التلقائية',
+        'رؤى صحية مفصلة وتوصيات',
+        'دعم عملاء ذو أولوية',
+        'دعم كامل للعربية والإنجليزية',
+        'واجهة الوضع الداكن',
+      ]
+    : [
+        'Unlimited PDF lab report uploads',
+        'AI-powered lab result analysis',
+        'Personalized AI diet plans',
+        'Track 50+ medical biomarkers',
+        'Compare old vs new results with trends',
+        'Automated recheck reminders',
+        'Detailed health insights & recommendations',
+        'Priority customer support',
+        'Full Arabic & English support',
+        'Dark mode interface',
+      ];
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
