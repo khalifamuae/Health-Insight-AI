@@ -3,34 +3,34 @@ import path from 'path';
 import fs from 'fs';
 
 const BASE_URL = 'http://localhost:5000';
-const OUTPUT_DIR = path.join(process.cwd(), 'screenshots');
-
-const DEVICES = [
-  {
-    name: '6.5inch',
-    width: 414,
-    height: 896,
-    deviceScaleFactor: 3,
-    outputWidth: 1242,
-    outputHeight: 2688,
-  },
-  {
-    name: '6.7inch',
-    width: 428,
-    height: 926,
-    deviceScaleFactor: 3,
-    outputWidth: 1284,
-    outputHeight: 2778,
-  },
-];
+const OUTPUT_DIR = path.join(process.cwd(), 'screenshots', 'en_dark_1242x2688');
 
 const SCREENS = [
-  { name: '01_dashboard', path: '/', waitFor: 3000 },
-  { name: '02_tests', path: '/tests', waitFor: 3000 },
-  { name: '03_diet', path: '/diet', waitFor: 3000 },
-  { name: '04_profile', path: '/profile', waitFor: 3000 },
-  { name: '05_compare', path: '/compare', waitFor: 3000 },
+  { name: '01_dashboard', path: '/', waitFor: 2000 },
+  { name: '02_tests', path: '/tests', waitFor: 2000 },
+  { name: '03_diet', path: '/diet', waitFor: 2000 },
+  { name: '04_profile', path: '/profile', waitFor: 2000 },
+  { name: '05_compare', path: '/compare', waitFor: 2000 },
 ];
+
+async function switchToEnglishAndDark(page: any) {
+  await page.evaluate(() => {
+    localStorage.setItem('i18nextLng', 'en');
+    localStorage.setItem('theme', 'dark');
+    document.documentElement.classList.add('dark');
+    document.documentElement.dir = 'ltr';
+    document.documentElement.lang = 'en';
+  });
+
+  const langBtn = page.locator('[data-testid="button-language-toggle"]');
+  const bodyText = await page.textContent('body');
+  if (bodyText?.includes('الرئيسية') || bodyText?.includes('فحوصاتي') || bodyText?.includes('النظام') || bodyText?.includes('المعلومات') || bodyText?.includes('مقارنة')) {
+    if (await langBtn.isVisible({ timeout: 1000 }).catch(() => false)) {
+      await langBtn.click();
+      await page.waitForTimeout(1000);
+    }
+  }
+}
 
 async function takeScreenshots() {
   if (!fs.existsSync(OUTPUT_DIR)) {
@@ -39,77 +39,52 @@ async function takeScreenshots() {
 
   const browser = await chromium.launch({ headless: true });
 
-  for (const device of DEVICES) {
-    const deviceDir = path.join(OUTPUT_DIR, `${device.outputWidth}x${device.outputHeight}`);
-    if (!fs.existsSync(deviceDir)) {
-      fs.mkdirSync(deviceDir, { recursive: true });
+  const context = await browser.newContext({
+    viewport: { width: 414, height: 896 },
+    deviceScaleFactor: 3,
+    isMobile: true,
+    hasTouch: true,
+    locale: 'en',
+    colorScheme: 'dark',
+  });
+
+  const page = await context.newPage();
+
+  console.log('\n📱 English + Dark Mode (1242x2688)');
+  console.log('🔐 Logging in...');
+
+  const loginResp = await page.goto(`${BASE_URL}/api/dev-screenshot-login`, { waitUntil: 'networkidle', timeout: 15000 });
+  const loginBody = await loginResp?.json().catch(() => null);
+  console.log('Login result:', loginBody);
+
+  for (const screen of SCREENS) {
+    try {
+      await page.goto(`${BASE_URL}${screen.path}`, { waitUntil: 'networkidle', timeout: 15000 });
+      await page.waitForTimeout(1500);
+
+      await switchToEnglishAndDark(page);
+      await page.waitForTimeout(screen.waitFor);
+
+      const screenshotPath = path.join(OUTPUT_DIR, `${screen.name}.png`);
+      await page.screenshot({ path: screenshotPath, fullPage: false });
+
+      const text = (await page.textContent('body')) || '';
+      const lang = text.includes('Home') || text.includes('My Tests') || text.includes('Diet') || text.includes('Personal') || text.includes('Compare') ? 'EN' : 'AR';
+      const dark = await page.evaluate(() => document.documentElement.classList.contains('dark'));
+      console.log(`✓ ${screen.name} [${lang}] [${dark ? 'Dark' : 'Light'}]`);
+    } catch (err) {
+      console.error(`✗ Error on ${screen.name}: ${err}`);
     }
-
-    const landscapeDir = path.join(OUTPUT_DIR, `${device.outputHeight}x${device.outputWidth}`);
-    if (!fs.existsSync(landscapeDir)) {
-      fs.mkdirSync(landscapeDir, { recursive: true });
-    }
-
-    const context = await browser.newContext({
-      viewport: { width: device.width, height: device.height },
-      deviceScaleFactor: device.deviceScaleFactor,
-      isMobile: true,
-      hasTouch: true,
-      locale: 'ar',
-    });
-
-    const page = await context.newPage();
-
-    console.log(`\n📱 Device: ${device.name} (${device.outputWidth}x${device.outputHeight})`);
-    console.log('🔐 Logging in...');
-
-    const loginResp = await page.goto(`${BASE_URL}/api/dev-screenshot-login`, { waitUntil: 'networkidle', timeout: 15000 });
-    const loginBody = await loginResp?.json().catch(() => null);
-    console.log('Login result:', loginBody);
-
-    if (!loginBody?.success) {
-      console.error('❌ Login failed, screenshots will show login page');
-    }
-
-    for (const screen of SCREENS) {
-      try {
-        await page.goto(`${BASE_URL}${screen.path}`, { waitUntil: 'networkidle', timeout: 15000 });
-        await page.waitForTimeout(screen.waitFor);
-
-        const portraitPath = path.join(deviceDir, `${screen.name}.png`);
-        await page.screenshot({ path: portraitPath, fullPage: false });
-        console.log(`✓ Portrait: ${device.outputWidth}x${device.outputHeight} - ${screen.name}`);
-
-        await page.setViewportSize({ width: device.height, height: device.width });
-        await page.waitForTimeout(1000);
-        const landscapePath = path.join(landscapeDir, `${screen.name}.png`);
-        await page.screenshot({ path: landscapePath, fullPage: false });
-        console.log(`✓ Landscape: ${device.outputHeight}x${device.outputWidth} - ${screen.name}`);
-
-        await page.setViewportSize({ width: device.width, height: device.height });
-        await page.waitForTimeout(500);
-      } catch (err) {
-        console.error(`✗ Error on ${screen.name}: ${err}`);
-      }
-    }
-
-    await context.close();
   }
 
+  await context.close();
   await browser.close();
-  console.log('\n📸 All screenshots saved to:', OUTPUT_DIR);
 
-  const dirs = fs.readdirSync(OUTPUT_DIR).sort();
-  for (const dir of dirs) {
-    const fullDir = path.join(OUTPUT_DIR, dir);
-    if (fs.statSync(fullDir).isDirectory()) {
-      const files = fs.readdirSync(fullDir);
-      console.log(`\n📁 ${dir}/`);
-      for (const file of files) {
-        const stat = fs.statSync(path.join(fullDir, file));
-        console.log(`   ${file} (${(stat.size / 1024).toFixed(0)} KB)`);
-      }
-    }
+  console.log('\n📸 Screenshots saved to:', OUTPUT_DIR);
+  const files = fs.readdirSync(OUTPUT_DIR);
+  for (const file of files) {
+    const stat = fs.statSync(path.join(OUTPUT_DIR, file));
+    console.log(`   ${file} (${(stat.size / 1024).toFixed(0)} KB)`);
   }
 }
 

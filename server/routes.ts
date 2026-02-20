@@ -23,6 +23,23 @@ export async function registerRoutes(
   await setupAuth(app);
   registerAuthRoutes(app);
 
+  app.get("/api/dev-screenshot-login", async (req: any, res: Response) => {
+    if (process.env.NODE_ENV === 'production') return res.status(404).send('Not found');
+    const userId = "41010778";
+    const profile = await storage.getUserProfile(userId);
+    if (!profile) return res.status(404).json({ error: 'User not found' });
+    const user = {
+      claims: { sub: userId, email: "demo@biotrack.ai", first_name: "Khalifa", last_name: "Alhosani", exp: Math.floor(Date.now()/1000) + 86400 },
+      expires_at: Math.floor(Date.now()/1000) + 86400,
+      access_token: "dev_token",
+      refresh_token: "dev_refresh"
+    };
+    req.login(user, (err: any) => {
+      if (err) return res.status(500).json({ error: 'Login failed' });
+      res.json({ success: true });
+    });
+  });
+
   app.get("/privacy", (req: Request, res: Response) => {
     const lang = req.query.lang as string;
     res.type("html").send(lang === "ar" ? getPrivacyPolicyArabicHTML() : getPrivacyPolicyHTML());
