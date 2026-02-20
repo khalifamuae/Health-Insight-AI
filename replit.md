@@ -13,7 +13,7 @@ BioTrack AI is a comprehensive health tracking application that analyzes PDF lab
 - **Bilingual**: Full Arabic and English support with RTL
 - **Recheck Reminders**: Automated alerts based on recommended intervals
 - **Subscription System**: Single "Pro" plan - $14.99/month or $139/year (23% savings). 7-day free trial for new users. After trial expires, user must subscribe to view uploaded data.
-- **Affiliate/Referral System**: Users earn 10% commission (one-time) on referred user's first subscription. $50 minimum withdrawal via PayPal or bank transfer.
+- **Affiliate/Referral System** [DISABLED - pending automatic payouts]: Users earn 10% commission (one-time) on referred user's first subscription. $50 minimum withdrawal via PayPal or bank transfer. Code preserved in AffiliateScreen.tsx, storage.ts, schema.ts.
 
 ## Recent Changes
 - **Affiliate System**: Complete referral and commission tracking system

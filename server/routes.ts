@@ -817,17 +817,16 @@ export async function registerRoutes(
         subscriptionPlatform: platform,
       });
 
-      // Track affiliate commission if user was referred
-      try {
-        const profile = await storage.getUserProfile(userId);
-        if (profile?.referredBy) {
-          const subscriptionAmount = period === 'yearly' ? 139.00 : 14.99;
-          await storage.createCommission(profile.referredBy, userId, subscriptionAmount, productId);
-          console.log(`[Affiliate] Commission created for referrer ${profile.referredBy} from user ${userId} ($${subscriptionAmount * 0.10})`);
-        }
-      } catch (affErr) {
-        console.error("[Affiliate] Error creating commission:", affErr);
-      }
+      // [DISABLED] Affiliate commission tracking - will be re-enabled with automatic payouts
+      // try {
+      //   const profile = await storage.getUserProfile(userId);
+      //   if (profile?.referredBy) {
+      //     const subscriptionAmount = period === 'yearly' ? 139.00 : 14.99;
+      //     await storage.createCommission(profile.referredBy, userId, subscriptionAmount, productId);
+      //   }
+      // } catch (affErr) {
+      //   console.error("[Affiliate] Error creating commission:", affErr);
+      // }
 
       res.json({ success: true, plan, expiresAt: expiresAt.toISOString() });
     } catch (error) {
@@ -919,150 +918,18 @@ export async function registerRoutes(
   });
 
   // ===== Affiliate System Endpoints =====
+  // [DISABLED] All affiliate endpoints are temporarily disabled until automatic payouts are implemented.
+  // Files preserved: mobile/src/screens/AffiliateScreen.tsx, storage methods, schema tables.
+  // To re-enable: uncomment the routes below and the commission tracking in /api/subscription/purchase.
 
-  // Get or generate referral code
-  app.get("/api/affiliate/referral-code", isAuthenticated, async (req: any, res: Response) => {
-    try {
-      const userId = req.user.claims.sub;
-      const code = await storage.generateReferralCode(userId);
-      res.json({ referralCode: code });
-    } catch (error) {
-      console.error("Error getting referral code:", error);
-      res.status(500).json({ error: "Failed to get referral code" });
-    }
-  });
-
-  // Register a referral (called when new user signs up with a referral code)
-  app.post("/api/affiliate/register-referral", isAuthenticated, async (req: any, res: Response) => {
-    try {
-      const userId = req.user.claims.sub;
-      const { referralCode } = req.body;
-
-      if (!referralCode) {
-        return res.status(400).json({ error: "Referral code is required" });
-      }
-
-      const profile = await storage.getUserProfile(userId);
-      if (profile?.referredBy) {
-        return res.status(400).json({ error: "User already has a referrer" });
-      }
-
-      const referrer = await storage.getUserByReferralCode(referralCode.toUpperCase());
-      if (!referrer) {
-        return res.status(404).json({ error: "Invalid referral code" });
-      }
-
-      if (referrer.id === userId) {
-        return res.status(400).json({ error: "Cannot refer yourself" });
-      }
-
-      const referral = await storage.createReferral(referrer.id, userId, referralCode.toUpperCase());
-      res.json({ success: true, referral });
-    } catch (error) {
-      console.error("Error registering referral:", error);
-      res.status(500).json({ error: "Failed to register referral" });
-    }
-  });
-
-  // Get affiliate dashboard stats
-  app.get("/api/affiliate/dashboard", isAuthenticated, async (req: any, res: Response) => {
-    try {
-      const userId = req.user.claims.sub;
-      const referralCode = await storage.generateReferralCode(userId);
-      const referralCount = await storage.getReferralCount(userId);
-      const totalEarnings = await storage.getTotalEarnings(userId);
-      const availableBalance = await storage.getAvailableBalance(userId);
-      const commissions = await storage.getCommissionsByUser(userId);
-      const withdrawals = await storage.getWithdrawalRequests(userId);
-
-      res.json({
-        referralCode,
-        referralCount,
-        totalEarnings: Math.round(totalEarnings * 100) / 100,
-        availableBalance: Math.round(availableBalance * 100) / 100,
-        commissionRate: 10,
-        minimumWithdrawal: 50,
-        commissions,
-        withdrawals,
-      });
-    } catch (error) {
-      console.error("Error fetching affiliate dashboard:", error);
-      res.status(500).json({ error: "Failed to fetch affiliate dashboard" });
-    }
-  });
-
-  // Request withdrawal
-  app.post("/api/affiliate/withdraw", isAuthenticated, async (req: any, res: Response) => {
-    try {
-      const userId = req.user.claims.sub;
-      const { amount, paymentMethod, paymentDetails } = req.body;
-
-      if (!amount || !paymentMethod || !paymentDetails) {
-        return res.status(400).json({ error: "Missing required fields" });
-      }
-
-      if (amount < 50) {
-        return res.status(400).json({ error: "Minimum withdrawal amount is $50" });
-      }
-
-      const availableBalance = await storage.getAvailableBalance(userId);
-      if (amount > availableBalance) {
-        return res.status(400).json({ error: "Insufficient balance" });
-      }
-
-      const withdrawal = await storage.createWithdrawalRequest(userId, amount, paymentMethod, paymentDetails);
-      res.json({ success: true, withdrawal });
-    } catch (error) {
-      console.error("Error requesting withdrawal:", error);
-      res.status(500).json({ error: "Failed to request withdrawal" });
-    }
-  });
-
-  // Admin authorization check
-  const ADMIN_USER_IDS = (process.env.ADMIN_USER_IDS || '').split(',').map(id => id.trim()).filter(Boolean);
-  function isAdmin(req: any): boolean {
-    const userId = req.user?.claims?.sub;
-    return ADMIN_USER_IDS.includes(userId);
-  }
-
-  // Admin: Get all withdrawal requests
-  app.get("/api/admin/withdrawals", isAuthenticated, async (req: any, res: Response) => {
-    try {
-      if (!isAdmin(req)) {
-        return res.status(403).json({ error: "Admin access required" });
-      }
-      const withdrawals = await storage.getAllWithdrawalRequests();
-      res.json(withdrawals);
-    } catch (error) {
-      console.error("Error fetching withdrawals:", error);
-      res.status(500).json({ error: "Failed to fetch withdrawals" });
-    }
-  });
-
-  // Admin: Update withdrawal status
-  app.patch("/api/admin/withdrawals/:id", isAuthenticated, async (req: any, res: Response) => {
-    try {
-      if (!isAdmin(req)) {
-        return res.status(403).json({ error: "Admin access required" });
-      }
-      const { id } = req.params;
-      const { status, adminNote } = req.body;
-
-      if (!status || !['approved', 'rejected', 'paid'].includes(status)) {
-        return res.status(400).json({ error: "Invalid status" });
-      }
-
-      const updated = await storage.updateWithdrawalStatus(id, status, adminNote);
-      if (!updated) {
-        return res.status(404).json({ error: "Withdrawal request not found" });
-      }
-
-      res.json({ success: true, withdrawal: updated });
-    } catch (error) {
-      console.error("Error updating withdrawal:", error);
-      res.status(500).json({ error: "Failed to update withdrawal" });
-    }
-  });
+  /*
+  app.get("/api/affiliate/referral-code", isAuthenticated, async (req: any, res: Response) => { ... });
+  app.post("/api/affiliate/register-referral", isAuthenticated, async (req: any, res: Response) => { ... });
+  app.get("/api/affiliate/dashboard", isAuthenticated, async (req: any, res: Response) => { ... });
+  app.post("/api/affiliate/withdraw", isAuthenticated, async (req: any, res: Response) => { ... });
+  app.get("/api/admin/withdrawals", isAuthenticated, async (req: any, res: Response) => { ... });
+  app.patch("/api/admin/withdrawals/:id", isAuthenticated, async (req: any, res: Response) => { ... });
+  */
 
   return httpServer;
 }

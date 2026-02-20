@@ -9,7 +9,6 @@ import TestsScreen from '../screens/TestsScreen';
 import UploadScreen from '../screens/UploadScreen';
 import RemindersScreen from '../screens/RemindersScreen';
 import ProfileScreen from '../screens/ProfileScreen';
-import AffiliateScreen from '../screens/AffiliateScreen';
 
 const Tab = createBottomTabNavigator();
 

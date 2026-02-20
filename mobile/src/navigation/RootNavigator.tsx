@@ -6,7 +6,6 @@ import { useAuth } from '../context/AuthContext';
 import LoginScreen from '../screens/LoginScreen';
 import TabNavigator from './TabNavigator';
 import SubscriptionScreen from '../screens/SubscriptionScreen';
-import AffiliateScreen from '../screens/AffiliateScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -37,11 +36,6 @@ export default function RootNavigator() {
             name="Subscription"
             component={SubscriptionScreen}
             options={{ presentation: 'modal' }}
-          />
-          <Stack.Screen
-            name="Affiliate"
-            component={AffiliateScreen}
-            options={{ presentation: 'modal', headerShown: true, title: '' }}
           />
         </>
       ) : (
