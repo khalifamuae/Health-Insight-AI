@@ -63,6 +63,10 @@ export default function HomeScreen({ navigation }: any) {
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+      <View style={styles.disclaimerSmall}>
+        <Ionicons name="information-circle-outline" size={16} color="#94a3b8" />
+        <Text style={styles.disclaimerSmallText}>{t('disclaimer.text')}</Text>
+      </View>
       <View style={styles.header}>
         <Text style={styles.title}>{t('welcome')}</Text>
         <Text style={styles.subtitle}>{t('subtitle')}</Text>
@@ -125,10 +129,6 @@ export default function HomeScreen({ navigation }: any) {
         <Text style={styles.viewTestsButtonText}>{t('myTests')}</Text>
       </TouchableOpacity>
 
-      <View style={styles.disclaimerSmall}>
-        <Ionicons name="information-circle-outline" size={16} color="#94a3b8" />
-        <Text style={styles.disclaimerSmallText}>{t('disclaimer.text')}</Text>
-      </View>
     </ScrollView>
   );
 }

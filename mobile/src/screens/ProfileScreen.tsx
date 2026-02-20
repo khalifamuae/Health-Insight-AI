@@ -97,6 +97,10 @@ export default function ProfileScreen({ navigation }: { navigation: any }) {
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+      <View style={styles.disclaimerSmall}>
+        <Ionicons name="information-circle-outline" size={16} color="#94a3b8" />
+        <Text style={styles.disclaimerSmallText}>{t('disclaimer.text')}</Text>
+      </View>
       <View style={styles.header}>
         <View style={styles.avatar}>
           <Ionicons name="person" size={40} color="#fff" />
@@ -303,10 +307,6 @@ export default function ProfileScreen({ navigation }: { navigation: any }) {
         </TouchableOpacity>
       </View>
 
-      <View style={styles.disclaimerSmall}>
-        <Ionicons name="information-circle-outline" size={16} color="#94a3b8" />
-        <Text style={styles.disclaimerSmallText}>{t('disclaimer.text')}</Text>
-      </View>
     </ScrollView>
   );
 }

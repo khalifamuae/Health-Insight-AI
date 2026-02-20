@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import type { UserProfile } from "@shared/schema";
+import { MedicalDisclaimer } from "@/components/MedicalDisclaimer";
 import {
   Loader2,
   Sun,
@@ -313,6 +314,7 @@ export default function DietPlan() {
   if (showQuestionnaire && !plan) {
     return (
       <div className="space-y-4">
+        <MedicalDisclaimer />
         {step === "disclaimer" && (
           <div className="space-y-4">
             <Card className="border-orange-200 dark:border-orange-800/40">
@@ -1048,6 +1050,7 @@ export default function DietPlan() {
 
   return (
     <div className="space-y-4">
+      <MedicalDisclaimer />
       <div className="flex items-center gap-2">
         <Salad className="h-5 w-5 text-primary" />
         <h2 className="text-lg font-bold" data-testid="text-diet-title">{t("dietPlan")}</h2>

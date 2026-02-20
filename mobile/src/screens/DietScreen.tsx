@@ -27,6 +27,10 @@ export default function DietScreen({ navigation }: any) {
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+      <View style={styles.disclaimerSmall}>
+        <Ionicons name="information-circle-outline" size={16} color="#94a3b8" />
+        <Text style={styles.disclaimerSmallText}>{t('disclaimer.text')}</Text>
+      </View>
       <View style={styles.heroCard}>
         <View style={styles.heroIconContainer}>
           <Ionicons name="nutrition" size={48} color="#f59e0b" />
@@ -132,11 +136,6 @@ export default function DietScreen({ navigation }: any) {
           {isArabic ? 'ابدأ خطتك الغذائية' : 'Start Your Diet Plan'}
         </Text>
       </TouchableOpacity>
-
-      <View style={styles.disclaimerSmall}>
-        <Ionicons name="information-circle-outline" size={16} color="#94a3b8" />
-        <Text style={styles.disclaimerSmallText}>{t('disclaimer.text')}</Text>
-      </View>
 
       <View style={styles.trustRow}>
         <View style={styles.trustItem}>

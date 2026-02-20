@@ -100,6 +100,10 @@ export default function RemindersScreen() {
 
   return (
     <View style={styles.container}>
+      <View style={styles.disclaimerSmall}>
+        <Ionicons name="information-circle-outline" size={16} color="#94a3b8" />
+        <Text style={styles.disclaimerSmallText}>{t('disclaimer.text')}</Text>
+      </View>
       <View style={styles.header}>
         <Text style={styles.title}>{t('reminders.title')}</Text>
         <Text style={styles.count}>{pendingReminders.length}</Text>
@@ -123,10 +127,6 @@ export default function RemindersScreen() {
           }
         />
       )}
-      <View style={styles.disclaimerSmall}>
-        <Ionicons name="information-circle-outline" size={16} color="#94a3b8" />
-        <Text style={styles.disclaimerSmallText}>{t('disclaimer.text')}</Text>
-      </View>
     </View>
   );
 }

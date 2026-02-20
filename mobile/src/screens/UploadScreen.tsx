@@ -65,6 +65,10 @@ export default function UploadScreen({ navigation }: any) {
   return (
     <View style={styles.container}>
       <View style={styles.content}>
+        <View style={styles.disclaimerSmall}>
+          <Ionicons name="information-circle-outline" size={16} color="#94a3b8" />
+          <Text style={styles.disclaimerSmallText}>{t('disclaimer.text')}</Text>
+        </View>
         <View style={styles.iconContainer}>
           <Ionicons name="document-text" size={80} color="#3b82f6" />
         </View>
@@ -143,10 +147,6 @@ export default function UploadScreen({ navigation }: any) {
           </View>
         </View>
 
-        <View style={styles.disclaimerSmall}>
-          <Ionicons name="information-circle-outline" size={16} color="#94a3b8" />
-          <Text style={styles.disclaimerSmallText}>{t('disclaimer.text')}</Text>
-        </View>
       </View>
     </View>
   );

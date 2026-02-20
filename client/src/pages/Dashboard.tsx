@@ -45,6 +45,7 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-6">
+      <MedicalDisclaimer />
       <div className="flex flex-wrap gap-3 justify-center" data-testid="trust-badges">
         <div className="flex items-center gap-1.5 bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400 px-3 py-1.5 rounded-full text-xs font-semibold">
           <ShieldCheck className="h-3.5 w-3.5" />
@@ -111,7 +112,6 @@ export default function Dashboard() {
         </div>
       </div>
 
-      <MedicalDisclaimer />
     </div>
   );
 }
