@@ -105,11 +105,9 @@ const resources = {
       proFeature5: "Compare old vs new results with trends",
       proFeature6: "Automated recheck reminders",
       proFeature7: "Detailed health insights & recommendations",
-      proFeature8: "Scientific knowledge base (PubMed & NIH)",
-      proFeature9: "Export & share your health reports",
-      proFeature10: "Priority customer support",
-      proFeature11: "Full Arabic & English support",
-      proFeature12: "Dark mode interface",
+      proFeature8: "Priority customer support",
+      proFeature9: "Full Arabic & English support",
+      proFeature10: "Dark mode interface",
       whyUpgrade: "Why upgrade to Pro?",
       
       // Reminders
@@ -421,11 +419,9 @@ const resources = {
       proFeature5: "مقارنة النتائج القديمة بالجديدة مع الاتجاهات",
       proFeature6: "تذكيرات إعادة الفحص التلقائية",
       proFeature7: "رؤى صحية مفصلة وتوصيات",
-      proFeature8: "قاعدة معرفية علمية (PubMed و NIH)",
-      proFeature9: "تصدير ومشاركة تقاريرك الصحية",
-      proFeature10: "دعم عملاء ذو أولوية",
-      proFeature11: "دعم كامل للعربية والإنجليزية",
-      proFeature12: "واجهة الوضع الداكن",
+      proFeature8: "دعم عملاء ذو أولوية",
+      proFeature9: "دعم كامل للعربية والإنجليزية",
+      proFeature10: "واجهة الوضع الداكن",
       whyUpgrade: "لماذا الترقية إلى Pro؟",
       
       // Reminders

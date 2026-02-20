@@ -23,8 +23,6 @@ const proFeatureKeys = [
   "proFeature8",
   "proFeature9",
   "proFeature10",
-  "proFeature11",
-  "proFeature12",
 ];
 
 const planConfig = {
