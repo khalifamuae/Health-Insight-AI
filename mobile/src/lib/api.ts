@@ -1,6 +1,6 @@
 import * as SecureStore from 'expo-secure-store';
 
-const API_BASE_URL = 'https://your-app-url.replit.app';
+const API_BASE_URL = 'https://health-insight-ai.replit.app';
 
 let authToken: string | null = null;
 
