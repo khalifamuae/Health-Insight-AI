@@ -4,7 +4,6 @@ import {
   Text,
   StyleSheet,
   TouchableOpacity,
-  TextInput,
   Alert,
   ActivityIndicator,
   I18nManager,
@@ -12,7 +11,6 @@ import {
 } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { Ionicons } from '@expo/vector-icons';
-import * as SecureStore from 'expo-secure-store';
 
 interface LoginScreenProps {
   onLogin: () => void;
@@ -26,7 +24,7 @@ export default function LoginScreen({ onLogin }: LoginScreenProps) {
   const handleReplitLogin = async () => {
     setIsLoading(true);
     try {
-      const authUrl = 'https://your-app-url.replit.app/api/login';
+      const authUrl = 'https://health-insight-ai.replit.app/api/login';
       await Linking.openURL(authUrl);
       
       setTimeout(() => {
@@ -43,24 +41,53 @@ export default function LoginScreen({ onLogin }: LoginScreenProps) {
     <View style={styles.container}>
       <View style={styles.content}>
         <View style={styles.logoContainer}>
-          <Ionicons name="flask" size={80} color="#3b82f6" />
+          <Ionicons name="flask" size={64} color="#3b82f6" />
         </View>
 
         <Text style={styles.title}>{t('appName')}</Text>
-        <Text style={styles.subtitle}>{t('subtitle')}</Text>
+        <Text style={styles.tagline}>
+          {isArabic ? 'تحليل ذكي لنتائج فحوصاتك الطبية' : 'Smart Analysis for Your Lab Results'}
+        </Text>
+
+        <View style={styles.trustBadgesRow}>
+          <View style={styles.trustBadge}>
+            <Ionicons name="shield-checkmark" size={22} color="#16a34a" />
+            <Text style={styles.trustBadgeLabel}>
+              {isArabic ? 'آمن وخاص' : 'Secure & Private'}
+            </Text>
+          </View>
+          <View style={styles.trustBadge}>
+            <Ionicons name="flask" size={22} color="#3b82f6" />
+            <Text style={styles.trustBadgeLabel}>
+              {isArabic ? '+50 مؤشر' : '50+ Biomarkers'}
+            </Text>
+          </View>
+          <View style={styles.trustBadge}>
+            <Ionicons name="sparkles" size={22} color="#7c3aed" />
+            <Text style={styles.trustBadgeLabel}>
+              {isArabic ? 'تحليل بالذكاء الاصطناعي' : 'AI Medical Insights'}
+            </Text>
+          </View>
+        </View>
 
         <View style={styles.featuresContainer}>
           <View style={styles.featureItem}>
-            <Ionicons name="document-text" size={24} color="#22c55e" />
-            <Text style={styles.featureText}>{t('uploadPdf')}</Text>
+            <Ionicons name="document-text" size={22} color="#22c55e" />
+            <Text style={styles.featureText}>
+              {isArabic ? 'رفع PDF وتحليل فوري' : 'Upload PDF & Instant Analysis'}
+            </Text>
           </View>
           <View style={styles.featureItem}>
-            <Ionicons name="analytics" size={24} color="#3b82f6" />
-            <Text style={styles.featureText}>{t('allTests')}</Text>
+            <Ionicons name="nutrition" size={22} color="#f59e0b" />
+            <Text style={styles.featureText}>
+              {isArabic ? 'خطة غذائية مخصصة بالذكاء الاصطناعي' : 'AI-Powered Personalized Diet Plan'}
+            </Text>
           </View>
           <View style={styles.featureItem}>
-            <Ionicons name="notifications" size={24} color="#f59e0b" />
-            <Text style={styles.featureText}>{t('reminders.title')}</Text>
+            <Ionicons name="notifications" size={22} color="#3b82f6" />
+            <Text style={styles.featureText}>
+              {isArabic ? 'تذكيرات إعادة الفحص' : 'Recheck Reminders & Tracking'}
+            </Text>
           </View>
         </View>
 
@@ -80,12 +107,9 @@ export default function LoginScreen({ onLogin }: LoginScreenProps) {
           )}
         </TouchableOpacity>
 
-        <View style={styles.disclaimerCard}>
-          <Ionicons name="shield-checkmark" size={20} color="#16a34a" />
-          <Text style={styles.disclaimerText}>
-            {t('disclaimer.text')}
-          </Text>
-        </View>
+        <Text style={styles.trialText}>
+          {isArabic ? '7 أيام تجربة مجانية' : '7-day free trial'}
+        </Text>
 
         <TouchableOpacity
           style={styles.languageButton}
@@ -97,6 +121,16 @@ export default function LoginScreen({ onLogin }: LoginScreenProps) {
             {isArabic ? 'English' : 'العربية'}
           </Text>
         </TouchableOpacity>
+
+        <View style={styles.footerLinks}>
+          <TouchableOpacity onPress={() => Linking.openURL('https://health-insight-ai.replit.app/privacy')} testID="link-privacy-login">
+            <Text style={styles.footerLink}>{isArabic ? 'الخصوصية' : 'Privacy'}</Text>
+          </TouchableOpacity>
+          <Text style={styles.footerDivider}>|</Text>
+          <TouchableOpacity onPress={() => Linking.openURL('https://health-insight-ai.replit.app/terms')} testID="link-terms-login">
+            <Text style={styles.footerLink}>{isArabic ? 'الشروط' : 'Terms'}</Text>
+          </TouchableOpacity>
+        </View>
       </View>
     </View>
   );
@@ -114,48 +148,67 @@ const styles = StyleSheet.create({
     alignItems: 'center'
   },
   logoContainer: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
+    width: 100,
+    height: 100,
+    borderRadius: 28,
     backgroundColor: '#eff6ff',
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 24
+    marginBottom: 16
   },
   title: {
-    fontSize: 32,
+    fontSize: 30,
     fontWeight: 'bold',
     color: '#1e293b',
-    marginBottom: 8,
+    marginBottom: 4,
     textAlign: 'center'
   },
-  subtitle: {
-    fontSize: 16,
+  tagline: {
+    fontSize: 15,
     color: '#64748b',
     textAlign: 'center',
-    marginBottom: 32
+    marginBottom: 24,
+  },
+  trustBadgesRow: {
+    flexDirection: I18nManager.isRTL ? 'row-reverse' : 'row',
+    justifyContent: 'center',
+    marginBottom: 24,
+    gap: 16,
+  },
+  trustBadge: {
+    alignItems: 'center',
+    gap: 4,
+  },
+  trustBadgeLabel: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: '#475569',
+    textAlign: 'center',
+    maxWidth: 80,
   },
   featuresContainer: {
     width: '100%',
-    marginBottom: 32
+    marginBottom: 28,
+    gap: 10,
   },
   featureItem: {
     flexDirection: I18nManager.isRTL ? 'row-reverse' : 'row',
     alignItems: 'center',
     backgroundColor: '#fff',
-    padding: 16,
+    padding: 14,
     borderRadius: 12,
-    marginBottom: 12,
+    gap: 12,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.04,
+    shadowRadius: 3,
+    elevation: 1
   },
   featureText: {
-    fontSize: 16,
+    flex: 1,
+    fontSize: 15,
     color: '#1e293b',
-    marginHorizontal: 12,
+    fontWeight: '500',
     textAlign: I18nManager.isRTL ? 'right' : 'left'
   },
   loginButton: {
@@ -163,42 +216,45 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: '#3b82f6',
-    borderRadius: 12,
+    borderRadius: 14,
     padding: 16,
     width: '100%',
-    marginBottom: 24
+    marginBottom: 8,
+    gap: 8,
   },
   loginButtonText: {
     fontSize: 18,
     color: '#fff',
-    fontWeight: '600',
-    marginHorizontal: 8
+    fontWeight: '700',
   },
-  disclaimerCard: {
-    flexDirection: I18nManager.isRTL ? 'row-reverse' : 'row',
-    alignItems: 'flex-start',
-    backgroundColor: '#f0fdf4',
-    borderRadius: 12,
-    padding: 16,
-    width: '100%',
-    marginBottom: 24
-  },
-  disclaimerText: {
-    flex: 1,
+  trialText: {
     fontSize: 13,
-    color: '#166534',
-    marginHorizontal: 12,
-    lineHeight: 18,
-    textAlign: I18nManager.isRTL ? 'right' : 'left'
+    color: '#22c55e',
+    fontWeight: '600',
+    marginBottom: 20,
   },
   languageButton: {
     flexDirection: I18nManager.isRTL ? 'row-reverse' : 'row',
     alignItems: 'center',
-    padding: 12
+    padding: 10,
+    gap: 6,
+    marginBottom: 12,
   },
   languageButtonText: {
     fontSize: 16,
     color: '#64748b',
-    marginHorizontal: 8
-  }
+  },
+  footerLinks: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 12,
+  },
+  footerLink: {
+    fontSize: 12,
+    color: '#94a3b8',
+  },
+  footerDivider: {
+    fontSize: 12,
+    color: '#d1d5db',
+  },
 });

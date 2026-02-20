@@ -7,13 +7,14 @@ import { Ionicons } from '@expo/vector-icons';
 import HomeScreen from '../screens/HomeScreen';
 import TestsScreen from '../screens/TestsScreen';
 import UploadScreen from '../screens/UploadScreen';
-import RemindersScreen from '../screens/RemindersScreen';
+import DietScreen from '../screens/DietScreen';
 import ProfileScreen from '../screens/ProfileScreen';
 
 const Tab = createBottomTabNavigator();
 
 export default function TabNavigator() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const isArabic = i18n.language === 'ar';
 
   return (
     <Tab.Navigator
@@ -52,16 +53,6 @@ export default function TabNavigator() {
         }}
       />
       <Tab.Screen
-        name="Tests"
-        component={TestsScreen}
-        options={{
-          title: t('tests'),
-          tabBarIcon: ({ color, size }: { color: string; size: number }) => (
-            <Ionicons name="flask" size={size} color={color} />
-          )
-        }}
-      />
-      <Tab.Screen
         name="Upload"
         component={UploadScreen}
         options={{
@@ -72,12 +63,22 @@ export default function TabNavigator() {
         }}
       />
       <Tab.Screen
-        name="Reminders"
-        component={RemindersScreen}
+        name="Diet"
+        component={DietScreen}
         options={{
-          title: t('reminders.title'),
+          title: isArabic ? 'الغذاء' : 'Diet',
           tabBarIcon: ({ color, size }: { color: string; size: number }) => (
-            <Ionicons name="notifications" size={size} color={color} />
+            <Ionicons name="nutrition" size={size} color={color} />
+          )
+        }}
+      />
+      <Tab.Screen
+        name="Tests"
+        component={TestsScreen}
+        options={{
+          title: t('tests'),
+          tabBarIcon: ({ color, size }: { color: string; size: number }) => (
+            <Ionicons name="flask" size={size} color={color} />
           )
         }}
       />

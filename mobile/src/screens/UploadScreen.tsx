@@ -15,7 +15,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { api } from '../lib/api';
 
 export default function UploadScreen({ navigation }: any) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const isArabic = i18n.language === 'ar';
   const queryClient = useQueryClient();
   const [selectedFile, setSelectedFile] = useState<DocumentPicker.DocumentPickerAsset | null>(null);
 
@@ -71,6 +72,13 @@ export default function UploadScreen({ navigation }: any) {
         <Text style={styles.title}>{t('uploadPdf')}</Text>
         <Text style={styles.subtitle}>{t('subtitle')}</Text>
 
+        <View style={styles.securityBadge}>
+          <Ionicons name="lock-closed" size={16} color="#16a34a" />
+          <Text style={styles.securityBadgeText}>
+            {isArabic ? 'PDF فقط – مشفر وآمن' : 'PDF Only – Encrypted & Secure'}
+          </Text>
+        </View>
+
         <TouchableOpacity
           style={styles.selectButton}
           onPress={pickDocument}
@@ -114,9 +122,25 @@ export default function UploadScreen({ navigation }: any) {
           )}
         </TouchableOpacity>
 
-        <View style={styles.infoCard}>
-          <Ionicons name="information-circle" size={24} color="#3b82f6" />
-          <Text style={styles.infoText}>{t('disclaimer.text')}</Text>
+        <View style={styles.stepsContainer}>
+          <View style={styles.stepRow}>
+            <View style={styles.stepNumber}><Text style={styles.stepNumberText}>1</Text></View>
+            <Text style={styles.stepText}>
+              {isArabic ? 'اختر ملف PDF لنتائج فحوصاتك' : 'Select your lab results PDF file'}
+            </Text>
+          </View>
+          <View style={styles.stepRow}>
+            <View style={styles.stepNumber}><Text style={styles.stepNumberText}>2</Text></View>
+            <Text style={styles.stepText}>
+              {isArabic ? 'الذكاء الاصطناعي يحلل 50+ مؤشر حيوي' : 'AI analyzes 50+ biomarkers'}
+            </Text>
+          </View>
+          <View style={styles.stepRow}>
+            <View style={styles.stepNumber}><Text style={styles.stepNumberText}>3</Text></View>
+            <Text style={styles.stepText}>
+              {isArabic ? 'احصل على تقرير فوري بالنتائج' : 'Get instant results report'}
+            </Text>
+          </View>
         </View>
       </View>
     </View>
@@ -154,7 +178,22 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#64748b',
     textAlign: 'center',
-    marginBottom: 32
+    marginBottom: 12
+  },
+  securityBadge: {
+    flexDirection: I18nManager.isRTL ? 'row-reverse' : 'row',
+    alignItems: 'center',
+    backgroundColor: '#f0fdf4',
+    paddingVertical: 6,
+    paddingHorizontal: 14,
+    borderRadius: 20,
+    marginBottom: 24,
+    gap: 6,
+  },
+  securityBadgeText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#16a34a',
   },
   selectButton: {
     flexDirection: I18nManager.isRTL ? 'row-reverse' : 'row',
@@ -215,20 +254,32 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     marginHorizontal: 8
   },
-  infoCard: {
-    flexDirection: I18nManager.isRTL ? 'row-reverse' : 'row',
-    alignItems: 'flex-start',
-    backgroundColor: '#eff6ff',
-    borderRadius: 12,
-    padding: 16,
-    width: '100%'
+  stepsContainer: {
+    width: '100%',
+    gap: 12,
   },
-  infoText: {
+  stepRow: {
+    flexDirection: I18nManager.isRTL ? 'row-reverse' : 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  stepNumber: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: '#eff6ff',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  stepNumberText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#3b82f6',
+  },
+  stepText: {
     flex: 1,
     fontSize: 14,
-    color: '#1e40af',
-    marginHorizontal: 12,
-    lineHeight: 20,
-    textAlign: I18nManager.isRTL ? 'right' : 'left'
-  }
+    color: '#475569',
+    textAlign: I18nManager.isRTL ? 'right' : 'left',
+  },
 });
