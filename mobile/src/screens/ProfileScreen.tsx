@@ -7,7 +7,8 @@ import {
   TextInput,
   TouchableOpacity,
   Alert,
-  I18nManager
+  I18nManager,
+  Linking,
 } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -26,6 +27,8 @@ interface UserProfile {
   subscription: 'free' | 'pro';
   pdfCount: number;
 }
+
+const BASE_URL = 'https://health-insight-ai.replit.app';
 
 export default function ProfileScreen({ navigation }: { navigation: any }) {
   const { t, i18n } = useTranslation();
@@ -244,6 +247,59 @@ export default function ProfileScreen({ navigation }: { navigation: any }) {
             {isArabic ? 'English' : 'العربية'}
           </Text>
           <Ionicons name="chevron-forward" size={20} color="#94a3b8" />
+        </TouchableOpacity>
+      </View>
+
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>{isArabic ? 'القانونية والدعم' : 'Legal & Support'}</Text>
+
+        <TouchableOpacity
+          style={styles.settingItem}
+          onPress={() => Linking.openURL(`${BASE_URL}/privacy`)}
+          testID="link-privacy-profile"
+        >
+          <Ionicons name="shield-checkmark-outline" size={24} color="#64748b" />
+          <Text style={styles.settingText}>{isArabic ? 'سياسة الخصوصية' : 'Privacy Policy'}</Text>
+          <Ionicons name="open-outline" size={18} color="#94a3b8" />
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.settingItem}
+          onPress={() => Linking.openURL(`${BASE_URL}/terms`)}
+          testID="link-terms-profile"
+        >
+          <Ionicons name="document-text-outline" size={24} color="#64748b" />
+          <Text style={styles.settingText}>{isArabic ? 'شروط الاستخدام' : 'Terms of Use'}</Text>
+          <Ionicons name="open-outline" size={18} color="#94a3b8" />
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.settingItem}
+          onPress={() => Linking.openURL(`${BASE_URL}/support`)}
+          testID="link-support-profile"
+        >
+          <Ionicons name="help-circle-outline" size={24} color="#64748b" />
+          <Text style={styles.settingText}>{isArabic ? 'الدعم والمساعدة' : 'Help & Support'}</Text>
+          <Ionicons name="open-outline" size={18} color="#94a3b8" />
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.settingItem}
+          onPress={() => {
+            Alert.alert(
+              isArabic ? 'حذف الحساب' : 'Delete Account',
+              isArabic ? 'هل أنت متأكد من حذف حسابك؟ لا يمكن التراجع عن هذا الإجراء.' : 'Are you sure you want to delete your account? This action cannot be undone.',
+              [
+                { text: isArabic ? 'إلغاء' : 'Cancel', style: 'cancel' },
+                { text: isArabic ? 'حذف' : 'Delete', style: 'destructive', onPress: () => Linking.openURL(`${BASE_URL}/account-deletion`) },
+              ]
+            );
+          }}
+          testID="button-delete-account"
+        >
+          <Ionicons name="trash-outline" size={24} color="#ef4444" />
+          <Text style={[styles.settingText, { color: '#ef4444' }]}>{isArabic ? 'حذف الحساب' : 'Delete Account'}</Text>
+          <Ionicons name="chevron-forward" size={20} color="#ef4444" />
         </TouchableOpacity>
       </View>
     </ScrollView>
