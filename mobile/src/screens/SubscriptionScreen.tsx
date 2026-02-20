@@ -150,8 +150,8 @@ export default function SubscriptionScreen({ navigation, route }: Props) {
           <Text style={[styles.comparisonTitle, { color: '#7c3aed' }]}>Pro</Text>
           <Text style={[styles.comparisonPrice, { color: '#7c3aed' }]}>
             {selectedPeriod === 'yearly'
-              ? (isArabic ? '١١.٥٨$/شهر' : '$11.58/mo')
-              : (isArabic ? '١٤.٩٩$/شهر' : '$14.99/mo')}
+              ? (isArabic ? '$11.58/شهر' : '$11.58/mo')
+              : (isArabic ? '$14.99/شهر' : '$14.99/mo')}
           </Text>
           {proFeatures.map((f, i) => (
             <View key={i} style={styles.comparisonRow}>
@@ -172,7 +172,7 @@ export default function SubscriptionScreen({ navigation, route }: Props) {
             {isArabic ? 'شهري' : 'Monthly'}
           </Text>
           <Text style={[styles.periodPrice, selectedPeriod === 'monthly' && styles.periodPriceActive]}>
-            {isArabic ? '١٤.٩٩$' : '$14.99'}
+            {isArabic ? '$14.99' : '$14.99'}
           </Text>
         </TouchableOpacity>
         <TouchableOpacity
@@ -181,16 +181,16 @@ export default function SubscriptionScreen({ navigation, route }: Props) {
           testID="button-period-yearly"
         >
           <View style={styles.savingsBadge}>
-            <Text style={styles.savingsText}>{isArabic ? 'خصم ٢٣٪' : '23% OFF'}</Text>
+            <Text style={styles.savingsText}>{isArabic ? 'خصم 23%' : '23% OFF'}</Text>
           </View>
           <Text style={[styles.periodText, selectedPeriod === 'yearly' && styles.periodTextActive]}>
             {isArabic ? 'سنوي' : 'Yearly'}
           </Text>
           <Text style={[styles.periodPrice, selectedPeriod === 'yearly' && styles.periodPriceActive]}>
-            {isArabic ? '١٣٩$' : '$139'}
+            {isArabic ? '$139' : '$139'}
           </Text>
           <Text style={[styles.periodSub, selectedPeriod === 'yearly' && styles.periodSubActive]}>
-            {isArabic ? '≈ ١١.٥٨$/شهرياً' : '≈ $11.58/mo'}
+            {isArabic ? '≈ $11.58/شهرياً' : '≈ $11.58/mo'}
           </Text>
         </TouchableOpacity>
       </View>
@@ -234,7 +234,7 @@ export default function SubscriptionScreen({ navigation, route }: Props) {
         </View>
         <Text style={styles.footerText}>
           {isArabic
-            ? 'يتم الدفع عبر حساب Apple أو Google. يتجدد تلقائياً ما لم يُلغى قبل ٢٤ ساعة من نهاية الفترة.'
+            ? 'يتم الدفع عبر حساب Apple أو Google. يتجدد تلقائياً ما لم يُلغى قبل 24 ساعة من نهاية الفترة.'
             : 'Payment charged to your Apple or Google account. Auto-renews unless cancelled 24h before period end.'}
         </Text>
         <View style={styles.footerLinks}>

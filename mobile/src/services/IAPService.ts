@@ -30,7 +30,7 @@ export const SUBSCRIPTION_PRODUCTS: SubscriptionProduct[] = [
     title: 'Monthly',
     titleAr: 'شهري',
     price: '$14.99/mo',
-    priceAr: '١٤.٩٩$/شهرياً',
+    priceAr: '$14.99/شهرياً',
     features: [
       'Unlimited PDF uploads',
       'Unlimited AI diet plans',
@@ -57,9 +57,9 @@ export const SUBSCRIPTION_PRODUCTS: SubscriptionProduct[] = [
     title: 'Yearly',
     titleAr: 'سنوي',
     price: '$139/year',
-    priceAr: '١٣٩$/سنوياً',
+    priceAr: '$139/سنوياً',
     savings: 'Save $40.88 (23% off)',
-    savingsAr: 'وفّر ٤٠.٨٨$ (خصم ٢٣٪)',
+    savingsAr: 'وفّر $40.88 (خصم 23%)',
     features: [
       'Unlimited PDF uploads',
       'Unlimited AI diet plans',

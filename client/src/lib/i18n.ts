@@ -291,6 +291,7 @@ const resources = {
       dietScheduleNotesTitle: "Important Notes",
 
       // Share
+      share: "Share",
       shareResults: "Share Results",
       shareSuccess: "Shared successfully",
       copiedToClipboard: "Copied to clipboard",
@@ -512,11 +513,11 @@ const resources = {
       activitySedentary: "قليل الحركة",
       activitySedentaryDesc: "تقضي معظم يومك جالساً مع القليل من التمارين أو بدونها",
       activityLight: "نشيط بشكل خفيف",
-      activityLightDesc: "تقوم بأنشطة يومية خفيفة أو تمارين خفيفة ١-٣ مرة أسبوعياً",
+      activityLightDesc: "تقوم بأنشطة يومية خفيفة أو تمارين خفيفة 1-3 مرة أسبوعياً",
       activityVery: "نشيط بشكل عالي",
-      activityVeryDesc: "تقف على قدميك معظم اليوم أو تمارس الرياضة بشكل معتدل ٣-٥ مرات أسبوعياً",
+      activityVeryDesc: "تقف على قدميك معظم اليوم أو تمارس الرياضة بشكل معتدل 3-5 مرات أسبوعياً",
       activityExtreme: "نشيط بشكل عالي جداً",
-      activityExtremeDesc: "عملك يتطلب مجهوداً بدنياً أو تمارس رياضة مكثفة أكثر من ٥ مرات أسبوعياً",
+      activityExtremeDesc: "عملك يتطلب مجهوداً بدنياً أو تمارس رياضة مكثفة أكثر من 5 مرات أسبوعياً",
       questAllergyTitle: "هل تعاني من أي حساسية غذائية؟",
       questAllergyYes: "نعم",
       questAllergyNo: "لا",
@@ -584,11 +585,12 @@ const resources = {
       exportError: "فشل في حفظ النظام الغذائي",
       viewPlan: "عرض الخطة",
       hidePlan: "إخفاء الخطة",
-      dietScheduleNote: "يتم تغيير الجدول الغذائي كل ٣ أسابيع إلى شهر للحصول على أفضل النتائج",
+      dietScheduleNote: "يتم تغيير الجدول الغذائي كل 3 أسابيع إلى شهر للحصول على أفضل النتائج",
       plateauNote: "عند ثبات الوزن لمدة أسبوعين تقريباً، يجب أخذ وجبة مفتوحة (شيت ميل) لكسر هذا الثبات وتنشيط عملية الأيض",
       dietScheduleNotesTitle: "ملاحظات مهمة",
 
       // Share
+      share: "مشاركة",
       shareResults: "مشاركة النتائج",
       shareSuccess: "تمت المشاركة بنجاح",
       copiedToClipboard: "تم النسخ إلى الحافظة",

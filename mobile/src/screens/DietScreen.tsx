@@ -95,7 +95,7 @@ export default function DietScreen({ navigation }: any) {
         <View style={styles.calorieSummary}>
           <Ionicons name="flame" size={18} color="#ef4444" />
           <Text style={styles.calorieSummaryText}>
-            {isArabic ? '~١,٥٥٠ سعرة حرارية/يوم' : '~1,550 kcal/day'}
+            {isArabic ? '~1,550 سعرة حرارية/يوم' : '~1,550 kcal/day'}
           </Text>
         </View>
         {sampleMeals.map((meal, idx) => (
