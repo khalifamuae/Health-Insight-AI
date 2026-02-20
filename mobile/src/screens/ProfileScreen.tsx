@@ -231,6 +231,21 @@ export default function ProfileScreen({ navigation }: { navigation: any }) {
         </TouchableOpacity>
       </View>
 
+      <TouchableOpacity
+        style={styles.affiliateCard}
+        onPress={() => navigation.navigate('Affiliate')}
+        testID="button-affiliate"
+      >
+        <View style={styles.affiliateIcon}>
+          <Ionicons name="gift" size={24} color="#fff" />
+        </View>
+        <View style={{ flex: 1 }}>
+          <Text style={styles.affiliateTitle}>{t('affiliate.title')}</Text>
+          <Text style={styles.affiliateSubtitle}>{t('affiliate.step3')}</Text>
+        </View>
+        <Ionicons name={I18nManager.isRTL ? 'chevron-back' : 'chevron-forward'} size={20} color="#7c3aed" />
+      </TouchableOpacity>
+
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>{t('settings')}</Text>
         
@@ -416,5 +431,36 @@ const styles = StyleSheet.create({
     color: '#1e293b',
     marginHorizontal: 12,
     textAlign: I18nManager.isRTL ? 'right' : 'left'
-  }
+  },
+  affiliateCard: {
+    flexDirection: I18nManager.isRTL ? 'row-reverse' : 'row',
+    alignItems: 'center',
+    backgroundColor: '#faf5ff',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: '#e9d5ff',
+    gap: 12,
+  },
+  affiliateIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: '#7c3aed',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  affiliateTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#7c3aed',
+    textAlign: I18nManager.isRTL ? 'right' : 'left',
+  },
+  affiliateSubtitle: {
+    fontSize: 12,
+    color: '#64748b',
+    marginTop: 2,
+    textAlign: I18nManager.isRTL ? 'right' : 'left',
+  },
 });

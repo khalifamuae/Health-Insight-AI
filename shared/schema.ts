@@ -44,6 +44,8 @@ export const userProfiles = pgTable("user_profiles", {
   proteinPreference: proteinPreferenceEnum("protein_preference").default("mixed"),
   proteinPreferences: text("protein_preferences").array(),
   carbPreferences: text("carb_preferences").array(),
+  referralCode: varchar("referral_code", { length: 10 }),
+  referredBy: varchar("referred_by"),
   profileImagePath: text("profile_image_path"),
   language: varchar("language", { length: 5 }).default("ar"),
   subscriptionPlan: subscriptionPlanEnum("subscription_plan").default("free"),
@@ -163,6 +165,44 @@ export const knowledgeLearningLog = pgTable("knowledge_learning_log", {
   topicsSearched: text("topics_searched").array(),
   entriesAdded: integer("entries_added").default(0),
   status: varchar("status").notNull().default("completed"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Affiliate system enums
+export const withdrawalStatusEnum = pgEnum("withdrawal_status", ["pending", "approved", "rejected", "paid"]);
+
+// Referrals - tracks who referred whom
+export const referrals = pgTable("referrals", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  referrerId: varchar("referrer_id").notNull(),
+  referredUserId: varchar("referred_user_id").notNull(),
+  referralCode: varchar("referral_code").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Affiliate commissions - tracks earned commissions
+export const affiliateCommissions = pgTable("affiliate_commissions", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  referrerId: varchar("referrer_id").notNull(),
+  referredUserId: varchar("referred_user_id").notNull(),
+  subscriptionAmount: real("subscription_amount").notNull(),
+  commissionRate: real("commission_rate").notNull().default(0.10),
+  commissionAmount: real("commission_amount").notNull(),
+  productId: varchar("product_id"),
+  status: varchar("status").notNull().default("earned"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Withdrawal requests
+export const withdrawalRequests = pgTable("withdrawal_requests", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull(),
+  amount: real("amount").notNull(),
+  paymentMethod: varchar("payment_method").notNull(),
+  paymentDetails: text("payment_details").notNull(),
+  status: withdrawalStatusEnum("status").default("pending"),
+  adminNote: text("admin_note"),
+  processedAt: timestamp("processed_at"),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -310,3 +350,9 @@ export type KnowledgeDomain = "nutrition" | "aerobic_training" | "resistance_tra
 export type KnowledgeEntry = typeof knowledgeBase.$inferSelect;
 export type InsertKnowledgeEntry = z.infer<typeof insertKnowledgeBaseSchema>;
 export type KnowledgeLearningLogEntry = typeof knowledgeLearningLog.$inferSelect;
+
+// Affiliate types
+export type Referral = typeof referrals.$inferSelect;
+export type AffiliateCommission = typeof affiliateCommissions.$inferSelect;
+export type WithdrawalRequest = typeof withdrawalRequests.$inferSelect;
+export type WithdrawalStatus = "pending" | "approved" | "rejected" | "paid";

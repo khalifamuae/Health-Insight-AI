@@ -11,6 +11,9 @@ import {
   dietPlanJobs,
   knowledgeBase,
   knowledgeLearningLog,
+  referrals,
+  affiliateCommissions,
+  withdrawalRequests,
   type User,
   type UpsertUser,
   type UserProfile,
@@ -29,6 +32,10 @@ import {
   type InsertKnowledgeEntry,
   type KnowledgeDomain,
   type KnowledgeLearningLogEntry,
+  type Referral,
+  type AffiliateCommission,
+  type WithdrawalRequest,
+  type WithdrawalStatus,
 } from "@shared/schema";
 
 export interface IStorage {
@@ -74,6 +81,22 @@ export interface IStorage {
   deleteKnowledgeEntry(id: string): Promise<void>;
   getLastLearningLog(domain: KnowledgeDomain): Promise<KnowledgeLearningLogEntry | null>;
   addLearningLog(domain: KnowledgeDomain, topicsSearched: string[], entriesAdded: number): Promise<void>;
+
+  // Affiliate
+  generateReferralCode(userId: string): Promise<string>;
+  getUserByReferralCode(code: string): Promise<UserProfile | undefined>;
+  createReferral(referrerId: string, referredUserId: string, code: string): Promise<Referral>;
+  getReferralsByUser(userId: string): Promise<Referral[]>;
+  getReferralCount(userId: string): Promise<number>;
+  hasExistingCommission(referredUserId: string): Promise<boolean>;
+  createCommission(referrerId: string, referredUserId: string, subscriptionAmount: number, productId?: string): Promise<AffiliateCommission | null>;
+  getCommissionsByUser(userId: string): Promise<AffiliateCommission[]>;
+  getTotalEarnings(userId: string): Promise<number>;
+  getAvailableBalance(userId: string): Promise<number>;
+  createWithdrawalRequest(userId: string, amount: number, paymentMethod: string, paymentDetails: string): Promise<WithdrawalRequest>;
+  getWithdrawalRequests(userId: string): Promise<WithdrawalRequest[]>;
+  getAllWithdrawalRequests(): Promise<(WithdrawalRequest & { userName?: string })[]>;
+  updateWithdrawalStatus(id: string, status: WithdrawalStatus, adminNote?: string): Promise<WithdrawalRequest | null>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -430,6 +453,144 @@ export class DatabaseStorage implements IStorage {
       entriesAdded,
       status: "completed",
     });
+  }
+
+  // Affiliate methods
+  async generateReferralCode(userId: string): Promise<string> {
+    const profile = await this.getUserProfile(userId);
+    if (profile?.referralCode) return profile.referralCode;
+
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+    let code = '';
+    for (let i = 0; i < 8; i++) {
+      code += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+
+    await db.update(userProfiles)
+      .set({ referralCode: code, updatedAt: new Date() })
+      .where(eq(userProfiles.id, userId));
+
+    return code;
+  }
+
+  async getUserByReferralCode(code: string): Promise<UserProfile | undefined> {
+    const [profile] = await db.select().from(userProfiles)
+      .where(eq(userProfiles.referralCode, code.toUpperCase()));
+    return profile;
+  }
+
+  async createReferral(referrerId: string, referredUserId: string, code: string): Promise<Referral> {
+    const existing = await db.select().from(referrals)
+      .where(eq(referrals.referredUserId, referredUserId));
+    if (existing.length > 0) {
+      return existing[0];
+    }
+    const [created] = await db.insert(referrals)
+      .values({ referrerId, referredUserId, referralCode: code })
+      .returning();
+    await db.update(userProfiles)
+      .set({ referredBy: referrerId, updatedAt: new Date() })
+      .where(eq(userProfiles.id, referredUserId));
+    return created;
+  }
+
+  async getReferralsByUser(userId: string): Promise<Referral[]> {
+    return db.select().from(referrals)
+      .where(eq(referrals.referrerId, userId))
+      .orderBy(desc(referrals.createdAt));
+  }
+
+  async getReferralCount(userId: string): Promise<number> {
+    const [result] = await db.select({ count: sql<number>`count(*)::int` })
+      .from(referrals)
+      .where(eq(referrals.referrerId, userId));
+    return result?.count || 0;
+  }
+
+  async hasExistingCommission(referredUserId: string): Promise<boolean> {
+    const [result] = await db.select({ count: sql<number>`count(*)::int` })
+      .from(affiliateCommissions)
+      .where(eq(affiliateCommissions.referredUserId, referredUserId));
+    return (result?.count || 0) > 0;
+  }
+
+  async createCommission(referrerId: string, referredUserId: string, subscriptionAmount: number, productId?: string): Promise<AffiliateCommission | null> {
+    const exists = await this.hasExistingCommission(referredUserId);
+    if (exists) return null;
+
+    const commissionRate = 0.10;
+    const commissionAmount = subscriptionAmount * commissionRate;
+    const [created] = await db.insert(affiliateCommissions)
+      .values({
+        referrerId,
+        referredUserId,
+        subscriptionAmount,
+        commissionRate,
+        commissionAmount,
+        productId: productId || null,
+        status: "earned",
+      })
+      .returning();
+    return created;
+  }
+
+  async getCommissionsByUser(userId: string): Promise<AffiliateCommission[]> {
+    return db.select().from(affiliateCommissions)
+      .where(eq(affiliateCommissions.referrerId, userId))
+      .orderBy(desc(affiliateCommissions.createdAt));
+  }
+
+  async getTotalEarnings(userId: string): Promise<number> {
+    const [result] = await db.select({
+      total: sql<number>`COALESCE(SUM(${affiliateCommissions.commissionAmount}), 0)::real`
+    }).from(affiliateCommissions)
+      .where(eq(affiliateCommissions.referrerId, userId));
+    return result?.total || 0;
+  }
+
+  async getAvailableBalance(userId: string): Promise<number> {
+    const totalEarnings = await this.getTotalEarnings(userId);
+    const [withdrawnResult] = await db.select({
+      total: sql<number>`COALESCE(SUM(${withdrawalRequests.amount}), 0)::real`
+    }).from(withdrawalRequests)
+      .where(and(
+        eq(withdrawalRequests.userId, userId),
+        sql`${withdrawalRequests.status} IN ('pending', 'approved', 'paid')`
+      ));
+    const withdrawn = withdrawnResult?.total || 0;
+    return Math.max(0, totalEarnings - withdrawn);
+  }
+
+  async createWithdrawalRequest(userId: string, amount: number, paymentMethod: string, paymentDetails: string): Promise<WithdrawalRequest> {
+    const [created] = await db.insert(withdrawalRequests)
+      .values({ userId, amount, paymentMethod, paymentDetails, status: "pending" })
+      .returning();
+    return created;
+  }
+
+  async getWithdrawalRequests(userId: string): Promise<WithdrawalRequest[]> {
+    return db.select().from(withdrawalRequests)
+      .where(eq(withdrawalRequests.userId, userId))
+      .orderBy(desc(withdrawalRequests.createdAt));
+  }
+
+  async getAllWithdrawalRequests(): Promise<(WithdrawalRequest & { userName?: string })[]> {
+    const results = await db.select().from(withdrawalRequests)
+      .orderBy(desc(withdrawalRequests.createdAt));
+    return results as (WithdrawalRequest & { userName?: string })[];
+  }
+
+  async updateWithdrawalStatus(id: string, status: WithdrawalStatus, adminNote?: string): Promise<WithdrawalRequest | null> {
+    const updateData: Record<string, unknown> = { status };
+    if (adminNote) updateData.adminNote = adminNote;
+    if (status === 'approved' || status === 'paid' || status === 'rejected') {
+      updateData.processedAt = new Date();
+    }
+    const [updated] = await db.update(withdrawalRequests)
+      .set(updateData)
+      .where(eq(withdrawalRequests.id, id))
+      .returning();
+    return updated || null;
   }
 }
 
