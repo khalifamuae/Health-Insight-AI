@@ -4,7 +4,7 @@ import { useLocation } from "wouter";
 import { DashboardStats } from "@/components/DashboardStats";
 import { TestsTable } from "@/components/TestsTable";
 import { RemindersCard } from "@/components/RemindersCard";
-import { MedicalDisclaimer } from "@/components/MedicalDisclaimer";
+
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Salad, GitCompareArrows, ShieldCheck, FlaskConical, Sparkles } from "lucide-react";
@@ -111,7 +111,6 @@ export default function Dashboard() {
         </div>
       </div>
 
-      <MedicalDisclaimer />
     </div>
   );
 }
