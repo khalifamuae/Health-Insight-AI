@@ -256,8 +256,8 @@ export default function SubscriptionScreen({ navigation, route }: Props) {
         </View>
         <Text style={styles.footerText}>
           {isArabic
-            ? 'يتم الدفع عبر حساب Apple أو Google. يتجدد تلقائياً ما لم يُلغى قبل 24 ساعة من نهاية الفترة.'
-            : 'Payment charged to your Apple or Google account. Auto-renews unless cancelled 24h before period end.'}
+            ? 'الاشتراك يتجدد تلقائياً ما لم يتم إلغاؤه قبل 24 ساعة على الأقل من نهاية الفترة الحالية. يتم خصم المبلغ من حساب iTunes/Google Play عند تأكيد الشراء. يمكنك إدارة وإلغاء اشتراكك من إعدادات حسابك في المتجر.'
+            : 'Subscription automatically renews unless canceled at least 24 hours before the end of the current period. Payment will be charged to your iTunes/Google Play account at confirmation of purchase. You can manage and cancel your subscription in your account settings in the App Store or Google Play.'}
         </Text>
         <View style={styles.footerLinks}>
           <TouchableOpacity onPress={() => Linking.openURL(`${BASE_URL}/terms`)} testID="link-terms">
