@@ -11,6 +11,7 @@ export function getPrivacyPolicyHTML(): string {
     .container { max-width: 800px; margin: 0 auto; background: #fff; border-radius: 12px; padding: 40px; box-shadow: 0 2px 10px rgba(0,0,0,0.08); }
     h1 { font-size: 28px; margin-bottom: 8px; color: #3b82f6; }
     h2 { font-size: 20px; margin-top: 32px; margin-bottom: 12px; color: #1e3a5f; }
+    h3 { font-size: 16px; margin-top: 16px; margin-bottom: 8px; color: #374151; font-weight: 600; }
     p, li { font-size: 15px; margin-bottom: 10px; color: #374151; }
     ul { padding-left: 24px; margin-bottom: 16px; }
     .date { font-size: 13px; color: #6b7280; margin-bottom: 24px; }
@@ -26,67 +27,115 @@ export function getPrivacyPolicyHTML(): string {
     <p class="date">Last updated: February 2026</p>
 
     <h2>1. Introduction</h2>
-    <p>BioTrack AI ("we", "our", "the app") is committed to protecting your privacy. This Privacy Policy explains how we collect, use, store, and protect your personal information when you use our mobile application.</p>
+    <p>BioTrack AI ("we", "our", or "the App") respects your privacy and is committed to protecting your personal data. This Privacy Policy explains how we collect, use, process, and safeguard your information when you use our mobile application.</p>
+    <p>BioTrack AI is designed for educational and informational purposes only and does not provide medical diagnosis or treatment.</p>
 
     <h2>2. Information We Collect</h2>
-    <p>We collect the following types of information:</p>
+    <p>We collect only the minimum data necessary to provide our services:</p>
+    <h3>Account Information</h3>
     <ul>
-      <li><strong>Account Information:</strong> Name, email address, and authentication data when you create an account.</li>
-      <li><strong>Health Data:</strong> Lab test results, medical test values, and health metrics (weight, height, age, gender) that you voluntarily upload or enter.</li>
-      <li><strong>PDF Documents:</strong> Lab result PDF files that you upload for AI analysis.</li>
-      <li><strong>Diet Plan Data:</strong> Information about your dietary preferences, allergies, activity level, and generated diet plans.</li>
-      <li><strong>Subscription Data:</strong> Purchase history and subscription status (payment processing is handled by Apple App Store or Google Play Store).</li>
+      <li>Email address</li>
+      <li>Name (if provided)</li>
+      <li>Authentication credentials</li>
     </ul>
+    <h3>Health Data (User Provided)</h3>
+    <ul>
+      <li>Laboratory test values</li>
+      <li>Medical test results</li>
+      <li>Weight, height, age, gender</li>
+      <li>Dietary preferences and allergies</li>
+    </ul>
+    <h3>Uploaded Content</h3>
+    <ul>
+      <li>PDF lab reports</li>
+      <li>Images of lab results</li>
+    </ul>
+    <h3>Subscription Information</h3>
+    <p>Subscription status and purchase history processed securely through Apple App Store or Google Play. We do not collect or store payment card details.</p>
 
     <h2>3. How We Use Your Information</h2>
+    <p>We use your data strictly for:</p>
     <ul>
-      <li>To analyze your lab results using AI and provide health insights.</li>
-      <li>To generate personalized diet and nutrition plans based on your health data.</li>
-      <li>To track your health progress over time and provide test comparisons.</li>
-      <li>To send recheck reminders for medical tests.</li>
-      <li>To manage your subscription and provide customer support.</li>
+      <li>AI-based lab result analysis</li>
+      <li>Generating personalized diet plans</li>
+      <li>Providing health tracking comparisons</li>
+      <li>Sending optional reminders</li>
+      <li>Account management</li>
+      <li>Customer support</li>
     </ul>
+    <p>We do NOT use your data for advertising or tracking purposes.</p>
 
-    <h2>4. Data Storage and Security</h2>
-    <p>Your data is stored on secure servers with encryption. We use industry-standard security measures including:</p>
+    <h2>4. Legal Basis for Processing (GDPR Compliance)</h2>
+    <p>If you are located in the European Economic Area (EEA), we process your data under:</p>
     <ul>
-      <li>HTTPS encryption for all data transmission.</li>
-      <li>Secure session management and authentication.</li>
-      <li>Encrypted database storage for sensitive health information.</li>
-      <li>Regular security audits and updates.</li>
+      <li>Your explicit consent</li>
+      <li>Performance of a contract (providing app services)</li>
+      <li>Compliance with legal obligations</li>
     </ul>
+    <p>You may withdraw consent at any time.</p>
 
-    <h2>5. AI Processing</h2>
-    <p>We use artificial intelligence to analyze your lab results and generate diet plans. Your health data is processed by our AI systems to provide personalized recommendations. AI-generated content is for informational purposes only and does not constitute medical advice.</p>
-
-    <h2>6. Data Sharing</h2>
-    <p>We do NOT sell, trade, or share your personal health data with third parties, except:</p>
+    <h2>5. Data Sharing</h2>
+    <p>We do NOT sell, rent, or trade personal or health data.</p>
+    <p>We may share limited data only:</p>
     <ul>
-      <li>When required by law or legal processes.</li>
-      <li>With AI processing services to analyze your lab results (data is processed securely and not retained by third-party AI providers).</li>
-      <li>With payment processors (Apple/Google) for subscription management (they do not receive your health data).</li>
+      <li>With secure AI processing providers solely to analyze lab results</li>
+      <li>With Apple or Google for subscription verification</li>
+      <li>If required by law</li>
     </ul>
+    <p>Third-party AI providers do not retain your health data.</p>
 
-    <h2>7. Your Rights</h2>
+    <h2>6. Data Storage & Security</h2>
+    <p>We implement industry-standard safeguards:</p>
+    <ul>
+      <li>HTTPS encryption</li>
+      <li>Encrypted database storage</li>
+      <li>Secure authentication</li>
+      <li>Access controls</li>
+      <li>Regular security updates</li>
+    </ul>
+    <p>Health data is stored securely and accessible only to authorized systems.</p>
+
+    <h2>7. Data Retention</h2>
+    <p>Your data is retained while your account is active.</p>
+    <p>Upon account deletion:</p>
+    <ul>
+      <li>All personal data</li>
+      <li>Health records</li>
+      <li>Uploaded files</li>
+    </ul>
+    <p>are permanently deleted within 30 days.</p>
+
+    <h2>8. Your Rights</h2>
     <p>You have the right to:</p>
     <ul>
-      <li>Access your personal data stored in the app.</li>
-      <li>Request deletion of your account and all associated data.</li>
-      <li>Export your health data.</li>
-      <li>Opt out of non-essential communications.</li>
+      <li>Access your personal data</li>
+      <li>Request correction</li>
+      <li>Request deletion</li>
+      <li>Request data export</li>
+      <li>Restrict or object to processing (EU users)</li>
     </ul>
+    <p>To exercise these rights, contact: <a href="mailto:support@biotrack-ai.com">support@biotrack-ai.com</a></p>
 
-    <h2>8. Data Retention</h2>
-    <p>We retain your data for as long as your account is active. Upon account deletion, all personal data including health records, uploaded PDFs, and diet plans are permanently deleted within 30 days.</p>
+    <h2>9. No Tracking or Advertising</h2>
+    <p>BioTrack AI does not use:</p>
+    <ul>
+      <li>Advertising identifiers</li>
+      <li>Cross-app tracking</li>
+      <li>Third-party advertising SDKs</li>
+    </ul>
+    <p>We do not track users across apps or websites.</p>
 
-    <h2>9. Children's Privacy</h2>
-    <p>BioTrack AI is not intended for use by individuals under the age of 13. We do not knowingly collect data from children under 13.</p>
+    <h2>10. Children's Privacy</h2>
+    <p>BioTrack AI is not intended for individuals under 13. We do not knowingly collect data from children.</p>
 
-    <h2>10. Changes to This Policy</h2>
-    <p>We may update this Privacy Policy from time to time. We will notify you of significant changes through the app or via email.</p>
+    <h2>11. International Users</h2>
+    <p>Your data may be processed on secure servers located outside your country of residence. We ensure appropriate safeguards are in place.</p>
 
-    <h2>11. Contact Us</h2>
-    <p>If you have questions about this Privacy Policy, please contact us at: <a href="mailto:support@biotrack-ai.com">support@biotrack-ai.com</a></p>
+    <h2>12. Changes to This Policy</h2>
+    <p>We may update this Privacy Policy. Significant changes will be communicated through the app.</p>
+
+    <h2>13. Contact</h2>
+    <p>For privacy-related inquiries: <a href="mailto:support@biotrack-ai.com">support@biotrack-ai.com</a></p>
   </div>
 </body>
 </html>`;

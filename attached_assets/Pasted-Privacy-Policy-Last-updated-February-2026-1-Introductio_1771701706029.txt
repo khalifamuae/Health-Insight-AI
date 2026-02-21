@@ -1,0 +1,163 @@
+Privacy Policy
+
+Last updated: February 2026
+
+1. Introduction
+
+BioTrack AI (“we”, “our”, or “the App”) respects your privacy and is committed to protecting your personal data. This Privacy Policy explains how we collect, use, process, and safeguard your information when you use our mobile application.
+
+BioTrack AI is designed for educational and informational purposes only and does not provide medical diagnosis or treatment.
+
+2. Information We Collect
+
+We collect only the minimum data necessary to provide our services:
+
+Account Information
+
+Email address
+
+Name (if provided)
+
+Authentication credentials
+
+Health Data (User Provided)
+
+Laboratory test values
+
+Medical test results
+
+Weight, height, age, gender
+
+Dietary preferences and allergies
+
+Uploaded Content
+
+PDF lab reports
+
+Images of lab results
+
+Subscription Information
+
+Subscription status and purchase history processed securely through Apple App Store or Google Play.
+We do not collect or store payment card details.
+
+3. How We Use Your Information
+
+We use your data strictly for:
+
+AI-based lab result analysis
+
+Generating personalized diet plans
+
+Providing health tracking comparisons
+
+Sending optional reminders
+
+Account management
+
+Customer support
+
+We do NOT use your data for advertising or tracking purposes.
+
+4. Legal Basis for Processing (GDPR Compliance)
+
+If you are located in the European Economic Area (EEA), we process your data under:
+
+Your explicit consent
+
+Performance of a contract (providing app services)
+
+Compliance with legal obligations
+
+You may withdraw consent at any time.
+
+5. Data Sharing
+
+We do NOT sell, rent, or trade personal or health data.
+
+We may share limited data only:
+
+With secure AI processing providers solely to analyze lab results
+
+With Apple or Google for subscription verification
+
+If required by law
+
+Third-party AI providers do not retain your health data.
+
+6. Data Storage & Security
+
+We implement industry-standard safeguards:
+
+HTTPS encryption
+
+Encrypted database storage
+
+Secure authentication
+
+Access controls
+
+Regular security updates
+
+Health data is stored securely and accessible only to authorized systems.
+
+7. Data Retention
+
+Your data is retained while your account is active.
+
+Upon account deletion:
+
+All personal data
+
+Health records
+
+Uploaded files
+
+are permanently deleted within 30 days.
+
+8. Your Rights
+
+You have the right to:
+
+Access your personal data
+
+Request correction
+
+Request deletion
+
+Request data export
+
+Restrict or object to processing (EU users)
+
+To exercise these rights, contact: support@biotrack-ai.com
+
+9. No Tracking or Advertising
+
+BioTrack AI does not use:
+
+Advertising identifiers
+
+Cross-app tracking
+
+Third-party advertising SDKs
+
+We do not track users across apps or websites.
+
+10. Children's Privacy
+
+BioTrack AI is not intended for individuals under 13.
+We do not knowingly collect data from children.
+
+11. International Users
+
+Your data may be processed on secure servers located outside your country of residence.
+We ensure appropriate safeguards are in place.
+
+12. Changes to This Policy
+
+We may update this Privacy Policy. Significant changes will be communicated through the app.
+
+13. Contact
+
+For privacy-related inquiries:
+📧 support@biotrack-ai.com
