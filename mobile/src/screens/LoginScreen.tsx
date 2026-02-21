@@ -24,18 +24,167 @@ interface LoginScreenProps {
   onLogin: (userData: any, token: string) => void;
 }
 
+type SignupStep = 'form' | 'verify';
+
 export default function LoginScreen({ onLogin }: LoginScreenProps) {
   const { t, i18n } = useTranslation();
   const isArabic = i18n.language === 'ar';
   const [isLoading, setIsLoading] = useState(false);
   const [isSignUp, setIsSignUp] = useState(false);
+  const [signupStep, setSignupStep] = useState<SignupStep>('form');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [passwordConfirm, setPasswordConfirm] = useState('');
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
+  const [phone, setPhone] = useState('');
+  const [verificationCode, setVerificationCode] = useState('');
   const [showPassword, setShowPassword] = useState(false);
 
-  const handleAuth = async () => {
+  const resetForm = () => {
+    setEmail('');
+    setPassword('');
+    setPasswordConfirm('');
+    setFirstName('');
+    setLastName('');
+    setPhone('');
+    setVerificationCode('');
+    setSignupStep('form');
+  };
+
+  const handleSendCode = async () => {
+    if (!firstName.trim() || !lastName.trim()) {
+      Alert.alert(
+        isArabic ? 'خطأ' : 'Error',
+        isArabic ? 'الاسم الأول واسم العائلة مطلوبان' : 'First name and last name are required'
+      );
+      return;
+    }
+    if (!email.trim()) {
+      Alert.alert(
+        isArabic ? 'خطأ' : 'Error',
+        isArabic ? 'البريد الإلكتروني مطلوب' : 'Email is required'
+      );
+      return;
+    }
+    if (!phone.trim()) {
+      Alert.alert(
+        isArabic ? 'خطأ' : 'Error',
+        isArabic ? 'رقم الهاتف مطلوب' : 'Phone number is required'
+      );
+      return;
+    }
+    if (password.length < 6) {
+      Alert.alert(
+        isArabic ? 'خطأ' : 'Error',
+        isArabic ? 'كلمة المرور يجب أن تكون 6 أحرف على الأقل' : 'Password must be at least 6 characters'
+      );
+      return;
+    }
+    if (password !== passwordConfirm) {
+      Alert.alert(
+        isArabic ? 'خطأ' : 'Error',
+        isArabic ? 'كلمة المرور غير متطابقة' : 'Passwords do not match'
+      );
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/auth/send-verification`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: email.trim().toLowerCase() }),
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        let errorMsg = data.error || (isArabic ? 'حدث خطأ' : 'An error occurred');
+        if (response.status === 409) {
+          errorMsg = isArabic ? 'هذا البريد الإلكتروني مسجل مسبقاً' : 'This email is already registered';
+        }
+        Alert.alert(isArabic ? 'خطأ' : 'Error', errorMsg);
+        return;
+      }
+      Alert.alert(
+        isArabic ? 'تم' : 'Success',
+        isArabic ? 'تم إرسال رمز التحقق إلى بريدك الإلكتروني' : 'Verification code sent to your email'
+      );
+      setSignupStep('verify');
+    } catch {
+      Alert.alert(
+        isArabic ? 'خطأ' : 'Error',
+        isArabic ? 'فشل الاتصال بالخادم' : 'Failed to connect to server'
+      );
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleVerifyAndRegister = async () => {
+    if (verificationCode.length !== 6) {
+      Alert.alert(
+        isArabic ? 'خطأ' : 'Error',
+        isArabic ? 'رمز التحقق غير صحيح' : 'Invalid verification code'
+      );
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const verifyResponse = await fetch(`${API_BASE_URL}/api/auth/verify-code`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: email.trim().toLowerCase(), code: verificationCode.trim() }),
+      });
+      const verifyData = await verifyResponse.json();
+      if (!verifyResponse.ok) {
+        const errorMsg = verifyData.error === 'Verification code expired'
+          ? (isArabic ? 'انتهت صلاحية رمز التحقق. يرجى إعادة الإرسال' : 'Verification code expired. Please resend')
+          : (isArabic ? 'رمز التحقق غير صحيح' : 'Invalid verification code');
+        Alert.alert(isArabic ? 'خطأ' : 'Error', errorMsg);
+        return;
+      }
+
+      const registerResponse = await fetch(`${API_BASE_URL}/api/auth/register`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: email.trim().toLowerCase(),
+          password,
+          firstName: firstName.trim(),
+          lastName: lastName.trim(),
+          phone: phone.trim(),
+        }),
+        credentials: 'include',
+      });
+
+      const setCookieHeader = registerResponse.headers.get('set-cookie');
+      if (setCookieHeader) {
+        const sessionMatch = setCookieHeader.match(/connect\.sid=[^;]+/);
+        if (sessionMatch) {
+          await setSessionCookie(sessionMatch[0]);
+        }
+      }
+
+      const data = await registerResponse.json();
+      if (!registerResponse.ok) {
+        const errorMsg = data.error || (isArabic ? 'حدث خطأ' : 'An error occurred');
+        Alert.alert(isArabic ? 'خطأ' : 'Error', errorMsg);
+        return;
+      }
+
+      onLogin(data.user, data.token);
+    } catch {
+      Alert.alert(
+        isArabic ? 'خطأ' : 'Error',
+        isArabic ? 'فشل الاتصال بالخادم' : 'Failed to connect to server'
+      );
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleLogin = async () => {
     if (!email.trim() || !password.trim()) {
       Alert.alert(
         isArabic ? 'خطأ' : 'Error',
@@ -44,33 +193,12 @@ export default function LoginScreen({ onLogin }: LoginScreenProps) {
       return;
     }
 
-    if (isSignUp && (!firstName.trim() || !lastName.trim())) {
-      Alert.alert(
-        isArabic ? 'خطأ' : 'Error',
-        isArabic ? 'يرجى إدخال الاسم الأول والأخير' : 'Please enter first and last name'
-      );
-      return;
-    }
-
-    if (password.length < 6) {
-      Alert.alert(
-        isArabic ? 'خطأ' : 'Error',
-        isArabic ? 'كلمة المرور يجب أن تكون 6 أحرف على الأقل' : 'Password must be at least 6 characters'
-      );
-      return;
-    }
-
     setIsLoading(true);
     try {
-      const endpoint = isSignUp ? '/api/auth/register' : '/api/auth/login';
-      const body = isSignUp 
-        ? { email: email.trim(), password, firstName: firstName.trim(), lastName: lastName.trim() }
-        : { email: email.trim(), password };
-
-      const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+      const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
+        body: JSON.stringify({ email: email.trim().toLowerCase(), password }),
         credentials: 'include',
       });
 
@@ -83,21 +211,17 @@ export default function LoginScreen({ onLogin }: LoginScreenProps) {
       }
 
       const data = await response.json();
-
       if (!response.ok) {
-        const errorMsg = data.error || (isArabic ? 'حدث خطأ' : 'An error occurred');
-        let localizedError = errorMsg;
-        if (errorMsg === 'Email already registered') {
-          localizedError = isArabic ? 'البريد الإلكتروني مسجل مسبقاً' : errorMsg;
-        } else if (errorMsg === 'Invalid email or password') {
-          localizedError = isArabic ? 'البريد الإلكتروني أو كلمة المرور غير صحيحة' : errorMsg;
+        let errorMsg = data.error || (isArabic ? 'حدث خطأ' : 'An error occurred');
+        if (errorMsg === 'Invalid email or password') {
+          errorMsg = isArabic ? 'البريد الإلكتروني أو كلمة المرور غير صحيحة' : errorMsg;
         }
-        Alert.alert(isArabic ? 'خطأ' : 'Error', localizedError);
+        Alert.alert(isArabic ? 'خطأ' : 'Error', errorMsg);
         return;
       }
 
       onLogin(data.user, data.token);
-    } catch (error) {
+    } catch {
       Alert.alert(
         isArabic ? 'خطأ' : 'Error',
         isArabic ? 'فشل الاتصال بالخادم' : 'Failed to connect to server'
@@ -106,6 +230,223 @@ export default function LoginScreen({ onLogin }: LoginScreenProps) {
       setIsLoading(false);
     }
   };
+
+  const renderSignupForm = () => (
+    <>
+      <View style={styles.nameRow}>
+        <View style={[styles.inputContainer, { flex: 1 }]}>
+          <Ionicons name="person-outline" size={20} color="#94a3b8" style={styles.inputIcon} />
+          <TextInput
+            style={[styles.input, isArabic && styles.inputRTL]}
+            placeholder={isArabic ? 'الاسم الأول' : 'First Name'}
+            placeholderTextColor="#94a3b8"
+            value={firstName}
+            onChangeText={setFirstName}
+            autoCapitalize="words"
+            testID="input-first-name"
+          />
+        </View>
+        <View style={[styles.inputContainer, { flex: 1 }]}>
+          <TextInput
+            style={[styles.input, isArabic && styles.inputRTL]}
+            placeholder={isArabic ? 'الاسم الأخير' : 'Last Name'}
+            placeholderTextColor="#94a3b8"
+            value={lastName}
+            onChangeText={setLastName}
+            autoCapitalize="words"
+            testID="input-last-name"
+          />
+        </View>
+      </View>
+
+      <View style={styles.inputContainer}>
+        <Ionicons name="mail-outline" size={20} color="#94a3b8" style={styles.inputIcon} />
+        <TextInput
+          style={[styles.input, isArabic && styles.inputRTL]}
+          placeholder={isArabic ? 'البريد الإلكتروني' : 'Email'}
+          placeholderTextColor="#94a3b8"
+          value={email}
+          onChangeText={setEmail}
+          keyboardType="email-address"
+          autoCapitalize="none"
+          autoCorrect={false}
+          testID="input-email"
+        />
+      </View>
+
+      <View style={styles.inputContainer}>
+        <Ionicons name="call-outline" size={20} color="#94a3b8" style={styles.inputIcon} />
+        <TextInput
+          style={[styles.input, isArabic && styles.inputRTL]}
+          placeholder={isArabic ? 'رقم الهاتف' : 'Phone Number'}
+          placeholderTextColor="#94a3b8"
+          value={phone}
+          onChangeText={setPhone}
+          keyboardType="phone-pad"
+          testID="input-phone"
+        />
+      </View>
+
+      <View style={styles.inputContainer}>
+        <Ionicons name="lock-closed-outline" size={20} color="#94a3b8" style={styles.inputIcon} />
+        <TextInput
+          style={[styles.input, { flex: 1 }, isArabic && styles.inputRTL]}
+          placeholder={isArabic ? 'كلمة المرور' : 'Password'}
+          placeholderTextColor="#94a3b8"
+          value={password}
+          onChangeText={setPassword}
+          secureTextEntry={!showPassword}
+          testID="input-password"
+        />
+        <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={styles.eyeIcon} testID="button-toggle-password">
+          <Ionicons name={showPassword ? 'eye-off-outline' : 'eye-outline'} size={20} color="#94a3b8" />
+        </TouchableOpacity>
+      </View>
+
+      <View style={styles.inputContainer}>
+        <Ionicons name="lock-closed-outline" size={20} color="#94a3b8" style={styles.inputIcon} />
+        <TextInput
+          style={[styles.input, isArabic && styles.inputRTL]}
+          placeholder={isArabic ? 'تأكيد كلمة المرور' : 'Confirm Password'}
+          placeholderTextColor="#94a3b8"
+          value={passwordConfirm}
+          onChangeText={setPasswordConfirm}
+          secureTextEntry={!showPassword}
+          testID="input-password-confirm"
+        />
+      </View>
+
+      <TouchableOpacity
+        style={styles.loginButton}
+        onPress={handleSendCode}
+        disabled={isLoading}
+        testID="button-send-code"
+      >
+        {isLoading ? (
+          <ActivityIndicator color="#fff" />
+        ) : (
+          <View style={styles.buttonContent}>
+            <Ionicons name="mail-outline" size={20} color="#fff" style={{ marginRight: 8 }} />
+            <Text style={styles.loginButtonText}>
+              {isArabic ? 'إرسال رمز التحقق' : 'Send Verification Code'}
+            </Text>
+          </View>
+        )}
+      </TouchableOpacity>
+    </>
+  );
+
+  const renderVerifyStep = () => (
+    <>
+      <View style={styles.emailBadge}>
+        <Ionicons name="mail" size={18} color="#3b82f6" />
+        <Text style={styles.emailBadgeText}>{email}</Text>
+      </View>
+
+      <Text style={styles.verifyHint}>
+        {isArabic ? 'أدخل الرمز المكون من 6 أرقام المرسل إلى بريدك' : 'Enter the 6-digit code sent to your email'}
+      </Text>
+
+      <View style={[styles.inputContainer, styles.codeInputContainer]}>
+        <TextInput
+          style={styles.codeInput}
+          placeholder="000000"
+          placeholderTextColor="#94a3b8"
+          value={verificationCode}
+          onChangeText={(text) => setVerificationCode(text.replace(/\D/g, '').slice(0, 6))}
+          keyboardType="number-pad"
+          maxLength={6}
+          autoFocus
+          testID="input-verification-code"
+        />
+      </View>
+
+      <Text style={styles.checkEmailText}>
+        {isArabic ? 'تحقق من صندوق البريد الوارد للحصول على رمز التحقق' : 'Check your email inbox for the verification code'}
+      </Text>
+
+      <TouchableOpacity
+        style={[styles.loginButton, verificationCode.length !== 6 && styles.buttonDisabled]}
+        onPress={handleVerifyAndRegister}
+        disabled={isLoading || verificationCode.length !== 6}
+        testID="button-verify-code"
+      >
+        {isLoading ? (
+          <ActivityIndicator color="#fff" />
+        ) : (
+          <View style={styles.buttonContent}>
+            <Ionicons name="checkmark-circle-outline" size={20} color="#fff" style={{ marginRight: 8 }} />
+            <Text style={styles.loginButtonText}>
+              {isArabic ? 'تحقق وأنشئ الحساب' : 'Verify & Create Account'}
+            </Text>
+          </View>
+        )}
+      </TouchableOpacity>
+
+      <View style={styles.verifyActions}>
+        <TouchableOpacity onPress={() => setSignupStep('form')} testID="button-back-to-form">
+          <View style={styles.backButton}>
+            <Ionicons name="arrow-back" size={16} color="#3b82f6" />
+            <Text style={styles.backButtonText}>{isArabic ? 'رجوع' : 'Back'}</Text>
+          </View>
+        </TouchableOpacity>
+
+        <TouchableOpacity onPress={handleSendCode} disabled={isLoading} testID="button-resend-code">
+          <Text style={styles.resendText}>{isArabic ? 'إعادة إرسال الرمز' : 'Resend Code'}</Text>
+        </TouchableOpacity>
+      </View>
+    </>
+  );
+
+  const renderLoginForm = () => (
+    <>
+      <View style={styles.inputContainer}>
+        <Ionicons name="mail-outline" size={20} color="#94a3b8" style={styles.inputIcon} />
+        <TextInput
+          style={[styles.input, isArabic && styles.inputRTL]}
+          placeholder={isArabic ? 'البريد الإلكتروني' : 'Email'}
+          placeholderTextColor="#94a3b8"
+          value={email}
+          onChangeText={setEmail}
+          keyboardType="email-address"
+          autoCapitalize="none"
+          autoCorrect={false}
+          testID="input-email"
+        />
+      </View>
+
+      <View style={styles.inputContainer}>
+        <Ionicons name="lock-closed-outline" size={20} color="#94a3b8" style={styles.inputIcon} />
+        <TextInput
+          style={[styles.input, { flex: 1 }, isArabic && styles.inputRTL]}
+          placeholder={isArabic ? 'كلمة المرور' : 'Password'}
+          placeholderTextColor="#94a3b8"
+          value={password}
+          onChangeText={setPassword}
+          secureTextEntry={!showPassword}
+          testID="input-password"
+        />
+        <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={styles.eyeIcon} testID="button-toggle-password">
+          <Ionicons name={showPassword ? 'eye-off-outline' : 'eye-outline'} size={20} color="#94a3b8" />
+        </TouchableOpacity>
+      </View>
+
+      <TouchableOpacity
+        style={styles.loginButton}
+        onPress={handleLogin}
+        disabled={isLoading}
+        testID="button-auth-submit"
+      >
+        {isLoading ? (
+          <ActivityIndicator color="#fff" />
+        ) : (
+          <Text style={styles.loginButtonText}>
+            {isArabic ? 'تسجيل الدخول' : 'Sign In'}
+          </Text>
+        )}
+      </TouchableOpacity>
+    </>
+  );
 
   return (
     <KeyboardAvoidingView 
@@ -146,89 +487,24 @@ export default function LoginScreen({ onLogin }: LoginScreenProps) {
 
           <View style={styles.formContainer}>
             <Text style={styles.formTitle}>
-              {isSignUp 
-                ? (isArabic ? 'إنشاء حساب جديد' : 'Create Account')
+              {isSignUp
+                ? signupStep === 'verify'
+                  ? (isArabic ? 'تحقق من البريد الإلكتروني' : 'Verify Email')
+                  : (isArabic ? 'إنشاء حساب جديد' : 'Create Account')
                 : (isArabic ? 'تسجيل الدخول' : 'Sign In')}
             </Text>
 
-            {isSignUp && (
-              <View style={styles.nameRow}>
-                <View style={[styles.inputContainer, { flex: 1 }]}>
-                  <Ionicons name="person-outline" size={20} color="#94a3b8" style={styles.inputIcon} />
-                  <TextInput
-                    style={[styles.input, isArabic && styles.inputRTL]}
-                    placeholder={isArabic ? 'الاسم الأول' : 'First Name'}
-                    placeholderTextColor="#94a3b8"
-                    value={firstName}
-                    onChangeText={setFirstName}
-                    autoCapitalize="words"
-                    testID="input-first-name"
-                  />
-                </View>
-                <View style={[styles.inputContainer, { flex: 1 }]}>
-                  <TextInput
-                    style={[styles.input, isArabic && styles.inputRTL]}
-                    placeholder={isArabic ? 'الاسم الأخير' : 'Last Name'}
-                    placeholderTextColor="#94a3b8"
-                    value={lastName}
-                    onChangeText={setLastName}
-                    autoCapitalize="words"
-                    testID="input-last-name"
-                  />
-                </View>
-              </View>
-            )}
-
-            <View style={styles.inputContainer}>
-              <Ionicons name="mail-outline" size={20} color="#94a3b8" style={styles.inputIcon} />
-              <TextInput
-                style={[styles.input, isArabic && styles.inputRTL]}
-                placeholder={isArabic ? 'البريد الإلكتروني' : 'Email'}
-                placeholderTextColor="#94a3b8"
-                value={email}
-                onChangeText={setEmail}
-                keyboardType="email-address"
-                autoCapitalize="none"
-                autoCorrect={false}
-                testID="input-email"
-              />
-            </View>
-
-            <View style={styles.inputContainer}>
-              <Ionicons name="lock-closed-outline" size={20} color="#94a3b8" style={styles.inputIcon} />
-              <TextInput
-                style={[styles.input, { flex: 1 }, isArabic && styles.inputRTL]}
-                placeholder={isArabic ? 'كلمة المرور' : 'Password'}
-                placeholderTextColor="#94a3b8"
-                value={password}
-                onChangeText={setPassword}
-                secureTextEntry={!showPassword}
-                testID="input-password"
-              />
-              <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={styles.eyeIcon} testID="button-toggle-password">
-                <Ionicons name={showPassword ? 'eye-off-outline' : 'eye-outline'} size={20} color="#94a3b8" />
-              </TouchableOpacity>
-            </View>
-
-            <TouchableOpacity
-              style={styles.loginButton}
-              onPress={handleAuth}
-              disabled={isLoading}
-              testID="button-auth-submit"
-            >
-              {isLoading ? (
-                <ActivityIndicator color="#fff" />
-              ) : (
-                <Text style={styles.loginButtonText}>
-                  {isSignUp 
-                    ? (isArabic ? 'إنشاء حساب' : 'Create Account')
-                    : (isArabic ? 'تسجيل الدخول' : 'Sign In')}
-                </Text>
-              )}
-            </TouchableOpacity>
+            {isSignUp
+              ? signupStep === 'form'
+                ? renderSignupForm()
+                : renderVerifyStep()
+              : renderLoginForm()}
 
             <TouchableOpacity 
-              onPress={() => setIsSignUp(!isSignUp)} 
+              onPress={() => {
+                setIsSignUp(!isSignUp);
+                resetForm();
+              }} 
               style={styles.switchButton}
               testID="button-switch-auth-mode"
             >
@@ -373,6 +649,11 @@ const styles = StyleSheet.create({
   eyeIcon: {
     padding: 4,
   },
+  buttonContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   loginButton: {
     alignItems: 'center',
     justifyContent: 'center',
@@ -381,6 +662,9 @@ const styles = StyleSheet.create({
     paddingVertical: 15,
     width: '100%',
     marginTop: 4,
+  },
+  buttonDisabled: {
+    opacity: 0.5,
   },
   loginButtonText: {
     fontSize: 17,
@@ -392,6 +676,68 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   switchText: {
+    fontSize: 14,
+    color: '#3b82f6',
+    fontWeight: '500',
+  },
+  emailBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#f1f5f9',
+    borderRadius: 10,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    marginBottom: 12,
+    gap: 8,
+  },
+  emailBadgeText: {
+    fontSize: 14,
+    color: '#64748b',
+  },
+  verifyHint: {
+    fontSize: 14,
+    color: '#64748b',
+    textAlign: 'center',
+    marginBottom: 16,
+  },
+  codeInputContainer: {
+    justifyContent: 'center',
+    paddingHorizontal: 0,
+  },
+  codeInput: {
+    flex: 1,
+    textAlign: 'center',
+    fontSize: 28,
+    fontWeight: '700',
+    letterSpacing: 12,
+    paddingVertical: 16,
+    color: '#1e293b',
+    fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
+  },
+  checkEmailText: {
+    fontSize: 12,
+    color: '#94a3b8',
+    textAlign: 'center',
+    marginBottom: 16,
+  },
+  verifyActions: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: 8,
+  },
+  backButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  backButtonText: {
+    fontSize: 14,
+    color: '#3b82f6',
+    fontWeight: '500',
+  },
+  resendText: {
     fontSize: 14,
     color: '#3b82f6',
     fontWeight: '500',
