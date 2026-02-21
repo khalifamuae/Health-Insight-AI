@@ -4,6 +4,7 @@ import multer from "multer";
 import bcrypt from "bcryptjs";
 import { storage } from "./storage";
 import { setupAuth, isAuthenticated, registerAuthRoutes } from "./replit_integrations/auth";
+import { authStorage } from "./replit_integrations/auth/storage";
 import { analyzeLabPdf } from "./pdfAnalyzer";
 import { generateDietPlan } from "./dietPlanGenerator";
 import { getPrivacyPolicyHTML, getPrivacyPolicyArabicHTML, getTermsOfServiceHTML, getTermsOfServiceArabicHTML, getSupportPageHTML, getAccountDeletionHTML } from "./legalPages";
@@ -44,7 +45,7 @@ export async function registerRoutes(
 
   app.post("/api/auth/register", async (req: any, res: Response) => {
     try {
-      const { password, firstName, lastName } = req.body || {};
+      const { password, firstName, lastName, phone, gender, dateOfBirth } = req.body || {};
       const email = (req.body?.email || '').trim().toLowerCase();
       if (!email || !password) {
         return res.status(400).json({ error: "Email and password are required" });
@@ -55,6 +56,18 @@ export async function registerRoutes(
       }
       if (password.length < 6) {
         return res.status(400).json({ error: "Password must be at least 6 characters" });
+      }
+      if (!firstName || !lastName) {
+        return res.status(400).json({ error: "First name and last name are required" });
+      }
+      if (!phone) {
+        return res.status(400).json({ error: "Phone number is required" });
+      }
+      if (!gender || !["male", "female"].includes(gender)) {
+        return res.status(400).json({ error: "Gender is required" });
+      }
+      if (!dateOfBirth) {
+        return res.status(400).json({ error: "Date of birth is required" });
       }
 
       const existingUsers = await db.select().from(userProfiles).where(eq(userProfiles.email, email)).limit(1);
@@ -67,19 +80,35 @@ export async function registerRoutes(
       const trialEnd = new Date();
       trialEnd.setDate(trialEnd.getDate() + 7);
 
+      const dob = new Date(dateOfBirth);
+      const ageDiff = Date.now() - dob.getTime();
+      const ageDate = new Date(ageDiff);
+      const calculatedAge = Math.abs(ageDate.getUTCFullYear() - 1970);
+
+      await authStorage.upsertUser({
+        id: userId,
+        email,
+        firstName: firstName.trim(),
+        lastName: lastName.trim(),
+      });
+
       const profile = await storage.upsertUserProfile({
         id: userId,
         email,
         passwordHash,
-        firstName: firstName || "",
-        lastName: lastName || "",
+        firstName: firstName.trim(),
+        lastName: lastName.trim(),
+        phone: phone.trim(),
+        gender,
+        dateOfBirth: dob,
+        age: calculatedAge,
         subscriptionPlan: "free",
         trialStartedAt: new Date(),
         trialEndsAt: trialEnd,
       });
 
       const user = {
-        claims: { sub: userId, email, first_name: firstName || "", last_name: lastName || "", exp: Math.floor(Date.now()/1000) + 86400 * 30 },
+        claims: { sub: userId, email, first_name: firstName.trim(), last_name: lastName.trim(), exp: Math.floor(Date.now()/1000) + 86400 * 30 },
         expires_at: Math.floor(Date.now()/1000) + 86400 * 30,
         access_token: `token_${userId}`,
         refresh_token: `refresh_${userId}`
@@ -90,7 +119,7 @@ export async function registerRoutes(
         res.json({ 
           success: true, 
           token: `token_${userId}`,
-          user: { id: userId, email, firstName: firstName || "", lastName: lastName || "", subscription: profile.subscriptionPlan }
+          user: { id: userId, email, firstName: firstName.trim(), lastName: lastName.trim(), subscription: profile.subscriptionPlan }
         });
       });
     } catch (err) {

@@ -17,7 +17,7 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import NotFound from "@/pages/not-found";
-import LandingPage from "@/pages/LandingPage";
+import AuthPage from "@/pages/AuthPage";
 import Dashboard from "@/pages/Dashboard";
 import MyTests from "@/pages/MyTests";
 import Compare from "@/pages/Compare";
@@ -132,7 +132,7 @@ function AppContent() {
   }
 
   if (!isAuthenticated) {
-    return <LandingPage />;
+    return <AuthPage />;
   }
 
   return (
