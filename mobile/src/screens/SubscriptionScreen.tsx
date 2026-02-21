@@ -194,7 +194,7 @@ export default function SubscriptionScreen({ navigation, route }: Props) {
             {isArabic ? 'شهري' : 'Monthly'}
           </Text>
           <Text style={[styles.periodPrice, selectedPeriod === 'monthly' && styles.periodPriceActive]}>
-            {isArabic ? '$14.99' : '$14.99'}
+            {isArabic ? '$14.99/شهر' : '$14.99/month'}
           </Text>
         </TouchableOpacity>
         <TouchableOpacity
@@ -209,7 +209,7 @@ export default function SubscriptionScreen({ navigation, route }: Props) {
             {isArabic ? 'سنوي' : 'Yearly'}
           </Text>
           <Text style={[styles.periodPrice, selectedPeriod === 'yearly' && styles.periodPriceActive]}>
-            {isArabic ? '$139' : '$139'}
+            {isArabic ? '$139/سنة' : '$139/year'}
           </Text>
           <Text style={[styles.periodSub, selectedPeriod === 'yearly' && styles.periodSubActive]}>
             {isArabic ? '≈ $11.58/شهرياً' : '≈ $11.58/mo'}
