@@ -12,6 +12,8 @@ import { desc, eq, and, gte, sql } from "drizzle-orm";
 import { db } from "./db";
 import { userProfiles } from "@shared/schema";
 import crypto from "crypto";
+import { emailVerificationCodes } from "@shared/schema";
+import { getResendClient } from "./resendClient";
 
 const upload = multer({ 
   storage: multer.memoryStorage(),
@@ -43,9 +45,82 @@ export async function registerRoutes(
     });
   });
 
+  app.post("/api/auth/send-verification", async (req: any, res: Response) => {
+    try {
+      const email = (req.body?.email || '').trim().toLowerCase();
+      if (!email) return res.status(400).json({ error: "Email is required" });
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email)) return res.status(400).json({ error: "Invalid email format" });
+
+      const existingUsers = await db.select().from(userProfiles).where(eq(userProfiles.email, email)).limit(1);
+      if (existingUsers.length > 0) return res.status(409).json({ error: "Email already registered" });
+
+      const code = Math.floor(100000 + Math.random() * 900000).toString();
+      const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
+
+      await db.delete(emailVerificationCodes).where(eq(emailVerificationCodes.email, email));
+      await db.insert(emailVerificationCodes).values({ email, code, expiresAt });
+
+      try {
+        const { client, fromEmail } = await getResendClient();
+        await client.emails.send({
+          from: fromEmail || "BioTrack AI <noreply@resend.dev>",
+          to: email,
+          subject: "BioTrack AI - Verification Code / رمز التحقق",
+          html: `
+            <div style="font-family: Arial, sans-serif; max-width: 480px; margin: 0 auto; padding: 32px; text-align: center;">
+              <h2 style="color: #10b981;">BioTrack AI</h2>
+              <p style="font-size: 16px; color: #374151;">Your verification code is:</p>
+              <p style="font-size: 16px; color: #374151; direction: rtl;">رمز التحقق الخاص بك:</p>
+              <div style="background: #f3f4f6; border-radius: 12px; padding: 24px; margin: 24px 0;">
+                <span style="font-size: 36px; font-weight: bold; letter-spacing: 8px; color: #10b981;">${code}</span>
+              </div>
+              <p style="font-size: 14px; color: #6b7280;">This code expires in 10 minutes.</p>
+              <p style="font-size: 14px; color: #6b7280; direction: rtl;">ينتهي هذا الرمز خلال 10 دقائق.</p>
+            </div>
+          `,
+        });
+      } catch (emailErr) {
+        console.error("Email send error:", emailErr);
+        return res.status(500).json({ error: "Failed to send verification email" });
+      }
+
+      res.json({ success: true });
+    } catch (err) {
+      console.error("Send verification error:", err);
+      res.status(500).json({ error: "Failed to send verification code" });
+    }
+  });
+
+  app.post("/api/auth/verify-code", async (req: any, res: Response) => {
+    try {
+      const email = (req.body?.email || '').trim().toLowerCase();
+      const code = (req.body?.code || '').trim();
+      if (!email || !code) return res.status(400).json({ error: "Email and code are required" });
+
+      const records = await db.select().from(emailVerificationCodes)
+        .where(and(eq(emailVerificationCodes.email, email), eq(emailVerificationCodes.code, code)))
+        .limit(1);
+
+      if (records.length === 0) return res.status(400).json({ error: "Invalid verification code" });
+
+      const record = records[0];
+      if (new Date() > record.expiresAt) return res.status(400).json({ error: "Verification code expired" });
+
+      await db.update(emailVerificationCodes)
+        .set({ verified: true })
+        .where(eq(emailVerificationCodes.id, record.id));
+
+      res.json({ success: true, verified: true });
+    } catch (err) {
+      console.error("Verify code error:", err);
+      res.status(500).json({ error: "Verification failed" });
+    }
+  });
+
   app.post("/api/auth/register", async (req: any, res: Response) => {
     try {
-      const { password, firstName, lastName, phone, gender, dateOfBirth } = req.body || {};
+      const { password, firstName, lastName, phone } = req.body || {};
       const email = (req.body?.email || '').trim().toLowerCase();
       if (!email || !password) {
         return res.status(400).json({ error: "Email and password are required" });
@@ -63,11 +138,12 @@ export async function registerRoutes(
       if (!phone) {
         return res.status(400).json({ error: "Phone number is required" });
       }
-      if (!gender || !["male", "female"].includes(gender)) {
-        return res.status(400).json({ error: "Gender is required" });
-      }
-      if (!dateOfBirth) {
-        return res.status(400).json({ error: "Date of birth is required" });
+
+      const verified = await db.select().from(emailVerificationCodes)
+        .where(and(eq(emailVerificationCodes.email, email), eq(emailVerificationCodes.verified, true)))
+        .limit(1);
+      if (verified.length === 0) {
+        return res.status(400).json({ error: "Email not verified" });
       }
 
       const existingUsers = await db.select().from(userProfiles).where(eq(userProfiles.email, email)).limit(1);
@@ -79,11 +155,6 @@ export async function registerRoutes(
       const passwordHash = await bcrypt.hash(password, 10);
       const trialEnd = new Date();
       trialEnd.setDate(trialEnd.getDate() + 7);
-
-      const dob = new Date(dateOfBirth);
-      const ageDiff = Date.now() - dob.getTime();
-      const ageDate = new Date(ageDiff);
-      const calculatedAge = Math.abs(ageDate.getUTCFullYear() - 1970);
 
       await authStorage.upsertUser({
         id: userId,
@@ -99,13 +170,12 @@ export async function registerRoutes(
         firstName: firstName.trim(),
         lastName: lastName.trim(),
         phone: phone.trim(),
-        gender,
-        dateOfBirth: dob,
-        age: calculatedAge,
         subscriptionPlan: "free",
         trialStartedAt: new Date(),
         trialEndsAt: trialEnd,
       });
+
+      await db.delete(emailVerificationCodes).where(eq(emailVerificationCodes.email, email));
 
       const user = {
         claims: { sub: userId, email, first_name: firstName.trim(), last_name: lastName.trim(), exp: Math.floor(Date.now()/1000) + 86400 * 30 },

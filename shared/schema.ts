@@ -66,6 +66,15 @@ export const userProfiles = pgTable("user_profiles", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+export const emailVerificationCodes = pgTable("email_verification_codes", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  email: varchar("email").notNull(),
+  code: varchar("code", { length: 6 }).notNull(),
+  expiresAt: timestamp("expires_at").notNull(),
+  verified: boolean("verified").default(false),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 // Test definitions - the 50 tests with their metadata
 export const testDefinitions = pgTable("test_definitions", {
   id: varchar("id").primaryKey(),
