@@ -65,14 +65,8 @@ export function getPrivacyPolicyHTML(): string {
     </ul>
     <p>We do NOT use your data for advertising or tracking purposes.</p>
 
-    <h2>4. Legal Basis for Processing (GDPR Compliance)</h2>
-    <p>If you are located in the European Economic Area (EEA), we process your data under:</p>
-    <ul>
-      <li>Your explicit consent</li>
-      <li>Performance of a contract (providing app services)</li>
-      <li>Compliance with legal obligations</li>
-    </ul>
-    <p>You may withdraw consent at any time.</p>
+    <h2>4. Legal Basis for Processing (EEA Users)</h2>
+    <p>If you are located in the European Economic Area (EEA), we process your personal data based on your explicit consent and for the performance of a contract (providing app services). You may withdraw your consent at any time.</p>
 
     <h2>5. Data Sharing</h2>
     <p>We do NOT sell, rent, or trade personal or health data.</p>
@@ -116,20 +110,14 @@ export function getPrivacyPolicyHTML(): string {
     </ul>
     <p>To exercise these rights, contact: <a href="mailto:support@biotrack-ai.com">support@biotrack-ai.com</a></p>
 
-    <h2>9. No Tracking or Advertising</h2>
-    <p>BioTrack AI does not use:</p>
-    <ul>
-      <li>Advertising identifiers</li>
-      <li>Cross-app tracking</li>
-      <li>Third-party advertising SDKs</li>
-    </ul>
-    <p>We do not track users across apps or websites.</p>
+    <h2>9. No Advertising or Tracking</h2>
+    <p>BioTrack AI does not use third-party advertising networks, tracking technologies, or cross-app tracking. We do not sell or monetize personal or health data.</p>
 
     <h2>10. Children's Privacy</h2>
     <p>BioTrack AI is not intended for individuals under 13. We do not knowingly collect data from children.</p>
 
-    <h2>11. International Users</h2>
-    <p>Your data may be processed on secure servers located outside your country of residence. We ensure appropriate safeguards are in place.</p>
+    <h2>11. International Data Transfers</h2>
+    <p>Your data may be processed on secure servers located outside your country of residence. We implement appropriate safeguards to protect your information.</p>
 
     <h2>12. Changes to This Policy</h2>
     <p>We may update this Privacy Policy. Significant changes will be communicated through the app.</p>
@@ -207,14 +195,8 @@ export function getPrivacyPolicyArabicHTML(): string {
     </ul>
     <p>نحن لا نستخدم بياناتك لأغراض الإعلان أو التتبع.</p>
 
-    <h2>4. الأساس القانوني للمعالجة (التوافق مع GDPR)</h2>
-    <p>إذا كنت في المنطقة الاقتصادية الأوروبية (EEA)، نعالج بياناتك بموجب:</p>
-    <ul>
-      <li>موافقتك الصريحة</li>
-      <li>تنفيذ العقد (تقديم خدمات التطبيق)</li>
-      <li>الامتثال للالتزامات القانونية</li>
-    </ul>
-    <p>يمكنك سحب موافقتك في أي وقت.</p>
+    <h2>4. الأساس القانوني للمعالجة (مستخدمو المنطقة الاقتصادية الأوروبية)</h2>
+    <p>إذا كنت في المنطقة الاقتصادية الأوروبية (EEA)، نعالج بياناتك الشخصية بناءً على موافقتك الصريحة ولتنفيذ العقد (تقديم خدمات التطبيق). يمكنك سحب موافقتك في أي وقت.</p>
 
     <h2>5. مشاركة البيانات</h2>
     <p>نحن لا نبيع أو نؤجر أو نتاجر بالبيانات الشخصية أو الصحية.</p>
@@ -258,20 +240,14 @@ export function getPrivacyPolicyArabicHTML(): string {
     </ul>
     <p>لممارسة هذه الحقوق، تواصل معنا: <a href="mailto:support@biotrack-ai.com">support@biotrack-ai.com</a></p>
 
-    <h2>9. عدم التتبع أو الإعلان</h2>
-    <p>لا يستخدم BioTrack AI:</p>
-    <ul>
-      <li>معرّفات إعلانية</li>
-      <li>تتبع عبر التطبيقات</li>
-      <li>حزم SDK إعلانية من أطراف ثالثة</li>
-    </ul>
-    <p>نحن لا نتتبع المستخدمين عبر التطبيقات أو المواقع.</p>
+    <h2>9. عدم الإعلان أو التتبع</h2>
+    <p>لا يستخدم BioTrack AI شبكات إعلانية من أطراف ثالثة أو تقنيات تتبع أو تتبع عبر التطبيقات. نحن لا نبيع أو نستثمر البيانات الشخصية أو الصحية.</p>
 
     <h2>10. خصوصية الأطفال</h2>
     <p>تطبيق BioTrack AI غير مخصص للأشخاص دون سن 13 عاماً. نحن لا نجمع بيانات من الأطفال عن قصد.</p>
 
-    <h2>11. المستخدمون الدوليون</h2>
-    <p>قد تتم معالجة بياناتك على خوادم آمنة خارج بلد إقامتك. نضمن وجود إجراءات حماية مناسبة.</p>
+    <h2>11. نقل البيانات الدولي</h2>
+    <p>قد تتم معالجة بياناتك على خوادم آمنة خارج بلد إقامتك. نطبق إجراءات حماية مناسبة لحماية معلوماتك.</p>
 
     <h2>12. التغييرات على هذه السياسة</h2>
     <p>قد نقوم بتحديث سياسة الخصوصية هذه. سيتم إبلاغك بالتغييرات المهمة عبر التطبيق.</p>
