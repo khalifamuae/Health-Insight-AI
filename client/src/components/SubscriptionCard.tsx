@@ -120,6 +120,16 @@ export function SubscriptionCard({ currentPlan, filesUsed, onUpgrade }: Subscrip
             </Button>
 
             <p className="text-xs text-center text-muted-foreground">{t("freeTrial")}</p>
+
+            <p className="text-[10px] text-center text-muted-foreground leading-relaxed mt-2" data-testid="text-auto-renew-disclosure">
+              {t("autoRenewDisclosure")}
+            </p>
+
+            <div className="flex items-center justify-center gap-2 mt-2" data-testid="subscription-legal-links">
+              <a href="/terms" target="_blank" className="text-[10px] text-primary hover:underline">{t("termsOfUse")}</a>
+              <span className="text-[10px] text-muted-foreground">|</span>
+              <a href="/privacy" target="_blank" className="text-[10px] text-primary hover:underline">{t("privacyPolicy")}</a>
+            </div>
           </div>
         )}
 
