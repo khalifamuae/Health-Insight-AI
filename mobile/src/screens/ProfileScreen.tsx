@@ -14,6 +14,7 @@ import { useTranslation } from 'react-i18next';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Ionicons } from '@expo/vector-icons';
 import { queries, api } from '../lib/api';
+import { useAuth } from '../context/AuthContext';
 
 interface UserProfile {
   id: number;
@@ -33,6 +34,7 @@ const BASE_URL = 'https://health-insight-ai.replit.app';
 export default function ProfileScreen({ navigation }: { navigation: any }) {
   const { t, i18n } = useTranslation();
   const queryClient = useQueryClient();
+  const { logout } = useAuth();
   const isArabic = i18n.language === 'ar';
 
   const [age, setAge] = useState('');
@@ -307,6 +309,24 @@ export default function ProfileScreen({ navigation }: { navigation: any }) {
         </TouchableOpacity>
       </View>
 
+      <TouchableOpacity
+        style={styles.logoutButton}
+        onPress={() => {
+          Alert.alert(
+            isArabic ? 'تسجيل الخروج' : 'Logout',
+            isArabic ? 'هل تريد تسجيل الخروج؟' : 'Are you sure you want to logout?',
+            [
+              { text: isArabic ? 'إلغاء' : 'Cancel', style: 'cancel' },
+              { text: isArabic ? 'خروج' : 'Logout', style: 'destructive', onPress: () => logout() },
+            ]
+          );
+        }}
+        testID="button-logout"
+      >
+        <Ionicons name="log-out-outline" size={22} color="#ef4444" />
+        <Text style={styles.logoutText}>{isArabic ? 'تسجيل الخروج' : 'Logout'}</Text>
+      </TouchableOpacity>
+
     </ScrollView>
   );
 }
@@ -508,6 +528,23 @@ const styles = StyleSheet.create({
     color: '#64748b',
     marginTop: 2,
     textAlign: I18nManager.isRTL ? 'right' : 'left',
+  },
+  logoutButton: {
+    flexDirection: I18nManager.isRTL ? 'row-reverse' : 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#fef2f2',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 16,
+    gap: 8,
+    borderWidth: 1,
+    borderColor: '#fecaca',
+  },
+  logoutText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#ef4444',
   },
   disclaimerSmall: {
     flexDirection: I18nManager.isRTL ? 'row-reverse' : 'row',

@@ -6,6 +6,7 @@ import { useAuth } from '../context/AuthContext';
 import LoginScreen from '../screens/LoginScreen';
 import TabNavigator from './TabNavigator';
 import SubscriptionScreen from '../screens/SubscriptionScreen';
+import CompareScreen from '../screens/CompareScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -33,6 +34,11 @@ export default function RootNavigator() {
             name="Subscription"
             component={SubscriptionScreen}
             options={{ presentation: 'modal' }}
+          />
+          <Stack.Screen
+            name="Compare"
+            component={CompareScreen}
+            options={{ headerShown: false }}
           />
         </>
       ) : (

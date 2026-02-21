@@ -111,6 +111,36 @@ export default function HomeScreen({ navigation }: any) {
         />
       </View>
 
+      <View style={styles.shortcutsRow}>
+        <TouchableOpacity
+          style={styles.shortcutCard}
+          onPress={() => navigation.navigate('Diet')}
+          testID="card-diet-shortcut"
+        >
+          <View style={[styles.shortcutIcon, { backgroundColor: '#f0fdf4' }]}>
+            <Ionicons name="nutrition" size={22} color="#22c55e" />
+          </View>
+          <View style={styles.shortcutTextContainer}>
+            <Text style={styles.shortcutTitle}>{isArabic ? 'خطة غذائية' : 'Diet Plan'}</Text>
+            <Text style={styles.shortcutDesc} numberOfLines={1}>{isArabic ? 'تغذية مخصصة بالذكاء الاصطناعي' : 'AI-powered nutrition plan'}</Text>
+          </View>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.shortcutCard}
+          onPress={() => navigation.navigate('Compare')}
+          testID="card-compare-shortcut"
+        >
+          <View style={[styles.shortcutIcon, { backgroundColor: '#eff6ff' }]}>
+            <Ionicons name="git-compare" size={22} color="#3b82f6" />
+          </View>
+          <View style={styles.shortcutTextContainer}>
+            <Text style={styles.shortcutTitle}>{isArabic ? 'مقارنة النتائج' : 'Compare Results'}</Text>
+            <Text style={styles.shortcutDesc} numberOfLines={1}>{isArabic ? 'قارن فحوصاتك القديمة والجديدة' : 'Compare old vs new results'}</Text>
+          </View>
+        </TouchableOpacity>
+      </View>
+
       <TouchableOpacity
         style={styles.uploadButton}
         onPress={() => navigation.navigate('Upload')}
@@ -212,6 +242,48 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#64748b',
     marginTop: 4
+  },
+  shortcutsRow: {
+    flexDirection: I18nManager.isRTL ? 'row-reverse' : 'row',
+    gap: 10,
+    marginBottom: 16,
+  },
+  shortcutCard: {
+    flex: 1,
+    flexDirection: I18nManager.isRTL ? 'row-reverse' : 'row',
+    alignItems: 'center',
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 12,
+    gap: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.04,
+    shadowRadius: 2,
+    elevation: 1,
+  },
+  shortcutIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  shortcutTextContainer: {
+    flex: 1,
+    alignItems: I18nManager.isRTL ? 'flex-end' : 'flex-start',
+  },
+  shortcutTitle: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#1e293b',
+    textAlign: I18nManager.isRTL ? 'right' : 'left',
+  },
+  shortcutDesc: {
+    fontSize: 10,
+    color: '#64748b',
+    marginTop: 1,
+    textAlign: I18nManager.isRTL ? 'right' : 'left',
   },
   uploadButton: {
     backgroundColor: '#3b82f6',
