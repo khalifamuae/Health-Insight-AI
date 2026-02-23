@@ -6,7 +6,7 @@ export const PRODUCT_IDS = {
   PRO_YEARLY: 'com.biotrack.ai.pro.yearly',
 };
 
-export const FREE_TRIAL_DAYS = 7;
+export const FREE_TRIAL_DAYS = 15;
 
 export interface SubscriptionProduct {
   productId: string;

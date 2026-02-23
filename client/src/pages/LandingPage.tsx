@@ -112,7 +112,7 @@ export default function LandingPage() {
             </Button>
           </div>
           <p className="text-sm font-semibold text-emerald-600 dark:text-emerald-400">
-            {isArabic ? "7 أيام تجربة مجانية" : "7-day free trial"}
+            {isArabic ? "15 يوم تجربة مجانية" : "15-day free trial"}
           </p>
         </section>
 

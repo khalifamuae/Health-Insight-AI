@@ -12,7 +12,7 @@ BioTrack AI is a comprehensive health tracking application that analyzes PDF lab
 - **7 Importance Levels**: Tests organized by clinical importance
 - **Bilingual**: Full Arabic and English support with RTL
 - **Recheck Reminders**: Automated alerts based on recommended intervals
-- **Subscription System**: Single "Pro" plan - $14.99/month or $139/year (23% savings). 7-day free trial for new users. After trial expires, user must subscribe to view uploaded data.
+- **Subscription System**: Single "Pro" plan - $14.99/month or $139/year (23% savings). 15-day free trial for new users. After trial expires, user must subscribe to view uploaded data.
 - **Affiliate/Referral System** [DISABLED - pending automatic payouts]: Users earn 10% commission (one-time) on referred user's first subscription. $50 minimum withdrawal via PayPal or bank transfer. Code preserved in AffiliateScreen.tsx, storage.ts, schema.ts.
 
 ## Recent Changes
@@ -31,12 +31,12 @@ BioTrack AI is a comprehensive health tracking application that analyzes PDF lab
   - Full Arabic + English translations
 - **In-App Purchase (IAP) System**: Single "Pro" plan subscription for Apple App Store and Google Play
   - Pricing: $14.99/month or $139/year (23% savings)
-  - 7-day free trial auto-starts on new user registration
+  - 15-day free trial auto-starts on new user registration
   - Server-side endpoints: GET /api/subscription/status, POST /api/subscription/purchase, POST /api/subscription/restore, POST /api/subscription/webhook
   - Database schema: subscription_expires_at, subscription_product_id, subscription_platform, trial_started_at, trial_ends_at
   - Mobile SubscriptionScreen: Monthly/yearly toggle with savings badge, purchase flow, restore purchases, bilingual
   - IAP product IDs: com.biotrack.ai.pro.{monthly,yearly}
-  - Server enforces trial expiration (blocks all data access after 7 days if no subscription - tests, PDFs, reminders, diet plans)
+  - Server enforces trial expiration (blocks all data access after 15 days if no subscription - tests, PDFs, reminders, diet plans)
   - Webhook security: x-webhook-secret header verification (set IAP_WEBHOOK_SECRET env var)
   - react-native-iap SDK integrated with purchase listeners, receipt validation, and restore flow
   - Graceful fallback to server-only mode when native IAP module unavailable (dev/testing)

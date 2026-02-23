@@ -154,7 +154,7 @@ export async function registerRoutes(
       const userId = crypto.randomUUID();
       const passwordHash = await bcrypt.hash(password, 10);
       const trialEnd = new Date();
-      trialEnd.setDate(trialEnd.getDate() + 7);
+      trialEnd.setDate(trialEnd.getDate() + 15);
 
       await authStorage.upsertUser({
         id: userId,
@@ -274,7 +274,7 @@ export async function registerRoutes(
       
       if (!profile) {
         const trialEnd = new Date();
-        trialEnd.setDate(trialEnd.getDate() + 7);
+        trialEnd.setDate(trialEnd.getDate() + 15);
         profile = await storage.upsertUserProfile({
           id: userId,
           subscriptionPlan: "free",

@@ -313,7 +313,7 @@ export function getTermsOfServiceHTML(): string {
     <h2>5. Subscription and Payments</h2>
     <ul>
       <li>BioTrack AI offers a "Pro" subscription plan at $14.99/month or $139/year.</li>
-      <li>New users receive a 7-day free trial.</li>
+      <li>New users receive a 15-day free trial.</li>
       <li>Subscriptions are processed through the Apple App Store or Google Play Store.</li>
       <li>Subscriptions automatically renew unless cancelled at least 24 hours before the current period ends.</li>
       <li>Refunds are subject to Apple's or Google's refund policies.</li>
@@ -412,7 +412,7 @@ export function getTermsOfServiceArabicHTML(): string {
     <h2>5. الاشتراك والدفع</h2>
     <ul>
       <li>يقدم BioTrack AI خطة اشتراك "Pro" بسعر $14.99/شهرياً أو $139/سنوياً.</li>
-      <li>يحصل المستخدمون الجدد على فترة تجريبية مجانية لمدة 7 أيام.</li>
+      <li>يحصل المستخدمون الجدد على فترة تجريبية مجانية لمدة 15 يوم.</li>
       <li>تتم معالجة الاشتراكات عبر Apple App Store أو Google Play Store.</li>
       <li>يتجدد الاشتراك تلقائياً ما لم يتم الإلغاء قبل 24 ساعة على الأقل من نهاية الفترة الحالية.</li>
       <li>تخضع عمليات الاسترداد لسياسات Apple أو Google.</li>

@@ -90,8 +90,8 @@ export default function SubscriptionScreen({ navigation, route }: Props) {
   };
 
   const freeFeatures = isArabic
-    ? ['7 أيام تجربة مجانية', 'عرض الفحوصات الأساسية', 'وصول محدود']
-    : ['7-day free trial', 'View basic tests', 'Limited access'];
+    ? ['15 يوم تجربة مجانية', 'عرض الفحوصات الأساسية', 'وصول محدود']
+    : ['15-day free trial', 'View basic tests', 'Limited access'];
 
   const proFeatures = isArabic
     ? [
