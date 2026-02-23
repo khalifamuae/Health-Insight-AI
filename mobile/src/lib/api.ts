@@ -62,7 +62,9 @@ export const api = {
     });
     await extractAndSaveCookie(response);
     if (!response.ok) {
-      throw new Error(`API Error: ${response.status}`);
+      const errorData = await response.json().catch(() => null);
+      const message = errorData?.message || errorData?.error || `API Error: ${response.status}`;
+      throw new Error(message);
     }
     return response.json();
   },
@@ -77,7 +79,9 @@ export const api = {
     });
     await extractAndSaveCookie(response);
     if (!response.ok) {
-      throw new Error(`API Error: ${response.status}`);
+      const errorData = await response.json().catch(() => null);
+      const message = errorData?.message || errorData?.error || `API Error: ${response.status}`;
+      throw new Error(message);
     }
     return response.json();
   },
@@ -92,7 +96,9 @@ export const api = {
     });
     await extractAndSaveCookie(response);
     if (!response.ok) {
-      throw new Error(`API Error: ${response.status}`);
+      const errorData = await response.json().catch(() => null);
+      const message = errorData?.message || errorData?.error || `API Error: ${response.status}`;
+      throw new Error(message);
     }
     return response.json();
   },
@@ -106,7 +112,9 @@ export const api = {
     });
     await extractAndSaveCookie(response);
     if (!response.ok) {
-      throw new Error(`API Error: ${response.status}`);
+      const errorData = await response.json().catch(() => null);
+      const message = errorData?.message || errorData?.error || `API Error: ${response.status}`;
+      throw new Error(message);
     }
   },
 
@@ -139,10 +147,13 @@ export const api = {
 };
 
 export const queries = {
-  user: () => api.get('/api/user'),
+  profile: () => api.get('/api/profile'),
   tests: () => api.get('/api/tests'),
-  userTests: () => api.get('/api/user-tests'),
   allTests: () => api.get('/api/tests/all'),
   reminders: () => api.get('/api/reminders'),
-  testDefinitions: () => api.get('/api/test-definitions')
+  testDefinitions: () => api.get('/api/test-definitions'),
+  stats: () => api.get('/api/stats'),
+  uploadedPdfs: () => api.get('/api/uploaded-pdfs'),
+  savedDietPlans: () => api.get('/api/saved-diet-plans'),
+  subscriptionStatus: () => api.get('/api/subscription/status'),
 };

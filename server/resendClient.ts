@@ -3,7 +3,20 @@ import { Resend } from 'resend';
 let connectionSettings: any;
 
 async function getCredentials() {
+  // Support direct API key configuration (non-Replit environments)
+  if (process.env.RESEND_API_KEY) {
+    return {
+      apiKey: process.env.RESEND_API_KEY,
+      fromEmail: process.env.RESEND_FROM_EMAIL || "BioTrack AI <noreply@resend.dev>"
+    };
+  }
+
+  // Replit connector-based configuration
   const hostname = process.env.REPLIT_CONNECTORS_HOSTNAME;
+  if (!hostname) {
+    throw new Error('Neither RESEND_API_KEY nor REPLIT_CONNECTORS_HOSTNAME is configured');
+  }
+
   const xReplitToken = process.env.REPL_IDENTITY
     ? 'repl ' + process.env.REPL_IDENTITY
     : process.env.WEB_REPL_RENEWAL
