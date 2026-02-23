@@ -24,7 +24,11 @@
       "env": {
         "API_URL": "https://health-insight-ai.replit.app"
       },
-      "autoIncrement": true
+      "autoIncrement": true,
+      "node": "18.18.0",
+      "cache": {
+        "disabled": true
+      }
     }
   },
   "submit": {
