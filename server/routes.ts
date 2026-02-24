@@ -63,46 +63,6 @@ export async function registerRoutes(
   await setupAuth(app);
   registerAuthRoutes(app);
 
-  // One-time demo account setup endpoint (remove after use)
-  app.post("/api/setup-demo-account", async (req: any, res: Response) => {
-    const setupKey = req.body?.setupKey;
-    if (setupKey !== "BioTrackSetup2026!Secure") {
-      return res.status(404).send("Not found");
-    }
-    try {
-      const existingUsers = await db.select().from(userProfiles).where(eq(userProfiles.email, "demo@biotrack.ai")).limit(1);
-      if (existingUsers.length > 0) {
-        const passwordHash = await bcrypt.hash("BioTrack2025!Review", 10);
-        await db.update(userProfiles).set({
-          passwordHash,
-          subscriptionPlan: "pro",
-          subscriptionExpiresAt: new Date("2027-12-31T23:59:59Z"),
-          trialStartedAt: new Date("2026-02-01"),
-          trialEndsAt: new Date("2027-12-31T23:59:59Z"),
-        }).where(eq(userProfiles.email, "demo@biotrack.ai"));
-        return res.json({ success: true, action: "updated" });
-      }
-      const userId = crypto.randomUUID();
-      const passwordHash = await bcrypt.hash("BioTrack2025!Review", 10);
-      await authStorage.upsertUser({ id: userId, email: "demo@biotrack.ai", firstName: "Demo", lastName: "User" });
-      await storage.upsertUserProfile({
-        id: userId,
-        email: "demo@biotrack.ai",
-        passwordHash,
-        firstName: "Demo",
-        lastName: "User",
-        subscriptionPlan: "pro",
-        subscriptionExpiresAt: new Date("2027-12-31T23:59:59Z"),
-        trialStartedAt: new Date("2026-02-01"),
-        trialEndsAt: new Date("2027-12-31T23:59:59Z"),
-      });
-      return res.json({ success: true, action: "created", userId });
-    } catch (err) {
-      console.error("Demo setup error:", err);
-      return res.status(500).json({ error: "Setup failed" });
-    }
-  });
-
   // Dev-only screenshot login - strictly disabled in production
   if (process.env.NODE_ENV !== 'production') {
     app.get("/api/dev-screenshot-login", async (req: any, res: Response) => {
