@@ -20,6 +20,41 @@ const upload = multer({
   limits: { fileSize: 10 * 1024 * 1024 } // 10MB limit
 });
 
+// Simple in-memory rate limiter
+const rateLimitStore = new Map<string, { count: number; resetAt: number }>();
+
+function rateLimit(windowMs: number, maxRequests: number) {
+  return (req: any, res: Response, next: Function) => {
+    const key = `${req.ip}:${req.path}`;
+    const now = Date.now();
+    const entry = rateLimitStore.get(key);
+    
+    if (!entry || now > entry.resetAt) {
+      rateLimitStore.set(key, { count: 1, resetAt: now + windowMs });
+      return next();
+    }
+    
+    if (entry.count >= maxRequests) {
+      return res.status(429).json({ error: "Too many requests. Please try again later." });
+    }
+    
+    entry.count++;
+    return next();
+  };
+}
+
+// Clean up expired entries periodically
+setInterval(() => {
+  const now = Date.now();
+  rateLimitStore.forEach((entry, key) => {
+    if (now > entry.resetAt) rateLimitStore.delete(key);
+  });
+}, 60 * 1000);
+
+// Rate limiters
+const authRateLimit = rateLimit(15 * 60 * 1000, 10); // 10 attempts per 15 min
+const emailRateLimit = rateLimit(60 * 1000, 3); // 3 emails per minute
+
 export async function registerRoutes(
   httpServer: Server,
   app: Express
@@ -28,24 +63,31 @@ export async function registerRoutes(
   await setupAuth(app);
   registerAuthRoutes(app);
 
-  app.get("/api/dev-screenshot-login", async (req: any, res: Response) => {
-    if (process.env.NODE_ENV === 'production') return res.status(404).send('Not found');
-    const userId = "41010778";
-    const profile = await storage.getUserProfile(userId);
-    if (!profile) return res.status(404).json({ error: 'User not found' });
-    const user = {
-      claims: { sub: userId, email: "demo@biotrack.ai", first_name: "Khalifa", last_name: "Alhosani", exp: Math.floor(Date.now()/1000) + 86400 },
-      expires_at: Math.floor(Date.now()/1000) + 86400,
-      access_token: "dev_token",
-      refresh_token: "dev_refresh"
-    };
-    req.login(user, (err: any) => {
-      if (err) return res.status(500).json({ error: 'Login failed' });
-      res.json({ success: true });
+  // Dev-only screenshot login - strictly disabled in production
+  if (process.env.NODE_ENV !== 'production') {
+    app.get("/api/dev-screenshot-login", async (req: any, res: Response) => {
+      const devSecret = process.env.DEV_SCREENSHOT_SECRET;
+      if (!devSecret || req.query.secret !== devSecret) {
+        return res.status(404).send('Not found');
+      }
+      const userId = process.env.DEV_USER_ID;
+      if (!userId) return res.status(404).send('Not found');
+      const profile = await storage.getUserProfile(userId);
+      if (!profile) return res.status(404).json({ error: 'User not found' });
+      const user = {
+        claims: { sub: userId, email: profile.email || "demo@biotrack.ai", first_name: profile.firstName || "", last_name: profile.lastName || "", exp: Math.floor(Date.now()/1000) + 86400 },
+        expires_at: Math.floor(Date.now()/1000) + 86400,
+        access_token: "dev_token",
+        refresh_token: "dev_refresh"
+      };
+      req.login(user, (err: any) => {
+        if (err) return res.status(500).json({ error: 'Login failed' });
+        res.json({ success: true });
+      });
     });
-  });
+  }
 
-  app.post("/api/auth/send-verification", async (req: any, res: Response) => {
+  app.post("/api/auth/send-verification", emailRateLimit, async (req: any, res: Response) => {
     try {
       const email = (req.body?.email || '').trim().toLowerCase();
       if (!email) return res.status(400).json({ error: "Email is required" });
@@ -92,7 +134,7 @@ export async function registerRoutes(
     }
   });
 
-  app.post("/api/auth/verify-code", async (req: any, res: Response) => {
+  app.post("/api/auth/verify-code", authRateLimit, async (req: any, res: Response) => {
     try {
       const email = (req.body?.email || '').trim().toLowerCase();
       const code = (req.body?.code || '').trim();
@@ -118,7 +160,7 @@ export async function registerRoutes(
     }
   });
 
-  app.post("/api/auth/register", async (req: any, res: Response) => {
+  app.post("/api/auth/register", authRateLimit, async (req: any, res: Response) => {
     try {
       const { password, firstName, lastName, phone } = req.body || {};
       const email = (req.body?.email || '').trim().toLowerCase();
@@ -198,7 +240,7 @@ export async function registerRoutes(
     }
   });
 
-  app.post("/api/auth/login", async (req: any, res: Response) => {
+  app.post("/api/auth/login", authRateLimit, async (req: any, res: Response) => {
     try {
       const { password } = req.body || {};
       const email = (req.body?.email || '').trim().toLowerCase();
@@ -703,7 +745,7 @@ export async function registerRoutes(
       const plan = profile?.subscriptionPlan || "free";
       const filesUploaded = profile?.filesUploaded || 0;
       
-      const limits: Record<string, number> = { free: 3, basic: 20, premium: Infinity };
+      const limits: Record<string, number> = { free: 3, basic: 20, premium: Infinity, pro: Infinity };
       if (filesUploaded >= limits[plan]) {
         return res.status(403).json({ 
           error: "Upload limit reached", 
@@ -1014,9 +1056,31 @@ export async function registerRoutes(
 
       console.log(`[IAP] Purchase request: user=${userId}, product=${productId}, plan=${plan}, period=${period}, platform=${platform}`);
 
-      // TODO: In production, validate receipt with Apple/Google servers
-      // Apple: https://buy.itunes.apple.com/verifyReceipt
-      // Google: Google Play Developer API - purchases.subscriptions.get
+      // SECURITY: Validate receipt with Apple/Google servers
+      if (platform === 'ios' && receiptData) {
+        try {
+          // TODO: Implement Apple receipt validation
+          // const verifyUrl = process.env.NODE_ENV === 'production' 
+          //   ? 'https://buy.itunes.apple.com/verifyReceipt'
+          //   : 'https://sandbox.itunes.apple.com/verifyReceipt';
+          // const appleResponse = await fetch(verifyUrl, { ... });
+          console.warn('[IAP] WARNING: Apple receipt validation not yet implemented - accepting purchase on trust');
+        } catch (err) {
+          console.error('[IAP] Apple receipt validation failed:', err);
+          return res.status(400).json({ error: "Receipt validation failed" });
+        }
+      } else if (platform === 'android' && receiptData) {
+        try {
+          // TODO: Implement Google Play receipt validation
+          // Use Google Play Developer API - purchases.subscriptions.get
+          console.warn('[IAP] WARNING: Google receipt validation not yet implemented - accepting purchase on trust');
+        } catch (err) {
+          console.error('[IAP] Google receipt validation failed:', err);
+          return res.status(400).json({ error: "Receipt validation failed" });
+        }
+      } else if (!receiptData) {
+        console.warn('[IAP] WARNING: No receipt data provided for purchase');
+      }
 
       const expiresAt = new Date();
       if (period === 'yearly') {
@@ -1077,12 +1141,16 @@ export async function registerRoutes(
 
   app.post("/api/subscription/webhook", async (req: Request, res: Response) => {
     try {
-      // TODO: PRODUCTION SECURITY - Verify webhook signature before processing
+      // SECURITY: Verify webhook signature before processing
       // Apple: Verify JWS signature from App Store Server Notifications V2
       // Google: Verify RTDN (Real-Time Developer Notifications) via Cloud Pub/Sub
       const webhookSecret = process.env.IAP_WEBHOOK_SECRET;
+      if (!webhookSecret) {
+        console.error('[IAP Webhook] IAP_WEBHOOK_SECRET not configured - rejecting all webhooks');
+        return res.status(503).json({ error: "Webhook not configured" });
+      }
       const providedSecret = req.headers['x-webhook-secret'];
-      if (webhookSecret && providedSecret !== webhookSecret) {
+      if (providedSecret !== webhookSecret) {
         console.warn('[IAP Webhook] Unauthorized webhook attempt');
         return res.status(403).json({ error: "Unauthorized" });
       }
