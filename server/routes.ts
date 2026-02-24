@@ -63,6 +63,19 @@ export async function registerRoutes(
   await setupAuth(app);
   registerAuthRoutes(app);
 
+  // Auto-seed test definitions if table is empty
+  try {
+    const existingDefs = await storage.getTestDefinitions();
+    if (existingDefs.length === 0) {
+      console.log("Test definitions table is empty, auto-seeding...");
+      const { seedTestDefinitions } = await import("./seedTests");
+      await seedTestDefinitions();
+      console.log("Auto-seed complete");
+    }
+  } catch (err) {
+    console.error("Auto-seed error:", err);
+  }
+
   // Dev-only screenshot login - strictly disabled in production
   if (process.env.NODE_ENV !== 'production') {
     app.get("/api/dev-screenshot-login", async (req: any, res: Response) => {
