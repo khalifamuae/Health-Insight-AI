@@ -1,5 +1,5 @@
 import OpenAI from "openai";
-import { PDFParse } from "pdf-parse";
+import pdfParse from "pdf-parse";
 
 const openai = new OpenAI({
   apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
@@ -237,9 +237,8 @@ function findTestId(testName: string): string | null {
 
 export async function analyzeLabPdf(pdfBuffer: Buffer): Promise<ExtractedTest[]> {
   try {
-    const parser = new PDFParse({ data: pdfBuffer });
-    const textResult = await parser.getText();
-    const pdfText = textResult.text;
+    const pdfData = await pdfParse(pdfBuffer);
+    const pdfText = pdfData.text;
 
     if (!pdfText || pdfText.trim().length < 50) {
       console.error("PDF text extraction failed or too short - may be a scanned image PDF");
