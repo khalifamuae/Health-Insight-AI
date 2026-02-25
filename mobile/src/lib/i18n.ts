@@ -92,6 +92,10 @@ const resources = {
         height: 'الطول (سم)',
         weight: 'الوزن (كجم)',
         bloodType: 'فصيلة الدم',
+        fitnessGoal: 'هدف اللياقة',
+        goalWeightLoss: 'إنقاص الوزن',
+        goalMaintain: 'الحفاظ على الوزن',
+        goalMuscleGain: 'بناء العضلات',
         save: 'حفظ'
       },
       affiliate: {
@@ -149,6 +153,8 @@ const resources = {
         dietPlanError: 'فشل في إنشاء الخطة الغذائية',
         subscriptionRequired: 'انتهت الفترة التجريبية. يرجى الاشتراك للاستمرار.'
       },
+      totalTests: 'إجمالي الفحوصات',
+      recentUploads: 'الملفات المرفوعة',
       pending: 'معلق',
       testsCompleted: 'فحص مكتمل',
       yourValue: 'قيمتك',
@@ -245,6 +251,7 @@ const resources = {
       conditionTips: 'نصائح صحية مخصصة',
       avoidFoods: 'أطعمة يجب تجنبها',
       references: 'المراجع والمصادر',
+      intakeAlignment: 'مدى توافق الأكل مع الهدف',
       savePlan: 'حفظ الخطة',
       newPlan: 'خطة جديدة',
       savedPlans: 'خططي المحفوظة',
@@ -352,6 +359,10 @@ const resources = {
         height: 'Height (cm)',
         weight: 'Weight (kg)',
         bloodType: 'Blood Type',
+        fitnessGoal: 'Fitness Goal',
+        goalWeightLoss: 'Weight Loss',
+        goalMaintain: 'Maintain',
+        goalMuscleGain: 'Muscle Gain',
         save: 'Save'
       },
       affiliate: {
@@ -409,6 +420,8 @@ const resources = {
         dietPlanError: 'Failed to create diet plan',
         subscriptionRequired: 'Trial period ended. Please subscribe to continue.'
       },
+      totalTests: 'Total Tests',
+      recentUploads: 'Recent Uploads',
       pending: 'Pending',
       testsCompleted: 'tests completed',
       yourValue: 'Your Value',
@@ -505,6 +518,7 @@ const resources = {
       conditionTips: 'Health-Specific Tips',
       avoidFoods: 'Foods to Avoid',
       references: 'References & Sources',
+      intakeAlignment: 'Intake Alignment with Your Goal',
       savePlan: 'Save Plan',
       newPlan: 'New Plan',
       savedPlans: 'My Saved Plans',
