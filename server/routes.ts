@@ -46,9 +46,9 @@ function rateLimit(windowMs: number, maxRequests: number) {
 // Clean up expired entries periodically
 setInterval(() => {
   const now = Date.now();
-  for (const [key, entry] of rateLimitStore) {
+  rateLimitStore.forEach((entry, key) => {
     if (now > entry.resetAt) rateLimitStore.delete(key);
-  }
+  });
 }, 60 * 1000);
 
 // Rate limiters
@@ -62,6 +62,19 @@ export async function registerRoutes(
   // Setup Replit Auth
   await setupAuth(app);
   registerAuthRoutes(app);
+
+  // Auto-seed test definitions if table is empty
+  try {
+    const existingDefs = await storage.getTestDefinitions();
+    if (existingDefs.length === 0) {
+      console.log("Test definitions table is empty, auto-seeding...");
+      const { seedTestDefinitions } = await import("./seedTests");
+      await seedTestDefinitions();
+      console.log("Auto-seed complete");
+    }
+  } catch (err) {
+    console.error("Auto-seed error:", err);
+  }
 
   // Dev-only screenshot login - strictly disabled in production
   if (process.env.NODE_ENV !== 'production') {
@@ -1213,6 +1226,31 @@ export async function registerRoutes(
   app.get("/api/admin/withdrawals", isAuthenticated, async (req: any, res: Response) => { ... });
   app.patch("/api/admin/withdrawals/:id", isAuthenticated, async (req: any, res: Response) => { ... });
   */
+
+  app.get("/api/health", async (_req: Request, res: Response) => {
+    try {
+      const dbCheck = await db.execute(sql`SELECT 1`);
+      const uptime = process.uptime();
+      const memUsage = process.memoryUsage();
+      res.json({
+        status: "ok",
+        timestamp: new Date().toISOString(),
+        uptime: Math.floor(uptime),
+        memory: {
+          heapUsed: Math.round(memUsage.heapUsed / 1024 / 1024),
+          heapTotal: Math.round(memUsage.heapTotal / 1024 / 1024),
+          rss: Math.round(memUsage.rss / 1024 / 1024),
+        },
+        database: dbCheck ? "connected" : "error",
+      });
+    } catch (error: any) {
+      res.status(500).json({
+        status: "error",
+        timestamp: new Date().toISOString(),
+        error: error.message,
+      });
+    }
+  });
 
   return httpServer;
 }

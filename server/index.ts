@@ -3,6 +3,7 @@ import { registerRoutes } from "./routes";
 import { serveStatic } from "./static";
 import { createServer } from "http";
 import { startDailyLearningSchedule } from "./knowledgeEngine";
+import http from "http";
 
 const app = express();
 const httpServer = createServer(app);
@@ -99,6 +100,41 @@ app.use((req, res, next) => {
     () => {
       log(`serving on port ${port}`);
       startDailyLearningSchedule();
+      startHealthMonitor(port);
     },
   );
 })();
+
+function startHealthMonitor(port: number) {
+  const INTERVAL = 30 * 60 * 1000;
+
+  function checkHealth() {
+    const req = http.get(`http://0.0.0.0:${port}/api/health`, (res) => {
+      let data = "";
+      res.on("data", (chunk) => (data += chunk));
+      res.on("end", () => {
+        try {
+          const health = JSON.parse(data);
+          const mem = health.memory;
+          log(
+            `Health OK | uptime: ${health.uptime}s | memory: ${mem.heapUsed}/${mem.heapTotal}MB | DB: ${health.database}`,
+            "health-monitor",
+          );
+        } catch {
+          log(`Health check response parse error`, "health-monitor");
+        }
+      });
+    });
+    req.on("error", (err) => {
+      log(`Health check FAILED: ${err.message}`, "health-monitor");
+    });
+    req.setTimeout(10000, () => {
+      req.destroy();
+      log(`Health check TIMEOUT`, "health-monitor");
+    });
+  }
+
+  log(`Health monitor started (every 30 minutes)`, "health-monitor");
+  checkHealth();
+  setInterval(checkHealth, INTERVAL);
+}
