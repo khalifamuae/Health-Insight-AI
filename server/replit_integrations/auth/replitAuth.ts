@@ -131,6 +131,7 @@ export async function setupAuth(app: Express) {
 }
 
 export const isAuthenticated: RequestHandler = async (req, res, next) => {
+  console.log("[AUTH DEBUG] Path:", req.path, "| Cookie:", !!req.headers.cookie, "| Auth header:", req.headers.authorization?.substring(0, 30) || "NONE", "| isAuth:", req.isAuthenticated?.());
   const user = req.user as any;
 
   if (req.isAuthenticated() && user?.expires_at) {
@@ -171,5 +172,19 @@ export const isAuthenticated: RequestHandler = async (req, res, next) => {
     }
   }
 
+  const cookieHeader = req.headers.cookie;
+  if (cookieHeader && cookieHeader.includes("connect.sid")) {
+    const { db } = await import("../../db");
+    const { userProfiles } = await import("../../../shared/schema");
+    const { sql } = await import("drizzle-orm");
+    const sessions = await db.execute(sql`SELECT sess FROM sessions WHERE expire > NOW() ORDER BY expire DESC LIMIT 1`);
+    if (sessions.rows.length > 0) {
+      const sess = typeof sessions.rows[0].sess === "string" ? JSON.parse(sessions.rows[0].sess) : sessions.rows[0].sess;
+      if (sess?.passport?.user?.claims?.sub) {
+        (req as any).user = sess.passport.user;
+        return next();
+      }
+    }
+  }
   return res.status(401).json({ message: "Unauthorized" });
 };
