@@ -54,12 +54,20 @@ export default function HomeScreen({ navigation }: any) {
     queryFn: queries.reminders
   });
 
+  const { data: uploadedPdfs } = useQuery({
+    queryKey: ['uploadedPdfs'],
+    queryFn: queries.uploadedPdfs
+  });
+
   const tests = userTests as any[] || [];
   const remindersList = reminders as any[] || [];
+  const uploadedPdfsList = uploadedPdfs as any[] || [];
   
+  const totalTests = tests.length;
   const abnormalCount = tests.filter((t: any) => t.status === 'abnormal').length;
   const normalCount = tests.filter((t: any) => t.status === 'normal').length;
   const pendingReminders = remindersList.filter((r: any) => !r.isCompleted).length;
+  const recentUploads = uploadedPdfsList.length;
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
@@ -92,6 +100,12 @@ export default function HomeScreen({ navigation }: any) {
 
       <View style={styles.statsGrid}>
         <StatsCard
+          icon="flask"
+          title={t('totalTests')}
+          value={totalTests}
+          color="#3b82f6"
+        />
+        <StatsCard
           icon="checkmark-circle"
           title={t('normal')}
           value={normalCount}
@@ -108,6 +122,12 @@ export default function HomeScreen({ navigation }: any) {
           title={t('reminders.title')}
           value={pendingReminders}
           color="#f59e0b"
+        />
+        <StatsCard
+          icon="document-text"
+          title={t('recentUploads')}
+          value={recentUploads}
+          color="#7c3aed"
         />
       </View>
 
@@ -215,15 +235,15 @@ const styles = StyleSheet.create({
   },
   statsGrid: {
     flexDirection: I18nManager.isRTL ? 'row-reverse' : 'row',
-    justifyContent: 'space-between',
+    flexWrap: 'wrap',
+    gap: 8,
     marginBottom: 20
   },
   statsCard: {
-    flex: 1,
+    width: '48%' as any,
     backgroundColor: '#fff',
     borderRadius: 12,
     padding: 16,
-    marginHorizontal: 4,
     alignItems: 'center',
     borderLeftWidth: 4,
     shadowColor: '#000',
