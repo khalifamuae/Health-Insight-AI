@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -7,150 +7,610 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   I18nManager,
+  Alert,
 } from 'react-native';
 import { useTranslation } from 'react-i18next';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Ionicons } from '@expo/vector-icons';
+import { api, queries } from '../lib/api';
+
+type Step = 'intro' | 'disclaimer' | 'activity' | 'allergy' | 'allergySelect' | 'proteinPref' | 'carbPref' | 'preference' | 'generating' | 'result';
+
+const ALLERGY_OPTIONS = [
+  { key: 'eggs', labelKey: 'allergyEggs' },
+  { key: 'dairy', labelKey: 'allergyDairy' },
+  { key: 'peanuts', labelKey: 'allergyPeanuts' },
+  { key: 'nuts', labelKey: 'allergyNuts' },
+  { key: 'seafood', labelKey: 'allergySeafood' },
+  { key: 'soy', labelKey: 'allergySoy' },
+  { key: 'sesame', labelKey: 'allergySesame' },
+  { key: 'wheat', labelKey: 'allergyWheat' },
+  { key: 'fish', labelKey: 'allergyFish' },
+];
+
+const ACTIVITY_OPTIONS = [
+  { key: 'sedentary', labelKey: 'activitySedentary', descKey: 'activitySedentaryDesc', icon: 'bed' as const },
+  { key: 'lightly_active', labelKey: 'activityLight', descKey: 'activityLightDesc', icon: 'walk' as const },
+  { key: 'very_active', labelKey: 'activityVery', descKey: 'activityVeryDesc', icon: 'bicycle' as const },
+  { key: 'extremely_active', labelKey: 'activityExtreme', descKey: 'activityExtremeDesc', icon: 'barbell' as const },
+];
+
+const PROTEIN_OPTIONS = [
+  { key: 'fish', labelKey: 'proteinFish', icon: 'fish' as const },
+  { key: 'chicken', labelKey: 'proteinChicken', icon: 'restaurant' as const },
+  { key: 'meat', labelKey: 'proteinMeat', icon: 'flame' as const },
+  { key: 'vegetarian', labelKey: 'proteinVegetarian', icon: 'leaf' as const },
+];
+
+const CARB_OPTIONS = [
+  { key: 'rice', labelKey: 'carbRice' },
+  { key: 'bread', labelKey: 'carbBread' },
+  { key: 'pasta', labelKey: 'carbPasta' },
+  { key: 'oats', labelKey: 'carbOats' },
+  { key: 'potato', labelKey: 'carbPotato' },
+  { key: 'sweet_potato', labelKey: 'carbSweetPotato' },
+  { key: 'quinoa', labelKey: 'carbQuinoa' },
+  { key: 'bulgur', labelKey: 'carbBulgur' },
+  { key: 'keto', labelKey: 'carbKeto' },
+  { key: 'corn', labelKey: 'carbCorn' },
+  { key: 'beans', labelKey: 'carbBeans' },
+  { key: 'fruits', labelKey: 'carbFruits' },
+];
+
+const PREFERENCE_OPTIONS = [
+  { key: 'high_protein', labelKey: 'prefHighProtein', descKey: 'prefHighProteinDesc', icon: 'barbell' as const, recommended: true },
+  { key: 'balanced', labelKey: 'prefBalanced', descKey: 'prefBalancedDesc', icon: 'scale' as const },
+  { key: 'low_carb', labelKey: 'prefLowCarb', descKey: 'prefLowCarbDesc', icon: 'leaf' as const },
+  { key: 'keto', labelKey: 'prefKeto', descKey: 'prefKetoDesc', icon: 'flame' as const },
+  { key: 'vegetarian', labelKey: 'prefVegetarian', descKey: 'prefVegetarianDesc', icon: 'nutrition' as const },
+  { key: 'custom_macros', labelKey: 'prefCustomMacros', descKey: 'prefCustomMacrosDesc', icon: 'stats-chart' as const },
+];
 
 export default function DietScreen({ navigation }: any) {
   const { t, i18n } = useTranslation();
   const isArabic = i18n.language === 'ar';
+  const queryClient = useQueryClient();
 
-  const sampleMeals = isArabic ? [
-    { icon: 'sunny' as const, title: 'الفطور', desc: '3 بيضات مسلوقة + شوفان بالحليب + موزة', cal: '450 سعرة' },
-    { icon: 'restaurant' as const, title: 'الغداء', desc: 'صدر دجاج مشوي + أرز بني + سلطة خضراء', cal: '600 سعرة' },
-    { icon: 'moon' as const, title: 'العشاء', desc: 'سمك سلمون + خضروات مشوية + كينوا', cal: '500 سعرة' },
-  ] : [
-    { icon: 'sunny' as const, title: 'Breakfast', desc: '3 boiled eggs + oatmeal with milk + banana', cal: '450 kcal' },
-    { icon: 'restaurant' as const, title: 'Lunch', desc: 'Grilled chicken breast + brown rice + green salad', cal: '600 kcal' },
-    { icon: 'moon' as const, title: 'Dinner', desc: 'Salmon fillet + roasted vegetables + quinoa', cal: '500 kcal' },
-  ];
+  const [step, setStep] = useState<Step>('intro');
+  const [activityLevel, setActivityLevel] = useState('');
+  const [hasAllergies, setHasAllergies] = useState<boolean | null>(null);
+  const [selectedAllergies, setSelectedAllergies] = useState<string[]>([]);
+  const [selectedProteins, setSelectedProteins] = useState<string[]>([]);
+  const [selectedCarbs, setSelectedCarbs] = useState<string[]>([]);
+  const [mealPreference, setMealPreference] = useState('');
+  const [plan, setPlan] = useState<any>(null);
+  const [jobId, setJobId] = useState<string | null>(null);
+  const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const { data: profile } = useQuery({ queryKey: ['profile'], queryFn: queries.profile });
+  const { data: savedPlans } = useQuery({ queryKey: ['savedDietPlans'], queryFn: queries.savedDietPlans });
+
+  useEffect(() => {
+    if (profile) {
+      if ((profile as any).activityLevel) setActivityLevel((profile as any).activityLevel);
+      if ((profile as any).mealPreference) setMealPreference((profile as any).mealPreference);
+      if ((profile as any).hasAllergies != null) setHasAllergies((profile as any).hasAllergies);
+      if ((profile as any).allergies) setSelectedAllergies((profile as any).allergies);
+      if ((profile as any).proteinPreferences) setSelectedProteins((profile as any).proteinPreferences);
+      if ((profile as any).carbPreferences) setSelectedCarbs((profile as any).carbPreferences);
+    }
+  }, [profile]);
+
+  useEffect(() => {
+    if (jobId && step === 'generating') {
+      pollingRef.current = setInterval(async () => {
+        try {
+          const result = await api.get<any>(`/api/diet-plan/job/${jobId}`);
+          if (result.status === 'completed' && result.planData) {
+            const parsed = typeof result.planData === 'string' ? JSON.parse(result.planData) : result.planData;
+            setPlan(parsed);
+            setStep('result');
+            setJobId(null);
+            if (pollingRef.current) clearInterval(pollingRef.current);
+          } else if (result.status === 'failed') {
+            Alert.alert(t('errors.dietPlanError'), result.error || '');
+            setStep('intro');
+            setJobId(null);
+            if (pollingRef.current) clearInterval(pollingRef.current);
+          }
+        } catch (e) {}
+      }, 3000);
+      return () => { if (pollingRef.current) clearInterval(pollingRef.current); };
+    }
+  }, [jobId, step]);
+
+  const generateMutation = useMutation({
+    mutationFn: async () => {
+      await api.patch('/api/user', {
+        activityLevel,
+        mealPreference,
+        hasAllergies: hasAllergies || false,
+        allergies: hasAllergies ? selectedAllergies : [],
+        proteinPreferences: mealPreference === 'vegetarian' ? [] : selectedProteins,
+        carbPreferences: mealPreference === 'keto' ? [] : selectedCarbs,
+      });
+      const result = await api.post<any>('/api/diet-plan', { language: i18n.language });
+      return result;
+    },
+    onSuccess: (data: any) => {
+      setJobId(data.jobId);
+      setStep('generating');
+    },
+    onError: (error: any) => {
+      const msg = error.message || t('errors.dietPlanError');
+      if (msg.includes('MISSING_PROFILE_DATA')) {
+        Alert.alert(t('errors.missingProfile'), '', [
+          { text: 'OK', onPress: () => navigation.navigate('Profile') }
+        ]);
+      } else if (msg.includes('SUBSCRIPTION_REQUIRED')) {
+        Alert.alert(t('errors.subscriptionRequired'), '', [
+          { text: 'OK', onPress: () => navigation.navigate('Subscription') }
+        ]);
+      } else {
+        Alert.alert(t('errors.dietPlanError'), msg);
+      }
+      setStep('intro');
+    },
+  });
+
+  const saveMutation = useMutation({
+    mutationFn: async () => {
+      return api.post('/api/saved-diet-plans', { planData: JSON.stringify(plan) });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['savedDietPlans'] });
+      Alert.alert(t('savePlan'), '');
+    },
+  });
+
+  const startQuestionnaire = () => setStep('disclaimer');
+
+  const handleFinish = () => {
+    setStep('generating');
+    generateMutation.mutate();
+  };
+
+  const getStepNumber = (): number => {
+    const steps: Step[] = ['activity', 'allergy', 'allergySelect', 'proteinPref', 'carbPref', 'preference'];
+    const idx = steps.indexOf(step);
+    return idx >= 0 ? idx + 1 : 0;
+  };
+
+  const renderStepHeader = (backStep: Step, totalSteps = 5) => (
+    <View style={styles.stepHeader}>
+      <TouchableOpacity onPress={() => setStep(backStep)} testID="button-quest-back">
+        <Ionicons name={isArabic ? 'chevron-forward' : 'chevron-back'} size={24} color="#3b82f6" />
+      </TouchableOpacity>
+      <Text style={styles.stepCounter}>{t('questStep')} {getStepNumber()} {t('questOf')} {totalSteps}</Text>
+      <View style={{ width: 24 }} />
+    </View>
+  );
+
+  if (step === 'generating') {
+    return (
+      <View style={styles.generatingContainer}>
+        <ActivityIndicator size="large" color="#f59e0b" />
+        <Text style={styles.generatingTitle}>{t('generating')}</Text>
+        <Text style={styles.generatingDesc}>{t('generatingDesc')}</Text>
+      </View>
+    );
+  }
+
+  if (step === 'result' && plan) {
+    return (
+      <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+        <Text style={styles.resultTitle}>{t('dietPlanReady')}</Text>
+
+        {plan.healthSummary && (
+          <View style={styles.card}>
+            <View style={styles.cardHeader}>
+              <Ionicons name="heart" size={20} color="#ef4444" />
+              <Text style={styles.cardTitle}>{t('healthSummary')}</Text>
+            </View>
+            <Text style={styles.cardText}>{plan.healthSummary}</Text>
+          </View>
+        )}
+
+        {plan.calories && (
+          <View style={styles.card}>
+            <View style={styles.cardHeader}>
+              <Ionicons name="flame" size={20} color="#f59e0b" />
+              <Text style={styles.cardTitle}>{t('calories')}</Text>
+            </View>
+            <View style={styles.calorieRow}>
+              <View style={styles.calorieStat}>
+                <Text style={styles.calorieValue}>{plan.calories.bmr}</Text>
+                <Text style={styles.calorieLabel}>{t('bmr')}</Text>
+              </View>
+              <View style={styles.calorieStat}>
+                <Text style={styles.calorieValue}>{plan.calories.tdee}</Text>
+                <Text style={styles.calorieLabel}>{t('tdee')}</Text>
+              </View>
+              <View style={styles.calorieStat}>
+                <Text style={[styles.calorieValue, { color: '#22c55e' }]}>{plan.calories.target}</Text>
+                <Text style={styles.calorieLabel}>{t('target')}</Text>
+              </View>
+            </View>
+            {plan.macros && (
+              <View style={styles.macroRow}>
+                <View style={[styles.macroBadge, { backgroundColor: '#dbeafe' }]}>
+                  <Text style={[styles.macroText, { color: '#2563eb' }]}>{t('protein')} {plan.macros.protein?.grams}g</Text>
+                </View>
+                <View style={[styles.macroBadge, { backgroundColor: '#fef3c7' }]}>
+                  <Text style={[styles.macroText, { color: '#d97706' }]}>{t('carbs')} {plan.macros.carbs?.grams}g</Text>
+                </View>
+                <View style={[styles.macroBadge, { backgroundColor: '#fce7f3' }]}>
+                  <Text style={[styles.macroText, { color: '#db2777' }]}>{t('fats')} {plan.macros.fats?.grams}g</Text>
+                </View>
+              </View>
+            )}
+          </View>
+        )}
+
+        {plan.mealPlan && ['breakfast', 'lunch', 'dinner', 'snacks'].map((mealType) => {
+          const meals = plan.mealPlan[mealType];
+          if (!meals || meals.length === 0) return null;
+          const mealIcons: Record<string, string> = { breakfast: 'sunny', lunch: 'restaurant', dinner: 'moon', snacks: 'cafe' };
+          return (
+            <View key={mealType} style={styles.card}>
+              <View style={styles.cardHeader}>
+                <Ionicons name={mealIcons[mealType] as any} size={20} color="#f59e0b" />
+                <Text style={styles.cardTitle}>{t(mealType)}</Text>
+              </View>
+              {meals.map((meal: any, idx: number) => (
+                <View key={idx} style={styles.mealItem}>
+                  <Text style={styles.mealOptionLabel}>{t('mealOption')} {idx + 1}</Text>
+                  <Text style={styles.mealName}>{meal.name}</Text>
+                  <Text style={styles.mealDesc}>{meal.description}</Text>
+                  <View style={styles.mealMacros}>
+                    <Text style={styles.mealMacroText}>{meal.calories} kcal</Text>
+                    <Text style={styles.mealMacroText}>P:{meal.protein}g</Text>
+                    <Text style={styles.mealMacroText}>C:{meal.carbs}g</Text>
+                    <Text style={styles.mealMacroText}>F:{meal.fats}g</Text>
+                  </View>
+                  {meal.benefits && <Text style={styles.mealBenefits}>{meal.benefits}</Text>}
+                </View>
+              ))}
+            </View>
+          );
+        })}
+
+        {plan.supplements && plan.supplements.length > 0 && (
+          <View style={styles.card}>
+            <View style={styles.cardHeader}>
+              <Ionicons name="medkit" size={20} color="#8b5cf6" />
+              <Text style={styles.cardTitle}>{t('supplements')}</Text>
+            </View>
+            {plan.supplements.map((sup: any, idx: number) => (
+              <View key={idx} style={styles.supplementItem}>
+                <Text style={styles.supplementName}>{sup.name}</Text>
+                <Text style={styles.supplementDetail}>{sup.dosage} - {sup.reason}</Text>
+                {sup.duration && <Text style={styles.supplementDetail}>{t('supplementDuration')}: {sup.duration}</Text>}
+                {sup.foodSources && sup.foodSources.length > 0 && (
+                  <Text style={styles.supplementFoods}>{t('supplementFoodSources')}: {sup.foodSources.join(', ')}</Text>
+                )}
+              </View>
+            ))}
+          </View>
+        )}
+
+        {plan.conditionTips && plan.conditionTips.length > 0 && (
+          <View style={styles.card}>
+            <View style={styles.cardHeader}>
+              <Ionicons name="bulb" size={20} color="#22c55e" />
+              <Text style={styles.cardTitle}>{t('conditionTips')}</Text>
+            </View>
+            {plan.conditionTips.map((tip: any, idx: number) => (
+              <View key={idx} style={styles.tipItem}>
+                <Text style={styles.tipCondition}>{tip.condition}</Text>
+                {tip.advice?.map((a: string, i: number) => (
+                  <Text key={i} style={styles.tipAdvice}>• {a}</Text>
+                ))}
+                {tip.avoidFoods && tip.avoidFoods.length > 0 && (
+                  <Text style={styles.tipAvoid}>{t('avoidFoods')}: {tip.avoidFoods.join(', ')}</Text>
+                )}
+              </View>
+            ))}
+          </View>
+        )}
+
+        {plan.tips && plan.tips.length > 0 && (
+          <View style={styles.card}>
+            <View style={styles.cardHeader}>
+              <Ionicons name="information-circle" size={20} color="#3b82f6" />
+              <Text style={styles.cardTitle}>{t('tips')}</Text>
+            </View>
+            {plan.tips.map((tip: string, idx: number) => (
+              <Text key={idx} style={styles.tipText}>• {tip}</Text>
+            ))}
+          </View>
+        )}
+
+        {plan.references && plan.references.length > 0 && (
+          <View style={styles.card}>
+            <View style={styles.cardHeader}>
+              <Ionicons name="book" size={20} color="#64748b" />
+              <Text style={styles.cardTitle}>{t('references')}</Text>
+            </View>
+            {plan.references.map((ref: string, idx: number) => (
+              <Text key={idx} style={styles.refText}>{idx + 1}. {ref}</Text>
+            ))}
+          </View>
+        )}
+
+        <View style={styles.actionButtons}>
+          <TouchableOpacity style={styles.saveButton} onPress={() => saveMutation.mutate()} testID="button-save-plan">
+            <Ionicons name="save" size={20} color="#fff" />
+            <Text style={styles.saveButtonText}>{t('savePlan')}</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.newPlanButton} onPress={() => { setPlan(null); setStep('intro'); }} testID="button-new-plan">
+            <Ionicons name="refresh" size={20} color="#3b82f6" />
+            <Text style={styles.newPlanButtonText}>{t('newPlan')}</Text>
+          </TouchableOpacity>
+        </View>
+      </ScrollView>
+    );
+  }
+
+  if (step === 'disclaimer') {
+    return (
+      <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+        <View style={styles.disclaimerCard}>
+          <Ionicons name="shield-checkmark" size={48} color="#f59e0b" />
+          <Text style={styles.disclaimerTitle}>{isArabic ? 'تنبيه مهم' : 'Important Notice'}</Text>
+          <Text style={styles.disclaimerText}>{t('nutritionDisclaimer')}</Text>
+          <TouchableOpacity style={styles.continueButton} onPress={() => setStep('activity')} testID="button-accept-disclaimer">
+            <Text style={styles.continueButtonText}>{t('questContinue')}</Text>
+          </TouchableOpacity>
+        </View>
+      </ScrollView>
+    );
+  }
+
+  if (step === 'activity') {
+    return (
+      <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+        {renderStepHeader('disclaimer')}
+        <Text style={styles.questTitle}>{t('questActivityTitle')}</Text>
+        <Text style={styles.questSubtitle}>{t('questActivitySubtitle')}</Text>
+        {ACTIVITY_OPTIONS.map(opt => (
+          <TouchableOpacity
+            key={opt.key}
+            style={[styles.optionCard, activityLevel === opt.key && styles.optionCardSelected]}
+            onPress={() => setActivityLevel(opt.key)}
+            testID={`button-activity-${opt.key}`}
+          >
+            <Ionicons name={opt.icon} size={24} color={activityLevel === opt.key ? '#fff' : '#3b82f6'} />
+            <View style={styles.optionTextContainer}>
+              <Text style={[styles.optionTitle, activityLevel === opt.key && styles.optionTitleSelected]}>{t(opt.labelKey)}</Text>
+              <Text style={[styles.optionDesc, activityLevel === opt.key && styles.optionDescSelected]}>{t(opt.descKey)}</Text>
+            </View>
+          </TouchableOpacity>
+        ))}
+        {activityLevel ? (
+          <TouchableOpacity style={styles.nextButton} onPress={() => setStep('allergy')} testID="button-next-activity">
+            <Text style={styles.nextButtonText}>{t('questNext')}</Text>
+            <Ionicons name={isArabic ? 'chevron-back' : 'chevron-forward'} size={20} color="#fff" />
+          </TouchableOpacity>
+        ) : null}
+      </ScrollView>
+    );
+  }
+
+  if (step === 'allergy') {
+    return (
+      <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+        {renderStepHeader('activity')}
+        <Text style={styles.questTitle}>{t('questAllergyTitle')}</Text>
+        <View style={styles.allergyButtons}>
+          <TouchableOpacity
+            style={[styles.allergyChoice, hasAllergies === true && styles.allergyChoiceSelected]}
+            onPress={() => { setHasAllergies(true); setStep('allergySelect'); }}
+            testID="button-allergy-yes"
+          >
+            <Ionicons name="alert-circle" size={24} color={hasAllergies === true ? '#fff' : '#ef4444'} />
+            <Text style={[styles.allergyChoiceText, hasAllergies === true && styles.allergyChoiceTextSelected]}>{t('questAllergyYes')}</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.allergyChoice, hasAllergies === false && styles.allergyChoiceSelectedGreen]}
+            onPress={() => { setHasAllergies(false); setSelectedAllergies([]); setStep(mealPreference === 'vegetarian' ? 'preference' : 'proteinPref'); }}
+            testID="button-allergy-no"
+          >
+            <Ionicons name="checkmark-circle" size={24} color={hasAllergies === false ? '#fff' : '#22c55e'} />
+            <Text style={[styles.allergyChoiceText, hasAllergies === false && styles.allergyChoiceTextSelected]}>{t('questAllergyNo')}</Text>
+          </TouchableOpacity>
+        </View>
+      </ScrollView>
+    );
+  }
+
+  if (step === 'allergySelect') {
+    return (
+      <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+        {renderStepHeader('allergy')}
+        <Text style={styles.questTitle}>{t('questAllergyWhich')}</Text>
+        <View style={styles.chipGrid}>
+          {ALLERGY_OPTIONS.map(opt => {
+            const selected = selectedAllergies.includes(opt.key);
+            return (
+              <TouchableOpacity
+                key={opt.key}
+                style={[styles.chip, selected && styles.chipSelected]}
+                onPress={() => setSelectedAllergies(prev => selected ? prev.filter(a => a !== opt.key) : [...prev, opt.key])}
+                testID={`chip-allergy-${opt.key}`}
+              >
+                <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{t(opt.labelKey)}</Text>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+        <TouchableOpacity style={styles.nextButton} onPress={() => setStep('proteinPref')} testID="button-next-allergy">
+          <Text style={styles.nextButtonText}>{t('questNext')}</Text>
+          <Ionicons name={isArabic ? 'chevron-back' : 'chevron-forward'} size={20} color="#fff" />
+        </TouchableOpacity>
+      </ScrollView>
+    );
+  }
+
+  if (step === 'proteinPref') {
+    return (
+      <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+        {renderStepHeader('allergy')}
+        <Text style={styles.questTitle}>{t('questProteinTitle')}</Text>
+        <Text style={styles.questSubtitle}>{t('questProteinSubtitle')}</Text>
+        <View style={styles.chipGrid}>
+          {PROTEIN_OPTIONS.map(opt => {
+            const selected = selectedProteins.includes(opt.key);
+            return (
+              <TouchableOpacity
+                key={opt.key}
+                style={[styles.proteinCard, selected && styles.proteinCardSelected]}
+                onPress={() => setSelectedProteins(prev => selected ? prev.filter(p => p !== opt.key) : [...prev, opt.key])}
+                testID={`chip-protein-${opt.key}`}
+              >
+                <Ionicons name={opt.icon} size={24} color={selected ? '#fff' : '#3b82f6'} />
+                <Text style={[styles.proteinText, selected && styles.proteinTextSelected]}>{t(opt.labelKey)}</Text>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+        {selectedProteins.length > 0 && (
+          <TouchableOpacity style={styles.nextButton} onPress={() => setStep('carbPref')} testID="button-next-protein">
+            <Text style={styles.nextButtonText}>{t('questNext')}</Text>
+            <Ionicons name={isArabic ? 'chevron-back' : 'chevron-forward'} size={20} color="#fff" />
+          </TouchableOpacity>
+        )}
+      </ScrollView>
+    );
+  }
+
+  if (step === 'carbPref') {
+    return (
+      <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+        {renderStepHeader('proteinPref')}
+        <Text style={styles.questTitle}>{t('questCarbTitle')}</Text>
+        <Text style={styles.questSubtitle}>{t('questCarbSubtitle')}</Text>
+        <View style={styles.chipGrid}>
+          {CARB_OPTIONS.map(opt => {
+            const selected = selectedCarbs.includes(opt.key);
+            return (
+              <TouchableOpacity
+                key={opt.key}
+                style={[styles.chip, selected && styles.chipSelected]}
+                onPress={() => setSelectedCarbs(prev => selected ? prev.filter(c => c !== opt.key) : [...prev, opt.key])}
+                testID={`chip-carb-${opt.key}`}
+              >
+                <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{t(opt.labelKey)}</Text>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+        {selectedCarbs.length > 0 && (
+          <TouchableOpacity style={styles.nextButton} onPress={() => setStep('preference')} testID="button-next-carb">
+            <Text style={styles.nextButtonText}>{t('questNext')}</Text>
+            <Ionicons name={isArabic ? 'chevron-back' : 'chevron-forward'} size={20} color="#fff" />
+          </TouchableOpacity>
+        )}
+      </ScrollView>
+    );
+  }
+
+  if (step === 'preference') {
+    return (
+      <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+        {renderStepHeader('carbPref')}
+        <Text style={styles.questTitle}>{t('questPreferenceTitle')}</Text>
+        {PREFERENCE_OPTIONS.map(opt => (
+          <TouchableOpacity
+            key={opt.key}
+            style={[styles.optionCard, mealPreference === opt.key && styles.optionCardSelected]}
+            onPress={() => setMealPreference(opt.key)}
+            testID={`button-pref-${opt.key}`}
+          >
+            <Ionicons name={opt.icon} size={24} color={mealPreference === opt.key ? '#fff' : '#3b82f6'} />
+            <View style={styles.optionTextContainer}>
+              <View style={{ flexDirection: isArabic ? 'row-reverse' : 'row', alignItems: 'center', gap: 6 }}>
+                <Text style={[styles.optionTitle, mealPreference === opt.key && styles.optionTitleSelected]}>{t(opt.labelKey)}</Text>
+                {opt.recommended && (
+                  <View style={styles.recommendedBadge}>
+                    <Text style={styles.recommendedText}>{t('recommended')}</Text>
+                  </View>
+                )}
+              </View>
+              <Text style={[styles.optionDesc, mealPreference === opt.key && styles.optionDescSelected]}>{t(opt.descKey)}</Text>
+            </View>
+          </TouchableOpacity>
+        ))}
+        {mealPreference ? (
+          <TouchableOpacity style={[styles.nextButton, { backgroundColor: '#22c55e' }]} onPress={handleFinish} testID="button-generate">
+            <Ionicons name="sparkles" size={20} color="#fff" />
+            <Text style={styles.nextButtonText}>{isArabic ? 'إنشاء خطتي الغذائية' : 'Generate My Diet Plan'}</Text>
+          </TouchableOpacity>
+        ) : null}
+      </ScrollView>
+    );
+  }
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <View style={styles.disclaimerSmall}>
-        <Ionicons name="information-circle-outline" size={16} color="#94a3b8" />
-        <Text style={styles.disclaimerSmallText}>{t('disclaimer.text')}</Text>
-      </View>
       <View style={styles.heroCard}>
         <View style={styles.heroIconContainer}>
           <Ionicons name="nutrition" size={48} color="#f59e0b" />
         </View>
-        <Text style={styles.heroTitle}>
-          {isArabic ? 'خطتك الغذائية الذكية' : 'Your AI Diet Plan'}
-        </Text>
+        <Text style={styles.heroTitle}>{isArabic ? 'خطتك الغذائية الذكية' : 'Your AI Diet Plan'}</Text>
         <Text style={styles.heroSubtitle}>
-          {isArabic
-            ? 'خطة غذائية مخصصة بناءً على نتائج فحوصاتك وبيانات جسمك'
-            : 'Personalized nutrition plan based on your lab results and body data'}
+          {isArabic ? 'خطة غذائية مخصصة بناءً على نتائج فحوصاتك وبيانات جسمك' : 'Personalized nutrition plan based on your lab results and body data'}
         </Text>
       </View>
 
       <View style={styles.howItWorksSection}>
-        <Text style={styles.sectionTitle}>
-          {isArabic ? 'كيف تعمل الخطة؟' : 'How It Works'}
-        </Text>
-        <View style={styles.stepsList}>
-          <View style={styles.stepItem}>
-            <View style={[styles.stepIcon, { backgroundColor: '#eff6ff' }]}>
-              <Ionicons name="document-text" size={20} color="#3b82f6" />
+        <Text style={styles.sectionTitle}>{isArabic ? 'كيف تعمل الخطة؟' : 'How It Works'}</Text>
+        {[
+          { icon: 'document-text' as const, bg: '#eff6ff', color: '#3b82f6', title: isArabic ? 'تحليل فحوصاتك' : 'Analyze Your Labs', desc: isArabic ? 'نحلل نتائج فحوصاتك لمعرفة النقص' : 'We analyze your lab results for deficiencies' },
+          { icon: 'calculator' as const, bg: '#fef3c7', color: '#f59e0b', title: isArabic ? 'حساب احتياجاتك' : 'Calculate Your Needs', desc: isArabic ? 'BMR و TDEE بناءً على وزنك وطولك ونشاطك' : 'BMR & TDEE based on your profile' },
+          { icon: 'leaf' as const, bg: '#f0fdf4', color: '#22c55e', title: isArabic ? 'خطة مخصصة لك' : 'Your Custom Plan', desc: isArabic ? '5 وجبات يومية مع مكملات وتوصيات' : '5 daily meals with supplements & tips' },
+        ].map((item, idx) => (
+          <View key={idx} style={styles.stepItem}>
+            <View style={[styles.stepIcon, { backgroundColor: item.bg }]}>
+              <Ionicons name={item.icon} size={20} color={item.color} />
             </View>
             <View style={styles.stepTextContainer}>
-              <Text style={styles.stepTitle}>
-                {isArabic ? 'تحليل فحوصاتك' : 'Analyze Your Labs'}
-              </Text>
-              <Text style={styles.stepDesc}>
-                {isArabic ? 'نحلل نتائج فحوصاتك لمعرفة النقص' : 'We analyze your lab results for deficiencies'}
-              </Text>
-            </View>
-          </View>
-          <View style={styles.stepItem}>
-            <View style={[styles.stepIcon, { backgroundColor: '#fef3c7' }]}>
-              <Ionicons name="calculator" size={20} color="#f59e0b" />
-            </View>
-            <View style={styles.stepTextContainer}>
-              <Text style={styles.stepTitle}>
-                {isArabic ? 'حساب احتياجاتك' : 'Calculate Your Needs'}
-              </Text>
-              <Text style={styles.stepDesc}>
-                {isArabic ? 'BMR و TDEE بناءً على وزنك وطولك ونشاطك' : 'BMR & TDEE based on weight, height, activity'}
-              </Text>
-            </View>
-          </View>
-          <View style={styles.stepItem}>
-            <View style={[styles.stepIcon, { backgroundColor: '#f0fdf4' }]}>
-              <Ionicons name="leaf" size={20} color="#22c55e" />
-            </View>
-            <View style={styles.stepTextContainer}>
-              <Text style={styles.stepTitle}>
-                {isArabic ? 'خطة مخصصة لك' : 'Your Custom Plan'}
-              </Text>
-              <Text style={styles.stepDesc}>
-                {isArabic ? '5 وجبات يومية مع مكملات وتوصيات' : '5 daily meals with supplements & tips'}
-              </Text>
-            </View>
-          </View>
-        </View>
-      </View>
-
-      <View style={styles.sampleSection}>
-        <Text style={styles.sectionTitle}>
-          {isArabic ? 'مثال على خطة يومية' : 'Sample Daily Plan'}
-        </Text>
-        <View style={styles.calorieSummary}>
-          <Ionicons name="flame" size={18} color="#ef4444" />
-          <Text style={styles.calorieSummaryText}>
-            {isArabic ? '~1,550 سعرة حرارية/يوم' : '~1,550 kcal/day'}
-          </Text>
-        </View>
-        {sampleMeals.map((meal, idx) => (
-          <View key={idx} style={styles.mealCard}>
-            <View style={styles.mealIconContainer}>
-              <Ionicons name={meal.icon} size={22} color="#f59e0b" />
-            </View>
-            <View style={styles.mealContent}>
-              <View style={styles.mealHeader}>
-                <Text style={styles.mealTitle}>{meal.title}</Text>
-                <Text style={styles.mealCal}>{meal.cal}</Text>
-              </View>
-              <Text style={styles.mealDesc}>{meal.desc}</Text>
+              <Text style={styles.stepTitle}>{item.title}</Text>
+              <Text style={styles.stepDesc}>{item.desc}</Text>
             </View>
           </View>
         ))}
-        <View style={styles.sampleNote}>
-          <Ionicons name="information-circle-outline" size={16} color="#94a3b8" />
-          <Text style={styles.sampleNoteText}>
-            {isArabic
-              ? 'هذا مثال توضيحي فقط. خطتك الفعلية ستكون مخصصة بالكامل بناءً على فحوصاتك.'
-              : 'This is just a sample. Your actual plan will be fully customized based on your lab results.'}
-          </Text>
-        </View>
       </View>
 
-      <TouchableOpacity
-        style={styles.generateButton}
-        onPress={() => navigation.navigate('Profile')}
-        testID="button-generate-diet"
-      >
+      <TouchableOpacity style={styles.generateButton} onPress={startQuestionnaire} testID="button-generate-diet">
         <Ionicons name="sparkles" size={22} color="#fff" />
-        <Text style={styles.generateButtonText}>
-          {isArabic ? 'ابدأ خطتك الغذائية' : 'Start Your Diet Plan'}
-        </Text>
+        <Text style={styles.generateButtonText}>{isArabic ? 'ابدأ خطتك الغذائية' : 'Start Your Diet Plan'}</Text>
       </TouchableOpacity>
 
-      <View style={styles.trustRow}>
-        <View style={styles.trustItem}>
-          <Ionicons name="shield-checkmark" size={16} color="#16a34a" />
-          <Text style={styles.trustItemText}>
-            {isArabic ? 'مبني على أدلة علمية' : 'Evidence-Based'}
-          </Text>
+      {savedPlans && (savedPlans as any[]).length > 0 && (
+        <View style={styles.savedSection}>
+          <Text style={styles.sectionTitle}>{t('savedPlans')}</Text>
+          {(savedPlans as any[]).map((sp: any) => (
+            <TouchableOpacity
+              key={sp.id}
+              style={styles.savedCard}
+              onPress={() => {
+                const parsed = typeof sp.planData === 'string' ? JSON.parse(sp.planData) : sp.planData;
+                setPlan(parsed);
+                setStep('result');
+              }}
+              testID={`card-saved-plan-${sp.id}`}
+            >
+              <Ionicons name="document-text" size={20} color="#f59e0b" />
+              <View style={{ flex: 1 }}>
+                <Text style={styles.savedCardTitle}>{t('viewPlan')}</Text>
+                <Text style={styles.savedCardDate}>{t('savedOn')}: {new Date(sp.createdAt).toLocaleDateString(isArabic ? 'ar-SA' : 'en-US')}</Text>
+              </View>
+              <Ionicons name={isArabic ? 'chevron-back' : 'chevron-forward'} size={20} color="#94a3b8" />
+            </TouchableOpacity>
+          ))}
         </View>
-        <View style={styles.trustItem}>
-          <Ionicons name="medkit" size={16} color="#3b82f6" />
-          <Text style={styles.trustItemText}>
-            {isArabic ? 'مراجع علمية' : 'Scientific References'}
-          </Text>
-        </View>
-      </View>
+      )}
     </ScrollView>
   );
 }
@@ -158,198 +618,93 @@ export default function DietScreen({ navigation }: any) {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#f8fafc' },
   content: { padding: 16, paddingBottom: 32 },
-  heroCard: {
-    backgroundColor: '#fffbeb',
-    borderRadius: 16,
-    padding: 24,
-    alignItems: 'center',
-    marginBottom: 20,
-    borderWidth: 1,
-    borderColor: '#fde68a',
-  },
-  heroIconContainer: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: '#fef3c7',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  heroTitle: {
-    fontSize: 22,
-    fontWeight: '700',
-    color: '#92400e',
-    textAlign: 'center',
-    marginBottom: 8,
-  },
-  heroSubtitle: {
-    fontSize: 14,
-    color: '#a16207',
-    textAlign: 'center',
-    lineHeight: 20,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#1e293b',
-    marginBottom: 12,
-    textAlign: I18nManager.isRTL ? 'right' : 'left',
-  },
+  heroCard: { backgroundColor: '#fffbeb', borderRadius: 16, padding: 24, alignItems: 'center', marginBottom: 20, borderWidth: 1, borderColor: '#fde68a' },
+  heroIconContainer: { width: 80, height: 80, borderRadius: 40, backgroundColor: '#fef3c7', justifyContent: 'center', alignItems: 'center', marginBottom: 12 },
+  heroTitle: { fontSize: 22, fontWeight: '700', color: '#92400e', textAlign: 'center', marginBottom: 8 },
+  heroSubtitle: { fontSize: 14, color: '#a16207', textAlign: 'center', lineHeight: 20 },
+  sectionTitle: { fontSize: 18, fontWeight: '700', color: '#1e293b', marginBottom: 12, textAlign: I18nManager.isRTL ? 'right' : 'left' },
   howItWorksSection: { marginBottom: 20 },
-  stepsList: { gap: 10 },
-  stepItem: {
-    flexDirection: I18nManager.isRTL ? 'row-reverse' : 'row',
-    alignItems: 'center',
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 14,
-    gap: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.04,
-    shadowRadius: 2,
-    elevation: 1,
-  },
-  stepIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  stepTextContainer: {
-    flex: 1,
-    alignItems: I18nManager.isRTL ? 'flex-end' : 'flex-start',
-  },
-  stepTitle: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: '#1e293b',
-    textAlign: I18nManager.isRTL ? 'right' : 'left',
-  },
-  stepDesc: {
-    fontSize: 12,
-    color: '#64748b',
-    marginTop: 2,
-    textAlign: I18nManager.isRTL ? 'right' : 'left',
-  },
-  sampleSection: { marginBottom: 20 },
-  calorieSummary: {
-    flexDirection: I18nManager.isRTL ? 'row-reverse' : 'row',
-    alignItems: 'center',
-    gap: 6,
-    marginBottom: 10,
-    backgroundColor: '#fef2f2',
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    borderRadius: 8,
-    alignSelf: I18nManager.isRTL ? 'flex-end' : 'flex-start',
-  },
-  calorieSummaryText: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#dc2626',
-  },
-  mealCard: {
-    flexDirection: I18nManager.isRTL ? 'row-reverse' : 'row',
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 14,
-    marginBottom: 8,
-    gap: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.04,
-    shadowRadius: 2,
-    elevation: 1,
-  },
-  mealIconContainer: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
-    backgroundColor: '#fef3c7',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  mealContent: { flex: 1 },
-  mealHeader: {
-    flexDirection: I18nManager.isRTL ? 'row-reverse' : 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 4,
-  },
-  mealTitle: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: '#1e293b',
-  },
-  mealCal: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#f59e0b',
-  },
-  mealDesc: {
-    fontSize: 13,
-    color: '#64748b',
-    lineHeight: 18,
-    textAlign: I18nManager.isRTL ? 'right' : 'left',
-  },
-  sampleNote: {
-    flexDirection: I18nManager.isRTL ? 'row-reverse' : 'row',
-    alignItems: 'flex-start',
-    gap: 6,
-    marginTop: 4,
-    paddingHorizontal: 4,
-  },
-  sampleNoteText: {
-    flex: 1,
-    fontSize: 11,
-    color: '#94a3b8',
-    lineHeight: 16,
-    textAlign: I18nManager.isRTL ? 'right' : 'left',
-  },
-  generateButton: {
-    flexDirection: I18nManager.isRTL ? 'row-reverse' : 'row',
-    backgroundColor: '#f59e0b',
-    borderRadius: 14,
-    paddingVertical: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    marginBottom: 16,
-  },
-  generateButtonText: {
-    fontSize: 17,
-    fontWeight: '700',
-    color: '#fff',
-  },
-  trustRow: {
-    flexDirection: I18nManager.isRTL ? 'row-reverse' : 'row',
-    justifyContent: 'center',
-    gap: 20,
-  },
-  trustItem: {
-    flexDirection: I18nManager.isRTL ? 'row-reverse' : 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  trustItemText: {
-    fontSize: 12,
-    color: '#64748b',
-    fontWeight: '500',
-  },
-  disclaimerSmall: {
-    flexDirection: I18nManager.isRTL ? 'row-reverse' : 'row',
-    alignItems: 'flex-start',
-    paddingHorizontal: 4,
-    gap: 6,
-  },
-  disclaimerSmallText: {
-    flex: 1,
-    fontSize: 11,
-    color: '#94a3b8',
-    lineHeight: 16,
-    textAlign: I18nManager.isRTL ? 'right' : 'left',
-  },
+  stepItem: { flexDirection: I18nManager.isRTL ? 'row-reverse' : 'row', alignItems: 'center', backgroundColor: '#fff', borderRadius: 12, padding: 14, gap: 12, marginBottom: 8, elevation: 1, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.04, shadowRadius: 2 },
+  stepIcon: { width: 40, height: 40, borderRadius: 12, justifyContent: 'center', alignItems: 'center' },
+  stepTextContainer: { flex: 1, alignItems: I18nManager.isRTL ? 'flex-end' : 'flex-start' },
+  stepTitle: { fontSize: 15, fontWeight: '600', color: '#1e293b', textAlign: I18nManager.isRTL ? 'right' : 'left' },
+  stepDesc: { fontSize: 12, color: '#64748b', marginTop: 2, textAlign: I18nManager.isRTL ? 'right' : 'left' },
+  generateButton: { flexDirection: I18nManager.isRTL ? 'row-reverse' : 'row', backgroundColor: '#f59e0b', borderRadius: 14, paddingVertical: 16, alignItems: 'center', justifyContent: 'center', gap: 8, marginBottom: 16 },
+  generateButtonText: { fontSize: 17, fontWeight: '700', color: '#fff' },
+  generatingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 32, backgroundColor: '#f8fafc' },
+  generatingTitle: { fontSize: 20, fontWeight: '700', color: '#1e293b', marginTop: 20, textAlign: 'center' },
+  generatingDesc: { fontSize: 14, color: '#64748b', marginTop: 8, textAlign: 'center', lineHeight: 20 },
+  stepHeader: { flexDirection: I18nManager.isRTL ? 'row-reverse' : 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 },
+  stepCounter: { fontSize: 13, color: '#94a3b8', fontWeight: '500' },
+  questTitle: { fontSize: 20, fontWeight: '700', color: '#1e293b', textAlign: 'center', marginBottom: 8 },
+  questSubtitle: { fontSize: 14, color: '#64748b', textAlign: 'center', marginBottom: 20 },
+  optionCard: { flexDirection: I18nManager.isRTL ? 'row-reverse' : 'row', alignItems: 'center', backgroundColor: '#fff', borderRadius: 12, padding: 16, gap: 12, marginBottom: 10, borderWidth: 2, borderColor: '#e2e8f0' },
+  optionCardSelected: { backgroundColor: '#3b82f6', borderColor: '#3b82f6' },
+  optionTextContainer: { flex: 1, alignItems: I18nManager.isRTL ? 'flex-end' : 'flex-start' },
+  optionTitle: { fontSize: 16, fontWeight: '600', color: '#1e293b', textAlign: I18nManager.isRTL ? 'right' : 'left' },
+  optionTitleSelected: { color: '#fff' },
+  optionDesc: { fontSize: 12, color: '#64748b', marginTop: 2, textAlign: I18nManager.isRTL ? 'right' : 'left' },
+  optionDescSelected: { color: '#dbeafe' },
+  nextButton: { flexDirection: I18nManager.isRTL ? 'row-reverse' : 'row', backgroundColor: '#3b82f6', borderRadius: 12, paddingVertical: 14, alignItems: 'center', justifyContent: 'center', gap: 6, marginTop: 16 },
+  nextButtonText: { fontSize: 16, fontWeight: '600', color: '#fff' },
+  continueButton: { backgroundColor: '#f59e0b', borderRadius: 12, paddingVertical: 14, paddingHorizontal: 32, marginTop: 20, width: '100%', alignItems: 'center' },
+  continueButtonText: { fontSize: 16, fontWeight: '700', color: '#fff' },
+  allergyButtons: { flexDirection: I18nManager.isRTL ? 'row-reverse' : 'row', gap: 12, marginTop: 20 },
+  allergyChoice: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 20, borderRadius: 16, borderWidth: 2, borderColor: '#e2e8f0', backgroundColor: '#fff', gap: 8 },
+  allergyChoiceSelected: { backgroundColor: '#ef4444', borderColor: '#ef4444' },
+  allergyChoiceSelectedGreen: { backgroundColor: '#22c55e', borderColor: '#22c55e' },
+  allergyChoiceText: { fontSize: 16, fontWeight: '600', color: '#1e293b' },
+  allergyChoiceTextSelected: { color: '#fff' },
+  chipGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, justifyContent: 'center', marginTop: 12 },
+  chip: { paddingHorizontal: 16, paddingVertical: 10, borderRadius: 20, borderWidth: 1.5, borderColor: '#e2e8f0', backgroundColor: '#fff' },
+  chipSelected: { backgroundColor: '#3b82f6', borderColor: '#3b82f6' },
+  chipText: { fontSize: 14, fontWeight: '500', color: '#475569' },
+  chipTextSelected: { color: '#fff' },
+  proteinCard: { flexDirection: I18nManager.isRTL ? 'row-reverse' : 'row', alignItems: 'center', gap: 8, paddingHorizontal: 20, paddingVertical: 14, borderRadius: 12, borderWidth: 1.5, borderColor: '#e2e8f0', backgroundColor: '#fff', minWidth: '45%' },
+  proteinCardSelected: { backgroundColor: '#3b82f6', borderColor: '#3b82f6' },
+  proteinText: { fontSize: 14, fontWeight: '600', color: '#475569' },
+  proteinTextSelected: { color: '#fff' },
+  recommendedBadge: { backgroundColor: '#fef3c7', paddingHorizontal: 8, paddingVertical: 2, borderRadius: 8 },
+  recommendedText: { fontSize: 10, fontWeight: '600', color: '#d97706' },
+  disclaimerCard: { backgroundColor: '#fff', borderRadius: 16, padding: 24, alignItems: 'center', borderWidth: 1, borderColor: '#fde68a' },
+  disclaimerTitle: { fontSize: 20, fontWeight: '700', color: '#92400e', marginTop: 12, marginBottom: 12 },
+  disclaimerText: { fontSize: 14, color: '#64748b', textAlign: 'center', lineHeight: 22 },
+  resultTitle: { fontSize: 22, fontWeight: '700', color: '#1e293b', textAlign: 'center', marginBottom: 16 },
+  card: { backgroundColor: '#fff', borderRadius: 12, padding: 16, marginBottom: 12, elevation: 1, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 2 },
+  cardHeader: { flexDirection: I18nManager.isRTL ? 'row-reverse' : 'row', alignItems: 'center', gap: 8, marginBottom: 12 },
+  cardTitle: { fontSize: 16, fontWeight: '700', color: '#1e293b' },
+  cardText: { fontSize: 14, color: '#475569', lineHeight: 20, textAlign: I18nManager.isRTL ? 'right' : 'left' },
+  calorieRow: { flexDirection: I18nManager.isRTL ? 'row-reverse' : 'row', justifyContent: 'space-around', marginBottom: 12 },
+  calorieStat: { alignItems: 'center' },
+  calorieValue: { fontSize: 20, fontWeight: '700', color: '#1e293b' },
+  calorieLabel: { fontSize: 11, color: '#94a3b8', marginTop: 2 },
+  macroRow: { flexDirection: I18nManager.isRTL ? 'row-reverse' : 'row', justifyContent: 'center', gap: 8 },
+  macroBadge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12 },
+  macroText: { fontSize: 12, fontWeight: '600' },
+  mealItem: { borderTopWidth: 1, borderTopColor: '#f1f5f9', paddingTop: 12, marginTop: 8 },
+  mealOptionLabel: { fontSize: 11, fontWeight: '600', color: '#f59e0b', marginBottom: 4, textAlign: I18nManager.isRTL ? 'right' : 'left' },
+  mealName: { fontSize: 15, fontWeight: '600', color: '#1e293b', marginBottom: 4, textAlign: I18nManager.isRTL ? 'right' : 'left' },
+  mealDesc: { fontSize: 13, color: '#64748b', lineHeight: 18, marginBottom: 6, textAlign: I18nManager.isRTL ? 'right' : 'left' },
+  mealMacros: { flexDirection: I18nManager.isRTL ? 'row-reverse' : 'row', gap: 10 },
+  mealMacroText: { fontSize: 11, color: '#94a3b8', fontWeight: '500' },
+  mealBenefits: { fontSize: 12, color: '#22c55e', marginTop: 4, fontStyle: 'italic', textAlign: I18nManager.isRTL ? 'right' : 'left' },
+  supplementItem: { borderTopWidth: 1, borderTopColor: '#f1f5f9', paddingTop: 10, marginTop: 8 },
+  supplementName: { fontSize: 15, fontWeight: '600', color: '#1e293b', textAlign: I18nManager.isRTL ? 'right' : 'left' },
+  supplementDetail: { fontSize: 13, color: '#64748b', marginTop: 2, textAlign: I18nManager.isRTL ? 'right' : 'left' },
+  supplementFoods: { fontSize: 12, color: '#22c55e', marginTop: 4, textAlign: I18nManager.isRTL ? 'right' : 'left' },
+  tipItem: { borderTopWidth: 1, borderTopColor: '#f1f5f9', paddingTop: 10, marginTop: 8 },
+  tipCondition: { fontSize: 15, fontWeight: '600', color: '#1e293b', marginBottom: 4, textAlign: I18nManager.isRTL ? 'right' : 'left' },
+  tipAdvice: { fontSize: 13, color: '#475569', marginBottom: 2, textAlign: I18nManager.isRTL ? 'right' : 'left' },
+  tipAvoid: { fontSize: 12, color: '#ef4444', marginTop: 4, textAlign: I18nManager.isRTL ? 'right' : 'left' },
+  tipText: { fontSize: 13, color: '#475569', marginBottom: 4, textAlign: I18nManager.isRTL ? 'right' : 'left' },
+  refText: { fontSize: 12, color: '#94a3b8', marginBottom: 4, textAlign: I18nManager.isRTL ? 'right' : 'left' },
+  actionButtons: { gap: 10, marginTop: 8 },
+  saveButton: { flexDirection: I18nManager.isRTL ? 'row-reverse' : 'row', backgroundColor: '#22c55e', borderRadius: 12, paddingVertical: 14, alignItems: 'center', justifyContent: 'center', gap: 8 },
+  saveButtonText: { fontSize: 16, fontWeight: '600', color: '#fff' },
+  newPlanButton: { flexDirection: I18nManager.isRTL ? 'row-reverse' : 'row', backgroundColor: '#eff6ff', borderRadius: 12, paddingVertical: 14, alignItems: 'center', justifyContent: 'center', gap: 8 },
+  newPlanButtonText: { fontSize: 16, fontWeight: '600', color: '#3b82f6' },
+  savedSection: { marginTop: 16 },
+  savedCard: { flexDirection: I18nManager.isRTL ? 'row-reverse' : 'row', alignItems: 'center', backgroundColor: '#fff', borderRadius: 12, padding: 14, gap: 12, marginBottom: 8, elevation: 1, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.04, shadowRadius: 2 },
+  savedCardTitle: { fontSize: 15, fontWeight: '600', color: '#1e293b', textAlign: I18nManager.isRTL ? 'right' : 'left' },
+  savedCardDate: { fontSize: 12, color: '#94a3b8', marginTop: 2, textAlign: I18nManager.isRTL ? 'right' : 'left' },
 });
