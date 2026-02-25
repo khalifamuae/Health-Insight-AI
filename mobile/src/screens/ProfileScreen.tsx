@@ -25,6 +25,7 @@ interface UserProfile {
   height?: number;
   weight?: number;
   bloodType?: string;
+  fitnessGoal?: 'weight_loss' | 'maintain' | 'muscle_gain';
   subscription: 'free' | 'pro';
   pdfCount: number;
 }
@@ -42,6 +43,7 @@ export default function ProfileScreen({ navigation }: { navigation: any }) {
   const [height, setHeight] = useState('');
   const [weight, setWeight] = useState('');
   const [bloodType, setBloodType] = useState('');
+  const [fitnessGoal, setFitnessGoal] = useState<'weight_loss' | 'maintain' | 'muscle_gain' | null>(null);
 
   const { data: user } = useQuery({
     queryKey: ['profile'],
@@ -57,6 +59,7 @@ export default function ProfileScreen({ navigation }: { navigation: any }) {
       if (profile.height) setHeight(profile.height.toString());
       if (profile.weight) setWeight(profile.weight.toString());
       if (profile.bloodType) setBloodType(profile.bloodType);
+      if (profile.fitnessGoal) setFitnessGoal(profile.fitnessGoal);
     }
   }, [profile]);
 
@@ -78,7 +81,8 @@ export default function ProfileScreen({ navigation }: { navigation: any }) {
       gender: gender || undefined,
       height: height ? parseInt(height) : undefined,
       weight: weight ? parseInt(weight) : undefined,
-      bloodType: bloodType || undefined
+      bloodType: bloodType || undefined,
+      fitnessGoal: fitnessGoal || undefined
     });
   };
 
@@ -227,6 +231,63 @@ export default function ProfileScreen({ navigation }: { navigation: any }) {
             placeholder="A+"
             testID="input-blood-type"
           />
+        </View>
+
+        <View style={styles.inputGroup}>
+          <Text style={styles.label}>{t('profile.fitnessGoal')}</Text>
+          <View style={styles.fitnessGoalButtons}>
+            <TouchableOpacity
+              style={[styles.fitnessGoalButton, fitnessGoal === 'weight_loss' && styles.fitnessGoalButtonSelected]}
+              onPress={() => setFitnessGoal('weight_loss')}
+              testID="button-goal-weight-loss"
+            >
+              <Ionicons
+                name="trending-down"
+                size={20}
+                color={fitnessGoal === 'weight_loss' ? '#fff' : '#f59e0b'}
+              />
+              <Text style={[
+                styles.fitnessGoalButtonText,
+                fitnessGoal === 'weight_loss' && styles.fitnessGoalButtonTextSelected
+              ]}>
+                {t('profile.goalWeightLoss')}
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.fitnessGoalButton, fitnessGoal === 'maintain' && styles.fitnessGoalButtonSelected]}
+              onPress={() => setFitnessGoal('maintain')}
+              testID="button-goal-maintain"
+            >
+              <Ionicons
+                name="swap-horizontal"
+                size={20}
+                color={fitnessGoal === 'maintain' ? '#fff' : '#22c55e'}
+              />
+              <Text style={[
+                styles.fitnessGoalButtonText,
+                fitnessGoal === 'maintain' && styles.fitnessGoalButtonTextSelected
+              ]}>
+                {t('profile.goalMaintain')}
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.fitnessGoalButton, fitnessGoal === 'muscle_gain' && styles.fitnessGoalButtonSelected]}
+              onPress={() => setFitnessGoal('muscle_gain')}
+              testID="button-goal-muscle-gain"
+            >
+              <Ionicons
+                name="trending-up"
+                size={20}
+                color={fitnessGoal === 'muscle_gain' ? '#fff' : '#3b82f6'}
+              />
+              <Text style={[
+                styles.fitnessGoalButtonText,
+                fitnessGoal === 'muscle_gain' && styles.fitnessGoalButtonTextSelected
+              ]}>
+                {t('profile.goalMuscleGain')}
+              </Text>
+            </TouchableOpacity>
+          </View>
         </View>
 
         <TouchableOpacity
@@ -540,6 +601,30 @@ const styles = StyleSheet.create({
     gap: 8,
     borderWidth: 1,
     borderColor: '#fecaca',
+  },
+  fitnessGoalButtons: {
+    flexDirection: 'column',
+    gap: 8,
+  },
+  fitnessGoalButton: {
+    flexDirection: I18nManager.isRTL ? 'row-reverse' : 'row',
+    alignItems: 'center',
+    padding: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+    gap: 8,
+  },
+  fitnessGoalButtonSelected: {
+    backgroundColor: '#3b82f6',
+    borderColor: '#3b82f6',
+  },
+  fitnessGoalButtonText: {
+    fontSize: 14,
+    color: '#64748b',
+  },
+  fitnessGoalButtonTextSelected: {
+    color: '#fff',
   },
   logoutText: {
     fontSize: 16,
