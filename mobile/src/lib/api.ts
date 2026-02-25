@@ -140,7 +140,9 @@ export const api = {
 
     await extractAndSaveCookie(response);
     if (!response.ok) {
-      throw new Error(`Upload Error: ${response.status}`);
+      const errorData = await response.json().catch(() => null);
+      const message = errorData?.message || errorData?.error || `Upload Error: ${response.status}`;
+      throw new Error(message);
     }
     return response.json();
   }

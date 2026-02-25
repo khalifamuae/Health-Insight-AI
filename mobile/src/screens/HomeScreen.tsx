@@ -46,7 +46,7 @@ export default function HomeScreen({ navigation }: any) {
   
   const { data: userTests } = useQuery({
     queryKey: ['userTests'],
-    queryFn: queries.userTests
+    queryFn: queries.allTests
   });
 
   const { data: reminders } = useQuery({

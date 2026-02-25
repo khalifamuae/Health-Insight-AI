@@ -44,8 +44,8 @@ export default function ProfileScreen({ navigation }: { navigation: any }) {
   const [bloodType, setBloodType] = useState('');
 
   const { data: user } = useQuery({
-    queryKey: ['user'],
-    queryFn: queries.user
+    queryKey: ['profile'],
+    queryFn: queries.profile
   });
 
   const profile = user as UserProfile | undefined;
@@ -62,9 +62,9 @@ export default function ProfileScreen({ navigation }: { navigation: any }) {
 
   const updateMutation = useMutation({
     mutationFn: (data: Partial<UserProfile>) => 
-      api.patch('/api/user', data),
+      api.patch('/api/profile', data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['user'] });
+      queryClient.invalidateQueries({ queryKey: ['profile'] });
       Alert.alert(t('profile.save'), t('normal'));
     },
     onError: () => {
