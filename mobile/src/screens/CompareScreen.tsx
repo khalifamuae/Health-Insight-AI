@@ -64,6 +64,21 @@ const getCategoryColor = (category: string): string => {
   return colors[category] || '#64748b';
 };
 
+const getCategoryIcon = (category: string): keyof typeof Ionicons.glyphMap => {
+  const icons: Record<string, keyof typeof Ionicons.glyphMap> = {
+    vitamins: 'medical',
+    minerals: 'diamond',
+    hormones: 'pulse',
+    organ_functions: 'heart',
+    lipids: 'water',
+    immunity: 'shield',
+    blood: 'water',
+    coagulation: 'bandage',
+    special: 'star',
+  };
+  return icons[category] || 'ellipse';
+};
+
 export default function CompareScreen() {
   const { t, i18n } = useTranslation();
   const isArabic = i18n.language === 'ar';
@@ -215,7 +230,7 @@ export default function CompareScreen() {
       <View style={styles.comparisonCard} testID={`card-compare-${item.testId}`}>
         <View style={styles.cardHeader}>
           <View style={styles.cardTitleRow}>
-            <View style={[styles.categoryDot, { backgroundColor: categoryColor }]} />
+            <Ionicons name={getCategoryIcon(item.category)} size={16} color={categoryColor} />
             <Text style={styles.testName}>{testName}</Text>
           </View>
           <View style={[styles.changeBadge, { backgroundColor: changeInfo.color + '20' }]}>
@@ -418,11 +433,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 8,
     flex: 1,
-  },
-  categoryDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
   },
   testName: {
     fontSize: 15,
