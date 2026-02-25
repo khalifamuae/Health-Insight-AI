@@ -58,12 +58,12 @@ const CARB_OPTIONS = [
 ];
 
 const PREFERENCE_OPTIONS = [
-  { key: 'high_protein', labelKey: 'prefHighProtein', descKey: 'prefHighProteinDesc', icon: 'barbell' as const, recommended: true },
-  { key: 'balanced', labelKey: 'prefBalanced', descKey: 'prefBalancedDesc', icon: 'scale' as const },
-  { key: 'low_carb', labelKey: 'prefLowCarb', descKey: 'prefLowCarbDesc', icon: 'leaf' as const },
-  { key: 'keto', labelKey: 'prefKeto', descKey: 'prefKetoDesc', icon: 'flame' as const },
-  { key: 'vegetarian', labelKey: 'prefVegetarian', descKey: 'prefVegetarianDesc', icon: 'nutrition' as const },
-  { key: 'custom_macros', labelKey: 'prefCustomMacros', descKey: 'prefCustomMacrosDesc', icon: 'stats-chart' as const },
+  { key: 'high_protein', labelKey: 'prefHighProtein', descKey: 'prefHighProteinDesc', icon: 'barbell' as const, recommended: true, macros: 'P: 40-50% | C: 35-40% | F: 10-25%' },
+  { key: 'balanced', labelKey: 'prefBalanced', descKey: 'prefBalancedDesc', icon: 'scale' as const, macros: 'P: 25-35% | C: 40-50% | F: 20-30%' },
+  { key: 'low_carb', labelKey: 'prefLowCarb', descKey: 'prefLowCarbDesc', icon: 'leaf' as const, macros: 'P: 30-40% | C: 10-25% | F: 30-45%' },
+  { key: 'keto', labelKey: 'prefKeto', descKey: 'prefKetoDesc', icon: 'flame' as const, macros: 'P: 20-25% | C: 5-10% | F: 65-75%' },
+  { key: 'vegetarian', labelKey: 'prefVegetarian', descKey: 'prefVegetarianDesc', icon: 'nutrition' as const, macros: 'P: 20-30% | C: 45-55% | F: 20-30%' },
+  { key: 'custom_macros', labelKey: 'prefCustomMacros', descKey: 'prefCustomMacrosDesc', icon: 'stats-chart' as const, macros: '' },
 ];
 
 export default function DietScreen({ navigation }: any) {
@@ -247,6 +247,16 @@ export default function DietScreen({ navigation }: any) {
           </View>
         )}
 
+        {plan.intakeAlignment && (
+          <View style={styles.card}>
+            <View style={styles.cardHeader}>
+              <Ionicons name="analytics" size={20} color="#6366f1" />
+              <Text style={styles.cardTitle}>{t('intakeAlignment') || (isArabic ? 'مدى توافق الأكل مع الهدف' : 'Intake Alignment with Your Goal')}</Text>
+            </View>
+            <Text style={styles.cardText}>{plan.intakeAlignment}</Text>
+          </View>
+        )}
+
         {plan.mealPlan && ['breakfast', 'lunch', 'dinner', 'snacks'].map((mealType) => {
           const meals = plan.mealPlan[mealType];
           if (!meals || meals.length === 0) return null;
@@ -286,6 +296,18 @@ export default function DietScreen({ navigation }: any) {
                 <Text style={styles.supplementName}>{sup.name}</Text>
                 <Text style={styles.supplementDetail}>{sup.dosage} - {sup.reason}</Text>
                 {sup.duration && <Text style={styles.supplementDetail}>{t('supplementDuration')}: {sup.duration}</Text>}
+                {sup.targetLabValue && (
+                  <View style={styles.targetLabRow}>
+                    <Ionicons name="flask" size={12} color="#6366f1" />
+                    <Text style={styles.targetLabText}>{isArabic ? 'القيمة المستهدفة' : 'Target'}: {sup.targetLabValue}</Text>
+                  </View>
+                )}
+                {sup.scientificBasis && (
+                  <View style={styles.scientificRow}>
+                    <Ionicons name="school" size={12} color="#8b5cf6" />
+                    <Text style={styles.scientificText}>{sup.scientificBasis}</Text>
+                  </View>
+                )}
                 {sup.foodSources && sup.foodSources.length > 0 && (
                   <Text style={styles.supplementFoods}>{t('supplementFoodSources')}: {sup.foodSources.join(', ')}</Text>
                 )}
@@ -538,6 +560,7 @@ export default function DietScreen({ navigation }: any) {
                 )}
               </View>
               <Text style={[styles.optionDesc, mealPreference === opt.key && styles.optionDescSelected]}>{t(opt.descKey)}</Text>
+              {opt.macros ? <Text style={[styles.macroRangeText, mealPreference === opt.key && { color: '#dbeafe' }]}>{opt.macros}</Text> : null}
             </View>
           </TouchableOpacity>
         ))}
@@ -692,6 +715,11 @@ const styles = StyleSheet.create({
   supplementName: { fontSize: 15, fontWeight: '600', color: '#1e293b', textAlign: I18nManager.isRTL ? 'right' : 'left' },
   supplementDetail: { fontSize: 13, color: '#64748b', marginTop: 2, textAlign: I18nManager.isRTL ? 'right' : 'left' },
   supplementFoods: { fontSize: 12, color: '#22c55e', marginTop: 4, textAlign: I18nManager.isRTL ? 'right' : 'left' },
+  targetLabRow: { flexDirection: I18nManager.isRTL ? 'row-reverse' : 'row', alignItems: 'center', gap: 4, marginTop: 4 },
+  targetLabText: { fontSize: 12, color: '#6366f1', fontWeight: '500' },
+  scientificRow: { flexDirection: I18nManager.isRTL ? 'row-reverse' : 'row', alignItems: 'flex-start', gap: 4, marginTop: 4 },
+  scientificText: { fontSize: 11, color: '#8b5cf6', lineHeight: 16, flex: 1, textAlign: I18nManager.isRTL ? 'right' : 'left' },
+  macroRangeText: { fontSize: 11, color: '#94a3b8', marginTop: 4, fontWeight: '500', textAlign: I18nManager.isRTL ? 'right' : 'left' },
   tipItem: { borderTopWidth: 1, borderTopColor: '#f1f5f9', paddingTop: 10, marginTop: 8 },
   tipCondition: { fontSize: 15, fontWeight: '600', color: '#1e293b', marginBottom: 4, textAlign: I18nManager.isRTL ? 'right' : 'left' },
   tipAdvice: { fontSize: 13, color: '#475569', marginBottom: 2, textAlign: I18nManager.isRTL ? 'right' : 'left' },
