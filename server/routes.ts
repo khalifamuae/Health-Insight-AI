@@ -1227,5 +1227,30 @@ export async function registerRoutes(
   app.patch("/api/admin/withdrawals/:id", isAuthenticated, async (req: any, res: Response) => { ... });
   */
 
+  app.get("/api/health", async (_req: Request, res: Response) => {
+    try {
+      const dbCheck = await db.execute(sql`SELECT 1`);
+      const uptime = process.uptime();
+      const memUsage = process.memoryUsage();
+      res.json({
+        status: "ok",
+        timestamp: new Date().toISOString(),
+        uptime: Math.floor(uptime),
+        memory: {
+          heapUsed: Math.round(memUsage.heapUsed / 1024 / 1024),
+          heapTotal: Math.round(memUsage.heapTotal / 1024 / 1024),
+          rss: Math.round(memUsage.rss / 1024 / 1024),
+        },
+        database: dbCheck ? "connected" : "error",
+      });
+    } catch (error: any) {
+      res.status(500).json({
+        status: "error",
+        timestamp: new Date().toISOString(),
+        error: error.message,
+      });
+    }
+  });
+
   return httpServer;
 }
