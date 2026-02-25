@@ -1,5 +1,16 @@
 import OpenAI from "openai";
-import pdfParse from "pdf-parse";
+import { createRequire } from "module";
+import { fileURLToPath } from "url";
+import path from "path";
+
+let extractPdfText: (buffer: Buffer) => Promise<string>;
+try {
+  const _require = createRequire(import.meta.url);
+  extractPdfText = _require("./pdfLoader.cjs").extractText;
+} catch {
+  const _require = createRequire(path.resolve(__dirname || ".", "dummy.js"));
+  extractPdfText = _require("./pdfLoader.cjs").extractText;
+}
 
 const openai = new OpenAI({
   apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
@@ -237,8 +248,7 @@ function findTestId(testName: string): string | null {
 
 export async function analyzeLabPdf(pdfBuffer: Buffer): Promise<ExtractedTest[]> {
   try {
-const pdfData = await pdfParse(pdfBuffer);
-    const pdfText = pdfData.text;
+    const pdfText = await extractPdfText(pdfBuffer);
     if (!pdfText || pdfText.trim().length < 50) {
       console.error("PDF text extraction failed or too short - may be a scanned image PDF");
       throw new Error("SCANNED_PDF");

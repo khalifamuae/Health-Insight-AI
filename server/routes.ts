@@ -351,7 +351,7 @@ export async function registerRoutes(
   app.patch("/api/profile", isAuthenticated, async (req: any, res: Response) => {
     try {
       const userId = req.user.claims.sub;
-      const { phone, age, weight, height, gender, fitnessGoal, activityLevel, mealPreference, hasAllergies, allergies, proteinPreference, proteinPreferences, carbPreferences } = req.body;
+      const { phone, age, weight, height, gender, fitnessGoal, activityLevel, mealPreference, hasAllergies, allergies, proteinPreference, proteinPreferences, carbPreferences, bloodType } = req.body;
       
       const profile = await storage.upsertUserProfile({
         id: userId,
@@ -368,6 +368,7 @@ export async function registerRoutes(
         proteinPreference,
         proteinPreferences,
         carbPreferences,
+        bloodType,
       });
       
       res.json(profile);
@@ -682,7 +683,9 @@ export async function registerRoutes(
 
     try {
       // Analyze PDF using AI
+      console.log("[PDF DEBUG] Starting PDF analysis, buffer size:", fileBuffer.length);
       const extractedTests = await analyzeLabPdf(fileBuffer);
+      console.log("[PDF DEBUG] Analysis success, tests found:", extractedTests.length);
 
       // Get test definitions for matching
       const definitions = await storage.getTestDefinitions();
@@ -738,6 +741,7 @@ export async function registerRoutes(
     } catch (error) {
       // Update status to failed
       const errorMessage = error instanceof Error ? error.message : "Unknown error";
+      console.error("[PDF DEBUG] Analysis FAILED:", errorMessage, error);
       await storage.updateUploadedPdfStatus(pdfId, "failed", undefined, errorMessage);
       throw error;
     }

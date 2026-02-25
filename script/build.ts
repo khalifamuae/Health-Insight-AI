@@ -56,9 +56,12 @@ async function buildAll() {
       "process.env.NODE_ENV": '"production"',
     },
     minify: true,
-    external: externals,
+    external: [...externals, "./pdfLoader.cjs"],
     logLevel: "info",
   });
+
+  const { copyFile } = await import("fs/promises");
+  await copyFile("server/pdfLoader.cjs", "dist/pdfLoader.cjs");
 }
 
 buildAll().catch((err) => {

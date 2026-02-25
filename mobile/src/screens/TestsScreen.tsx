@@ -1,11 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   FlatList,
   TouchableOpacity,
-  I18nManager
+  I18nManager,
+  ScrollView
 } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
@@ -31,6 +32,8 @@ interface AllTestData {
   hasResult: boolean;
   order: number;
 }
+
+type SortMode = 'default' | 'bestToWorst' | 'worstToBest';
 
 const StatusBadge = ({ status, hasResult }: { status: string; hasResult: boolean }) => {
   const { t } = useTranslation();
@@ -78,10 +81,40 @@ const getCategoryColor = (category: string): string => {
   return colors[category] || '#64748b';
 };
 
+const getCategoryIcon = (category: string): string => {
+  const icons: Record<string, string> = {
+    all: 'apps',
+    vitamins: 'sunny',
+    minerals: 'diamond',
+    hormones: 'pulse',
+    organ_functions: 'fitness',
+    lipids: 'water',
+    immunity: 'shield-checkmark',
+    blood: 'color-fill',
+    coagulation: 'bandage',
+    special: 'star'
+  };
+  return icons[category] || 'ellipse';
+};
+
+function getStatusScore(test: AllTestData): number {
+  if (!test.hasResult) return 1;
+  if (test.status === 'normal') return 0;
+  if (test.normalRangeMin !== null && test.normalRangeMax !== null && test.value !== 0) {
+    const mid = (test.normalRangeMin + test.normalRangeMax) / 2;
+    const range = test.normalRangeMax - test.normalRangeMin;
+    if (range > 0) {
+      return Math.abs(test.value - mid) / range;
+    }
+  }
+  return 2;
+}
+
 export default function TestsScreen() {
   const { t, i18n } = useTranslation();
   const isArabic = i18n.language === 'ar';
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [sortMode, setSortMode] = useState<SortMode>('default');
 
   const { data: allTests, isLoading } = useQuery({
     queryKey: ['allTests'],
@@ -90,14 +123,42 @@ export default function TestsScreen() {
 
   const tests = (allTests as AllTestData[]) || [];
   
-  const categories = ['vitamins', 'minerals', 'hormones', 'organ_functions', 'lipids', 'immunity', 'blood', 'coagulation', 'special'];
-  
-  const filteredTests = selectedCategory
-    ? tests.filter(test => test.category === selectedCategory)
-    : tests;
+  const categories = ['all', 'vitamins', 'minerals', 'hormones', 'organ_functions', 'lipids', 'immunity', 'blood', 'coagulation', 'special'];
+
+  const filteredAndSortedTests = useMemo(() => {
+    let result = selectedCategory && selectedCategory !== 'all'
+      ? tests.filter(test => test.category === selectedCategory)
+      : tests;
+
+    if (sortMode === 'bestToWorst') {
+      result = [...result].sort((a, b) => getStatusScore(a) - getStatusScore(b));
+    } else if (sortMode === 'worstToBest') {
+      result = [...result].sort((a, b) => getStatusScore(b) - getStatusScore(a));
+    }
+
+    return result;
+  }, [tests, selectedCategory, sortMode]);
 
   const testsWithResults = tests.filter(t => t.hasResult).length;
   const abnormalTests = tests.filter(t => t.status === 'high' || t.status === 'low').length;
+
+  const cycleSortMode = () => {
+    const modes: SortMode[] = ['default', 'worstToBest', 'bestToWorst'];
+    const currentIndex = modes.indexOf(sortMode);
+    setSortMode(modes[(currentIndex + 1) % modes.length]);
+  };
+
+  const getSortIcon = (): string => {
+    if (sortMode === 'worstToBest') return 'arrow-down';
+    if (sortMode === 'bestToWorst') return 'arrow-up';
+    return 'swap-vertical';
+  };
+
+  const getSortLabel = (): string => {
+    if (sortMode === 'worstToBest') return t('sortWorstToBest');
+    if (sortMode === 'bestToWorst') return t('sortBestToWorst');
+    return t('sortDefault');
+  };
 
   const renderTest = ({ item, index }: { item: AllTestData; index: number }) => {
     const testName = isArabic ? item.nameAr : item.nameEn;
@@ -171,33 +232,55 @@ export default function TestsScreen() {
         </Text>
       </View>
 
-      <FlatList
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        data={categories}
-        keyExtractor={item => item}
-        style={styles.categoryList}
-        contentContainerStyle={styles.categoryContent}
-        inverted={isArabic}
-        renderItem={({ item }) => (
-          <TouchableOpacity
-            style={[
-              styles.categoryChip,
-              selectedCategory === item && styles.categoryChipSelected,
-              { borderColor: getCategoryColor(item) }
-            ]}
-            onPress={() => setSelectedCategory(selectedCategory === item ? null : item)}
-            testID={`chip-category-${item}`}
-          >
-            <Text style={[
-              styles.categoryChipText,
-              selectedCategory === item && styles.categoryChipTextSelected
-            ]}>
-              {t(item)}
-            </Text>
-          </TouchableOpacity>
-        )}
-      />
+      <View style={styles.categorySection}>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.categoryScrollContent}
+        >
+          {(isArabic ? [...categories].reverse() : categories).map((item) => {
+            const isAll = item === 'all';
+            const isSelected = isAll ? !selectedCategory || selectedCategory === 'all' : selectedCategory === item;
+            const chipColor = isAll ? '#3b82f6' : getCategoryColor(item);
+
+            return (
+              <TouchableOpacity
+                key={item}
+                style={[
+                  styles.categoryChip,
+                  { borderColor: chipColor },
+                  isSelected && { backgroundColor: chipColor, borderColor: chipColor }
+                ]}
+                onPress={() => setSelectedCategory(isAll ? null : (selectedCategory === item ? null : item))}
+                testID={`chip-category-${item}`}
+              >
+                <Ionicons
+                  name={getCategoryIcon(item) as any}
+                  size={14}
+                  color={isSelected ? '#fff' : chipColor}
+                />
+                <Text style={[
+                  styles.categoryChipText,
+                  { color: isSelected ? '#fff' : '#475569' }
+                ]}>
+                  {isAll ? t('all') : t(item)}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </ScrollView>
+      </View>
+
+      <View style={styles.sortBar}>
+        <TouchableOpacity
+          style={styles.sortButton}
+          onPress={cycleSortMode}
+          testID="button-sort-tests"
+        >
+          <Ionicons name={getSortIcon() as any} size={16} color="#3b82f6" />
+          <Text style={styles.sortButtonText}>{getSortLabel()}</Text>
+        </TouchableOpacity>
+      </View>
 
       {isLoading ? (
         <View style={styles.loadingContainer}>
@@ -205,7 +288,7 @@ export default function TestsScreen() {
         </View>
       ) : (
         <FlatList
-          data={filteredTests}
+          data={filteredAndSortedTests}
           keyExtractor={item => item.id}
           renderItem={renderTest}
           contentContainerStyle={styles.listContent}
@@ -244,35 +327,51 @@ const styles = StyleSheet.create({
     marginTop: 4,
     textAlign: I18nManager.isRTL ? 'right' : 'left'
   },
-  categoryList: {
-    maxHeight: 50,
+  categorySection: {
     backgroundColor: '#fff',
     borderBottomWidth: 1,
-    borderBottomColor: '#e2e8f0'
+    borderBottomColor: '#e2e8f0',
+    paddingVertical: 10,
   },
-  categoryContent: {
+  categoryScrollContent: {
     paddingHorizontal: 12,
-    paddingVertical: 8
+    gap: 8,
+    alignItems: 'center',
   },
   categoryChip: {
-    paddingHorizontal: 16,
-    paddingVertical: 6,
-    borderRadius: 16,
+    flexDirection: I18nManager.isRTL ? 'row-reverse' : 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 20,
     backgroundColor: '#fff',
-    marginHorizontal: 4,
-    borderWidth: 1.5
-  },
-  categoryChipSelected: {
-    backgroundColor: '#3b82f6',
-    borderColor: '#3b82f6'
+    borderWidth: 1.5,
+    gap: 5,
   },
   categoryChipText: {
     fontSize: 13,
-    color: '#475569',
-    fontWeight: '500'
+    fontWeight: '600'
   },
-  categoryChipTextSelected: {
-    color: '#fff'
+  sortBar: {
+    flexDirection: I18nManager.isRTL ? 'row-reverse' : 'row',
+    justifyContent: I18nManager.isRTL ? 'flex-start' : 'flex-end',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    backgroundColor: '#f8fafc',
+  },
+  sortButton: {
+    flexDirection: I18nManager.isRTL ? 'row-reverse' : 'row',
+    alignItems: 'center',
+    backgroundColor: '#eff6ff',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+    gap: 4,
+  },
+  sortButtonText: {
+    fontSize: 12,
+    color: '#3b82f6',
+    fontWeight: '600',
   },
   listContent: {
     padding: 16
