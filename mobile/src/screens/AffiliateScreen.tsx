@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import {
   View,
   Text,
@@ -15,7 +15,9 @@ import {
 import { useTranslation } from 'react-i18next';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Ionicons } from '@expo/vector-icons';
+import { useFocusEffect } from '@react-navigation/native';
 import { api } from '../lib/api';
+import { formatAppDate, getDateCalendarPreference, type CalendarType } from '../lib/dateFormat';
 
 interface AffiliateDashboard {
   referralCode: string;
@@ -41,12 +43,21 @@ interface AffiliateDashboard {
 }
 
 export default function AffiliateScreen() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const queryClient = useQueryClient();
+  const [dateCalendar, setDateCalendar] = useState<CalendarType>('gregorian');
   const [showWithdrawModal, setShowWithdrawModal] = useState(false);
   const [withdrawAmount, setWithdrawAmount] = useState('');
   const [paymentMethod, setPaymentMethod] = useState<'paypal' | 'bank'>('paypal');
   const [paymentDetails, setPaymentDetails] = useState('');
+
+  useFocusEffect(
+    useCallback(() => {
+      getDateCalendarPreference()
+        .then(setDateCalendar)
+        .catch(() => setDateCalendar('gregorian'));
+    }, [])
+  );
 
   const { data: dashboard, isLoading } = useQuery<AffiliateDashboard>({
     queryKey: ['affiliate-dashboard'],
@@ -216,7 +227,7 @@ export default function AffiliateScreen() {
               <View>
                 <Text style={styles.listAmount}>+${commission.commissionAmount.toFixed(2)}</Text>
                 <Text style={styles.listDate}>
-                  {new Date(commission.createdAt).toLocaleDateString()}
+                  {formatAppDate(commission.createdAt, i18n.language, dateCalendar)}
                 </Text>
               </View>
               <Text style={styles.listSubAmount}>
@@ -235,7 +246,7 @@ export default function AffiliateScreen() {
               <View>
                 <Text style={styles.listAmount}>${withdrawal.amount.toFixed(2)}</Text>
                 <Text style={styles.listDate}>
-                  {new Date(withdrawal.createdAt).toLocaleDateString()} - {withdrawal.paymentMethod}
+                  {formatAppDate(withdrawal.createdAt, i18n.language, dateCalendar)} - {withdrawal.paymentMethod}
                 </Text>
               </View>
               <View style={[styles.statusBadge, { backgroundColor: getStatusColor(withdrawal.status) + '20' }]}>

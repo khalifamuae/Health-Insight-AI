@@ -76,7 +76,8 @@
       "versionCode": 1,
       "permissions": [
         "INTERNET",
-        "CAMERA"
+        "CAMERA",
+        "POST_NOTIFICATIONS"
       ]
     },
     "web": {

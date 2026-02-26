@@ -354,7 +354,7 @@ export interface AllTestsData {
 
 export type TestCategory = "vitamins" | "minerals" | "hormones" | "organ_functions" | "lipids" | "immunity" | "blood" | "coagulation" | "special";
 export type TestStatus = "normal" | "low" | "high";
-export type SubscriptionPlan = "free" | "pro";
+export type SubscriptionPlan = "free" | "basic" | "premium" | "pro";
 export type Gender = "male" | "female";
 export type FitnessGoal = "weight_loss" | "maintain" | "muscle_gain";
 export type ActivityLevel = "sedentary" | "lightly_active" | "very_active" | "extremely_active";

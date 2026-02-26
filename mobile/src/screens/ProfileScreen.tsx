@@ -9,16 +9,22 @@ import {
   Alert,
   I18nManager,
   Linking,
+  Modal,
+  Image,
 } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Ionicons } from '@expo/vector-icons';
+import * as DocumentPicker from 'expo-document-picker';
 import { queries, api } from '../lib/api';
 import { useAuth } from '../context/AuthContext';
+import { useAppTheme } from '../context/ThemeContext';
+import { getDateCalendarPreference, setDateCalendarPreference, type CalendarType } from '../lib/dateFormat';
 
 interface UserProfile {
-  id: number;
-  name: string;
+  id: string;
+  firstName?: string;
+  lastName?: string;
   email: string;
   age?: number;
   gender?: 'male' | 'female';
@@ -26,24 +32,31 @@ interface UserProfile {
   weight?: number;
   bloodType?: string;
   fitnessGoal?: 'weight_loss' | 'maintain' | 'muscle_gain';
-  subscription: 'free' | 'pro';
+  subscriptionPlan?: 'free' | 'basic' | 'premium' | 'pro';
   pdfCount: number;
+  profileImagePath?: string;
 }
 
 const BASE_URL = 'https://health-insight-ai.replit.app';
+const BLOOD_TYPE_OPTIONS = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
 
 export default function ProfileScreen({ navigation }: { navigation: any }) {
   const { t, i18n } = useTranslation();
   const queryClient = useQueryClient();
   const { logout } = useAuth();
+  const { mode: themeMode, setMode: setThemeMode, isDark, colors } = useAppTheme();
   const isArabic = i18n.language === 'ar';
 
   const [age, setAge] = useState('');
+  const [displayName, setDisplayName] = useState('');
   const [gender, setGender] = useState<'male' | 'female' | null>(null);
   const [height, setHeight] = useState('');
   const [weight, setWeight] = useState('');
   const [bloodType, setBloodType] = useState('');
+  const [profileImagePath, setProfileImagePath] = useState('');
+  const [showBloodTypeModal, setShowBloodTypeModal] = useState(false);
   const [fitnessGoal, setFitnessGoal] = useState<'weight_loss' | 'maintain' | 'muscle_gain' | null>(null);
+  const [dateCalendar, setDateCalendar] = useState<CalendarType>('gregorian');
 
   const { data: user } = useQuery({
     queryKey: ['profile'],
@@ -55,6 +68,8 @@ export default function ProfileScreen({ navigation }: { navigation: any }) {
   useEffect(() => {
     if (profile) {
       if (profile.age) setAge(profile.age.toString());
+      if (profile.firstName || profile.lastName) setDisplayName(`${profile.firstName || ''} ${profile.lastName || ''}`.trim());
+      if (profile.profileImagePath) setProfileImagePath(profile.profileImagePath);
       if (profile.gender) setGender(profile.gender);
       if (profile.height) setHeight(profile.height.toString());
       if (profile.weight) setWeight(profile.weight.toString());
@@ -62,6 +77,12 @@ export default function ProfileScreen({ navigation }: { navigation: any }) {
       if (profile.fitnessGoal) setFitnessGoal(profile.fitnessGoal);
     }
   }, [profile]);
+
+  useEffect(() => {
+    getDateCalendarPreference()
+      .then(setDateCalendar)
+      .catch(() => setDateCalendar('gregorian'));
+  }, []);
 
   const updateMutation = useMutation({
     mutationFn: (data: Partial<UserProfile>) => 
@@ -76,7 +97,11 @@ export default function ProfileScreen({ navigation }: { navigation: any }) {
   });
 
   const handleSave = () => {
+    const cleanedDisplayName = displayName.trim();
     updateMutation.mutate({
+      firstName: cleanedDisplayName || undefined,
+      lastName: undefined,
+      profileImagePath: profileImagePath || undefined,
       age: age ? parseInt(age) : undefined,
       gender: gender || undefined,
       height: height ? parseInt(height) : undefined,
@@ -86,14 +111,79 @@ export default function ProfileScreen({ navigation }: { navigation: any }) {
     });
   };
 
+  const handlePickProfileImage = async () => {
+    try {
+      const result = await DocumentPicker.getDocumentAsync({
+        type: ['image/*'],
+        copyToCacheDirectory: true,
+      });
+      if (!result.canceled && result.assets[0]) {
+        setProfileImagePath(result.assets[0].uri);
+      }
+    } catch {
+      Alert.alert(isArabic ? 'تعذر اختيار الصورة' : 'Failed to pick image');
+    }
+  };
+
+  const handleThemePress = () => {
+    Alert.alert(
+      isArabic ? 'الوضع الليلي' : 'Theme Mode',
+      isArabic ? 'اختر الوضع المناسب' : 'Choose your preferred mode',
+      [
+        {
+          text: isArabic ? 'فاتح' : 'Light',
+          onPress: async () => setThemeMode('light'),
+        },
+        {
+          text: isArabic ? 'داكن' : 'Dark',
+          onPress: async () => setThemeMode('dark'),
+        },
+        {
+          text: isArabic ? 'تلقائي' : 'System',
+          onPress: async () => setThemeMode('system'),
+        },
+        { text: isArabic ? 'إلغاء' : 'Cancel', style: 'cancel' },
+      ]
+    );
+  };
+
+  const themeBg = colors.background;
+  const cardBg = colors.card;
+  const primaryText = colors.text;
+  const secondaryText = colors.mutedText;
+
   const toggleLanguage = () => {
     const newLang = isArabic ? 'en' : 'ar';
     i18n.changeLanguage(newLang);
   };
 
+  const handleDateCalendarPress = () => {
+    Alert.alert(
+      t('dateCalendar'),
+      t('dateCalendarSelect'),
+      [
+        {
+          text: t('gregorian'),
+          onPress: async () => {
+            await setDateCalendarPreference('gregorian');
+            setDateCalendar('gregorian');
+          },
+        },
+        {
+          text: t('hijri'),
+          onPress: async () => {
+            await setDateCalendarPreference('hijri');
+            setDateCalendar('hijri');
+          },
+        },
+        { text: isArabic ? 'إلغاء' : 'Cancel', style: 'cancel' },
+      ]
+    );
+  };
+
   const getSubscriptionInfo = () => {
     if (!profile) return { color: '#64748b', remaining: 0 };
-    if (profile.subscription === 'pro') {
+    if (profile.subscriptionPlan === 'pro' || profile.subscriptionPlan === 'basic' || profile.subscriptionPlan === 'premium') {
       return { color: '#7c3aed', remaining: Infinity };
     }
     return { color: '#64748b', remaining: 3 - profile.pdfCount };
@@ -102,24 +192,35 @@ export default function ProfileScreen({ navigation }: { navigation: any }) {
   const subInfo = getSubscriptionInfo();
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+    <ScrollView style={[styles.container, { backgroundColor: themeBg }]} contentContainerStyle={styles.content}>
       <View style={styles.disclaimerSmall}>
         <Ionicons name="information-circle-outline" size={16} color="#94a3b8" />
         <Text style={styles.disclaimerSmallText}>{t('disclaimer.text')}</Text>
       </View>
       <View style={styles.header}>
-        <View style={styles.avatar}>
-          <Ionicons name="person" size={40} color="#fff" />
-        </View>
-        <Text style={styles.name}>{profile?.name || t('profile.age')}</Text>
-        <Text style={styles.email}>{profile?.email}</Text>
+        <TouchableOpacity style={styles.avatar} onPress={handlePickProfileImage} testID="button-pick-avatar">
+          {profileImagePath ? (
+            <Image source={{ uri: profileImagePath }} style={styles.avatarImage} />
+          ) : (
+            <Ionicons name="person" size={40} color="#fff" />
+          )}
+        </TouchableOpacity>
+        <TextInput
+          style={[styles.displayNameInput, { color: primaryText, borderColor: isDark ? '#334155' : '#e2e8f0', backgroundColor: isDark ? '#0f172a' : '#fff' }]}
+          value={displayName}
+          onChangeText={setDisplayName}
+          placeholder={isArabic ? 'اكتب الاسم أو اللقب المناسب' : 'Enter your name or nickname'}
+          placeholderTextColor={secondaryText}
+          testID="input-display-name"
+        />
+        <Text style={[styles.email, { color: secondaryText }]}>{profile?.email}</Text>
       </View>
 
-      <View style={styles.subscriptionCard}>
+      <View style={[styles.subscriptionCard, { backgroundColor: cardBg }]}>
         <View style={styles.subscriptionHeader}>
           <Ionicons name="diamond" size={24} color={subInfo.color} />
           <Text style={[styles.subscriptionType, { color: subInfo.color }]}>
-            {t(`subscription.${profile?.subscription || 'free'}`)}
+            {t(`subscription.${profile?.subscriptionPlan || 'free'}`)}
           </Text>
         </View>
         <Text style={styles.subscriptionRemaining}>
@@ -127,11 +228,11 @@ export default function ProfileScreen({ navigation }: { navigation: any }) {
             ? '∞' 
             : `${Math.max(0, subInfo.remaining)} ${t('subscription.remaining')}`}
         </Text>
-        {profile?.subscription !== 'pro' && (
+        {(profile?.subscriptionPlan || 'free') === 'free' && (
           <TouchableOpacity
             style={styles.upgradeButton}
             onPress={() => navigation.navigate('Subscription', {
-              currentPlan: profile?.subscription || 'free',
+              currentPlan: profile?.subscriptionPlan || 'free',
               trialEndsAt: (profile as any)?.trialEndsAt,
               isTrialActive: (profile as any)?.isTrialActive,
             })}
@@ -142,8 +243,8 @@ export default function ProfileScreen({ navigation }: { navigation: any }) {
         )}
       </View>
 
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>{t('profile.age')}</Text>
+      <View style={[styles.section, { backgroundColor: cardBg }]}>
+        <Text style={[styles.sectionTitle, { color: primaryText }]}>{t('profile.age')}</Text>
 
         <View style={styles.inputGroup}>
           <Text style={styles.label}>{t('profile.age')}</Text>
@@ -224,13 +325,16 @@ export default function ProfileScreen({ navigation }: { navigation: any }) {
 
         <View style={styles.inputGroup}>
           <Text style={styles.label}>{t('profile.bloodType')}</Text>
-          <TextInput
-            style={styles.input}
-            value={bloodType}
-            onChangeText={setBloodType}
-            placeholder="A+"
-            testID="input-blood-type"
-          />
+          <TouchableOpacity
+            style={styles.selectorInput}
+            onPress={() => setShowBloodTypeModal(true)}
+            testID="select-blood-type"
+          >
+            <Text style={[styles.selectorInputText, !bloodType && styles.selectorPlaceholder]}>
+              {bloodType || (isArabic ? 'اختر فصيلة الدم' : 'Select blood type')}
+            </Text>
+            <Ionicons name="chevron-down" size={20} color="#64748b" />
+          </TouchableOpacity>
         </View>
 
         <View style={styles.inputGroup}>
@@ -301,8 +405,8 @@ export default function ProfileScreen({ navigation }: { navigation: any }) {
         </TouchableOpacity>
       </View>
 
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>{t('settings')}</Text>
+      <View style={[styles.section, { backgroundColor: cardBg }]}>
+        <Text style={[styles.sectionTitle, { color: primaryText }]}>{t('settings')}</Text>
         
         <TouchableOpacity 
           style={styles.settingItem}
@@ -312,6 +416,30 @@ export default function ProfileScreen({ navigation }: { navigation: any }) {
           <Ionicons name="language" size={24} color="#64748b" />
           <Text style={styles.settingText}>
             {isArabic ? 'English' : 'العربية'}
+          </Text>
+          <Ionicons name="chevron-forward" size={20} color="#94a3b8" />
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.settingItem}
+          onPress={handleDateCalendarPress}
+          testID="button-date-calendar"
+        >
+          <Ionicons name="calendar-outline" size={24} color="#64748b" />
+          <Text style={styles.settingText}>
+            {t('dateCalendar')}: {dateCalendar === 'hijri' ? t('hijri') : t('gregorian')}
+          </Text>
+          <Ionicons name="chevron-forward" size={20} color="#94a3b8" />
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.settingItem}
+          onPress={handleThemePress}
+          testID="button-theme-mode"
+        >
+          <Ionicons name="moon-outline" size={24} color="#64748b" />
+          <Text style={styles.settingText}>
+            {isArabic ? 'الوضع الليلي' : 'Theme'}: {themeMode === 'dark' ? (isArabic ? 'داكن' : 'Dark') : themeMode === 'light' ? (isArabic ? 'فاتح' : 'Light') : (isArabic ? 'تلقائي' : 'System')}
           </Text>
           <Ionicons name="chevron-forward" size={20} color="#94a3b8" />
         </TouchableOpacity>
@@ -388,6 +516,36 @@ export default function ProfileScreen({ navigation }: { navigation: any }) {
         <Text style={styles.logoutText}>{isArabic ? 'تسجيل الخروج' : 'Logout'}</Text>
       </TouchableOpacity>
 
+      <Modal visible={showBloodTypeModal} transparent animationType="fade" onRequestClose={() => setShowBloodTypeModal(false)}>
+        <View style={styles.modalBackdrop}>
+          <View style={styles.bloodTypeModalCard}>
+            <Text style={styles.bloodTypeModalTitle}>
+              {isArabic ? 'اختر فصيلة الدم' : 'Select Blood Type'}
+            </Text>
+            <View style={styles.bloodTypeGrid}>
+              {BLOOD_TYPE_OPTIONS.map((type) => (
+                <TouchableOpacity
+                  key={type}
+                  style={[styles.bloodTypeOption, bloodType === type && styles.bloodTypeOptionSelected]}
+                  onPress={() => {
+                    setBloodType(type);
+                    setShowBloodTypeModal(false);
+                  }}
+                  testID={`option-blood-type-${type}`}
+                >
+                  <Text style={[styles.bloodTypeOptionText, bloodType === type && styles.bloodTypeOptionTextSelected]}>
+                    {type}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+            <TouchableOpacity style={styles.bloodTypeCloseBtn} onPress={() => setShowBloodTypeModal(false)}>
+              <Text style={styles.bloodTypeCloseBtnText}>{isArabic ? 'إلغاء' : 'Cancel'}</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
     </ScrollView>
   );
 }
@@ -412,6 +570,21 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 12
+  },
+  avatarImage: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+  },
+  displayNameInput: {
+    width: '90%',
+    borderWidth: 1,
+    borderRadius: 10,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    fontSize: 16,
+    textAlign: I18nManager.isRTL ? 'right' : 'left',
+    marginBottom: 6,
   },
   name: {
     fontSize: 20,
@@ -495,6 +668,23 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#e2e8f0',
     textAlign: I18nManager.isRTL ? 'right' : 'left'
+  },
+  selectorInput: {
+    backgroundColor: '#f8fafc',
+    borderRadius: 8,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+    flexDirection: I18nManager.isRTL ? 'row-reverse' : 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  selectorInputText: {
+    fontSize: 16,
+    color: '#1e293b',
+  },
+  selectorPlaceholder: {
+    color: '#94a3b8',
   },
   row: {
     flexDirection: I18nManager.isRTL ? 'row-reverse' : 'row',
@@ -644,5 +834,56 @@ const styles = StyleSheet.create({
     color: '#94a3b8',
     lineHeight: 16,
     textAlign: I18nManager.isRTL ? 'right' : 'left',
+  },
+  modalBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.35)',
+    justifyContent: 'center',
+    paddingHorizontal: 24,
+  },
+  bloodTypeModalCard: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 16,
+  },
+  bloodTypeModalTitle: {
+    fontSize: 17,
+    fontWeight: '700',
+    color: '#1e293b',
+    marginBottom: 12,
+    textAlign: I18nManager.isRTL ? 'right' : 'left',
+  },
+  bloodTypeGrid: {
+    flexDirection: I18nManager.isRTL ? 'row-reverse' : 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  bloodTypeOption: {
+    width: '23%',
+    borderWidth: 1,
+    borderColor: '#cbd5e1',
+    borderRadius: 8,
+    paddingVertical: 10,
+    alignItems: 'center',
+  },
+  bloodTypeOptionSelected: {
+    backgroundColor: '#3b82f6',
+    borderColor: '#3b82f6',
+  },
+  bloodTypeOptionText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#334155',
+  },
+  bloodTypeOptionTextSelected: {
+    color: '#fff',
+  },
+  bloodTypeCloseBtn: {
+    marginTop: 14,
+    alignSelf: I18nManager.isRTL ? 'flex-start' : 'flex-end',
+  },
+  bloodTypeCloseBtnText: {
+    color: '#64748b',
+    fontWeight: '600',
   },
 });

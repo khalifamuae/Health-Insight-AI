@@ -345,18 +345,41 @@ export function AllTestsTable({ tests, isLoading }: AllTestsTableProps) {
             </SelectContent>
           </Select>
 
-          <Select value={filterCategory} onValueChange={(v) => setFilterCategory(v as FilterCategory)}>
-            <SelectTrigger className="w-full text-xs" data-testid="select-category">
-              <Filter className="h-3 w-3 me-1" />
-              <SelectValue placeholder={t("category")} />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">{t("allCategories")}</SelectItem>
-              {categories.map(cat => (
-                <SelectItem key={cat} value={cat}>{t(cat)}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                className="w-full text-xs justify-center gap-1"
+                data-testid="button-category-filter"
+              >
+                <Filter className="h-3 w-3" />
+                {filterCategory === "all" ? t("allCategories") : t(filterCategory)}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-56 p-2">
+              <div className="space-y-1">
+                <Button
+                  variant={filterCategory === "all" ? "default" : "ghost"}
+                  size="sm"
+                  className="w-full justify-start"
+                  onClick={() => setFilterCategory("all")}
+                >
+                  {t("allCategories")}
+                </Button>
+                {categories.map((cat) => (
+                  <Button
+                    key={cat}
+                    variant={filterCategory === cat ? "default" : "ghost"}
+                    size="sm"
+                    className="w-full justify-start"
+                    onClick={() => setFilterCategory(cat)}
+                  >
+                    {t(cat)}
+                  </Button>
+                ))}
+              </div>
+            </PopoverContent>
+          </Popover>
 
           <Select value={filterStatus} onValueChange={(v) => setFilterStatus(v as FilterStatus)}>
             <SelectTrigger className="w-full text-xs" data-testid="select-status">

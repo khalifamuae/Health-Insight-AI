@@ -19,6 +19,7 @@ interface UserHealthData {
   proteinPreference: string | null;
   proteinPreferences: string[] | null;
   carbPreferences: string[] | null;
+  customTargetCalories?: number | null;
   language: string;
   testResults: {
     testId?: string;
@@ -222,7 +223,13 @@ export async function generateDietPlan(userData: UserHealthData): Promise<DietPl
 
   const bmr = Math.round(calculateBMR(weight, height, age, gender));
   const tdee = calculateTDEE(bmr, activityLevel);
-  const { target: targetCalories, delta } = getTargetCalories(tdee, bmr, goal, hasSevereDeficiency);
+  const { target: autoTargetCalories } = getTargetCalories(tdee, bmr, goal, hasSevereDeficiency);
+  const hasCustomTargetCalories = mealPreference === "custom_macros" && typeof userData.customTargetCalories === "number" && Number.isFinite(userData.customTargetCalories);
+  const normalizedCustomTargetCalories = hasCustomTargetCalories
+    ? Math.max(800, Math.min(6000, Math.round(userData.customTargetCalories as number)))
+    : null;
+  const targetCalories = normalizedCustomTargetCalories ?? autoTargetCalories;
+  const delta = targetCalories - tdee;
   const macros = getMacroTargets(targetCalories, goal, mealPreference, weight);
   const tef = calculateTEF(targetCalories, macros.protein.grams, macros.carbs.grams, macros.fats.grams);
   const fiberTarget = calculateFiberTarget(targetCalories, gender);
@@ -394,6 +401,14 @@ export async function generateDietPlan(userData: UserHealthData): Promise<DietPl
       ? `\n- لا تقترح أي خطة غذائية تقل سعراتها عن BMR (${bmr} سعرة). هذا الحد الأدنى الآمن لوظائف الجسم الحيوية.`
       : `\n- NEVER suggest a diet plan below BMR (${bmr} kcal). This is the minimum safe threshold for vital body functions.`;
 
+  const customCalorieInstruction = hasCustomTargetCalories && normalizedCustomTargetCalories
+    ? isArabic
+      ? `\n- ⚠️ سعرات مخصصة من المستخدم: ${normalizedCustomTargetCalories} سعرة/يوم.
+- قاعدة إلزامية: متوسط مجموع سعرات اليوم (فطور + غداء + عشاء + سناك) يجب أن يكون أقل من أو يساوي ${normalizedCustomTargetCalories} سعرة، ولا يتجاوزها.`
+      : `\n- ⚠️ User-selected custom calories: ${normalizedCustomTargetCalories} kcal/day.
+- Mandatory rule: The average total daily calories (breakfast + lunch + dinner + snacks) must be less than or equal to ${normalizedCustomTargetCalories} kcal and must not exceed it.`
+    : "";
+
   const bmiCategoryLabels: Record<string, { en: string; ar: string }> = {
     underweight: { en: "Underweight", ar: "أقل من الوزن الطبيعي" },
     healthy: { en: "Healthy Weight", ar: "وزن صحي" },
@@ -455,6 +470,7 @@ BMI: ${bmi} (${bmiCategoryLabels[bmiCategory].ar})
 البروتين: ${macros.protein.grams}جم | الكاربوهيدرات: ${macros.carbs.grams}جم | الدهون: ${macros.fats.grams}جم
 الألياف: ${fiberTarget}جم | الماء: ${waterTarget} لتر | TEF: ${tef} سعرة
 ${toneInstruction}
+${customCalorieInstruction}
 
 تعليمات البروتوكول:
 - هذا البروتوكول الغذائي مصمم خصيصاً لهذا المستخدم بناءً على: الطول (${height}سم)، الوزن (${weight}كجم)، الجنس (${gender === "male" ? "ذكر" : "أنثى"})، العمر (${age})، الهدف (${goalDescriptions[goal].ar})، ونتائج الفحوصات المخبرية
@@ -577,6 +593,7 @@ Target Calories: ${targetCalories} kcal/day
 Protein: ${macros.protein.grams}g | Carbs: ${macros.carbs.grams}g | Fats: ${macros.fats.grams}g
 Fiber: ${fiberTarget}g | Water: ${waterTarget}L | TEF: ${tef} kcal
 ${toneInstruction}
+${customCalorieInstruction}
 
 Protocol Instructions:
 - This dietary protocol MUST be custom-designed for this specific user based on: Height (${height}cm), Weight (${weight}kg), Gender (${gender}), Age (${age}), Goal (${goalDescriptions[goal].en}), and their lab test results
@@ -685,7 +702,8 @@ ${testsDescription || "لا توجد نتائج تحاليل متوفرة"}
 7. عالج النواقص من خلال الغذاء الطبيعي أولاً
 8. اقترح مكملات فقط عند الحاجة الفعلية (بلغة إرشادية)
 9. قدم بالضبط 5 خيارات متنوعة لكل وجبة (فطور = 5، غداء = 5، عشاء = 5، وجبات خفيفة = 5) المجموع 20 خيار - لا تقدم أقل من 5
-10. أضف المراجع العلمية في "references"`
+10. أضف المراجع العلمية في "references"
+${hasCustomTargetCalories && normalizedCustomTargetCalories ? `11. شرط إلزامي: لا يتجاوز متوسط مجموع سعرات اليوم ${normalizedCustomTargetCalories} سعرة` : ""}`
     : `User data:
 - Age: ${age} years
 - Gender: ${gender}
@@ -723,7 +741,8 @@ Requirements:
 7. Treat deficiencies through natural food first
 8. Suggest supplements ONLY when truly needed (use guiding language)
 9. Provide EXACTLY 5 varied options for each meal (breakfast = 5, lunch = 5, dinner = 5, snacks = 5) Total 20 options - do NOT provide fewer than 5
-10. Add scientific references in "references"`;
+10. Add scientific references in "references"
+${hasCustomTargetCalories && normalizedCustomTargetCalories ? `11. Mandatory: Keep average total daily calories at or below ${normalizedCustomTargetCalories} kcal` : ""}`;
 
   let knowledgeContext = "";
   try {

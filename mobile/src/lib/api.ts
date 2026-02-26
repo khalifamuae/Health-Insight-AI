@@ -122,13 +122,13 @@ export const api = {
     const cookie = await getSessionCookie();
     const token = await getAuthToken();
     const formData = new FormData();
-    formData.append('pdf', {
+    formData.append('file', {
       uri: file.uri,
       name: file.name,
-      type: 'application/pdf'
+      type: file.type
     } as any);
 
-    const response = await fetch(`${API_BASE_URL}/api/analyze-pdf`, {
+    const response = await fetch(`${API_BASE_URL}/api/analyze-upload`, {
       method: 'POST',
       headers: {
         ...(cookie ? { Cookie: cookie } : {}),
@@ -151,6 +151,7 @@ export const api = {
 export const queries = {
   profile: () => api.get('/api/profile'),
   tests: () => api.get('/api/tests'),
+  testsHistory: () => api.get('/api/tests/history'),
   allTests: () => api.get('/api/tests/all'),
   reminders: () => api.get('/api/reminders'),
   testDefinitions: () => api.get('/api/test-definitions'),

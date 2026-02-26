@@ -3,22 +3,164 @@ import { createServer, type Server } from "http";
 import multer from "multer";
 import bcrypt from "bcryptjs";
 import { storage } from "./storage";
-import { setupAuth, isAuthenticated, registerAuthRoutes } from "./replit_integrations/auth";
+import { setupAuth, isAuthenticated, registerAuthRoutes, createApiToken } from "./replit_integrations/auth";
 import { authStorage } from "./replit_integrations/auth/storage";
 import { analyzeLabPdf } from "./pdfAnalyzer";
+import { analyzeInBodyPdf, analyzeInBodyImage } from "./inbodyAnalyzer";
 import { generateDietPlan } from "./dietPlanGenerator";
 import { getPrivacyPolicyHTML, getPrivacyPolicyArabicHTML, getTermsOfServiceHTML, getTermsOfServiceArabicHTML, getSupportPageHTML, getAccountDeletionHTML } from "./legalPages";
 import { desc, eq, and, gte, sql } from "drizzle-orm";
 import { db } from "./db";
-import { userProfiles } from "@shared/schema";
+import { userProfiles, testDefinitions, type TestDefinition } from "@shared/schema";
 import crypto from "crypto";
 import { emailVerificationCodes } from "@shared/schema";
 import { getResendClient } from "./resendClient";
 
 const upload = multer({ 
   storage: multer.memoryStorage(),
-  limits: { fileSize: 10 * 1024 * 1024 } // 10MB limit
+  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB limit
+  fileFilter: (_req, file, cb) => {
+    const isPdfMime = file.mimetype === "application/pdf";
+    const isPdfName = file.originalname.toLowerCase().endsWith(".pdf");
+    if (isPdfMime && isPdfName) return cb(null, true);
+    cb(new Error("Only PDF files are allowed"));
+  }
 });
+
+const uploadReport = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 10 * 1024 * 1024 },
+  fileFilter: (_req, file, cb) => {
+    const isPdfMime = file.mimetype === "application/pdf";
+    const isPdfName = file.originalname.toLowerCase().endsWith(".pdf");
+    const isImageMime = file.mimetype.startsWith("image/");
+    if ((isPdfMime && isPdfName) || isImageMime) return cb(null, true);
+    cb(new Error("Only PDF or image files are allowed"));
+  }
+});
+
+function isPdfBuffer(buffer: Buffer): boolean {
+  return buffer.length >= 5 && buffer.subarray(0, 5).toString("ascii") === "%PDF-";
+}
+
+function isSupportedImageMime(mimeType: string): boolean {
+  return mimeType.startsWith("image/");
+}
+
+function constantTimeEquals(a: string, b: string): boolean {
+  const aBuf = Buffer.from(a);
+  const bBuf = Buffer.from(b);
+  if (aBuf.length !== bBuf.length) return false;
+  return crypto.timingSafeEqual(aBuf, bBuf);
+}
+
+const INBODY_TEST_DEFINITIONS: Pick<TestDefinition, "id" | "nameEn" | "nameAr" | "category" | "level" | "unit" | "normalRangeMin" | "normalRangeMax" | "normalRangeText" | "recheckMonths" | "descriptionEn" | "descriptionAr" | "shortName">[] = [
+  {
+    id: "inbody-weight",
+    nameEn: "InBody Weight",
+    nameAr: "وزن الجسم (InBody)",
+    shortName: "Weight",
+    category: "special",
+    level: 3,
+    unit: "kg",
+    normalRangeMin: null,
+    normalRangeMax: null,
+    normalRangeText: null,
+    recheckMonths: 1,
+    descriptionEn: "Body weight measured by InBody scan.",
+    descriptionAr: "وزن الجسم كما يظهر في تقرير الإن بودي.",
+  },
+  {
+    id: "inbody-total-body-water",
+    nameEn: "InBody Total Body Water",
+    nameAr: "ماء الجسم الكلي (InBody)",
+    shortName: "TBW",
+    category: "special",
+    level: 4,
+    unit: "%",
+    normalRangeMin: null,
+    normalRangeMax: null,
+    normalRangeText: null,
+    recheckMonths: 1,
+    descriptionEn: "Total body water percentage from InBody report.",
+    descriptionAr: "نسبة الماء في الجسم من تقرير الإن بودي.",
+  },
+  {
+    id: "inbody-body-fat-percentage",
+    nameEn: "InBody Body Fat Percentage",
+    nameAr: "نسبة دهون الجسم (InBody)",
+    shortName: "PBF",
+    category: "special",
+    level: 5,
+    unit: "%",
+    normalRangeMin: null,
+    normalRangeMax: null,
+    normalRangeText: null,
+    recheckMonths: 1,
+    descriptionEn: "Body fat percentage (PBF) from InBody report.",
+    descriptionAr: "نسبة الدهون في الجسم من تقرير الإن بودي.",
+  },
+  {
+    id: "inbody-skeletal-muscle-mass",
+    nameEn: "InBody Skeletal Muscle Mass",
+    nameAr: "كتلة العضلات الهيكلية (InBody)",
+    shortName: "SMM",
+    category: "special",
+    level: 5,
+    unit: "kg",
+    normalRangeMin: null,
+    normalRangeMax: null,
+    normalRangeText: null,
+    recheckMonths: 1,
+    descriptionEn: "Skeletal muscle mass from InBody report.",
+    descriptionAr: "كتلة العضلات من تقرير الإن بودي.",
+  },
+  {
+    id: "inbody-bmi",
+    nameEn: "InBody BMI",
+    nameAr: "مؤشر كتلة الجسم (InBody)",
+    shortName: "BMI",
+    category: "special",
+    level: 4,
+    unit: "kg/m²",
+    normalRangeMin: 18.5,
+    normalRangeMax: 24.9,
+    normalRangeText: null,
+    recheckMonths: 1,
+    descriptionEn: "Body Mass Index from InBody report.",
+    descriptionAr: "مؤشر كتلة الجسم كما يظهر في تقرير الإن بودي.",
+  },
+  {
+    id: "inbody-visceral-fat-level",
+    nameEn: "InBody Visceral Fat Level",
+    nameAr: "مستوى الدهون الحشوية (InBody)",
+    shortName: "VFL",
+    category: "special",
+    level: 6,
+    unit: "level",
+    normalRangeMin: 1,
+    normalRangeMax: 9,
+    normalRangeText: null,
+    recheckMonths: 1,
+    descriptionEn: "Visceral fat level from InBody report.",
+    descriptionAr: "مستوى الدهون الحشوية من تقرير الإن بودي.",
+  },
+  {
+    id: "inbody-bmr",
+    nameEn: "InBody Basal Metabolic Rate",
+    nameAr: "معدل الأيض الأساسي (InBody)",
+    shortName: "BMR",
+    category: "special",
+    level: 4,
+    unit: "kcal",
+    normalRangeMin: null,
+    normalRangeMax: null,
+    normalRangeText: null,
+    recheckMonths: 1,
+    descriptionEn: "Basal metabolic rate from InBody report.",
+    descriptionAr: "معدل الحرق الأساسي كما يظهر في تقرير الإن بودي.",
+  },
+];
 
 // Simple in-memory rate limiter
 const rateLimitStore = new Map<string, { count: number; resetAt: number }>();
@@ -235,15 +377,16 @@ export async function registerRoutes(
       const user = {
         claims: { sub: userId, email, first_name: firstName.trim(), last_name: lastName.trim(), exp: Math.floor(Date.now()/1000) + 86400 * 30 },
         expires_at: Math.floor(Date.now()/1000) + 86400 * 30,
-        access_token: `token_${userId}`,
-        refresh_token: `refresh_${userId}`
+        access_token: crypto.randomUUID(),
+        refresh_token: crypto.randomUUID()
       };
 
       req.login(user, (err: any) => {
         if (err) return res.status(500).json({ error: "Registration failed" });
+        const apiToken = createApiToken(userId);
         res.json({ 
           success: true, 
-          token: `token_${userId}`,
+          token: apiToken,
           user: { id: userId, email, firstName: firstName.trim(), lastName: lastName.trim(), subscription: profile.subscriptionPlan }
         });
       });
@@ -275,15 +418,16 @@ export async function registerRoutes(
       const user = {
         claims: { sub: profile.id, email: profile.email, first_name: profile.firstName || "", last_name: profile.lastName || "", exp: Math.floor(Date.now()/1000) + 86400 * 30 },
         expires_at: Math.floor(Date.now()/1000) + 86400 * 30,
-        access_token: `token_${profile.id}`,
-        refresh_token: `refresh_${profile.id}`
+        access_token: crypto.randomUUID(),
+        refresh_token: crypto.randomUUID()
       };
 
       req.login(user, (err: any) => {
         if (err) return res.status(500).json({ error: "Login failed" });
+        const apiToken = createApiToken(profile.id);
         res.json({
           success: true,
-          token: `token_${profile.id}`,
+          token: apiToken,
           user: { id: profile.id, email: profile.email, firstName: profile.firstName || "", lastName: profile.lastName || "", subscription: profile.subscriptionPlan }
         });
       });
@@ -351,10 +495,13 @@ export async function registerRoutes(
   app.patch("/api/profile", isAuthenticated, async (req: any, res: Response) => {
     try {
       const userId = req.user.claims.sub;
-      const { phone, age, weight, height, gender, fitnessGoal, activityLevel, mealPreference, hasAllergies, allergies, proteinPreference, proteinPreferences, carbPreferences, bloodType } = req.body;
+      const { phone, age, weight, height, gender, fitnessGoal, activityLevel, mealPreference, hasAllergies, allergies, proteinPreference, proteinPreferences, carbPreferences, bloodType, firstName, lastName, profileImagePath } = req.body;
       
       const profile = await storage.upsertUserProfile({
         id: userId,
+        firstName,
+        lastName,
+        profileImagePath,
         phone,
         age,
         weight,
@@ -411,11 +558,27 @@ export async function registerRoutes(
       if (!access.hasAccess) {
         return res.status(403).json({ error: "SUBSCRIPTION_REQUIRED", message: access.reason, messageAr: access.reasonAr });
       }
-      const tests = await storage.getTestResultsByUser(userId);
+      const tests = await storage.getLatestTestResultsByUser(userId);
       res.json(tests);
     } catch (error) {
       console.error("Error fetching tests:", error);
       res.status(500).json({ error: "Failed to fetch tests" });
+    }
+  });
+
+  // Full history (used for result comparison over time)
+  app.get("/api/tests/history", isAuthenticated, async (req: any, res: Response) => {
+    try {
+      const userId = req.user.claims.sub;
+      const access = await checkSubscriptionAccess(userId);
+      if (!access.hasAccess) {
+        return res.status(403).json({ error: "SUBSCRIPTION_REQUIRED", message: access.reason, messageAr: access.reasonAr });
+      }
+      const tests = await storage.getTestResultsByUser(userId);
+      res.json(tests);
+    } catch (error) {
+      console.error("Error fetching test history:", error);
+      res.status(500).json({ error: "Failed to fetch test history" });
     }
   });
 
@@ -513,7 +676,7 @@ export async function registerRoutes(
       if (!access.hasAccess) {
         return res.status(403).json({ error: "SUBSCRIPTION_REQUIRED", message: access.reason, messageAr: access.reasonAr });
       }
-      const tests = await storage.getTestResultsByUser(userId);
+      const tests = await storage.getLatestTestResultsByUser(userId);
       const userReminders = await storage.getRemindersByUser(userId);
       const pdfs = await storage.getUploadedPdfsByUser(userId);
       
@@ -747,6 +910,56 @@ export async function registerRoutes(
     }
   }
 
+  async function ensureInBodyDefinitions() {
+    await db.insert(testDefinitions)
+      .values(INBODY_TEST_DEFINITIONS)
+      .onConflictDoNothing({ target: testDefinitions.id });
+  }
+
+  async function saveInBodyMetricsFromExtraction(
+    userId: string,
+    fileName: string,
+    extractedMetrics: Array<{ testId: string; value: number | null; valueText: string | null; testDate: string | null; }>
+  ) {
+    await ensureInBodyDefinitions();
+    const definitions = await storage.getTestDefinitions();
+    const defMap = new Map(definitions.map(d => [d.id, d]));
+    const defaultTestDate = new Date();
+    let metricsCreated = 0;
+
+    for (const metric of extractedMetrics) {
+      const def = defMap.get(metric.testId);
+      if (!def) continue;
+
+      let status: "normal" | "low" | "high" = "normal";
+      if (def.normalRangeMin !== null && def.normalRangeMax !== null && metric.value !== null) {
+        if (metric.value < def.normalRangeMin) status = "low";
+        else if (metric.value > def.normalRangeMax) status = "high";
+      }
+
+      const testDate = metric.testDate ? new Date(metric.testDate) : defaultTestDate;
+
+      await storage.createTestResult({
+        userId,
+        testId: metric.testId,
+        value: metric.value,
+        valueText: metric.valueText,
+        status,
+        testDate,
+        pdfFileName: fileName,
+      });
+      metricsCreated++;
+
+      if (def.recheckMonths) {
+        const dueDate = new Date(testDate);
+        dueDate.setMonth(dueDate.getMonth() + def.recheckMonths);
+        await storage.createReminder({ userId, testId: metric.testId, dueDate });
+      }
+    }
+
+    return metricsCreated;
+  }
+
   // PDF upload and analysis
   app.post("/api/analyze-pdf", isAuthenticated, upload.single("pdf"), async (req: any, res: Response) => {
     try {
@@ -755,6 +968,9 @@ export async function registerRoutes(
 
       if (!file) {
         return res.status(400).json({ error: "No PDF file uploaded" });
+      }
+      if (!isPdfBuffer(file.buffer)) {
+        return res.status(400).json({ error: "Invalid PDF file format" });
       }
 
       // Check subscription limits
@@ -805,6 +1021,150 @@ export async function registerRoutes(
     }
   });
 
+  // InBody PDF upload and analysis
+  app.post("/api/analyze-inbody", isAuthenticated, upload.single("pdf"), async (req: any, res: Response) => {
+    try {
+      const userId = req.user.claims.sub;
+      const file = req.file;
+
+      if (!file) {
+        return res.status(400).json({ error: "No PDF file uploaded" });
+      }
+      if (!isPdfBuffer(file.buffer)) {
+        return res.status(400).json({ error: "Invalid PDF file format" });
+      }
+
+      const profile = await storage.getUserProfile(userId);
+      const plan = profile?.subscriptionPlan || "free";
+      const filesUploaded = profile?.filesUploaded || 0;
+      const limits: Record<string, number> = { free: 3, basic: 20, premium: Infinity, pro: Infinity };
+      if (filesUploaded >= limits[plan]) {
+        return res.status(403).json({
+          error: "Upload limit reached",
+          message: "Please upgrade your subscription to upload more files"
+        });
+      }
+
+      const normalizedFileName = file.originalname.toLowerCase().includes("inbody")
+        ? file.originalname
+        : `InBody-${file.originalname}`;
+
+      const pdfRecord = await storage.createUploadedPdf({
+        userId,
+        fileName: normalizedFileName,
+        filePath: "",
+        status: "processing",
+      });
+
+      await storage.incrementFilesUploaded(userId);
+
+      try {
+        const extractedMetrics = await analyzeInBodyPdf(file.buffer);
+        await storage.updateUploadedPdfStatus(pdfRecord.id, "processing");
+        const metricsCreated = await saveInBodyMetricsFromExtraction(userId, normalizedFileName, extractedMetrics);
+
+        await storage.updateUploadedPdfStatus(pdfRecord.id, "success", metricsCreated);
+
+        res.json({
+          success: true,
+          testsExtracted: metricsCreated,
+          pdfId: pdfRecord.id,
+          message: `Successfully extracted ${metricsCreated} InBody metrics`,
+        });
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : "Unknown error";
+        await storage.updateUploadedPdfStatus(pdfRecord.id, "failed", undefined, errorMessage);
+        res.status(500).json({
+          error: "Failed to analyze InBody PDF",
+          pdfId: pdfRecord.id,
+          message: "The file was saved but could not be processed. You can retry later."
+        });
+      }
+    } catch (error) {
+      console.error("Error uploading InBody PDF:", error);
+      res.status(500).json({ error: "Failed to upload InBody PDF" });
+    }
+  });
+
+  // Unified upload endpoint: PDF => Lab analysis, Image => InBody analysis
+  app.post("/api/analyze-upload", isAuthenticated, uploadReport.single("file"), async (req: any, res: Response) => {
+    try {
+      const userId = req.user.claims.sub;
+      const file = req.file;
+
+      if (!file) return res.status(400).json({ error: "No file uploaded" });
+
+      const isPdf = file.mimetype === "application/pdf" || file.originalname.toLowerCase().endsWith(".pdf");
+      const isImage = isSupportedImageMime(file.mimetype);
+      if (!isPdf && !isImage) {
+        return res.status(400).json({ error: "Only PDF or image files are allowed" });
+      }
+      if (isPdf && !isPdfBuffer(file.buffer)) {
+        return res.status(400).json({ error: "Invalid PDF file format" });
+      }
+
+      const profile = await storage.getUserProfile(userId);
+      const plan = profile?.subscriptionPlan || "free";
+      const filesUploaded = profile?.filesUploaded || 0;
+      const limits: Record<string, number> = { free: 3, basic: 20, premium: Infinity, pro: Infinity };
+      if (filesUploaded >= limits[plan]) {
+        return res.status(403).json({
+          error: "Upload limit reached",
+          message: "Please upgrade your subscription to upload more files"
+        });
+      }
+
+      const mode: "lab" | "inbody" = isImage ? "inbody" : "lab";
+      const normalizedFileName = mode === "inbody" && !file.originalname.toLowerCase().includes("inbody")
+        ? `InBody-${file.originalname}`
+        : file.originalname;
+
+      const fileRecord = await storage.createUploadedPdf({
+        userId,
+        fileName: normalizedFileName,
+        filePath: "",
+        status: "processing",
+      });
+      await storage.incrementFilesUploaded(userId);
+
+      try {
+        await storage.updateUploadedPdfStatus(fileRecord.id, "processing");
+        let testsExtracted = 0;
+
+        if (mode === "lab") {
+          const result = await processPdfFromRecord(fileRecord.id, userId, file.buffer, normalizedFileName);
+          testsExtracted = result.testsExtracted;
+        } else {
+          const extractedMetrics = await analyzeInBodyImage(file.buffer, file.mimetype || "image/jpeg");
+          testsExtracted = await saveInBodyMetricsFromExtraction(userId, normalizedFileName, extractedMetrics);
+          await storage.updateUploadedPdfStatus(fileRecord.id, "success", testsExtracted);
+        }
+
+        res.json({
+          success: true,
+          mode,
+          testsExtracted,
+          pdfId: fileRecord.id,
+          message: mode === "inbody"
+            ? `Successfully extracted ${testsExtracted} InBody metrics`
+            : `Successfully extracted ${testsExtracted} test results`,
+        });
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : "Unknown error";
+        await storage.updateUploadedPdfStatus(fileRecord.id, "failed", undefined, errorMessage);
+        res.status(500).json({
+          error: "Failed to analyze uploaded file",
+          mode,
+          pdfId: fileRecord.id,
+          message: "The file was saved but could not be processed. You can retry later."
+        });
+      }
+    } catch (error) {
+      console.error("Error uploading file:", error);
+      res.status(500).json({ error: "Failed to upload file" });
+    }
+  });
+
   // Retry processing a failed PDF (requires file to be re-uploaded)
   app.post("/api/uploaded-pdfs/:id/retry", isAuthenticated, upload.single("pdf"), async (req: any, res: Response) => {
     try {
@@ -814,6 +1174,9 @@ export async function registerRoutes(
 
       if (!file) {
         return res.status(400).json({ error: "No PDF file uploaded for retry" });
+      }
+      if (!isPdfBuffer(file.buffer)) {
+        return res.status(400).json({ error: "Invalid PDF file format" });
       }
 
       // Get the existing PDF record
@@ -850,6 +1213,11 @@ export async function registerRoutes(
     try {
       const userId = req.user.claims.sub;
       const language = req.body.language || "ar";
+      const rawCustomTargetCalories = req.body.customTargetCalories;
+      const parsedCustomTargetCalories = Number.parseInt(String(rawCustomTargetCalories ?? ""), 10);
+      const customTargetCalories = Number.isFinite(parsedCustomTargetCalories) && parsedCustomTargetCalories >= 800 && parsedCustomTargetCalories <= 6000
+        ? parsedCustomTargetCalories
+        : null;
 
       const profile = await storage.getUserProfile(userId);
 
@@ -920,6 +1288,7 @@ export async function registerRoutes(
             proteinPreference: profile?.proteinPreference ?? "mixed",
             proteinPreferences: profile?.proteinPreferences ?? [],
             carbPreferences: profile?.carbPreferences ?? [],
+            customTargetCalories,
             language,
             testResults: testResultsData,
           });
@@ -1064,39 +1433,34 @@ export async function registerRoutes(
       if (!productId || !plan || !platform) {
         return res.status(400).json({ error: "Missing required fields" });
       }
+      if (platform !== "ios" && platform !== "android") {
+        return res.status(400).json({ error: "Invalid platform" });
+      }
 
       if (plan !== 'pro') {
         return res.status(400).json({ error: "Invalid plan" });
       }
 
       const period = req.body.period || 'monthly';
+      if (period !== "monthly" && period !== "yearly") {
+        return res.status(400).json({ error: "Invalid billing period" });
+      }
+      if (!receiptData || typeof receiptData !== "string" || !receiptData.trim()) {
+        return res.status(400).json({ error: "Receipt data is required" });
+      }
 
       console.log(`[IAP] Purchase request: user=${userId}, product=${productId}, plan=${plan}, period=${period}, platform=${platform}`);
-
-      // SECURITY: Validate receipt with Apple/Google servers
-      if (platform === 'ios' && receiptData) {
-        try {
-          // TODO: Implement Apple receipt validation
-          // const verifyUrl = process.env.NODE_ENV === 'production' 
-          //   ? 'https://buy.itunes.apple.com/verifyReceipt'
-          //   : 'https://sandbox.itunes.apple.com/verifyReceipt';
-          // const appleResponse = await fetch(verifyUrl, { ... });
-          console.warn('[IAP] WARNING: Apple receipt validation not yet implemented - accepting purchase on trust');
-        } catch (err) {
-          console.error('[IAP] Apple receipt validation failed:', err);
-          return res.status(400).json({ error: "Receipt validation failed" });
-        }
-      } else if (platform === 'android' && receiptData) {
-        try {
-          // TODO: Implement Google Play receipt validation
-          // Use Google Play Developer API - purchases.subscriptions.get
-          console.warn('[IAP] WARNING: Google receipt validation not yet implemented - accepting purchase on trust');
-        } catch (err) {
-          console.error('[IAP] Google receipt validation failed:', err);
-          return res.status(400).json({ error: "Receipt validation failed" });
-        }
-      } else if (!receiptData) {
-        console.warn('[IAP] WARNING: No receipt data provided for purchase');
+      if (process.env.NODE_ENV === "production") {
+        return res.status(503).json({
+          error: "RECEIPT_VALIDATION_REQUIRED",
+          message: "Purchase receipt validation is required and not configured on this server.",
+        });
+      }
+      if (process.env.ALLOW_UNVERIFIED_IAP !== "true") {
+        return res.status(503).json({
+          error: "RECEIPT_VALIDATION_REQUIRED",
+          message: "Set ALLOW_UNVERIFIED_IAP=true only in local development to test purchases.",
+        });
       }
 
       const expiresAt = new Date();
@@ -1167,7 +1531,7 @@ export async function registerRoutes(
         return res.status(503).json({ error: "Webhook not configured" });
       }
       const providedSecret = req.headers['x-webhook-secret'];
-      if (providedSecret !== webhookSecret) {
+      if (typeof providedSecret !== "string" || !constantTimeEquals(providedSecret, webhookSecret)) {
         console.warn('[IAP Webhook] Unauthorized webhook attempt');
         return res.status(403).json({ error: "Unauthorized" });
       }

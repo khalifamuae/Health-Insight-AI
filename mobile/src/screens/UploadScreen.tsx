@@ -6,48 +6,59 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   Alert,
-  I18nManager
+  I18nManager,
 } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import * as DocumentPicker from 'expo-document-picker';
 import { Ionicons } from '@expo/vector-icons';
 import { api } from '../lib/api';
+import { useAppTheme } from '../context/ThemeContext';
 
 export default function UploadScreen({ navigation }: any) {
   const { t, i18n } = useTranslation();
+  const { colors, isDark } = useAppTheme();
   const isArabic = i18n.language === 'ar';
   const queryClient = useQueryClient();
   const [selectedFile, setSelectedFile] = useState<DocumentPicker.DocumentPickerAsset | null>(null);
 
+  const uploadTitleText = isArabic ? 'رفع الملف او الصوره' : 'Upload File or Image';
+  const uploadSupportText = isArabic
+    ? 'ملاحظة: يمكن رفع صورة أو ملف PDF للتحليل أو فحص InBody'
+    : 'Note: You can upload an image or PDF file for analysis or InBody';
+
   const uploadMutation = useMutation({
-    mutationFn: (file: { uri: string; name: string; type: string }) => 
-      api.uploadPdf(file),
-    onSuccess: () => {
+    mutationFn: (file: { uri: string; name: string; type: string }) => api.uploadPdf(file),
+    onSuccess: (response: any) => {
       queryClient.invalidateQueries({ queryKey: ['userTests'] });
+      queryClient.invalidateQueries({ queryKey: ['allTests'] });
+      queryClient.invalidateQueries({ queryKey: ['testsHistory'] });
       queryClient.invalidateQueries({ queryKey: ['reminders'] });
+      const isInBodyMode = response?.mode === 'inbody';
       Alert.alert(
-        t('normal'),
-        t('subtitle'),
+        isArabic ? 'تم التحليل بنجاح' : 'Analysis Completed',
+        isInBodyMode
+          ? (isArabic ? 'تمت إضافة قياسات InBody إلى فحوصاتي.' : 'InBody metrics were added to My Tests.')
+          : (isArabic ? 'تمت إضافة نتائج التحليل إلى فحوصاتي.' : 'Your lab results were added to My Tests.'),
         [{ text: t('disclaimer.understand'), onPress: () => navigation.navigate('Tests') }]
       );
     },
     onError: (error: any) => {
       Alert.alert(t('errors.uploadFailed'), error.message);
-    }
+    },
   });
 
   const pickDocument = async () => {
     try {
       const result = await DocumentPicker.getDocumentAsync({
-        type: 'application/pdf',
-        copyToCacheDirectory: true
+        type: ['application/pdf', 'image/*'],
+        copyToCacheDirectory: true,
       });
 
       if (!result.canceled && result.assets[0]) {
         setSelectedFile(result.assets[0]);
       }
-    } catch (error) {
+    } catch {
       Alert.alert(t('errors.uploadFailed'));
     }
   };
@@ -57,45 +68,35 @@ export default function UploadScreen({ navigation }: any) {
       uploadMutation.mutate({
         uri: selectedFile.uri,
         name: selectedFile.name,
-        type: 'application/pdf'
+        type: selectedFile.mimeType || 'application/octet-stream',
       });
     }
   };
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       <View style={styles.content}>
-        <View style={styles.disclaimerSmall}>
-          <Ionicons name="information-circle-outline" size={16} color="#94a3b8" />
-          <Text style={styles.disclaimerSmallText}>{t('disclaimer.text')}</Text>
-        </View>
-        <View style={styles.iconContainer}>
-          <Ionicons name="document-text" size={80} color="#3b82f6" />
+        <View style={[styles.iconContainer, { backgroundColor: isDark ? '#1e3a8a' : '#eff6ff' }]}>
+          <Ionicons name="document-text" size={80} color={colors.primary} />
         </View>
 
-        <Text style={styles.title}>{t('uploadPdf')}</Text>
-        <Text style={styles.subtitle}>{t('subtitle')}</Text>
+        <Text style={[styles.title, { color: colors.text }]}>{uploadTitleText}</Text>
+        <Text style={[styles.subtitle, { color: colors.mutedText }]}>{uploadSupportText}</Text>
 
-        <View style={styles.securityBadge}>
+        <View style={[styles.securityBadge, { backgroundColor: isDark ? '#14532d' : '#f0fdf4' }]}>
           <Ionicons name="lock-closed" size={16} color="#16a34a" />
-          <Text style={styles.securityBadgeText}>
-            {isArabic ? 'PDF فقط – مشفر وآمن' : 'PDF Only – Encrypted & Secure'}
-          </Text>
+          <Text style={styles.securityBadgeText}>{isArabic ? 'مشفر و امن' : 'Encrypted and Secure'}</Text>
         </View>
 
-        <TouchableOpacity
-          style={styles.selectButton}
-          onPress={pickDocument}
-          testID="button-select-file"
-        >
-          <Ionicons name="folder-open" size={24} color="#3b82f6" />
-          <Text style={styles.selectButtonText}>{t('selectFile')}</Text>
+        <TouchableOpacity style={[styles.selectButton, { backgroundColor: colors.card, borderColor: colors.primary }]} onPress={pickDocument} testID="button-select-file">
+          <Ionicons name="folder-open" size={24} color={colors.primary} />
+          <Text style={[styles.selectButtonText, { color: colors.primary }]}>{isArabic ? 'اختر الملف' : 'Choose File'}</Text>
         </TouchableOpacity>
 
         {selectedFile && (
-          <View style={styles.fileCard}>
-            <Ionicons name="document" size={24} color="#64748b" />
-            <Text style={styles.fileName} numberOfLines={1}>
+          <View style={[styles.fileCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            <Ionicons name="document" size={24} color={colors.mutedText} />
+            <Text style={[styles.fileName, { color: colors.text }]} numberOfLines={1}>
               {selectedFile.name}
             </Text>
             <TouchableOpacity onPress={() => setSelectedFile(null)}>
@@ -105,10 +106,7 @@ export default function UploadScreen({ navigation }: any) {
         )}
 
         <TouchableOpacity
-          style={[
-            styles.uploadButton,
-            (!selectedFile || uploadMutation.isPending) && styles.uploadButtonDisabled
-          ]}
+          style={[styles.uploadButton, (!selectedFile || uploadMutation.isPending) && styles.uploadButtonDisabled]}
           onPress={handleUpload}
           disabled={!selectedFile || uploadMutation.isPending}
           testID="button-upload-file"
@@ -121,32 +119,10 @@ export default function UploadScreen({ navigation }: any) {
           ) : (
             <>
               <Ionicons name="cloud-upload" size={24} color="#fff" />
-              <Text style={styles.uploadButtonText}>{t('uploadPdf')}</Text>
+              <Text style={styles.uploadButtonText}>{isArabic ? 'رفع الملف او الصوره' : 'Upload File or Image'}</Text>
             </>
           )}
         </TouchableOpacity>
-
-        <View style={styles.stepsContainer}>
-          <View style={styles.stepRow}>
-            <View style={styles.stepNumber}><Text style={styles.stepNumberText}>1</Text></View>
-            <Text style={styles.stepText}>
-              {isArabic ? 'اختر ملف PDF لنتائج فحوصاتك' : 'Select your lab results PDF file'}
-            </Text>
-          </View>
-          <View style={styles.stepRow}>
-            <View style={styles.stepNumber}><Text style={styles.stepNumberText}>2</Text></View>
-            <Text style={styles.stepText}>
-              {isArabic ? 'الذكاء الاصطناعي يحلل 50+ مؤشر حيوي' : 'AI analyzes 50+ biomarkers'}
-            </Text>
-          </View>
-          <View style={styles.stepRow}>
-            <View style={styles.stepNumber}><Text style={styles.stepNumberText}>3</Text></View>
-            <Text style={styles.stepText}>
-              {isArabic ? 'احصل على تقرير فوري بالنتائج' : 'Get instant results report'}
-            </Text>
-          </View>
-        </View>
-
       </View>
     </View>
   );
@@ -155,13 +131,13 @@ export default function UploadScreen({ navigation }: any) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8fafc'
+    backgroundColor: '#f8fafc',
   },
   content: {
     flex: 1,
     padding: 20,
     alignItems: 'center',
-    justifyContent: 'center'
+    justifyContent: 'center',
   },
   iconContainer: {
     width: 120,
@@ -170,20 +146,20 @@ const styles = StyleSheet.create({
     backgroundColor: '#eff6ff',
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 24
+    marginBottom: 24,
   },
   title: {
     fontSize: 24,
     fontWeight: 'bold',
     color: '#1e293b',
     marginBottom: 8,
-    textAlign: 'center'
+    textAlign: 'center',
   },
   subtitle: {
     fontSize: 16,
     color: '#64748b',
     textAlign: 'center',
-    marginBottom: 12
+    marginBottom: 12,
   },
   securityBadge: {
     flexDirection: I18nManager.isRTL ? 'row-reverse' : 'row',
@@ -211,34 +187,31 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 20,
     width: '100%',
-    marginBottom: 16
+    marginBottom: 16,
   },
   selectButtonText: {
     fontSize: 16,
     color: '#3b82f6',
     fontWeight: '600',
-    marginHorizontal: 8
+    marginHorizontal: 8,
   },
   fileCard: {
     flexDirection: I18nManager.isRTL ? 'row-reverse' : 'row',
     alignItems: 'center',
     backgroundColor: '#fff',
     borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
     padding: 16,
     width: '100%',
     marginBottom: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2
   },
   fileName: {
     flex: 1,
     fontSize: 14,
     color: '#1e293b',
     marginHorizontal: 12,
-    textAlign: I18nManager.isRTL ? 'right' : 'left'
+    textAlign: I18nManager.isRTL ? 'right' : 'left',
   },
   uploadButton: {
     flexDirection: I18nManager.isRTL ? 'row-reverse' : 'row',
@@ -248,57 +221,15 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 16,
     width: '100%',
-    marginBottom: 24
+    marginBottom: 24,
   },
   uploadButtonDisabled: {
-    backgroundColor: '#94a3b8'
+    backgroundColor: '#94a3b8',
   },
   uploadButtonText: {
     fontSize: 18,
     color: '#fff',
     fontWeight: '600',
-    marginHorizontal: 8
-  },
-  stepsContainer: {
-    width: '100%',
-    gap: 12,
-  },
-  stepRow: {
-    flexDirection: I18nManager.isRTL ? 'row-reverse' : 'row',
-    alignItems: 'center',
-    gap: 12,
-  },
-  stepNumber: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: '#eff6ff',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  stepNumberText: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#3b82f6',
-  },
-  stepText: {
-    flex: 1,
-    fontSize: 14,
-    color: '#475569',
-    textAlign: I18nManager.isRTL ? 'right' : 'left',
-  },
-  disclaimerSmall: {
-    flexDirection: I18nManager.isRTL ? 'row-reverse' : 'row',
-    alignItems: 'flex-start',
-    paddingHorizontal: 4,
-    paddingTop: 16,
-    gap: 6,
-  },
-  disclaimerSmallText: {
-    flex: 1,
-    fontSize: 11,
-    color: '#94a3b8',
-    lineHeight: 16,
-    textAlign: I18nManager.isRTL ? 'right' : 'left',
+    marginHorizontal: 8,
   },
 });

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useCallback, useState } from 'react';
 import {
   View,
   Text,
@@ -6,11 +6,15 @@ import {
   FlatList,
   I18nManager,
   ActivityIndicator,
+  TouchableOpacity,
 } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
 import { Ionicons } from '@expo/vector-icons';
+import { useFocusEffect } from '@react-navigation/native';
 import { queries } from '../lib/api';
+import { useAppTheme } from '../context/ThemeContext';
+import { formatAppDate, getDateCalendarPreference, type CalendarType } from '../lib/dateFormat';
 
 interface TestDefinition {
   id: string;
@@ -28,6 +32,7 @@ interface TestResultWithDefinition {
   value: number | null;
   status: string;
   testDate: string | null;
+  createdAt?: string | null;
   testDefinition: TestDefinition;
 }
 
@@ -47,6 +52,12 @@ interface ComparisonItem {
   newDate: string;
   change: 'improved' | 'worsened' | 'same' | 'unknown';
   changePercent: number | null;
+}
+
+function getResultTimestamp(result: TestResultWithDefinition): number {
+  const testDateTs = result.testDate ? new Date(result.testDate).getTime() : 0;
+  const createdAtTs = result.createdAt ? new Date(result.createdAt).getTime() : 0;
+  return Math.max(testDateTs, createdAtTs);
 }
 
 const getCategoryColor = (category: string): string => {
@@ -81,14 +92,25 @@ const getCategoryIcon = (category: string): keyof typeof Ionicons.glyphMap => {
 
 export default function CompareScreen() {
   const { t, i18n } = useTranslation();
+  const { colors, isDark } = useAppTheme();
   const isArabic = i18n.language === 'ar';
+  const [dateCalendar, setDateCalendar] = useState<CalendarType>('gregorian');
+  const [compareTab, setCompareTab] = useState<'lab' | 'inbody'>('lab');
 
   const { data: testsData, isLoading } = useQuery({
-    queryKey: ['tests'],
-    queryFn: queries.tests,
+    queryKey: ['testsHistory'],
+    queryFn: queries.testsHistory,
   });
 
   const tests = (testsData as TestResultWithDefinition[]) || [];
+
+  useFocusEffect(
+    useCallback(() => {
+      getDateCalendarPreference()
+        .then(setDateCalendar)
+        .catch(() => setDateCalendar('gregorian'));
+    }, [])
+  );
 
   const comparisons: ComparisonItem[] = (() => {
     const grouped = new Map<string, TestResultWithDefinition[]>();
@@ -102,11 +124,7 @@ export default function CompareScreen() {
     for (const [testId, results] of Array.from(grouped.entries())) {
       if (results.length < 2) continue;
 
-      const sorted = [...results].sort(
-        (a, b) =>
-          new Date(a.testDate || '').getTime() -
-          new Date(b.testDate || '').getTime()
-      );
+      const sorted = [...results].sort((a, b) => getResultTimestamp(a) - getResultTimestamp(b));
 
       const oldResult = sorted[sorted.length - 2];
       const newResult = sorted[sorted.length - 1];
@@ -171,18 +189,12 @@ export default function CompareScreen() {
         oldValue: oldResult.value,
         oldStatus: oldResult.status || 'normal',
         oldDate: oldResult.testDate
-          ? new Date(oldResult.testDate).toLocaleDateString(
-              isArabic ? 'ar-SA' : 'en-US',
-              { year: '2-digit', month: '2-digit', day: '2-digit' }
-            )
+          ? formatAppDate(oldResult.testDate, i18n.language, dateCalendar)
           : '',
         newValue: newResult.value,
         newStatus: newResult.status || 'normal',
         newDate: newResult.testDate
-          ? new Date(newResult.testDate).toLocaleDateString(
-              isArabic ? 'ar-SA' : 'en-US',
-              { year: '2-digit', month: '2-digit', day: '2-digit' }
-            )
+          ? formatAppDate(newResult.testDate, i18n.language, dateCalendar)
           : '',
         change,
         changePercent,
@@ -191,6 +203,10 @@ export default function CompareScreen() {
 
     return items;
   })();
+
+  const filteredComparisons = comparisons.filter((item) =>
+    compareTab === 'inbody' ? item.testId.startsWith('inbody-') : !item.testId.startsWith('inbody-')
+  );
 
   const getStatusColor = (status: string) => {
     if (status === 'normal') return '#16a34a';
@@ -227,11 +243,11 @@ export default function CompareScreen() {
     const categoryColor = getCategoryColor(item.category);
 
     return (
-      <View style={styles.comparisonCard} testID={`card-compare-${item.testId}`}>
+      <View style={[styles.comparisonCard, { backgroundColor: colors.card, borderColor: colors.border }]} testID={`card-compare-${item.testId}`}>
         <View style={styles.cardHeader}>
           <View style={styles.cardTitleRow}>
             <Ionicons name={getCategoryIcon(item.category)} size={16} color={categoryColor} />
-            <Text style={styles.testName}>{testName}</Text>
+            <Text style={[styles.testName, { color: colors.text }]}>{testName}</Text>
           </View>
           <View style={[styles.changeBadge, { backgroundColor: changeInfo.color + '20' }]}>
             <Ionicons name={changeInfo.name} size={14} color={changeInfo.color} />
@@ -241,9 +257,13 @@ export default function CompareScreen() {
           </View>
         </View>
 
+        <Text style={[styles.compareDatesTop, { color: colors.mutedText }]}>
+          {isArabic ? 'تواريخ المقارنة' : 'Compared Dates'}: {item.oldDate || '-'} {'\u2192'} {item.newDate || '-'}
+        </Text>
+
         <View style={styles.valuesGrid}>
-          <View style={styles.valueColumn}>
-            <Text style={styles.valueLabel}>
+          <View style={[styles.valueColumn, { backgroundColor: isDark ? '#1f2937' : '#f8fafc' }]}>
+            <Text style={[styles.valueLabel, { color: colors.mutedText }]}>
               {isArabic ? 'النتيجة السابقة' : 'Previous'}
             </Text>
             <Text style={[styles.valueNumber, { color: getStatusColor(item.oldStatus) }]}>
@@ -254,7 +274,7 @@ export default function CompareScreen() {
                 {getStatusText(item.oldStatus)}
               </Text>
             </View>
-            <Text style={styles.dateText}>{item.oldDate}</Text>
+            <Text style={[styles.dateText, { color: colors.mutedText }]}>{item.oldDate}</Text>
           </View>
 
           <View style={styles.changeColumn}>
@@ -274,8 +294,8 @@ export default function CompareScreen() {
             )}
           </View>
 
-          <View style={styles.valueColumn}>
-            <Text style={styles.valueLabel}>
+          <View style={[styles.valueColumn, { backgroundColor: isDark ? '#1f2937' : '#f8fafc' }]}>
+            <Text style={[styles.valueLabel, { color: colors.mutedText }]}>
               {isArabic ? 'النتيجة الأخيرة' : 'Latest'}
             </Text>
             <Text style={[styles.valueNumber, { color: getStatusColor(item.newStatus) }]}>
@@ -286,12 +306,12 @@ export default function CompareScreen() {
                 {getStatusText(item.newStatus)}
               </Text>
             </View>
-            <Text style={styles.dateText}>{item.newDate}</Text>
+            <Text style={[styles.dateText, { color: colors.mutedText }]}>{item.newDate}</Text>
           </View>
         </View>
 
         {item.normalRangeMin != null && item.normalRangeMax != null && (
-          <Text style={styles.rangeText}>
+          <Text style={[styles.rangeText, { color: colors.mutedText }]}>
             {t('normalRange')}: {item.normalRangeMin} - {item.normalRangeMax}{' '}
             {item.unit || ''}
           </Text>
@@ -302,58 +322,85 @@ export default function CompareScreen() {
 
   if (isLoading) {
     return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#3b82f6" />
+      <View style={[styles.loadingContainer, { backgroundColor: colors.background }]}>
+        <ActivityIndicator size="large" color={colors.primary} />
       </View>
     );
   }
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       <View style={styles.disclaimerSmall}>
-        <Ionicons name="information-circle-outline" size={16} color="#94a3b8" />
-        <Text style={styles.disclaimerSmallText}>{t('disclaimer.text')}</Text>
+        <Ionicons name="information-circle-outline" size={16} color={colors.mutedText} />
+        <Text style={[styles.disclaimerSmallText, { color: colors.mutedText }]}>{t('disclaimer.text')}</Text>
       </View>
 
-      <View style={styles.header}>
+      <View style={[styles.header, { backgroundColor: colors.card, borderBottomColor: colors.border }]}>
         <View style={styles.headerRow}>
-          <Ionicons name="git-compare" size={22} color="#3b82f6" />
-          <Text style={styles.title}>{isArabic ? 'مقارنة النتائج' : 'Compare Results'}</Text>
+          <Ionicons name="git-compare" size={22} color={colors.primary} />
+          <Text style={[styles.title, { color: colors.text }]}>{isArabic ? 'مقارنة النتائج' : 'Compare Results'}</Text>
         </View>
       </View>
 
-      {comparisons.length > 0 && (
-        <View style={styles.legendRow}>
+      <View style={[styles.topTabsRow, { backgroundColor: colors.card, borderBottomColor: colors.border }]}>
+        <TouchableOpacity
+          style={[styles.topTab, { borderColor: colors.primary, backgroundColor: colors.card }, compareTab === 'lab' && styles.topTabActive]}
+          onPress={() => setCompareTab('lab')}
+          testID="button-compare-tab-lab"
+        >
+          <Ionicons name="flask-outline" size={15} color={compareTab === 'lab' ? '#fff' : colors.primary} />
+          <Text style={[styles.topTabText, compareTab === 'lab' && styles.topTabTextActive]}>
+            {isArabic ? 'الفحوصات' : 'Lab Tests'}
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.topTab, { borderColor: colors.primary, backgroundColor: colors.card }, compareTab === 'inbody' && styles.topTabActive]}
+          onPress={() => setCompareTab('inbody')}
+          testID="button-compare-tab-inbody"
+        >
+          <Ionicons name="body-outline" size={15} color={compareTab === 'inbody' ? '#fff' : colors.primary} />
+          <Text style={[styles.topTabText, compareTab === 'inbody' && styles.topTabTextActive]}>
+            InBody
+          </Text>
+        </TouchableOpacity>
+      </View>
+
+      {filteredComparisons.length > 0 && (
+        <View style={[styles.legendRow, { backgroundColor: colors.card, borderBottomColor: colors.border }]}>
           <View style={styles.legendItem}>
             <Ionicons name="trending-up" size={14} color="#22c55e" />
-            <Text style={styles.legendText}>{isArabic ? 'تحسّن' : 'Improved'}</Text>
+            <Text style={[styles.legendText, { color: colors.mutedText }]}>{isArabic ? 'تحسّن' : 'Improved'}</Text>
           </View>
           <View style={styles.legendItem}>
             <Ionicons name="trending-down" size={14} color="#dc2626" />
-            <Text style={styles.legendText}>{isArabic ? 'تراجع' : 'Worsened'}</Text>
+            <Text style={[styles.legendText, { color: colors.mutedText }]}>{isArabic ? 'تراجع' : 'Worsened'}</Text>
           </View>
           <View style={styles.legendItem}>
             <Ionicons name="remove" size={14} color="#94a3b8" />
-            <Text style={styles.legendText}>{isArabic ? 'ثابت' : 'No Change'}</Text>
+            <Text style={[styles.legendText, { color: colors.mutedText }]}>{isArabic ? 'ثابت' : 'No Change'}</Text>
           </View>
         </View>
       )}
 
       <FlatList
-        data={comparisons}
+        data={filteredComparisons}
         keyExtractor={(item) => item.testId}
         renderItem={renderComparison}
         contentContainerStyle={styles.listContent}
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
             <Ionicons name="git-compare-outline" size={64} color="#cbd5e1" />
-            <Text style={styles.emptyTitle}>
+            <Text style={[styles.emptyTitle, { color: colors.mutedText }]}>
               {isArabic ? 'لا توجد بيانات للمقارنة' : 'No comparison data'}
             </Text>
-            <Text style={styles.emptySubtitle}>
-              {isArabic
-                ? 'ارفع نتائج فحوصات أكثر من مرة لرؤية المقارنة'
-                : 'Upload lab results more than once to see comparison'}
+            <Text style={[styles.emptySubtitle, { color: colors.mutedText }]}>
+              {compareTab === 'inbody'
+                ? (isArabic
+                    ? 'ارفع تقرير InBody أكثر من مرة لرؤية المقارنة'
+                    : 'Upload InBody report more than once to see comparison')
+                : (isArabic
+                    ? 'ارفع نتائج فحوصات أكثر من مرة لرؤية المقارنة'
+                    : 'Upload lab results more than once to see comparison')}
             </Text>
           </View>
         }
@@ -387,6 +434,38 @@ const styles = StyleSheet.create({
     fontSize: 22,
     fontWeight: 'bold',
     color: '#1e293b',
+  },
+  topTabsRow: {
+    flexDirection: I18nManager.isRTL ? 'row-reverse' : 'row',
+    gap: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    backgroundColor: '#fff',
+    borderBottomWidth: 1,
+    borderBottomColor: '#e2e8f0',
+  },
+  topTab: {
+    flex: 1,
+    flexDirection: I18nManager.isRTL ? 'row-reverse' : 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    borderWidth: 1.5,
+    borderColor: '#3b82f6',
+    borderRadius: 12,
+    paddingVertical: 10,
+    backgroundColor: '#fff',
+  },
+  topTabActive: {
+    backgroundColor: '#3b82f6',
+  },
+  topTabText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#3b82f6',
+  },
+  topTabTextActive: {
+    color: '#fff',
   },
   legendRow: {
     flexDirection: I18nManager.isRTL ? 'row-reverse' : 'row',
@@ -451,6 +530,13 @@ const styles = StyleSheet.create({
   },
   changeBadgeText: {
     fontSize: 11,
+    fontWeight: '600',
+  },
+  compareDatesTop: {
+    fontSize: 11,
+    color: '#64748b',
+    marginBottom: 10,
+    textAlign: I18nManager.isRTL ? 'right' : 'left',
     fontWeight: '600',
   },
   valuesGrid: {

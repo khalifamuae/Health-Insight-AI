@@ -36,6 +36,12 @@ interface ComparisonItem {
   changePercent: number | null;
 }
 
+function getResultTimestamp(result: TestResultWithDefinition): number {
+  const testDateTs = result.testDate ? new Date(result.testDate).getTime() : 0;
+  const createdAtTs = result.createdAt ? new Date(result.createdAt).getTime() : 0;
+  return Math.max(testDateTs, createdAtTs);
+}
+
 function getStatusColor(status: string) {
   if (status === "normal") return "text-green-600 dark:text-green-400";
   if (status === "high" || status === "low") return "text-red-600 dark:text-red-400";
@@ -53,7 +59,7 @@ export default function Compare() {
   const isArabic = i18n.language === "ar";
 
   const { data: tests = [], isLoading } = useQuery<TestResultWithDefinition[]>({
-    queryKey: ["/api/tests"],
+    queryKey: ["/api/tests/history"],
   });
 
   const comparisons: ComparisonItem[] = (() => {
@@ -68,9 +74,7 @@ export default function Compare() {
     for (const [testId, results] of Array.from(grouped.entries())) {
       if (results.length < 2) continue;
 
-      const sorted = [...results].sort((a, b) =>
-        new Date(a.testDate).getTime() - new Date(b.testDate).getTime()
-      );
+      const sorted = [...results].sort((a, b) => getResultTimestamp(a) - getResultTimestamp(b));
 
       const oldResult = sorted[sorted.length - 2];
       const newResult = sorted[sorted.length - 1];

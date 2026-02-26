@@ -49,6 +49,7 @@ export interface IStorage {
   getTestDefinitionById(id: string): Promise<TestDefinition | undefined>;
   
   getTestResultsByUser(userId: string): Promise<TestResultWithDefinition[]>;
+  getLatestTestResultsByUser(userId: string): Promise<TestResultWithDefinition[]>;
   createTestResult(result: InsertTestResult): Promise<TestResult>;
   deleteTestResult(id: string, userId: string): Promise<void>;
   
@@ -176,6 +177,26 @@ export class DatabaseStorage implements IStorage {
       .orderBy(desc(testResults.testDate));
 
     return results as TestResultWithDefinition[];
+  }
+
+  async getLatestTestResultsByUser(userId: string): Promise<TestResultWithDefinition[]> {
+    const results = await this.getTestResultsByUser(userId);
+    const latestByTest = new Map<string, TestResultWithDefinition>();
+
+    for (const test of results) {
+      const existing = latestByTest.get(test.testId);
+      const currentTime = test.testDate ? new Date(test.testDate).getTime() : 0;
+      const existingTime = existing?.testDate ? new Date(existing.testDate).getTime() : 0;
+      if (!existing || currentTime > existingTime) {
+        latestByTest.set(test.testId, test);
+      }
+    }
+
+    return Array.from(latestByTest.values()).sort((a, b) => {
+      const aTime = a.testDate ? new Date(a.testDate).getTime() : 0;
+      const bTime = b.testDate ? new Date(b.testDate).getTime() : 0;
+      return bTime - aTime;
+    });
   }
 
   async createTestResult(result: InsertTestResult): Promise<TestResult> {

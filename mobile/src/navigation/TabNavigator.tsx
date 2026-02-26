@@ -4,6 +4,7 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { useTranslation } from 'react-i18next';
 import { Ionicons } from '@expo/vector-icons';
 
+import { useAppTheme } from '../context/ThemeContext';
 import HomeScreen from '../screens/HomeScreen';
 import TestsScreen from '../screens/TestsScreen';
 import UploadScreen from '../screens/UploadScreen';
@@ -14,16 +15,17 @@ const Tab = createBottomTabNavigator();
 
 export default function TabNavigator() {
   const { t, i18n } = useTranslation();
+  const { colors } = useAppTheme();
   const isArabic = i18n.language === 'ar';
 
   return (
     <Tab.Navigator
       screenOptions={{
-        tabBarActiveTintColor: '#3b82f6',
-        tabBarInactiveTintColor: '#64748b',
+        tabBarActiveTintColor: colors.primary,
+        tabBarInactiveTintColor: colors.mutedText,
         tabBarStyle: {
-          backgroundColor: '#fff',
-          borderTopColor: '#e2e8f0',
+          backgroundColor: colors.card,
+          borderTopColor: colors.border,
           paddingBottom: 8,
           paddingTop: 8,
           height: 70
@@ -33,12 +35,13 @@ export default function TabNavigator() {
           fontWeight: '500'
         },
         headerStyle: {
-          backgroundColor: '#fff'
+          backgroundColor: colors.card
         },
         headerTitleStyle: {
-          color: '#1e293b',
+          color: colors.text,
           fontWeight: '600'
         },
+        headerTintColor: colors.text,
         headerTitleAlign: 'center'
       }}
     >

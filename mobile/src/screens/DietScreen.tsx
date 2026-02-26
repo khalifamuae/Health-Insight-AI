@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -8,13 +8,22 @@ import {
   ActivityIndicator,
   I18nManager,
   Alert,
+  TextInput,
 } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Ionicons } from '@expo/vector-icons';
+import { useFocusEffect } from '@react-navigation/native';
 import { api, queries } from '../lib/api';
+import { formatAppDate, getDateCalendarPreference, type CalendarType } from '../lib/dateFormat';
 
 type Step = 'intro' | 'disclaimer' | 'activity' | 'allergy' | 'allergySelect' | 'proteinPref' | 'carbPref' | 'preference' | 'generating' | 'result';
+
+interface SavedPlan {
+  id: string;
+  planData: string | unknown;
+  createdAt: string;
+}
 
 const ALLERGY_OPTIONS = [
   { key: 'eggs', labelKey: 'allergyEggs' },
@@ -70,6 +79,7 @@ export default function DietScreen({ navigation }: any) {
   const { t, i18n } = useTranslation();
   const isArabic = i18n.language === 'ar';
   const queryClient = useQueryClient();
+  const [dateCalendar, setDateCalendar] = useState<CalendarType>('gregorian');
 
   const [step, setStep] = useState<Step>('intro');
   const [activityLevel, setActivityLevel] = useState('');
@@ -78,12 +88,25 @@ export default function DietScreen({ navigation }: any) {
   const [selectedProteins, setSelectedProteins] = useState<string[]>([]);
   const [selectedCarbs, setSelectedCarbs] = useState<string[]>([]);
   const [mealPreference, setMealPreference] = useState('');
+  const [customTargetCalories, setCustomTargetCalories] = useState('');
   const [plan, setPlan] = useState<any>(null);
   const [jobId, setJobId] = useState<string | null>(null);
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const { data: profile } = useQuery({ queryKey: ['profile'], queryFn: queries.profile });
-  const { data: savedPlans } = useQuery({ queryKey: ['savedDietPlans'], queryFn: queries.savedDietPlans });
+  const { data: savedPlans } = useQuery<SavedPlan[]>({
+    queryKey: ['savedDietPlans'],
+    queryFn: async () => (await queries.savedDietPlans()) as SavedPlan[],
+  });
+  const savedPlansList: SavedPlan[] = Array.isArray(savedPlans) ? savedPlans : [];
+
+  useFocusEffect(
+    useCallback(() => {
+      getDateCalendarPreference()
+        .then(setDateCalendar)
+        .catch(() => setDateCalendar('gregorian'));
+    }, [])
+  );
 
   useEffect(() => {
     if (profile) {
@@ -121,6 +144,10 @@ export default function DietScreen({ navigation }: any) {
 
   const generateMutation = useMutation({
     mutationFn: async () => {
+      const customCaloriesNumber = mealPreference === 'custom_macros'
+        ? Number.parseInt(customTargetCalories, 10)
+        : null;
+
       await api.patch('/api/user', {
         activityLevel,
         mealPreference,
@@ -129,7 +156,10 @@ export default function DietScreen({ navigation }: any) {
         proteinPreferences: mealPreference === 'vegetarian' ? [] : selectedProteins,
         carbPreferences: mealPreference === 'keto' ? [] : selectedCarbs,
       });
-      const result = await api.post<any>('/api/diet-plan', { language: i18n.language });
+      const result = await api.post<any>('/api/diet-plan', {
+        language: i18n.language,
+        customTargetCalories: Number.isFinite(customCaloriesNumber as number) ? customCaloriesNumber : null,
+      });
       return result;
     },
     onSuccess: (data: any) => {
@@ -166,6 +196,16 @@ export default function DietScreen({ navigation }: any) {
   const startQuestionnaire = () => setStep('disclaimer');
 
   const handleFinish = () => {
+    if (mealPreference === 'custom_macros') {
+      const calories = Number.parseInt(customTargetCalories, 10);
+      if (!Number.isFinite(calories) || calories < 800 || calories > 6000) {
+        Alert.alert(
+          isArabic ? 'ادخل سعرات صحيحة' : 'Enter valid calories',
+          isArabic ? 'أدخل رقم سعرات بين 800 و 6000' : 'Please enter calories between 800 and 6000'
+        );
+        return;
+      }
+    }
     setStep('generating');
     generateMutation.mutate();
   };
@@ -564,6 +604,27 @@ export default function DietScreen({ navigation }: any) {
             </View>
           </TouchableOpacity>
         ))}
+        {mealPreference === 'custom_macros' && (
+          <View style={styles.customCaloriesCard}>
+            <Text style={styles.customCaloriesLabel}>
+              {isArabic ? 'حدد السعرات اليومية المطلوبة' : 'Set your daily target calories'}
+            </Text>
+            <TextInput
+              value={customTargetCalories}
+              onChangeText={(text) => setCustomTargetCalories(text.replace(/[^0-9]/g, ''))}
+              placeholder={isArabic ? 'مثال: 1000' : 'Example: 1000'}
+              keyboardType="numeric"
+              style={styles.customCaloriesInput}
+              maxLength={4}
+              testID="input-custom-calories"
+            />
+            <Text style={styles.customCaloriesHint}>
+              {isArabic
+                ? 'سيتم إنشاء النظام بحيث لا يتجاوز هذا الرقم يوميًا.'
+                : 'The plan will be generated to not exceed this number per day.'}
+            </Text>
+          </View>
+        )}
         {mealPreference ? (
           <TouchableOpacity style={[styles.nextButton, { backgroundColor: '#22c55e' }]} onPress={handleFinish} testID="button-generate">
             <Ionicons name="sparkles" size={20} color="#fff" />
@@ -610,10 +671,10 @@ export default function DietScreen({ navigation }: any) {
         <Text style={styles.generateButtonText}>{isArabic ? 'ابدأ خطتك الغذائية' : 'Start Your Diet Plan'}</Text>
       </TouchableOpacity>
 
-      {savedPlans && (savedPlans as any[]).length > 0 && (
+      {savedPlansList.length > 0 && (
         <View style={styles.savedSection}>
           <Text style={styles.sectionTitle}>{t('savedPlans')}</Text>
-          {(savedPlans as any[]).map((sp: any) => (
+          {savedPlansList.map((sp) => (
             <TouchableOpacity
               key={sp.id}
               style={styles.savedCard}
@@ -627,7 +688,9 @@ export default function DietScreen({ navigation }: any) {
               <Ionicons name="document-text" size={20} color="#f59e0b" />
               <View style={{ flex: 1 }}>
                 <Text style={styles.savedCardTitle}>{t('viewPlan')}</Text>
-                <Text style={styles.savedCardDate}>{t('savedOn')}: {new Date(sp.createdAt).toLocaleDateString(isArabic ? 'ar-SA' : 'en-US')}</Text>
+                <Text style={styles.savedCardDate}>
+                  {t('savedOn')}: {formatAppDate(sp.createdAt, i18n.language, dateCalendar)}
+                </Text>
               </View>
               <Ionicons name={isArabic ? 'chevron-back' : 'chevron-forward'} size={20} color="#94a3b8" />
             </TouchableOpacity>
@@ -720,6 +783,10 @@ const styles = StyleSheet.create({
   scientificRow: { flexDirection: I18nManager.isRTL ? 'row-reverse' : 'row', alignItems: 'flex-start', gap: 4, marginTop: 4 },
   scientificText: { fontSize: 11, color: '#8b5cf6', lineHeight: 16, flex: 1, textAlign: I18nManager.isRTL ? 'right' : 'left' },
   macroRangeText: { fontSize: 11, color: '#94a3b8', marginTop: 4, fontWeight: '500', textAlign: I18nManager.isRTL ? 'right' : 'left' },
+  customCaloriesCard: { backgroundColor: '#fff', borderRadius: 12, padding: 14, borderWidth: 1, borderColor: '#e2e8f0', marginTop: 6 },
+  customCaloriesLabel: { fontSize: 14, fontWeight: '600', color: '#1e293b', marginBottom: 8, textAlign: I18nManager.isRTL ? 'right' : 'left' },
+  customCaloriesInput: { borderWidth: 1.5, borderColor: '#cbd5e1', borderRadius: 10, paddingHorizontal: 12, paddingVertical: 10, fontSize: 16, color: '#0f172a', backgroundColor: '#f8fafc', textAlign: I18nManager.isRTL ? 'right' : 'left' },
+  customCaloriesHint: { fontSize: 12, color: '#64748b', marginTop: 8, textAlign: I18nManager.isRTL ? 'right' : 'left' },
   tipItem: { borderTopWidth: 1, borderTopColor: '#f1f5f9', paddingTop: 10, marginTop: 8 },
   tipCondition: { fontSize: 15, fontWeight: '600', color: '#1e293b', marginBottom: 4, textAlign: I18nManager.isRTL ? 'right' : 'left' },
   tipAdvice: { fontSize: 13, color: '#475569', marginBottom: 2, textAlign: I18nManager.isRTL ? 'right' : 'left' },

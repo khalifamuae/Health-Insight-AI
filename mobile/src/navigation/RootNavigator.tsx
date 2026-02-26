@@ -1,8 +1,10 @@
 import React from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { ActivityIndicator, View } from 'react-native';
+import { useTranslation } from 'react-i18next';
 
 import { useAuth } from '../context/AuthContext';
+import { useAppTheme } from '../context/ThemeContext';
 import LoginScreen from '../screens/LoginScreen';
 import TabNavigator from './TabNavigator';
 import SubscriptionScreen from '../screens/SubscriptionScreen';
@@ -12,11 +14,14 @@ const Stack = createNativeStackNavigator();
 
 export default function RootNavigator() {
   const { isAuthenticated, isLoading, login } = useAuth();
+  const { i18n, t } = useTranslation();
+  const { colors } = useAppTheme();
+  const isArabic = i18n.language === 'ar';
 
   if (isLoading) {
     return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-        <ActivityIndicator size="large" color="#3b82f6" />
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.background }}>
+        <ActivityIndicator size="large" color={colors.primary} />
       </View>
     );
   }
@@ -33,12 +38,27 @@ export default function RootNavigator() {
           <Stack.Screen
             name="Subscription"
             component={SubscriptionScreen}
-            options={{ presentation: 'modal' }}
+            options={{
+              presentation: 'modal',
+              headerShown: true,
+              headerTitle: t('subscription.plans'),
+              headerTitleAlign: 'center',
+              headerTintColor: colors.text,
+              headerStyle: { backgroundColor: colors.card },
+              headerTitleStyle: { color: colors.text, fontWeight: '700' },
+            }}
           />
           <Stack.Screen
             name="Compare"
             component={CompareScreen}
-            options={{ headerShown: false }}
+            options={{
+              headerShown: true,
+              headerTitle: isArabic ? 'المقارنة' : 'Compare',
+              headerTitleAlign: 'center',
+              headerTintColor: colors.text,
+              headerStyle: { backgroundColor: colors.card },
+              headerTitleStyle: { color: colors.text, fontWeight: '700' },
+            }}
           />
         </>
       ) : (

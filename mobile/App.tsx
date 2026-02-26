@@ -1,14 +1,16 @@
 import React, { useEffect } from 'react';
 import { StatusBar } from 'expo-status-bar';
 import { I18nManager } from 'react-native';
-import { NavigationContainer } from '@react-navigation/native';
+import { DarkTheme, DefaultTheme, NavigationContainer } from '@react-navigation/native';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import './src/lib/i18n';
 import { AuthProvider } from './src/context/AuthContext';
+import { ThemeProvider, useAppTheme } from './src/context/ThemeContext';
 import RootNavigator from './src/navigation/RootNavigator';
 import { initIAP, endIAP } from './src/services/IAPService';
+import { initializeReminderNotifications } from './src/services/ReminderNotificationService';
 
 I18nManager.allowRTL(true);
 I18nManager.forceRTL(true);
@@ -29,6 +31,7 @@ export default function App() {
         console.log('[IAP] Connection established');
       }
     });
+    initializeReminderNotifications();
     return () => {
       endIAP();
     };
@@ -37,13 +40,46 @@ export default function App() {
   return (
     <SafeAreaProvider>
       <QueryClientProvider client={queryClient}>
-        <AuthProvider>
-          <NavigationContainer>
-            <StatusBar style="dark" />
-            <RootNavigator />
-          </NavigationContainer>
-        </AuthProvider>
+        <ThemeProvider>
+          <AuthProvider>
+            <AppNavigator />
+          </AuthProvider>
+        </ThemeProvider>
       </QueryClientProvider>
     </SafeAreaProvider>
+  );
+}
+
+function AppNavigator() {
+  const { isDark, colors } = useAppTheme();
+  const navTheme = isDark
+    ? {
+        ...DarkTheme,
+        colors: {
+          ...DarkTheme.colors,
+          primary: colors.primary,
+          background: colors.background,
+          card: colors.card,
+          text: colors.text,
+          border: colors.border,
+        },
+      }
+    : {
+        ...DefaultTheme,
+        colors: {
+          ...DefaultTheme.colors,
+          primary: colors.primary,
+          background: colors.background,
+          card: colors.card,
+          text: colors.text,
+          border: colors.border,
+        },
+      };
+
+  return (
+    <NavigationContainer theme={navTheme}>
+      <StatusBar style={isDark ? 'light' : 'dark'} />
+      <RootNavigator />
+    </NavigationContainer>
   );
 }
