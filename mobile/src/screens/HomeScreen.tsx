@@ -8,6 +8,7 @@ import {
   I18nManager,
 } from 'react-native';
 import { useTranslation } from 'react-i18next';
+import { isArabicLanguage } from '../lib/isArabic';
 import { useQuery } from '@tanstack/react-query';
 import { Ionicons } from '@expo/vector-icons';
 import { queries } from '../lib/api';
@@ -47,10 +48,12 @@ const TrustBadge = ({ icon, text, color }: TrustBadgeProps) => {
   );
 };
 
+const isArabic = I18nManager.isRTL;
+
 export default function HomeScreen({ navigation }: any) {
   const { t, i18n } = useTranslation();
   const { colors, isDark } = useAppTheme();
-  const isArabic = i18n.language === 'ar';
+  const isArabic = isArabicLanguage();
 
   const { data: userTests } = useQuery({
     queryKey: ['userTests'],
@@ -141,22 +144,22 @@ const styles = StyleSheet.create({
   },
   header: {
     marginBottom: 16,
-    alignItems: I18nManager.isRTL ? 'flex-end' : 'flex-start',
+    alignItems: isArabic ? 'flex-end' : 'flex-start',
   },
   title: {
     fontSize: 28,
     fontWeight: 'bold',
     color: '#1e293b',
-    textAlign: I18nManager.isRTL ? 'right' : 'left',
+    textAlign: isArabic ? 'right' : 'left',
   },
   subtitle: {
     fontSize: 16,
     color: '#64748b',
     marginTop: 4,
-    textAlign: I18nManager.isRTL ? 'right' : 'left',
+    textAlign: isArabic ? 'right' : 'left',
   },
   trustBadgesRow: {
-    flexDirection: I18nManager.isRTL ? 'row-reverse' : 'row',
+    flexDirection: isArabic ? 'row-reverse' : 'row',
     justifyContent: 'space-between',
     marginBottom: 16,
     gap: 8,
@@ -179,7 +182,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   statsGrid: {
-    flexDirection: I18nManager.isRTL ? 'row-reverse' : 'row',
+    flexDirection: isArabic ? 'row-reverse' : 'row',
     flexWrap: 'wrap',
     gap: 8,
     marginBottom: 20,
@@ -206,13 +209,13 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   shortcutsRow: {
-    flexDirection: I18nManager.isRTL ? 'row-reverse' : 'row',
+    flexDirection: isArabic ? 'row-reverse' : 'row',
     gap: 10,
     marginBottom: 16,
   },
   shortcutCard: {
     flex: 1,
-    flexDirection: I18nManager.isRTL ? 'row-reverse' : 'row',
+    flexDirection: isArabic ? 'row-reverse' : 'row',
     alignItems: 'center',
     backgroundColor: '#fff',
     borderRadius: 12,
@@ -230,25 +233,25 @@ const styles = StyleSheet.create({
   },
   shortcutTextContainer: {
     flex: 1,
-    alignItems: I18nManager.isRTL ? 'flex-end' : 'flex-start',
+    alignItems: isArabic ? 'flex-end' : 'flex-start',
   },
   shortcutTitle: {
     fontSize: 13,
     fontWeight: '700',
     color: '#1e293b',
-    textAlign: I18nManager.isRTL ? 'right' : 'left',
+    textAlign: isArabic ? 'right' : 'left',
   },
   shortcutDesc: {
     fontSize: 10,
     color: '#64748b',
     marginTop: 1,
-    textAlign: I18nManager.isRTL ? 'right' : 'left',
+    textAlign: isArabic ? 'right' : 'left',
   },
   uploadButton: {
     backgroundColor: '#3b82f6',
     borderRadius: 12,
     padding: 16,
-    flexDirection: I18nManager.isRTL ? 'row-reverse' : 'row',
+    flexDirection: isArabic ? 'row-reverse' : 'row',
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 12,
@@ -263,7 +266,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     borderRadius: 12,
     padding: 16,
-    flexDirection: I18nManager.isRTL ? 'row-reverse' : 'row',
+    flexDirection: isArabic ? 'row-reverse' : 'row',
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
@@ -277,7 +280,7 @@ const styles = StyleSheet.create({
     marginHorizontal: 8,
   },
   disclaimerSmall: {
-    flexDirection: I18nManager.isRTL ? 'row-reverse' : 'row',
+    flexDirection: isArabic ? 'row-reverse' : 'row',
     alignItems: 'flex-start',
     paddingHorizontal: 4,
     gap: 6,
@@ -287,6 +290,6 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: '#94a3b8',
     lineHeight: 16,
-    textAlign: I18nManager.isRTL ? 'right' : 'left',
+    textAlign: isArabic ? 'right' : 'left',
   },
 });

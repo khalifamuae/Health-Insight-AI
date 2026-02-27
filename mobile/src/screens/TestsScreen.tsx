@@ -12,6 +12,7 @@ import {
   Alert
 } from 'react-native';
 import { useTranslation } from 'react-i18next';
+import { isArabicLanguage } from '../lib/isArabic';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
@@ -530,11 +531,13 @@ function getStatusScore(test: AllTestData): number {
   return 2;
 }
 
+const isArabic = I18nManager.isRTL;
+
 export default function TestsScreen() {
   const { t, i18n } = useTranslation();
   const { colors, isDark } = useAppTheme();
   const queryClient = useQueryClient();
-  const isArabic = i18n.language === 'ar';
+  const isArabic = isArabicLanguage();
   const [dateCalendar, setDateCalendar] = useState<CalendarType>('gregorian');
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [isCategoryMenuOpen, setIsCategoryMenuOpen] = useState(false);
@@ -712,6 +715,7 @@ export default function TestsScreen() {
     const reminderDateLabel = existingReminder?.dueDate
       ? formatAppDate(existingReminder.dueDate, i18n.language, dateCalendar)
       : null;
+    const detailsBorderColor = (item.status === 'high' || item.status === 'low') && isDark ? '#7f1d1d' : colors.border;
     
     return (
       <View 
@@ -731,7 +735,7 @@ export default function TestsScreen() {
         </Text>
 
         <View style={styles.testHeader}>
-          <View style={styles.testNumberContainer}>
+          <View style={[styles.testNumberContainer, { backgroundColor: isDark ? '#334155' : '#f1f5f9' }]}>
             <Text style={styles.testNumber}>{index + 1}</Text>
           </View>
           <View style={styles.testNameRow}>
@@ -757,7 +761,7 @@ export default function TestsScreen() {
           <StatusBadge status={item.status} hasResult={item.hasResult} />
         </View>
         
-        <View style={styles.testDetails}>
+        <View style={[styles.testDetails, { borderTopColor: detailsBorderColor }]}>
           <View style={styles.categoryRow}>
             <View style={[styles.categoryDot, { backgroundColor: categoryColor }]} />
             <Text style={[styles.categoryText, { color: colors.mutedText }]}>
@@ -779,7 +783,7 @@ export default function TestsScreen() {
             
             <View style={styles.valueBox}>
               <Text style={[styles.valueLabel, { color: colors.mutedText }]}>{t('normalRange')}</Text>
-              <Text style={styles.rangeText}>
+              <Text style={[styles.rangeText, { color: colors.mutedText }]}>
                 {item.normalRangeMin !== null && item.normalRangeMax !== null
                   ? `${item.normalRangeMin} - ${item.normalRangeMax} ${item.unit || ''}`
                   : '-'}
@@ -816,14 +820,14 @@ export default function TestsScreen() {
         <Ionicons name="information-circle-outline" size={16} color={colors.mutedText} />
         <Text style={[styles.disclaimerSmallText, { color: colors.mutedText }]}>{t('disclaimer.text')}</Text>
       </View>
-      <View style={[styles.header, { backgroundColor: colors.card, borderBottomColor: colors.border }]}>
+      <View style={[styles.header, { backgroundColor: colors.card, borderBottomColor: isDark ? '#1f2937' : colors.border }]}>
         <Text style={[styles.title, { color: colors.text }]}>{t('myTests')}</Text>
         <Text style={[styles.count, { color: colors.mutedText }]}>
           {testsWithResults}/{filteredAndSortedTests.length} {t('testsCompleted')} | {abnormalTests} {t('abnormal')}
         </Text>
       </View>
 
-      <View style={[styles.categorySection, { backgroundColor: colors.card, borderBottomColor: colors.border }]}>
+      <View style={[styles.categorySection, { backgroundColor: colors.card, borderBottomColor: isDark ? '#1f2937' : colors.border }]}>
         <TouchableOpacity
           style={[styles.categoryMenuButton, { backgroundColor: isDark ? '#1e3a8a' : '#eff6ff' }]}
           onPress={() => setIsCategoryMenuOpen((prev) => !prev)}
@@ -849,7 +853,7 @@ export default function TestsScreen() {
               return (
                 <Pressable
                   key={item}
-                  style={[styles.categoryMenuItem, isSelected && styles.categoryMenuItemActive]}
+                  style={[styles.categoryMenuItem, isSelected && styles.categoryMenuItemActive, isSelected && isDark && { backgroundColor: '#1e293b' }]}
                   onPress={() => {
                     setSelectedCategory(isAll ? null : item);
                     setIsCategoryMenuOpen(false);
@@ -867,7 +871,7 @@ export default function TestsScreen() {
         )}
       </View>
 
-      <View style={styles.sortBar}>
+      <View style={[styles.sortBar, { backgroundColor: isDark ? colors.card : colors.background }]}>
         <TouchableOpacity
           style={[styles.sortButton, { backgroundColor: colors.cardAlt, borderColor: colors.border }]}
           onPress={() => setIsSortMenuOpen((prev) => !prev)}
@@ -880,7 +884,7 @@ export default function TestsScreen() {
       </View>
 
       {isSortMenuOpen && (
-        <View style={[styles.sortMenu, { backgroundColor: colors.card, borderColor: colors.border }]}>
+        <View style={[styles.sortMenu, { backgroundColor: colors.card, borderColor: isDark ? '#1f2937' : colors.border }]}>
           {[
             { key: 'default', label: t('sortDefault') },
             { key: 'worstToBest', label: t('sortWorstToBest') },
@@ -896,7 +900,7 @@ export default function TestsScreen() {
                 setIsSortMenuOpen(false);
               }}
             >
-              <Text style={[styles.sortMenuItemText, { color: colors.text }, sortMode === option.key && styles.sortMenuItemTextActive]}>
+              <Text style={[styles.sortMenuItemText, { color: colors.text }, sortMode === option.key && styles.sortMenuItemTextActive, sortMode === option.key && isDark && { color: '#93c5fd' }]}>
                 {option.label}
               </Text>
             </Pressable>
@@ -913,7 +917,8 @@ export default function TestsScreen() {
           data={filteredAndSortedTests}
           keyExtractor={item => item.id}
           renderItem={renderTest}
-          contentContainerStyle={styles.listContent}
+          style={{ backgroundColor: colors.background }}
+          contentContainerStyle={[styles.listContent, { backgroundColor: colors.background }]}
           ListEmptyComponent={
             <View style={styles.emptyContainer}>
               <Ionicons name="flask-outline" size={64} color="#cbd5e1" />
@@ -946,10 +951,10 @@ export default function TestsScreen() {
             />
             <View style={styles.modalButtons}>
               <TouchableOpacity
-                style={[styles.modalBtn, styles.modalBtnCancel]}
+                style={[styles.modalBtn, styles.modalBtnCancel, { backgroundColor: isDark ? '#334155' : '#f1f5f9' }]}
                 onPress={() => setIsReminderModalOpen(false)}
               >
-                <Text style={styles.modalBtnCancelText}>{isArabic ? 'إلغاء' : 'Cancel'}</Text>
+                <Text style={[styles.modalBtnCancelText, { color: isDark ? '#e2e8f0' : '#334155' }]}>{isArabic ? 'إلغاء' : 'Cancel'}</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.modalBtn, styles.modalBtnSave]}
@@ -1003,13 +1008,13 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: 'bold',
     color: '#1e293b',
-    textAlign: I18nManager.isRTL ? 'right' : 'left'
+    textAlign: isArabic ? 'right' : 'left'
   },
   count: {
     fontSize: 14,
     color: '#64748b',
     marginTop: 4,
-    textAlign: I18nManager.isRTL ? 'right' : 'left'
+    textAlign: isArabic ? 'right' : 'left'
   },
   categorySection: {
     backgroundColor: '#fff',
@@ -1019,7 +1024,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
   },
   categoryMenuButton: {
-    flexDirection: I18nManager.isRTL ? 'row-reverse' : 'row',
+    flexDirection: isArabic ? 'row-reverse' : 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     backgroundColor: '#eff6ff',
@@ -1035,7 +1040,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#1e40af',
     marginHorizontal: 8,
-    textAlign: I18nManager.isRTL ? 'right' : 'left',
+    textAlign: isArabic ? 'right' : 'left',
   },
   categoryMenuList: {
     marginTop: 8,
@@ -1046,7 +1051,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   categoryMenuItem: {
-    flexDirection: I18nManager.isRTL ? 'row-reverse' : 'row',
+    flexDirection: isArabic ? 'row-reverse' : 'row',
     alignItems: 'center',
     paddingHorizontal: 12,
     paddingVertical: 10,
@@ -1061,14 +1066,14 @@ const styles = StyleSheet.create({
     color: '#334155',
   },
   sortBar: {
-    flexDirection: I18nManager.isRTL ? 'row-reverse' : 'row',
-    justifyContent: I18nManager.isRTL ? 'flex-start' : 'flex-end',
+    flexDirection: isArabic ? 'row-reverse' : 'row',
+    justifyContent: isArabic ? 'flex-start' : 'flex-end',
     paddingHorizontal: 16,
     paddingVertical: 8,
     backgroundColor: '#f8fafc',
   },
   sortButton: {
-    flexDirection: I18nManager.isRTL ? 'row-reverse' : 'row',
+    flexDirection: isArabic ? 'row-reverse' : 'row',
     alignItems: 'center',
     backgroundColor: '#eff6ff',
     paddingHorizontal: 12,
@@ -1102,7 +1107,7 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: '#334155',
     fontWeight: '600',
-    textAlign: I18nManager.isRTL ? 'right' : 'left',
+    textAlign: isArabic ? 'right' : 'left',
   },
   sortMenuItemTextActive: {
     color: '#1d4ed8',
@@ -1132,7 +1137,7 @@ const styles = StyleSheet.create({
     borderColor: '#fecaca'
   },
   testHeader: {
-    flexDirection: I18nManager.isRTL ? 'row-reverse' : 'row',
+    flexDirection: isArabic ? 'row-reverse' : 'row',
     alignItems: 'center',
     marginBottom: 12,
     gap: 10
@@ -1155,11 +1160,11 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#1e293b',
     flex: 1,
-    textAlign: I18nManager.isRTL ? 'right' : 'left'
+    textAlign: isArabic ? 'right' : 'left'
   },
   testNameRow: {
     flex: 1,
-    flexDirection: I18nManager.isRTL ? 'row-reverse' : 'row',
+    flexDirection: isArabic ? 'row-reverse' : 'row',
     alignItems: 'center',
     gap: 6,
   },
@@ -1180,7 +1185,7 @@ const styles = StyleSheet.create({
     lineHeight: 12,
   },
   inbodyBadge: {
-    flexDirection: I18nManager.isRTL ? 'row-reverse' : 'row',
+    flexDirection: isArabic ? 'row-reverse' : 'row',
     alignItems: 'center',
     gap: 3,
     backgroundColor: '#ecfeff',
@@ -1233,7 +1238,7 @@ const styles = StyleSheet.create({
     paddingTop: 12
   },
   categoryRow: {
-    flexDirection: I18nManager.isRTL ? 'row-reverse' : 'row',
+    flexDirection: isArabic ? 'row-reverse' : 'row',
     alignItems: 'center',
     marginBottom: 10,
     gap: 6
@@ -1249,7 +1254,7 @@ const styles = StyleSheet.create({
     fontWeight: '500'
   },
   valuesRow: {
-    flexDirection: I18nManager.isRTL ? 'row-reverse' : 'row',
+    flexDirection: isArabic ? 'row-reverse' : 'row',
     justifyContent: 'space-between',
     marginBottom: 8
   },
@@ -1260,13 +1265,13 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: '#94a3b8',
     marginBottom: 2,
-    textAlign: I18nManager.isRTL ? 'right' : 'left'
+    textAlign: isArabic ? 'right' : 'left'
   },
   valueText: {
     fontSize: 16,
     fontWeight: '600',
     color: '#1e293b',
-    textAlign: I18nManager.isRTL ? 'right' : 'left'
+    textAlign: isArabic ? 'right' : 'left'
   },
   valueTextPending: {
     color: '#94a3b8'
@@ -1277,18 +1282,18 @@ const styles = StyleSheet.create({
   rangeText: {
     fontSize: 14,
     color: '#64748b',
-    textAlign: I18nManager.isRTL ? 'right' : 'left'
+    textAlign: isArabic ? 'right' : 'left'
   },
   dateText: {
     fontSize: 12,
     color: '#94a3b8',
-    textAlign: I18nManager.isRTL ? 'right' : 'left'
+    textAlign: isArabic ? 'right' : 'left'
   },
   testDateTop: {
     fontSize: 12,
     color: '#64748b',
     marginBottom: 8,
-    textAlign: I18nManager.isRTL ? 'right' : 'left',
+    textAlign: isArabic ? 'right' : 'left',
     fontWeight: '600',
   },
   reminderRow: {
@@ -1296,8 +1301,8 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   reminderButton: {
-    alignSelf: I18nManager.isRTL ? 'flex-end' : 'flex-start',
-    flexDirection: I18nManager.isRTL ? 'row-reverse' : 'row',
+    alignSelf: isArabic ? 'flex-end' : 'flex-start',
+    flexDirection: isArabic ? 'row-reverse' : 'row',
     alignItems: 'center',
     backgroundColor: '#3b82f6',
     borderRadius: 8,
@@ -1313,7 +1318,7 @@ const styles = StyleSheet.create({
   reminderDateText: {
     fontSize: 11,
     color: '#475569',
-    textAlign: I18nManager.isRTL ? 'right' : 'left',
+    textAlign: isArabic ? 'right' : 'left',
   },
   modalBackdrop: {
     flex: 1,
@@ -1330,14 +1335,14 @@ const styles = StyleSheet.create({
     fontSize: 17,
     fontWeight: '700',
     color: '#1e293b',
-    textAlign: I18nManager.isRTL ? 'right' : 'left',
+    textAlign: isArabic ? 'right' : 'left',
   },
   modalHint: {
     fontSize: 12,
     color: '#64748b',
     marginTop: 6,
     marginBottom: 10,
-    textAlign: I18nManager.isRTL ? 'right' : 'left',
+    textAlign: isArabic ? 'right' : 'left',
   },
   modalInput: {
     borderWidth: 1,
@@ -1349,7 +1354,7 @@ const styles = StyleSheet.create({
     color: '#0f172a',
   },
   modalButtons: {
-    flexDirection: I18nManager.isRTL ? 'row-reverse' : 'row',
+    flexDirection: isArabic ? 'row-reverse' : 'row',
     justifyContent: 'flex-end',
     gap: 8,
     marginTop: 12,
@@ -1394,7 +1399,7 @@ const styles = StyleSheet.create({
     marginTop: 16
   },
   disclaimerSmall: {
-    flexDirection: I18nManager.isRTL ? 'row-reverse' : 'row',
+    flexDirection: isArabic ? 'row-reverse' : 'row',
     alignItems: 'flex-start',
     paddingHorizontal: 16,
     paddingTop: 12,
@@ -1405,6 +1410,6 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: '#94a3b8',
     lineHeight: 16,
-    textAlign: I18nManager.isRTL ? 'right' : 'left',
+    textAlign: isArabic ? 'right' : 'left',
   },
 });

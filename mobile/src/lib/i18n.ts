@@ -1,6 +1,8 @@
 import i18n from 'i18next';
 import { initReactI18next } from 'react-i18next';
-import { I18nManager } from 'react-native';
+import { DevSettings, I18nManager } from 'react-native';
+import * as Updates from 'expo-updates';
+import * as SecureStore from 'expo-secure-store';
 
 const resources = {
   ar: {
@@ -553,12 +555,63 @@ i18n.use(initReactI18next).init({
   resources,
   lng: 'ar',
   fallbackLng: 'ar',
+  compatibilityJSON: 'v3',
   interpolation: {
     escapeValue: false
   }
 });
 
-I18nManager.allowRTL(true);
-I18nManager.forceRTL(true);
+const LANGUAGE_PREF_KEY = 'app_language_preference';
+let hasRequestedLayoutReload = false;
+
+const reloadAppForDirectionChange = async () => {
+  // In Expo Go / development, DevSettings reload is the most reliable way.
+  if (__DEV__) {
+    DevSettings.reload();
+    return;
+  }
+  await Updates.reloadAsync();
+};
+
+const applyLayoutDirection = async (language?: string) => {
+  const lang = (language || '').toLowerCase();
+  const shouldUseRTL = lang.startsWith('ar');
+  I18nManager.allowRTL(shouldUseRTL);
+
+  if (I18nManager.isRTL !== shouldUseRTL) {
+    I18nManager.forceRTL(shouldUseRTL);
+    if (!hasRequestedLayoutReload) {
+      hasRequestedLayoutReload = true;
+      try {
+        await reloadAppForDirectionChange();
+      } catch {
+        // If runtime reload is unavailable, the direction applies on next app launch.
+      }
+    }
+  }
+};
+
+const hydrateLanguageAndDirection = async () => {
+  let preferredLanguage: string | null = null;
+  try {
+    preferredLanguage = await SecureStore.getItemAsync(LANGUAGE_PREF_KEY);
+  } catch {
+    preferredLanguage = null;
+  }
+
+  if (preferredLanguage && preferredLanguage !== i18n.language) {
+    await i18n.changeLanguage(preferredLanguage);
+    await applyLayoutDirection(preferredLanguage);
+    return;
+  }
+
+  await applyLayoutDirection(i18n.resolvedLanguage || i18n.language);
+};
+
+i18n.on('languageChanged', (lang) => {
+  void SecureStore.setItemAsync(LANGUAGE_PREF_KEY, lang).catch(() => {});
+  void applyLayoutDirection(lang);
+});
+void hydrateLanguageAndDirection();
 
 export default i18n;

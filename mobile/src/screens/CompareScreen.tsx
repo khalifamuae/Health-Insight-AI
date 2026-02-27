@@ -9,6 +9,7 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import { useTranslation } from 'react-i18next';
+import { isArabicLanguage } from '../lib/isArabic';
 import { useQuery } from '@tanstack/react-query';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
@@ -90,10 +91,12 @@ const getCategoryIcon = (category: string): keyof typeof Ionicons.glyphMap => {
   return icons[category] || 'ellipse';
 };
 
+const isArabic = I18nManager.isRTL;
+
 export default function CompareScreen() {
   const { t, i18n } = useTranslation();
   const { colors, isDark } = useAppTheme();
-  const isArabic = i18n.language === 'ar';
+  const isArabic = isArabicLanguage();
   const [dateCalendar, setDateCalendar] = useState<CalendarType>('gregorian');
   const [compareTab, setCompareTab] = useState<'lab' | 'inbody'>('lab');
 
@@ -426,7 +429,7 @@ const styles = StyleSheet.create({
     borderBottomColor: '#e2e8f0',
   },
   headerRow: {
-    flexDirection: I18nManager.isRTL ? 'row-reverse' : 'row',
+    flexDirection: isArabic ? 'row-reverse' : 'row',
     alignItems: 'center',
     gap: 8,
   },
@@ -436,7 +439,7 @@ const styles = StyleSheet.create({
     color: '#1e293b',
   },
   topTabsRow: {
-    flexDirection: I18nManager.isRTL ? 'row-reverse' : 'row',
+    flexDirection: isArabic ? 'row-reverse' : 'row',
     gap: 8,
     paddingHorizontal: 16,
     paddingVertical: 10,
@@ -446,7 +449,7 @@ const styles = StyleSheet.create({
   },
   topTab: {
     flex: 1,
-    flexDirection: I18nManager.isRTL ? 'row-reverse' : 'row',
+    flexDirection: isArabic ? 'row-reverse' : 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 6,
@@ -468,7 +471,7 @@ const styles = StyleSheet.create({
     color: '#fff',
   },
   legendRow: {
-    flexDirection: I18nManager.isRTL ? 'row-reverse' : 'row',
+    flexDirection: isArabic ? 'row-reverse' : 'row',
     justifyContent: 'center',
     gap: 16,
     paddingVertical: 10,
@@ -477,7 +480,7 @@ const styles = StyleSheet.create({
     borderBottomColor: '#e2e8f0',
   },
   legendItem: {
-    flexDirection: I18nManager.isRTL ? 'row-reverse' : 'row',
+    flexDirection: isArabic ? 'row-reverse' : 'row',
     alignItems: 'center',
     gap: 4,
   },
@@ -502,13 +505,13 @@ const styles = StyleSheet.create({
     borderColor: '#e2e8f0',
   },
   cardHeader: {
-    flexDirection: I18nManager.isRTL ? 'row-reverse' : 'row',
+    flexDirection: isArabic ? 'row-reverse' : 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 14,
   },
   cardTitleRow: {
-    flexDirection: I18nManager.isRTL ? 'row-reverse' : 'row',
+    flexDirection: isArabic ? 'row-reverse' : 'row',
     alignItems: 'center',
     gap: 8,
     flex: 1,
@@ -518,10 +521,10 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#1e293b',
     flex: 1,
-    textAlign: I18nManager.isRTL ? 'right' : 'left',
+    textAlign: isArabic ? 'right' : 'left',
   },
   changeBadge: {
-    flexDirection: I18nManager.isRTL ? 'row-reverse' : 'row',
+    flexDirection: isArabic ? 'row-reverse' : 'row',
     alignItems: 'center',
     paddingHorizontal: 8,
     paddingVertical: 4,
@@ -536,11 +539,11 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: '#64748b',
     marginBottom: 10,
-    textAlign: I18nManager.isRTL ? 'right' : 'left',
+    textAlign: isArabic ? 'right' : 'left',
     fontWeight: '600',
   },
   valuesGrid: {
-    flexDirection: I18nManager.isRTL ? 'row-reverse' : 'row',
+    flexDirection: isArabic ? 'row-reverse' : 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
   },
@@ -611,7 +614,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 40,
   },
   disclaimerSmall: {
-    flexDirection: I18nManager.isRTL ? 'row-reverse' : 'row',
+    flexDirection: isArabic ? 'row-reverse' : 'row',
     alignItems: 'flex-start',
     paddingHorizontal: 16,
     paddingTop: 12,
@@ -622,6 +625,6 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: '#94a3b8',
     lineHeight: 16,
-    textAlign: I18nManager.isRTL ? 'right' : 'left',
+    textAlign: isArabic ? 'right' : 'left',
   },
 });

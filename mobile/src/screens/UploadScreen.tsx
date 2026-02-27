@@ -9,18 +9,30 @@ import {
   I18nManager,
 } from 'react-native';
 import { useTranslation } from 'react-i18next';
+import { isArabicLanguage } from '../lib/isArabic';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import * as DocumentPicker from 'expo-document-picker';
 import { Ionicons } from '@expo/vector-icons';
 import { api } from '../lib/api';
+import { useAIConsent } from '../context/AIConsentContext';
 import { useAppTheme } from '../context/ThemeContext';
+import { pickImageFromAlbum, takePhotoWithCamera } from '../lib/photoPicker';
+
+type SelectedUploadFile = {
+  uri: string;
+  name: string;
+  mimeType?: string;
+};
+
+const isArabic = I18nManager.isRTL;
 
 export default function UploadScreen({ navigation }: any) {
   const { t, i18n } = useTranslation();
   const { colors, isDark } = useAppTheme();
-  const isArabic = i18n.language === 'ar';
+  const { isAccepted, accept } = useAIConsent();
+  const isArabic = isArabicLanguage();
   const queryClient = useQueryClient();
-  const [selectedFile, setSelectedFile] = useState<DocumentPicker.DocumentPickerAsset | null>(null);
+  const [selectedFile, setSelectedFile] = useState<SelectedUploadFile | null>(null);
 
   const uploadTitleText = isArabic ? 'رفع الملف او الصوره' : 'Upload File or Image';
   const uploadSupportText = isArabic
@@ -44,11 +56,23 @@ export default function UploadScreen({ navigation }: any) {
       );
     },
     onError: (error: any) => {
-      Alert.alert(t('errors.uploadFailed'), error.message);
+      const rawMessage = error?.message || '';
+      const isHtmlResponseError =
+        rawMessage.includes('Server returned HTML') ||
+        rawMessage.includes('Unexpected character: <') ||
+        rawMessage.includes('Cannot POST') ||
+        rawMessage.includes('404');
+      const message = isHtmlResponseError
+        ? (isArabic
+            ? 'الخادم أعاد استجابة غير صحيحة. أعد المحاولة الآن. إذا استمرت المشكلة فقم بتشغيل آخر نسخة من السيرفر.'
+            : 'Server returned an invalid response. Please retry now. If it persists, run the latest backend version.')
+        : rawMessage;
+
+      Alert.alert(t('errors.uploadFailed'), message);
     },
   });
 
-  const pickDocument = async () => {
+  const pickFromFiles = async () => {
     try {
       const result = await DocumentPicker.getDocumentAsync({
         type: ['application/pdf', 'image/*'],
@@ -56,21 +80,122 @@ export default function UploadScreen({ navigation }: any) {
       });
 
       if (!result.canceled && result.assets[0]) {
-        setSelectedFile(result.assets[0]);
+        const file = result.assets[0];
+        setSelectedFile({
+          uri: file.uri,
+          name: file.name,
+          mimeType: file.mimeType,
+        });
       }
     } catch {
       Alert.alert(t('errors.uploadFailed'));
     }
   };
 
-  const handleUpload = () => {
-    if (selectedFile) {
-      uploadMutation.mutate({
-        uri: selectedFile.uri,
-        name: selectedFile.name,
-        type: selectedFile.mimeType || 'application/octet-stream',
-      });
+  const pickFromGallery = async () => {
+    try {
+      const asset = await pickImageFromAlbum();
+      if (asset) {
+        setSelectedFile({
+          uri: asset.uri,
+          name: asset.name,
+          mimeType: asset.type || 'image/jpeg',
+        });
+      }
+    } catch {
+      Alert.alert(t('errors.uploadFailed'));
     }
+  };
+
+  const pickFromCamera = async () => {
+    try {
+      const asset = await takePhotoWithCamera();
+      if (asset) {
+        setSelectedFile({
+          uri: asset.uri,
+          name: asset.name,
+          mimeType: asset.type || 'image/jpeg',
+        });
+      }
+    } catch {
+      Alert.alert(t('errors.uploadFailed'));
+    }
+  };
+
+  const openSourceOptions = () => {
+    Alert.alert(
+      isArabic ? 'اختر طريقة الرفع' : 'Choose Upload Method',
+      isArabic ? 'اختر مصدر الملف أو الصورة' : 'Select the source of your file or image',
+      [
+        { text: isArabic ? 'الملفات' : 'Files', onPress: pickFromFiles },
+        { text: isArabic ? 'الاستوديو' : 'Gallery', onPress: pickFromGallery },
+        { text: isArabic ? 'التقاط صورة' : 'Take Photo', onPress: pickFromCamera },
+        { text: isArabic ? 'إلغاء' : 'Cancel', style: 'cancel' },
+      ]
+    );
+  };
+
+  const startUpload = () => {
+    if (!selectedFile) {
+      return;
+    }
+
+    const lowerName = selectedFile.name.toLowerCase();
+    const inferredMimeType =
+      selectedFile.mimeType ||
+      (lowerName.endsWith('.pdf')
+        ? 'application/pdf'
+        : /\.(png|jpe?g|heic|webp)$/i.test(lowerName)
+          ? 'image/jpeg'
+          : 'application/octet-stream');
+
+    uploadMutation.mutate({
+      uri: selectedFile.uri,
+      name: selectedFile.name,
+      type: inferredMimeType,
+    });
+  };
+
+  const requestPerUploadConsent = () => {
+    Alert.alert(
+      isArabic ? 'موافقة رفع البيانات للتحليل' : 'Data Sharing Consent',
+      isArabic
+        ? 'أنا أوافق على مشاركة بياناتي الصحية المرفوعة (الملف أو الصورة) لغرض تحليلها وتقديم خدمات هذا التطبيق لي، وفق سياسة الخصوصية وشروط الاستخدام.'
+        : 'I agree to share my uploaded health data (file or image) for analysis and to provide this app’s services to me, in accordance with the Privacy Policy and Terms of Use.',
+      [
+        { text: isArabic ? 'إلغاء' : 'Cancel', style: 'cancel' },
+        { text: isArabic ? 'موافق' : 'I Agree', onPress: startUpload },
+      ]
+    );
+  };
+
+  const handleUpload = () => {
+    if (!selectedFile) {
+      openSourceOptions();
+      return;
+    }
+
+    if (!isAccepted) {
+      Alert.alert(
+        isArabic ? 'موافقة الذكاء الاصطناعي مطلوبة' : 'AI Consent Required',
+        isArabic
+          ? 'لا يمكن إرسال الملفات للتحليل بالذكاء الاصطناعي إلا بعد الموافقة على معالجة البيانات.'
+          : 'Files cannot be sent for AI analysis unless you agree to AI data processing.',
+        [
+          { text: isArabic ? 'إلغاء' : 'Cancel', style: 'cancel' },
+          {
+            text: isArabic ? 'موافقة' : 'Agree',
+            onPress: async () => {
+              await accept();
+              requestPerUploadConsent();
+            },
+          },
+        ]
+      );
+      return;
+    }
+
+    requestPerUploadConsent();
   };
 
   return (
@@ -88,9 +213,9 @@ export default function UploadScreen({ navigation }: any) {
           <Text style={styles.securityBadgeText}>{isArabic ? 'مشفر و امن' : 'Encrypted and Secure'}</Text>
         </View>
 
-        <TouchableOpacity style={[styles.selectButton, { backgroundColor: colors.card, borderColor: colors.primary }]} onPress={pickDocument} testID="button-select-file">
+        <TouchableOpacity style={[styles.selectButton, { backgroundColor: colors.card, borderColor: colors.primary }]} onPress={openSourceOptions} testID="button-select-file">
           <Ionicons name="folder-open" size={24} color={colors.primary} />
-          <Text style={[styles.selectButtonText, { color: colors.primary }]}>{isArabic ? 'اختر الملف' : 'Choose File'}</Text>
+          <Text style={[styles.selectButtonText, { color: colors.primary }]}>{isArabic ? 'اختر المصدر' : 'Choose Source'}</Text>
         </TouchableOpacity>
 
         {selectedFile && (
@@ -106,9 +231,9 @@ export default function UploadScreen({ navigation }: any) {
         )}
 
         <TouchableOpacity
-          style={[styles.uploadButton, (!selectedFile || uploadMutation.isPending) && styles.uploadButtonDisabled]}
+          style={[styles.uploadButton, uploadMutation.isPending && styles.uploadButtonDisabled]}
           onPress={handleUpload}
-          disabled={!selectedFile || uploadMutation.isPending}
+          disabled={uploadMutation.isPending}
           testID="button-upload-file"
         >
           {uploadMutation.isPending ? (
@@ -162,7 +287,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   securityBadge: {
-    flexDirection: I18nManager.isRTL ? 'row-reverse' : 'row',
+    flexDirection: isArabic ? 'row-reverse' : 'row',
     alignItems: 'center',
     backgroundColor: '#f0fdf4',
     paddingVertical: 6,
@@ -177,7 +302,7 @@ const styles = StyleSheet.create({
     color: '#16a34a',
   },
   selectButton: {
-    flexDirection: I18nManager.isRTL ? 'row-reverse' : 'row',
+    flexDirection: isArabic ? 'row-reverse' : 'row',
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: '#fff',
@@ -196,7 +321,7 @@ const styles = StyleSheet.create({
     marginHorizontal: 8,
   },
   fileCard: {
-    flexDirection: I18nManager.isRTL ? 'row-reverse' : 'row',
+    flexDirection: isArabic ? 'row-reverse' : 'row',
     alignItems: 'center',
     backgroundColor: '#fff',
     borderRadius: 12,
@@ -211,10 +336,10 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#1e293b',
     marginHorizontal: 12,
-    textAlign: I18nManager.isRTL ? 'right' : 'left',
+    textAlign: isArabic ? 'right' : 'left',
   },
   uploadButton: {
-    flexDirection: I18nManager.isRTL ? 'row-reverse' : 'row',
+    flexDirection: isArabic ? 'row-reverse' : 'row',
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: '#3b82f6',

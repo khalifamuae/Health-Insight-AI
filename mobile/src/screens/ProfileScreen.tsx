@@ -13,10 +13,11 @@ import {
   Image,
 } from 'react-native';
 import { useTranslation } from 'react-i18next';
+import { isArabicLanguage } from '../lib/isArabic';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Ionicons } from '@expo/vector-icons';
-import * as DocumentPicker from 'expo-document-picker';
 import { queries, api } from '../lib/api';
+import { pickImageFromAlbum } from '../lib/photoPicker';
 import { useAuth } from '../context/AuthContext';
 import { useAppTheme } from '../context/ThemeContext';
 import { getDateCalendarPreference, setDateCalendarPreference, type CalendarType } from '../lib/dateFormat';
@@ -40,12 +41,14 @@ interface UserProfile {
 const BASE_URL = 'https://health-insight-ai.replit.app';
 const BLOOD_TYPE_OPTIONS = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
 
+const isArabic = I18nManager.isRTL;
+
 export default function ProfileScreen({ navigation }: { navigation: any }) {
   const { t, i18n } = useTranslation();
   const queryClient = useQueryClient();
   const { logout } = useAuth();
   const { mode: themeMode, setMode: setThemeMode, isDark, colors } = useAppTheme();
-  const isArabic = i18n.language === 'ar';
+  const isArabic = isArabicLanguage();
 
   const [age, setAge] = useState('');
   const [displayName, setDisplayName] = useState('');
@@ -113,15 +116,24 @@ export default function ProfileScreen({ navigation }: { navigation: any }) {
 
   const handlePickProfileImage = async () => {
     try {
-      const result = await DocumentPicker.getDocumentAsync({
-        type: ['image/*'],
-        copyToCacheDirectory: true,
-      });
-      if (!result.canceled && result.assets[0]) {
-        setProfileImagePath(result.assets[0].uri);
+      const albumImage = await pickImageFromAlbum();
+      if (albumImage?.uri) {
+        setProfileImagePath(albumImage.uri);
+        return;
       }
+      Alert.alert(
+        isArabic ? 'تعذر اختيار صورة من الألبوم' : 'Could Not Pick Image From Album',
+        isArabic
+          ? 'تأكد من السماح للتطبيق بالوصول إلى الصور من إعدادات الجهاز.'
+          : 'Please allow Photos access for the app from device settings.'
+      );
     } catch {
-      Alert.alert(isArabic ? 'تعذر اختيار الصورة' : 'Failed to pick image');
+      Alert.alert(
+        isArabic ? 'تعذر اختيار صورة من الألبوم' : 'Could Not Pick Image From Album',
+        isArabic
+          ? 'تأكد من السماح للتطبيق بالوصول إلى الصور من إعدادات الجهاز.'
+          : 'Please allow Photos access for the app from device settings.'
+      );
     }
   };
 
@@ -223,7 +235,7 @@ export default function ProfileScreen({ navigation }: { navigation: any }) {
             {t(`subscription.${profile?.subscriptionPlan || 'free'}`)}
           </Text>
         </View>
-        <Text style={styles.subscriptionRemaining}>
+        <Text style={[styles.subscriptionRemaining, { color: secondaryText }]}>
           {subInfo.remaining === Infinity 
             ? '∞' 
             : `${Math.max(0, subInfo.remaining)} ${t('subscription.remaining')}`}
@@ -247,9 +259,9 @@ export default function ProfileScreen({ navigation }: { navigation: any }) {
         <Text style={[styles.sectionTitle, { color: primaryText }]}>{t('profile.age')}</Text>
 
         <View style={styles.inputGroup}>
-          <Text style={styles.label}>{t('profile.age')}</Text>
+          <Text style={[styles.label, { color: secondaryText }]}>{t('profile.age')}</Text>
           <TextInput
-            style={styles.input}
+            style={[styles.input, { backgroundColor: isDark ? '#0f172a' : '#f8fafc', borderColor: colors.border, color: primaryText }]}
             value={age}
             onChangeText={setAge}
             keyboardType="number-pad"
@@ -259,7 +271,7 @@ export default function ProfileScreen({ navigation }: { navigation: any }) {
         </View>
 
         <View style={styles.inputGroup}>
-          <Text style={styles.label}>{t('profile.gender')}</Text>
+          <Text style={[styles.label, { color: secondaryText }]}>{t('profile.gender')}</Text>
           <View style={styles.genderButtons}>
             <TouchableOpacity
               style={[styles.genderButton, gender === 'male' && styles.genderButtonSelected]}
@@ -300,9 +312,9 @@ export default function ProfileScreen({ navigation }: { navigation: any }) {
 
         <View style={styles.row}>
           <View style={[styles.inputGroup, styles.halfWidth]}>
-            <Text style={styles.label}>{t('profile.height')}</Text>
+            <Text style={[styles.label, { color: secondaryText }]}>{t('profile.height')}</Text>
             <TextInput
-              style={styles.input}
+              style={[styles.input, { backgroundColor: isDark ? '#0f172a' : '#f8fafc', borderColor: colors.border, color: primaryText }]}
               value={height}
               onChangeText={setHeight}
               keyboardType="number-pad"
@@ -311,9 +323,9 @@ export default function ProfileScreen({ navigation }: { navigation: any }) {
             />
           </View>
           <View style={[styles.inputGroup, styles.halfWidth]}>
-            <Text style={styles.label}>{t('profile.weight')}</Text>
+            <Text style={[styles.label, { color: secondaryText }]}>{t('profile.weight')}</Text>
             <TextInput
-              style={styles.input}
+              style={[styles.input, { backgroundColor: isDark ? '#0f172a' : '#f8fafc', borderColor: colors.border, color: primaryText }]}
               value={weight}
               onChangeText={setWeight}
               keyboardType="number-pad"
@@ -324,21 +336,21 @@ export default function ProfileScreen({ navigation }: { navigation: any }) {
         </View>
 
         <View style={styles.inputGroup}>
-          <Text style={styles.label}>{t('profile.bloodType')}</Text>
+          <Text style={[styles.label, { color: secondaryText }]}>{t('profile.bloodType')}</Text>
           <TouchableOpacity
-            style={styles.selectorInput}
+            style={[styles.selectorInput, { backgroundColor: isDark ? '#0f172a' : '#f8fafc', borderColor: colors.border }]}
             onPress={() => setShowBloodTypeModal(true)}
             testID="select-blood-type"
           >
-            <Text style={[styles.selectorInputText, !bloodType && styles.selectorPlaceholder]}>
+            <Text style={[styles.selectorInputText, { color: primaryText }, !bloodType && styles.selectorPlaceholder]}>
               {bloodType || (isArabic ? 'اختر فصيلة الدم' : 'Select blood type')}
             </Text>
-            <Ionicons name="chevron-down" size={20} color="#64748b" />
+            <Ionicons name="chevron-down" size={20} color={secondaryText} />
           </TouchableOpacity>
         </View>
 
         <View style={styles.inputGroup}>
-          <Text style={styles.label}>{t('profile.fitnessGoal')}</Text>
+          <Text style={[styles.label, { color: secondaryText }]}>{t('profile.fitnessGoal')}</Text>
           <View style={styles.fitnessGoalButtons}>
             <TouchableOpacity
               style={[styles.fitnessGoalButton, fitnessGoal === 'weight_loss' && styles.fitnessGoalButtonSelected]}
@@ -409,77 +421,77 @@ export default function ProfileScreen({ navigation }: { navigation: any }) {
         <Text style={[styles.sectionTitle, { color: primaryText }]}>{t('settings')}</Text>
         
         <TouchableOpacity 
-          style={styles.settingItem}
+          style={[styles.settingItem, { borderBottomColor: colors.border }]}
           onPress={toggleLanguage}
           testID="button-toggle-language"
         >
-          <Ionicons name="language" size={24} color="#64748b" />
-          <Text style={styles.settingText}>
+          <Ionicons name="language" size={24} color={secondaryText} />
+          <Text style={[styles.settingText, { color: primaryText }]}>
             {isArabic ? 'English' : 'العربية'}
           </Text>
-          <Ionicons name="chevron-forward" size={20} color="#94a3b8" />
+          <Ionicons name="chevron-forward" size={20} color={secondaryText} />
         </TouchableOpacity>
 
         <TouchableOpacity
-          style={styles.settingItem}
+          style={[styles.settingItem, { borderBottomColor: colors.border }]}
           onPress={handleDateCalendarPress}
           testID="button-date-calendar"
         >
-          <Ionicons name="calendar-outline" size={24} color="#64748b" />
-          <Text style={styles.settingText}>
+          <Ionicons name="calendar-outline" size={24} color={secondaryText} />
+          <Text style={[styles.settingText, { color: primaryText }]}>
             {t('dateCalendar')}: {dateCalendar === 'hijri' ? t('hijri') : t('gregorian')}
           </Text>
-          <Ionicons name="chevron-forward" size={20} color="#94a3b8" />
+          <Ionicons name="chevron-forward" size={20} color={secondaryText} />
         </TouchableOpacity>
 
         <TouchableOpacity
-          style={styles.settingItem}
+          style={[styles.settingItem, { borderBottomColor: colors.border }]}
           onPress={handleThemePress}
           testID="button-theme-mode"
         >
-          <Ionicons name="moon-outline" size={24} color="#64748b" />
-          <Text style={styles.settingText}>
+          <Ionicons name="moon-outline" size={24} color={secondaryText} />
+          <Text style={[styles.settingText, { color: primaryText }]}>
             {isArabic ? 'الوضع الليلي' : 'Theme'}: {themeMode === 'dark' ? (isArabic ? 'داكن' : 'Dark') : themeMode === 'light' ? (isArabic ? 'فاتح' : 'Light') : (isArabic ? 'تلقائي' : 'System')}
           </Text>
-          <Ionicons name="chevron-forward" size={20} color="#94a3b8" />
+          <Ionicons name="chevron-forward" size={20} color={secondaryText} />
         </TouchableOpacity>
       </View>
 
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>{isArabic ? 'القانونية والدعم' : 'Legal & Support'}</Text>
+      <View style={[styles.section, { backgroundColor: cardBg }]}>
+        <Text style={[styles.sectionTitle, { color: primaryText }]}>{isArabic ? 'القانونية والدعم' : 'Legal & Support'}</Text>
 
         <TouchableOpacity
-          style={styles.settingItem}
+          style={[styles.settingItem, { borderBottomColor: colors.border }]}
           onPress={() => Linking.openURL(`${BASE_URL}/privacy`)}
           testID="link-privacy-profile"
         >
-          <Ionicons name="shield-checkmark-outline" size={24} color="#64748b" />
-          <Text style={styles.settingText}>{isArabic ? 'سياسة الخصوصية' : 'Privacy Policy'}</Text>
-          <Ionicons name="open-outline" size={18} color="#94a3b8" />
+          <Ionicons name="shield-checkmark-outline" size={24} color={secondaryText} />
+          <Text style={[styles.settingText, { color: primaryText }]}>{isArabic ? 'سياسة الخصوصية' : 'Privacy Policy'}</Text>
+          <Ionicons name="open-outline" size={18} color={secondaryText} />
         </TouchableOpacity>
 
         <TouchableOpacity
-          style={styles.settingItem}
+          style={[styles.settingItem, { borderBottomColor: colors.border }]}
           onPress={() => Linking.openURL(`${BASE_URL}/terms`)}
           testID="link-terms-profile"
         >
-          <Ionicons name="document-text-outline" size={24} color="#64748b" />
-          <Text style={styles.settingText}>{isArabic ? 'شروط الاستخدام' : 'Terms of Use'}</Text>
-          <Ionicons name="open-outline" size={18} color="#94a3b8" />
+          <Ionicons name="document-text-outline" size={24} color={secondaryText} />
+          <Text style={[styles.settingText, { color: primaryText }]}>{isArabic ? 'شروط الاستخدام' : 'Terms of Use'}</Text>
+          <Ionicons name="open-outline" size={18} color={secondaryText} />
         </TouchableOpacity>
 
         <TouchableOpacity
-          style={styles.settingItem}
+          style={[styles.settingItem, { borderBottomColor: colors.border }]}
           onPress={() => Linking.openURL(`${BASE_URL}/support`)}
           testID="link-support-profile"
         >
-          <Ionicons name="help-circle-outline" size={24} color="#64748b" />
-          <Text style={styles.settingText}>{isArabic ? 'الدعم والمساعدة' : 'Help & Support'}</Text>
-          <Ionicons name="open-outline" size={18} color="#94a3b8" />
+          <Ionicons name="help-circle-outline" size={24} color={secondaryText} />
+          <Text style={[styles.settingText, { color: primaryText }]}>{isArabic ? 'الدعم والمساعدة' : 'Help & Support'}</Text>
+          <Ionicons name="open-outline" size={18} color={secondaryText} />
         </TouchableOpacity>
 
         <TouchableOpacity
-          style={styles.settingItem}
+          style={[styles.settingItem, { borderBottomColor: colors.border }]}
           onPress={() => {
             Alert.alert(
               isArabic ? 'حذف الحساب' : 'Delete Account',
@@ -499,7 +511,7 @@ export default function ProfileScreen({ navigation }: { navigation: any }) {
       </View>
 
       <TouchableOpacity
-        style={styles.logoutButton}
+        style={[styles.logoutButton, { backgroundColor: cardBg, borderColor: colors.border }]}
         onPress={() => {
           Alert.alert(
             isArabic ? 'تسجيل الخروج' : 'Logout',
@@ -513,20 +525,20 @@ export default function ProfileScreen({ navigation }: { navigation: any }) {
         testID="button-logout"
       >
         <Ionicons name="log-out-outline" size={22} color="#ef4444" />
-        <Text style={styles.logoutText}>{isArabic ? 'تسجيل الخروج' : 'Logout'}</Text>
+        <Text style={[styles.logoutText, { color: '#ef4444' }]}>{isArabic ? 'تسجيل الخروج' : 'Logout'}</Text>
       </TouchableOpacity>
 
       <Modal visible={showBloodTypeModal} transparent animationType="fade" onRequestClose={() => setShowBloodTypeModal(false)}>
         <View style={styles.modalBackdrop}>
-          <View style={styles.bloodTypeModalCard}>
-            <Text style={styles.bloodTypeModalTitle}>
+          <View style={[styles.bloodTypeModalCard, { backgroundColor: cardBg }]}>
+            <Text style={[styles.bloodTypeModalTitle, { color: primaryText }]}>
               {isArabic ? 'اختر فصيلة الدم' : 'Select Blood Type'}
             </Text>
             <View style={styles.bloodTypeGrid}>
               {BLOOD_TYPE_OPTIONS.map((type) => (
                 <TouchableOpacity
                   key={type}
-                  style={[styles.bloodTypeOption, bloodType === type && styles.bloodTypeOptionSelected]}
+                  style={[styles.bloodTypeOption, { borderColor: colors.border, backgroundColor: isDark ? '#0f172a' : '#fff' }, bloodType === type && styles.bloodTypeOptionSelected]}
                   onPress={() => {
                     setBloodType(type);
                     setShowBloodTypeModal(false);
@@ -539,7 +551,7 @@ export default function ProfileScreen({ navigation }: { navigation: any }) {
                 </TouchableOpacity>
               ))}
             </View>
-            <TouchableOpacity style={styles.bloodTypeCloseBtn} onPress={() => setShowBloodTypeModal(false)}>
+            <TouchableOpacity style={[styles.bloodTypeCloseBtn, { backgroundColor: isDark ? '#334155' : '#f1f5f9' }]} onPress={() => setShowBloodTypeModal(false)}>
               <Text style={styles.bloodTypeCloseBtnText}>{isArabic ? 'إلغاء' : 'Cancel'}</Text>
             </TouchableOpacity>
           </View>
@@ -583,7 +595,7 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     paddingHorizontal: 12,
     fontSize: 16,
-    textAlign: I18nManager.isRTL ? 'right' : 'left',
+    textAlign: isArabic ? 'right' : 'left',
     marginBottom: 6,
   },
   name: {
@@ -609,7 +621,7 @@ const styles = StyleSheet.create({
     elevation: 2
   },
   subscriptionHeader: {
-    flexDirection: I18nManager.isRTL ? 'row-reverse' : 'row',
+    flexDirection: isArabic ? 'row-reverse' : 'row',
     alignItems: 'center',
     marginBottom: 8
   },
@@ -649,7 +661,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#1e293b',
     marginBottom: 16,
-    textAlign: I18nManager.isRTL ? 'right' : 'left'
+    textAlign: isArabic ? 'right' : 'left'
   },
   inputGroup: {
     marginBottom: 16
@@ -658,7 +670,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#64748b',
     marginBottom: 8,
-    textAlign: I18nManager.isRTL ? 'right' : 'left'
+    textAlign: isArabic ? 'right' : 'left'
   },
   input: {
     backgroundColor: '#f8fafc',
@@ -667,7 +679,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     borderWidth: 1,
     borderColor: '#e2e8f0',
-    textAlign: I18nManager.isRTL ? 'right' : 'left'
+    textAlign: isArabic ? 'right' : 'left'
   },
   selectorInput: {
     backgroundColor: '#f8fafc',
@@ -675,7 +687,7 @@ const styles = StyleSheet.create({
     padding: 12,
     borderWidth: 1,
     borderColor: '#e2e8f0',
-    flexDirection: I18nManager.isRTL ? 'row-reverse' : 'row',
+    flexDirection: isArabic ? 'row-reverse' : 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
   },
@@ -687,19 +699,19 @@ const styles = StyleSheet.create({
     color: '#94a3b8',
   },
   row: {
-    flexDirection: I18nManager.isRTL ? 'row-reverse' : 'row',
+    flexDirection: isArabic ? 'row-reverse' : 'row',
     justifyContent: 'space-between'
   },
   halfWidth: {
     width: '48%'
   },
   genderButtons: {
-    flexDirection: I18nManager.isRTL ? 'row-reverse' : 'row',
+    flexDirection: isArabic ? 'row-reverse' : 'row',
     justifyContent: 'space-between'
   },
   genderButton: {
     flex: 1,
-    flexDirection: I18nManager.isRTL ? 'row-reverse' : 'row',
+    flexDirection: isArabic ? 'row-reverse' : 'row',
     alignItems: 'center',
     justifyContent: 'center',
     padding: 12,
@@ -721,7 +733,7 @@ const styles = StyleSheet.create({
     color: '#fff'
   },
   saveButton: {
-    flexDirection: I18nManager.isRTL ? 'row-reverse' : 'row',
+    flexDirection: isArabic ? 'row-reverse' : 'row',
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: '#22c55e',
@@ -736,7 +748,7 @@ const styles = StyleSheet.create({
     marginHorizontal: 8
   },
   settingItem: {
-    flexDirection: I18nManager.isRTL ? 'row-reverse' : 'row',
+    flexDirection: isArabic ? 'row-reverse' : 'row',
     alignItems: 'center',
     paddingVertical: 12,
     borderBottomWidth: 1,
@@ -747,10 +759,10 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#1e293b',
     marginHorizontal: 12,
-    textAlign: I18nManager.isRTL ? 'right' : 'left'
+    textAlign: isArabic ? 'right' : 'left'
   },
   affiliateCard: {
-    flexDirection: I18nManager.isRTL ? 'row-reverse' : 'row',
+    flexDirection: isArabic ? 'row-reverse' : 'row',
     alignItems: 'center',
     backgroundColor: '#faf5ff',
     borderRadius: 12,
@@ -772,16 +784,16 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     color: '#7c3aed',
-    textAlign: I18nManager.isRTL ? 'right' : 'left',
+    textAlign: isArabic ? 'right' : 'left',
   },
   affiliateSubtitle: {
     fontSize: 12,
     color: '#64748b',
     marginTop: 2,
-    textAlign: I18nManager.isRTL ? 'right' : 'left',
+    textAlign: isArabic ? 'right' : 'left',
   },
   logoutButton: {
-    flexDirection: I18nManager.isRTL ? 'row-reverse' : 'row',
+    flexDirection: isArabic ? 'row-reverse' : 'row',
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: '#fef2f2',
@@ -797,7 +809,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   fitnessGoalButton: {
-    flexDirection: I18nManager.isRTL ? 'row-reverse' : 'row',
+    flexDirection: isArabic ? 'row-reverse' : 'row',
     alignItems: 'center',
     padding: 12,
     borderRadius: 8,
@@ -822,7 +834,7 @@ const styles = StyleSheet.create({
     color: '#ef4444',
   },
   disclaimerSmall: {
-    flexDirection: I18nManager.isRTL ? 'row-reverse' : 'row',
+    flexDirection: isArabic ? 'row-reverse' : 'row',
     alignItems: 'flex-start',
     paddingHorizontal: 4,
     paddingTop: 16,
@@ -833,7 +845,7 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: '#94a3b8',
     lineHeight: 16,
-    textAlign: I18nManager.isRTL ? 'right' : 'left',
+    textAlign: isArabic ? 'right' : 'left',
   },
   modalBackdrop: {
     flex: 1,
@@ -851,10 +863,10 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#1e293b',
     marginBottom: 12,
-    textAlign: I18nManager.isRTL ? 'right' : 'left',
+    textAlign: isArabic ? 'right' : 'left',
   },
   bloodTypeGrid: {
-    flexDirection: I18nManager.isRTL ? 'row-reverse' : 'row',
+    flexDirection: isArabic ? 'row-reverse' : 'row',
     flexWrap: 'wrap',
     gap: 8,
   },
@@ -880,7 +892,7 @@ const styles = StyleSheet.create({
   },
   bloodTypeCloseBtn: {
     marginTop: 14,
-    alignSelf: I18nManager.isRTL ? 'flex-start' : 'flex-end',
+    alignSelf: isArabic ? 'flex-start' : 'flex-end',
   },
   bloodTypeCloseBtnText: {
     color: '#64748b',

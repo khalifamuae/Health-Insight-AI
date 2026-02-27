@@ -14,9 +14,11 @@ import {
   ScrollView,
 } from 'react-native';
 import { useTranslation } from 'react-i18next';
+import { isArabicLanguage } from '../lib/isArabic';
 import { Ionicons } from '@expo/vector-icons';
 
 import { setSessionCookie } from '../lib/api';
+import { useAppTheme } from '../context/ThemeContext';
 
 const API_BASE_URL = 'https://health-insight-ai.replit.app';
 
@@ -26,9 +28,12 @@ interface LoginScreenProps {
 
 type SignupStep = 'form' | 'verify';
 
+const isArabic = I18nManager.isRTL;
+
 export default function LoginScreen({ onLogin }: LoginScreenProps) {
   const { t, i18n } = useTranslation();
-  const isArabic = i18n.language === 'ar';
+  const { colors, isDark } = useAppTheme();
+  const isArabic = isArabicLanguage();
   const [isLoading, setIsLoading] = useState(false);
   const [isSignUp, setIsSignUp] = useState(false);
   const [signupStep, setSignupStep] = useState<SignupStep>('form');
@@ -450,17 +455,17 @@ export default function LoginScreen({ onLogin }: LoginScreenProps) {
 
   return (
     <KeyboardAvoidingView 
-      style={styles.container} 
+      style={[styles.container, { backgroundColor: colors.background }]} 
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
       <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
         <View style={styles.content}>
-          <View style={styles.logoContainer}>
-            <Ionicons name="flask" size={56} color="#3b82f6" />
+          <View style={[styles.logoContainer, { backgroundColor: isDark ? '#1e3a8a' : '#eff6ff' }]}>
+            <Ionicons name="flask" size={56} color={colors.primary} />
           </View>
 
-          <Text style={styles.title}>{t('appName')}</Text>
-          <Text style={styles.tagline}>
+          <Text style={[styles.title, { color: colors.text }]}>{t('appName')}</Text>
+          <Text style={[styles.tagline, { color: colors.mutedText }]}>
             {isArabic ? 'تحليل ذكي لنتائج فحوصاتك الطبية' : 'Smart Analysis for Your Lab Results'}
           </Text>
 
@@ -485,8 +490,8 @@ export default function LoginScreen({ onLogin }: LoginScreenProps) {
             </View>
           </View>
 
-          <View style={styles.formContainer}>
-            <Text style={styles.formTitle}>
+          <View style={[styles.formContainer, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            <Text style={[styles.formTitle, { color: colors.text }]}>
               {isSignUp
                 ? signupStep === 'verify'
                   ? (isArabic ? 'تحقق من البريد الإلكتروني' : 'Verify Email')
@@ -508,7 +513,7 @@ export default function LoginScreen({ onLogin }: LoginScreenProps) {
               style={styles.switchButton}
               testID="button-switch-auth-mode"
             >
-              <Text style={styles.switchText}>
+            <Text style={[styles.switchText, { color: colors.primary }]}>
                 {isSignUp 
                   ? (isArabic ? 'لديك حساب بالفعل؟ تسجيل الدخول' : 'Already have an account? Sign In')
                   : (isArabic ? 'ليس لديك حساب؟ إنشاء حساب جديد' : "Don't have an account? Create Account")}
@@ -525,19 +530,19 @@ export default function LoginScreen({ onLogin }: LoginScreenProps) {
             onPress={() => i18n.changeLanguage(isArabic ? 'en' : 'ar')}
             testID="button-language-toggle"
           >
-            <Ionicons name="language" size={20} color="#64748b" />
-            <Text style={styles.languageButtonText}>
+            <Ionicons name="language" size={20} color={colors.mutedText} />
+            <Text style={[styles.languageButtonText, { color: colors.mutedText }]}>
               {isArabic ? 'English' : 'العربية'}
             </Text>
           </TouchableOpacity>
 
           <View style={styles.footerLinks}>
             <TouchableOpacity onPress={() => Linking.openURL('https://health-insight-ai.replit.app/privacy')} testID="link-privacy-login">
-              <Text style={styles.footerLink}>{isArabic ? 'الخصوصية' : 'Privacy'}</Text>
+              <Text style={[styles.footerLink, { color: colors.mutedText }]}>{isArabic ? 'الخصوصية' : 'Privacy'}</Text>
             </TouchableOpacity>
-            <Text style={styles.footerDivider}>|</Text>
+            <Text style={[styles.footerDivider, { color: colors.mutedText }]}>|</Text>
             <TouchableOpacity onPress={() => Linking.openURL('https://health-insight-ai.replit.app/terms')} testID="link-terms-login">
-              <Text style={styles.footerLink}>{isArabic ? 'الشروط' : 'Terms'}</Text>
+              <Text style={[styles.footerLink, { color: colors.mutedText }]}>{isArabic ? 'الشروط' : 'Terms'}</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -583,7 +588,7 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   trustBadgesRow: {
-    flexDirection: I18nManager.isRTL ? 'row-reverse' : 'row',
+    flexDirection: isArabic ? 'row-reverse' : 'row',
     justifyContent: 'center',
     marginBottom: 20,
     gap: 16,
@@ -619,12 +624,12 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   nameRow: {
-    flexDirection: I18nManager.isRTL ? 'row-reverse' : 'row',
+    flexDirection: isArabic ? 'row-reverse' : 'row',
     gap: 10,
     marginBottom: 12,
   },
   inputContainer: {
-    flexDirection: I18nManager.isRTL ? 'row-reverse' : 'row',
+    flexDirection: isArabic ? 'row-reverse' : 'row',
     alignItems: 'center',
     backgroundColor: '#f1f5f9',
     borderRadius: 12,
@@ -634,8 +639,8 @@ const styles = StyleSheet.create({
     borderColor: '#e2e8f0',
   },
   inputIcon: {
-    marginRight: I18nManager.isRTL ? 0 : 8,
-    marginLeft: I18nManager.isRTL ? 8 : 0,
+    marginRight: isArabic ? 0 : 8,
+    marginLeft: isArabic ? 8 : 0,
   },
   input: {
     flex: 1,
@@ -749,7 +754,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   languageButton: {
-    flexDirection: I18nManager.isRTL ? 'row-reverse' : 'row',
+    flexDirection: isArabic ? 'row-reverse' : 'row',
     alignItems: 'center',
     padding: 10,
     gap: 6,

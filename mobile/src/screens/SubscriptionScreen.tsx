@@ -11,6 +11,7 @@ import {
   Linking,
 } from 'react-native';
 import { useTranslation } from 'react-i18next';
+import { isArabicLanguage } from '../lib/isArabic';
 import { useQueryClient } from '@tanstack/react-query';
 import { Ionicons } from '@expo/vector-icons';
 import {
@@ -27,10 +28,12 @@ interface Props {
 
 const BASE_URL = 'https://health-insight-ai.replit.app';
 
+const isArabic = I18nManager.isRTL;
+
 export default function SubscriptionScreen({ navigation, route }: Props) {
   const { t, i18n } = useTranslation();
   const queryClient = useQueryClient();
-  const isArabic = i18n.language === 'ar';
+  const isArabic = isArabicLanguage();
   const currentPlan = route?.params?.currentPlan || 'free';
   const trialEndsAt = route?.params?.trialEndsAt;
   const isTrialActive = route?.params?.isTrialActive || false;
@@ -283,7 +286,7 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#f8fafc' },
   content: { padding: 16, paddingTop: 60, paddingBottom: 40 },
   header: {
-    flexDirection: I18nManager.isRTL ? 'row-reverse' : 'row',
+    flexDirection: isArabic ? 'row-reverse' : 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     marginBottom: 20,
@@ -291,7 +294,7 @@ const styles = StyleSheet.create({
   backButton: { width: 40, height: 40, justifyContent: 'center', alignItems: 'center' },
   headerTitle: { fontSize: 22, fontWeight: 'bold', color: '#1e293b' },
   trialBanner: {
-    flexDirection: I18nManager.isRTL ? 'row-reverse' : 'row',
+    flexDirection: isArabic ? 'row-reverse' : 'row',
     alignItems: 'center',
     backgroundColor: '#fffbeb',
     borderWidth: 1,
@@ -301,11 +304,11 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     gap: 12,
   },
-  trialTextContainer: { flex: 1, alignItems: I18nManager.isRTL ? 'flex-end' : 'flex-start' },
+  trialTextContainer: { flex: 1, alignItems: isArabic ? 'flex-end' : 'flex-start' },
   trialTitle: { fontSize: 15, fontWeight: '700', color: '#b45309', marginBottom: 2 },
   trialSubtitle: { fontSize: 13, color: '#92400e' },
   comparisonContainer: {
-    flexDirection: I18nManager.isRTL ? 'row-reverse' : 'row',
+    flexDirection: isArabic ? 'row-reverse' : 'row',
     gap: 10,
     marginBottom: 20,
   },
@@ -337,14 +340,14 @@ const styles = StyleSheet.create({
   comparisonTitle: { fontSize: 18, fontWeight: '700', color: '#64748b', textAlign: 'center', marginTop: 4 },
   comparisonPrice: { fontSize: 14, fontWeight: '600', color: '#94a3b8', textAlign: 'center', marginBottom: 6 },
   comparisonRow: {
-    flexDirection: I18nManager.isRTL ? 'row-reverse' : 'row',
+    flexDirection: isArabic ? 'row-reverse' : 'row',
     alignItems: 'center',
     gap: 6,
   },
-  comparisonFeature: { fontSize: 12, color: '#475569', flex: 1, textAlign: I18nManager.isRTL ? 'right' : 'left' },
-  comparisonFeatureGray: { fontSize: 12, color: '#94a3b8', flex: 1, textAlign: I18nManager.isRTL ? 'right' : 'left' },
+  comparisonFeature: { fontSize: 12, color: '#475569', flex: 1, textAlign: isArabic ? 'right' : 'left' },
+  comparisonFeatureGray: { fontSize: 12, color: '#94a3b8', flex: 1, textAlign: isArabic ? 'right' : 'left' },
   periodToggle: {
-    flexDirection: I18nManager.isRTL ? 'row-reverse' : 'row',
+    flexDirection: isArabic ? 'row-reverse' : 'row',
     backgroundColor: '#e2e8f0',
     borderRadius: 14,
     padding: 4,
@@ -380,7 +383,7 @@ const styles = StyleSheet.create({
   restoreText: { color: '#3b82f6', fontSize: 14, fontWeight: '500', textDecorationLine: 'underline' },
   footer: { paddingTop: 16, borderTopWidth: 1, borderTopColor: '#e2e8f0' },
   freeTrialInfo: {
-    flexDirection: I18nManager.isRTL ? 'row-reverse' : 'row',
+    flexDirection: isArabic ? 'row-reverse' : 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 6,

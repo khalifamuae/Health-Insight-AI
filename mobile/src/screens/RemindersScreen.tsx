@@ -8,9 +8,11 @@ import {
   I18nManager
 } from 'react-native';
 import { useTranslation } from 'react-i18next';
+import { isArabicLanguage } from '../lib/isArabic';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Ionicons } from '@expo/vector-icons';
 import { queries, api } from '../lib/api';
+import { useAppTheme } from '../context/ThemeContext';
 
 interface Reminder {
   id: number;
@@ -20,10 +22,13 @@ interface Reminder {
   isCompleted: boolean;
 }
 
+const isArabic = I18nManager.isRTL;
+
 export default function RemindersScreen() {
   const { t, i18n } = useTranslation();
+  const { colors } = useAppTheme();
   const queryClient = useQueryClient();
-  const isArabic = i18n.language === 'ar';
+  const isArabic = isArabicLanguage();
 
   const { data: reminders, isLoading } = useQuery({
     queryKey: ['reminders'],
@@ -58,6 +63,7 @@ export default function RemindersScreen() {
       <View 
         style={[
           styles.reminderCard,
+          { backgroundColor: colors.card, borderColor: colors.border },
           item.isCompleted && styles.completedCard
         ]} 
         testID={`card-reminder-${item.id}`}
@@ -69,11 +75,12 @@ export default function RemindersScreen() {
               size={24} 
               color={item.isCompleted ? '#22c55e' : isOverdue ? '#dc2626' : '#f59e0b'} 
             />
-            <Text style={styles.testName}>{testName}</Text>
+            <Text style={[styles.testName, { color: colors.text }]}>{testName}</Text>
           </View>
           <View style={styles.reminderDetails}>
             <Text style={[
               styles.dueText,
+              { color: colors.mutedText },
               isOverdue && !item.isCompleted && styles.overdueText
             ]}>
               {item.isCompleted 
@@ -99,13 +106,13 @@ export default function RemindersScreen() {
   };
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       <View style={styles.disclaimerSmall}>
-        <Ionicons name="information-circle-outline" size={16} color="#94a3b8" />
-        <Text style={styles.disclaimerSmallText}>{t('disclaimer.text')}</Text>
+        <Ionicons name="information-circle-outline" size={16} color={colors.mutedText} />
+        <Text style={[styles.disclaimerSmallText, { color: colors.mutedText }]}>{t('disclaimer.text')}</Text>
       </View>
       <View style={styles.header}>
-        <Text style={styles.title}>{t('reminders.title')}</Text>
+        <Text style={[styles.title, { color: colors.text }]}>{t('reminders.title')}</Text>
         <Text style={styles.count}>{pendingReminders.length}</Text>
       </View>
 
@@ -122,7 +129,7 @@ export default function RemindersScreen() {
           ListEmptyComponent={
             <View style={styles.emptyContainer}>
               <Ionicons name="notifications-off" size={64} color="#cbd5e1" />
-              <Text style={styles.emptyText}>{t('reminders.title')}</Text>
+            <Text style={[styles.emptyText, { color: colors.mutedText }]}>{t('reminders.title')}</Text>
             </View>
           }
         />
@@ -138,7 +145,7 @@ const styles = StyleSheet.create({
   },
   header: {
     padding: 16,
-    flexDirection: I18nManager.isRTL ? 'row-reverse' : 'row',
+    flexDirection: isArabic ? 'row-reverse' : 'row',
     justifyContent: 'space-between',
     alignItems: 'center'
   },
@@ -164,7 +171,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
-    flexDirection: I18nManager.isRTL ? 'row-reverse' : 'row',
+    flexDirection: isArabic ? 'row-reverse' : 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     shadowColor: '#000',
@@ -180,7 +187,7 @@ const styles = StyleSheet.create({
     flex: 1
   },
   reminderHeader: {
-    flexDirection: I18nManager.isRTL ? 'row-reverse' : 'row',
+    flexDirection: isArabic ? 'row-reverse' : 'row',
     alignItems: 'center',
     marginBottom: 8
   },
@@ -189,16 +196,16 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#1e293b',
     marginHorizontal: 8,
-    textAlign: I18nManager.isRTL ? 'right' : 'left'
+    textAlign: isArabic ? 'right' : 'left'
   },
   reminderDetails: {
-    marginLeft: I18nManager.isRTL ? 0 : 32,
-    marginRight: I18nManager.isRTL ? 32 : 0
+    marginLeft: isArabic ? 0 : 32,
+    marginRight: isArabic ? 32 : 0
   },
   dueText: {
     fontSize: 14,
     color: '#64748b',
-    textAlign: I18nManager.isRTL ? 'right' : 'left'
+    textAlign: isArabic ? 'right' : 'left'
   },
   overdueText: {
     color: '#dc2626',
@@ -233,7 +240,7 @@ const styles = StyleSheet.create({
     marginTop: 16
   },
   disclaimerSmall: {
-    flexDirection: I18nManager.isRTL ? 'row-reverse' : 'row',
+    flexDirection: isArabic ? 'row-reverse' : 'row',
     alignItems: 'flex-start',
     paddingHorizontal: 16,
     paddingBottom: 12,
@@ -244,6 +251,6 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: '#94a3b8',
     lineHeight: 16,
-    textAlign: I18nManager.isRTL ? 'right' : 'left',
+    textAlign: isArabic ? 'right' : 'left',
   },
 });

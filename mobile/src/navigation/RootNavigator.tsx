@@ -16,7 +16,7 @@ export default function RootNavigator() {
   const { isAuthenticated, isLoading, login } = useAuth();
   const { i18n, t } = useTranslation();
   const { colors } = useAppTheme();
-  const isArabic = i18n.language === 'ar';
+  const isArabic = (i18n.resolvedLanguage || i18n.language || '').toLowerCase().startsWith('ar');
 
   if (isLoading) {
     return (
@@ -31,7 +31,14 @@ export default function RootNavigator() {
   };
 
   return (
-    <Stack.Navigator screenOptions={{ headerShown: false }}>
+    <Stack.Navigator
+      screenOptions={{
+        headerShown: false,
+        contentStyle: {
+          direction: isArabic ? 'rtl' : 'ltr',
+        },
+      }}
+    >
       {isAuthenticated ? (
         <>
           <Stack.Screen name="Main" component={TabNavigator} />

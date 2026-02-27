@@ -11,10 +11,13 @@ import {
   TextInput,
 } from 'react-native';
 import { useTranslation } from 'react-i18next';
+import { isArabicLanguage } from '../lib/isArabic';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import { api, queries } from '../lib/api';
+import { useAIConsent } from '../context/AIConsentContext';
+import { useAppTheme } from '../context/ThemeContext';
 import { formatAppDate, getDateCalendarPreference, type CalendarType } from '../lib/dateFormat';
 
 type Step = 'intro' | 'disclaimer' | 'activity' | 'allergy' | 'allergySelect' | 'proteinPref' | 'carbPref' | 'preference' | 'generating' | 'result';
@@ -75,9 +78,13 @@ const PREFERENCE_OPTIONS = [
   { key: 'custom_macros', labelKey: 'prefCustomMacros', descKey: 'prefCustomMacrosDesc', icon: 'stats-chart' as const, macros: '' },
 ];
 
-export default function DietScreen({ navigation }: any) {
+const isArabic = I18nManager.isRTL;
+
+export default function DietScreen({ navigation, route }: any) {
   const { t, i18n } = useTranslation();
-  const isArabic = i18n.language === 'ar';
+  const { colors, isDark } = useAppTheme();
+  const { isAccepted, accept } = useAIConsent();
+  const isArabic = isArabicLanguage();
   const queryClient = useQueryClient();
   const [dateCalendar, setDateCalendar] = useState<CalendarType>('gregorian');
 
@@ -100,6 +107,10 @@ export default function DietScreen({ navigation }: any) {
   });
   const savedPlansList: SavedPlan[] = Array.isArray(savedPlans) ? savedPlans : [];
 
+  const openMyDietPlansScreen = useCallback(() => {
+    navigation.navigate('DietTable');
+  }, [navigation]);
+
   useFocusEffect(
     useCallback(() => {
       getDateCalendarPreference()
@@ -118,6 +129,27 @@ export default function DietScreen({ navigation }: any) {
       if ((profile as any).carbPreferences) setSelectedCarbs((profile as any).carbPreferences);
     }
   }, [profile]);
+
+  useEffect(() => {
+    const incomingPlan = route?.params?.openPlanData;
+    const planNonce = route?.params?.openPlanNonce;
+    if (!incomingPlan || !planNonce) {
+      return;
+    }
+
+    try {
+      const parsed = typeof incomingPlan === 'string' ? JSON.parse(incomingPlan) : incomingPlan;
+      setPlan(parsed);
+      setStep('result');
+    } catch {
+      Alert.alert(
+        isArabic ? 'تعذر فتح الخطة' : 'Unable to open plan',
+        isArabic ? 'حدث خطأ أثناء فتح الخطة الغذائية المحفوظة.' : 'There was an error opening the saved diet plan.'
+      );
+    } finally {
+      navigation.setParams?.({ openPlanData: undefined, openPlanNonce: undefined });
+    }
+  }, [isArabic, navigation, route?.params?.openPlanData, route?.params?.openPlanNonce]);
 
   useEffect(() => {
     if (jobId && step === 'generating') {
@@ -183,19 +215,53 @@ export default function DietScreen({ navigation }: any) {
     },
   });
 
+  const persistPlan = async () => api.post('/api/saved-diet-plans', { planData: JSON.stringify(plan) });
+
   const saveMutation = useMutation({
-    mutationFn: async () => {
-      return api.post('/api/saved-diet-plans', { planData: JSON.stringify(plan) });
-    },
+    mutationFn: persistPlan,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['savedDietPlans'] });
-      Alert.alert(t('savePlan'), '');
+      Alert.alert(t('savePlan'), isArabic ? 'تم حفظ الخطة الغذائية بنجاح.' : 'Diet plan saved successfully.');
+    },
+    onError: () => {
+      Alert.alert(
+        isArabic ? 'فشل الحفظ' : 'Save failed',
+        isArabic ? 'تعذر حفظ الخطة الغذائية حالياً.' : 'Unable to save your diet plan right now.'
+      );
+    },
+  });
+
+  const exportMutation = useMutation({
+    mutationFn: persistPlan,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['savedDietPlans'] });
+      openMyDietPlansScreen();
+    },
+    onError: () => {
+      Alert.alert(
+        isArabic ? 'فشل التصدير' : 'Export failed',
+        isArabic ? 'تعذر تصدير الخطة إلى صفحة جدولي الغذائي.' : 'Unable to export this plan to My Diet Plans.'
+      );
     },
   });
 
   const startQuestionnaire = () => setStep('disclaimer');
 
   const handleFinish = () => {
+    if (!isAccepted) {
+      Alert.alert(
+        isArabic ? 'موافقة الذكاء الاصطناعي مطلوبة' : 'AI Consent Required',
+        isArabic
+          ? 'لا يمكن إنشاء الخطة الغذائية بالذكاء الاصطناعي إلا بعد الموافقة على معالجة البيانات.'
+          : 'AI diet plan generation is blocked until you agree to AI data processing.',
+        [
+          { text: isArabic ? 'إلغاء' : 'Cancel', style: 'cancel' },
+          { text: isArabic ? 'موافقة' : 'Agree', onPress: () => accept() },
+        ]
+      );
+      return;
+    }
+
     if (mealPreference === 'custom_macros') {
       const calories = Number.parseInt(customTargetCalories, 10);
       if (!Number.isFinite(calories) || calories < 800 || calories > 6000) {
@@ -228,34 +294,34 @@ export default function DietScreen({ navigation }: any) {
 
   if (step === 'generating') {
     return (
-      <View style={styles.generatingContainer}>
+      <View style={[styles.generatingContainer, { backgroundColor: colors.background }]}>
         <ActivityIndicator size="large" color="#f59e0b" />
-        <Text style={styles.generatingTitle}>{t('generating')}</Text>
-        <Text style={styles.generatingDesc}>{t('generatingDesc')}</Text>
+        <Text style={[styles.generatingTitle, { color: colors.text }]}>{t('generating')}</Text>
+        <Text style={[styles.generatingDesc, { color: colors.mutedText }]}>{t('generatingDesc')}</Text>
       </View>
     );
   }
 
   if (step === 'result' && plan) {
     return (
-      <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-        <Text style={styles.resultTitle}>{t('dietPlanReady')}</Text>
+      <ScrollView style={[styles.container, { backgroundColor: colors.background }]} contentContainerStyle={styles.content}>
+        <Text style={[styles.resultTitle, { color: colors.text }]}>{t('dietPlanReady')}</Text>
 
         {plan.healthSummary && (
-          <View style={styles.card}>
+          <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
             <View style={styles.cardHeader}>
               <Ionicons name="heart" size={20} color="#ef4444" />
-              <Text style={styles.cardTitle}>{t('healthSummary')}</Text>
+              <Text style={[styles.cardTitle, { color: colors.text }]}>{t('healthSummary')}</Text>
             </View>
-            <Text style={styles.cardText}>{plan.healthSummary}</Text>
+            <Text style={[styles.cardText, { color: colors.mutedText }]}>{plan.healthSummary}</Text>
           </View>
         )}
 
         {plan.calories && (
-          <View style={styles.card}>
+          <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
             <View style={styles.cardHeader}>
               <Ionicons name="flame" size={20} color="#f59e0b" />
-              <Text style={styles.cardTitle}>{t('calories')}</Text>
+              <Text style={[styles.cardTitle, { color: colors.text }]}>{t('calories')}</Text>
             </View>
             <View style={styles.calorieRow}>
               <View style={styles.calorieStat}>
@@ -288,12 +354,12 @@ export default function DietScreen({ navigation }: any) {
         )}
 
         {plan.intakeAlignment && (
-          <View style={styles.card}>
+          <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
             <View style={styles.cardHeader}>
               <Ionicons name="analytics" size={20} color="#6366f1" />
-              <Text style={styles.cardTitle}>{t('intakeAlignment') || (isArabic ? 'مدى توافق الأكل مع الهدف' : 'Intake Alignment with Your Goal')}</Text>
+              <Text style={[styles.cardTitle, { color: colors.text }]}>{t('intakeAlignment') || (isArabic ? 'مدى توافق الأكل مع الهدف' : 'Intake Alignment with Your Goal')}</Text>
             </View>
-            <Text style={styles.cardText}>{plan.intakeAlignment}</Text>
+            <Text style={[styles.cardText, { color: colors.mutedText }]}>{plan.intakeAlignment}</Text>
           </View>
         )}
 
@@ -302,10 +368,10 @@ export default function DietScreen({ navigation }: any) {
           if (!meals || meals.length === 0) return null;
           const mealIcons: Record<string, string> = { breakfast: 'sunny', lunch: 'restaurant', dinner: 'moon', snacks: 'cafe' };
           return (
-            <View key={mealType} style={styles.card}>
+            <View key={mealType} style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
               <View style={styles.cardHeader}>
                 <Ionicons name={mealIcons[mealType] as any} size={20} color="#f59e0b" />
-                <Text style={styles.cardTitle}>{t(mealType)}</Text>
+                <Text style={[styles.cardTitle, { color: colors.text }]}>{t(mealType)}</Text>
               </View>
               {meals.map((meal: any, idx: number) => (
                 <View key={idx} style={styles.mealItem}>
@@ -326,10 +392,10 @@ export default function DietScreen({ navigation }: any) {
         })}
 
         {plan.supplements && plan.supplements.length > 0 && (
-          <View style={styles.card}>
+          <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
             <View style={styles.cardHeader}>
               <Ionicons name="medkit" size={20} color="#8b5cf6" />
-              <Text style={styles.cardTitle}>{t('supplements')}</Text>
+              <Text style={[styles.cardTitle, { color: colors.text }]}>{t('supplements')}</Text>
             </View>
             {plan.supplements.map((sup: any, idx: number) => (
               <View key={idx} style={styles.supplementItem}>
@@ -357,10 +423,10 @@ export default function DietScreen({ navigation }: any) {
         )}
 
         {plan.conditionTips && plan.conditionTips.length > 0 && (
-          <View style={styles.card}>
+          <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
             <View style={styles.cardHeader}>
               <Ionicons name="bulb" size={20} color="#22c55e" />
-              <Text style={styles.cardTitle}>{t('conditionTips')}</Text>
+              <Text style={[styles.cardTitle, { color: colors.text }]}>{t('conditionTips')}</Text>
             </View>
             {plan.conditionTips.map((tip: any, idx: number) => (
               <View key={idx} style={styles.tipItem}>
@@ -377,10 +443,10 @@ export default function DietScreen({ navigation }: any) {
         )}
 
         {plan.tips && plan.tips.length > 0 && (
-          <View style={styles.card}>
+          <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
             <View style={styles.cardHeader}>
               <Ionicons name="information-circle" size={20} color="#3b82f6" />
-              <Text style={styles.cardTitle}>{t('tips')}</Text>
+              <Text style={[styles.cardTitle, { color: colors.text }]}>{t('tips')}</Text>
             </View>
             {plan.tips.map((tip: string, idx: number) => (
               <Text key={idx} style={styles.tipText}>• {tip}</Text>
@@ -389,10 +455,10 @@ export default function DietScreen({ navigation }: any) {
         )}
 
         {plan.references && plan.references.length > 0 && (
-          <View style={styles.card}>
+          <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
             <View style={styles.cardHeader}>
               <Ionicons name="book" size={20} color="#64748b" />
-              <Text style={styles.cardTitle}>{t('references')}</Text>
+              <Text style={[styles.cardTitle, { color: colors.text }]}>{t('references')}</Text>
             </View>
             {plan.references.map((ref: string, idx: number) => (
               <Text key={idx} style={styles.refText}>{idx + 1}. {ref}</Text>
@@ -405,22 +471,38 @@ export default function DietScreen({ navigation }: any) {
             <Ionicons name="save" size={20} color="#fff" />
             <Text style={styles.saveButtonText}>{t('savePlan')}</Text>
           </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.exportButton, exportMutation.isPending && { opacity: 0.7 }]}
+            onPress={() => exportMutation.mutate()}
+            disabled={exportMutation.isPending}
+            testID="button-export-plan"
+          >
+            <Ionicons name="share-social" size={20} color="#fff" />
+            <Text style={styles.exportButtonText}>
+              {isArabic ? 'تصدير إلى جدولي الغذائي' : 'Export to My Diet Plans'}
+            </Text>
+          </TouchableOpacity>
           <TouchableOpacity style={styles.newPlanButton} onPress={() => { setPlan(null); setStep('intro'); }} testID="button-new-plan">
             <Ionicons name="refresh" size={20} color="#3b82f6" />
             <Text style={styles.newPlanButtonText}>{t('newPlan')}</Text>
           </TouchableOpacity>
         </View>
+        <Text style={[styles.monthlyNote, { color: colors.mutedText }]}>
+          {isArabic
+            ? 'ملاحظة: يفضل تغيير الجدول الغذائي كل شهر للحصول على أفضل النتائج.'
+            : 'Note: Update your diet plan every month for best results.'}
+        </Text>
       </ScrollView>
     );
   }
 
   if (step === 'disclaimer') {
     return (
-      <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-        <View style={styles.disclaimerCard}>
+      <ScrollView style={[styles.container, { backgroundColor: colors.background }]} contentContainerStyle={styles.content}>
+        <View style={[styles.disclaimerCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
           <Ionicons name="shield-checkmark" size={48} color="#f59e0b" />
-          <Text style={styles.disclaimerTitle}>{isArabic ? 'تنبيه مهم' : 'Important Notice'}</Text>
-          <Text style={styles.disclaimerText}>{t('nutritionDisclaimer')}</Text>
+          <Text style={[styles.disclaimerTitle, { color: colors.text }]}>{isArabic ? 'تنبيه مهم' : 'Important Notice'}</Text>
+          <Text style={[styles.disclaimerText, { color: colors.mutedText }]}>{t('nutritionDisclaimer')}</Text>
           <TouchableOpacity style={styles.continueButton} onPress={() => setStep('activity')} testID="button-accept-disclaimer">
             <Text style={styles.continueButtonText}>{t('questContinue')}</Text>
           </TouchableOpacity>
@@ -431,21 +513,21 @@ export default function DietScreen({ navigation }: any) {
 
   if (step === 'activity') {
     return (
-      <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+      <ScrollView style={[styles.container, { backgroundColor: colors.background }]} contentContainerStyle={styles.content}>
         {renderStepHeader('disclaimer')}
-        <Text style={styles.questTitle}>{t('questActivityTitle')}</Text>
-        <Text style={styles.questSubtitle}>{t('questActivitySubtitle')}</Text>
+        <Text style={[styles.questTitle, { color: colors.text }]}>{t('questActivityTitle')}</Text>
+        <Text style={[styles.questSubtitle, { color: colors.mutedText }]}>{t('questActivitySubtitle')}</Text>
         {ACTIVITY_OPTIONS.map(opt => (
           <TouchableOpacity
             key={opt.key}
-            style={[styles.optionCard, activityLevel === opt.key && styles.optionCardSelected]}
+            style={[styles.optionCard, { backgroundColor: colors.card, borderColor: colors.border }, activityLevel === opt.key && styles.optionCardSelected]}
             onPress={() => setActivityLevel(opt.key)}
             testID={`button-activity-${opt.key}`}
           >
             <Ionicons name={opt.icon} size={24} color={activityLevel === opt.key ? '#fff' : '#3b82f6'} />
             <View style={styles.optionTextContainer}>
-              <Text style={[styles.optionTitle, activityLevel === opt.key && styles.optionTitleSelected]}>{t(opt.labelKey)}</Text>
-              <Text style={[styles.optionDesc, activityLevel === opt.key && styles.optionDescSelected]}>{t(opt.descKey)}</Text>
+              <Text style={[styles.optionTitle, { color: colors.text }, activityLevel === opt.key && styles.optionTitleSelected]}>{t(opt.labelKey)}</Text>
+              <Text style={[styles.optionDesc, { color: colors.mutedText }, activityLevel === opt.key && styles.optionDescSelected]}>{t(opt.descKey)}</Text>
             </View>
           </TouchableOpacity>
         ))}
@@ -461,12 +543,12 @@ export default function DietScreen({ navigation }: any) {
 
   if (step === 'allergy') {
     return (
-      <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+      <ScrollView style={[styles.container, { backgroundColor: colors.background }]} contentContainerStyle={styles.content}>
         {renderStepHeader('activity')}
-        <Text style={styles.questTitle}>{t('questAllergyTitle')}</Text>
+        <Text style={[styles.questTitle, { color: colors.text }]}>{t('questAllergyTitle')}</Text>
         <View style={styles.allergyButtons}>
           <TouchableOpacity
-            style={[styles.allergyChoice, hasAllergies === true && styles.allergyChoiceSelected]}
+            style={[styles.allergyChoice, { backgroundColor: colors.card, borderColor: colors.border }, hasAllergies === true && styles.allergyChoiceSelected]}
             onPress={() => { setHasAllergies(true); setStep('allergySelect'); }}
             testID="button-allergy-yes"
           >
@@ -474,7 +556,7 @@ export default function DietScreen({ navigation }: any) {
             <Text style={[styles.allergyChoiceText, hasAllergies === true && styles.allergyChoiceTextSelected]}>{t('questAllergyYes')}</Text>
           </TouchableOpacity>
           <TouchableOpacity
-            style={[styles.allergyChoice, hasAllergies === false && styles.allergyChoiceSelectedGreen]}
+            style={[styles.allergyChoice, { backgroundColor: colors.card, borderColor: colors.border }, hasAllergies === false && styles.allergyChoiceSelectedGreen]}
             onPress={() => { setHasAllergies(false); setSelectedAllergies([]); setStep(mealPreference === 'vegetarian' ? 'preference' : 'proteinPref'); }}
             testID="button-allergy-no"
           >
@@ -488,16 +570,16 @@ export default function DietScreen({ navigation }: any) {
 
   if (step === 'allergySelect') {
     return (
-      <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+      <ScrollView style={[styles.container, { backgroundColor: colors.background }]} contentContainerStyle={styles.content}>
         {renderStepHeader('allergy')}
-        <Text style={styles.questTitle}>{t('questAllergyWhich')}</Text>
+        <Text style={[styles.questTitle, { color: colors.text }]}>{t('questAllergyWhich')}</Text>
         <View style={styles.chipGrid}>
           {ALLERGY_OPTIONS.map(opt => {
             const selected = selectedAllergies.includes(opt.key);
             return (
               <TouchableOpacity
                 key={opt.key}
-                style={[styles.chip, selected && styles.chipSelected]}
+                style={[styles.chip, { backgroundColor: colors.card, borderColor: colors.border }, selected && styles.chipSelected]}
                 onPress={() => setSelectedAllergies(prev => selected ? prev.filter(a => a !== opt.key) : [...prev, opt.key])}
                 testID={`chip-allergy-${opt.key}`}
               >
@@ -516,22 +598,22 @@ export default function DietScreen({ navigation }: any) {
 
   if (step === 'proteinPref') {
     return (
-      <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+      <ScrollView style={[styles.container, { backgroundColor: colors.background }]} contentContainerStyle={styles.content}>
         {renderStepHeader('allergy')}
-        <Text style={styles.questTitle}>{t('questProteinTitle')}</Text>
-        <Text style={styles.questSubtitle}>{t('questProteinSubtitle')}</Text>
+        <Text style={[styles.questTitle, { color: colors.text }]}>{t('questProteinTitle')}</Text>
+        <Text style={[styles.questSubtitle, { color: colors.mutedText }]}>{t('questProteinSubtitle')}</Text>
         <View style={styles.chipGrid}>
           {PROTEIN_OPTIONS.map(opt => {
             const selected = selectedProteins.includes(opt.key);
             return (
               <TouchableOpacity
                 key={opt.key}
-                style={[styles.proteinCard, selected && styles.proteinCardSelected]}
+                style={[styles.proteinCard, { backgroundColor: colors.card, borderColor: colors.border }, selected && styles.proteinCardSelected]}
                 onPress={() => setSelectedProteins(prev => selected ? prev.filter(p => p !== opt.key) : [...prev, opt.key])}
                 testID={`chip-protein-${opt.key}`}
               >
                 <Ionicons name={opt.icon} size={24} color={selected ? '#fff' : '#3b82f6'} />
-                <Text style={[styles.proteinText, selected && styles.proteinTextSelected]}>{t(opt.labelKey)}</Text>
+                <Text style={[styles.proteinText, { color: colors.text }, selected && styles.proteinTextSelected]}>{t(opt.labelKey)}</Text>
               </TouchableOpacity>
             );
           })}
@@ -548,17 +630,17 @@ export default function DietScreen({ navigation }: any) {
 
   if (step === 'carbPref') {
     return (
-      <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+      <ScrollView style={[styles.container, { backgroundColor: colors.background }]} contentContainerStyle={styles.content}>
         {renderStepHeader('proteinPref')}
-        <Text style={styles.questTitle}>{t('questCarbTitle')}</Text>
-        <Text style={styles.questSubtitle}>{t('questCarbSubtitle')}</Text>
+        <Text style={[styles.questTitle, { color: colors.text }]}>{t('questCarbTitle')}</Text>
+        <Text style={[styles.questSubtitle, { color: colors.mutedText }]}>{t('questCarbSubtitle')}</Text>
         <View style={styles.chipGrid}>
           {CARB_OPTIONS.map(opt => {
             const selected = selectedCarbs.includes(opt.key);
             return (
               <TouchableOpacity
                 key={opt.key}
-                style={[styles.chip, selected && styles.chipSelected]}
+                style={[styles.chip, { backgroundColor: colors.card, borderColor: colors.border }, selected && styles.chipSelected]}
                 onPress={() => setSelectedCarbs(prev => selected ? prev.filter(c => c !== opt.key) : [...prev, opt.key])}
                 testID={`chip-carb-${opt.key}`}
               >
@@ -579,34 +661,34 @@ export default function DietScreen({ navigation }: any) {
 
   if (step === 'preference') {
     return (
-      <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+      <ScrollView style={[styles.container, { backgroundColor: colors.background }]} contentContainerStyle={styles.content}>
         {renderStepHeader('carbPref')}
-        <Text style={styles.questTitle}>{t('questPreferenceTitle')}</Text>
+        <Text style={[styles.questTitle, { color: colors.text }]}>{t('questPreferenceTitle')}</Text>
         {PREFERENCE_OPTIONS.map(opt => (
           <TouchableOpacity
             key={opt.key}
-            style={[styles.optionCard, mealPreference === opt.key && styles.optionCardSelected]}
+            style={[styles.optionCard, { backgroundColor: colors.card, borderColor: colors.border }, mealPreference === opt.key && styles.optionCardSelected]}
             onPress={() => setMealPreference(opt.key)}
             testID={`button-pref-${opt.key}`}
           >
             <Ionicons name={opt.icon} size={24} color={mealPreference === opt.key ? '#fff' : '#3b82f6'} />
             <View style={styles.optionTextContainer}>
               <View style={{ flexDirection: isArabic ? 'row-reverse' : 'row', alignItems: 'center', gap: 6 }}>
-                <Text style={[styles.optionTitle, mealPreference === opt.key && styles.optionTitleSelected]}>{t(opt.labelKey)}</Text>
+                <Text style={[styles.optionTitle, { color: colors.text }, mealPreference === opt.key && styles.optionTitleSelected]}>{t(opt.labelKey)}</Text>
                 {opt.recommended && (
                   <View style={styles.recommendedBadge}>
                     <Text style={styles.recommendedText}>{t('recommended')}</Text>
                   </View>
                 )}
               </View>
-              <Text style={[styles.optionDesc, mealPreference === opt.key && styles.optionDescSelected]}>{t(opt.descKey)}</Text>
+              <Text style={[styles.optionDesc, { color: colors.mutedText }, mealPreference === opt.key && styles.optionDescSelected]}>{t(opt.descKey)}</Text>
               {opt.macros ? <Text style={[styles.macroRangeText, mealPreference === opt.key && { color: '#dbeafe' }]}>{opt.macros}</Text> : null}
             </View>
           </TouchableOpacity>
         ))}
         {mealPreference === 'custom_macros' && (
-          <View style={styles.customCaloriesCard}>
-            <Text style={styles.customCaloriesLabel}>
+          <View style={[styles.customCaloriesCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            <Text style={[styles.customCaloriesLabel, { color: colors.text }]}>
               {isArabic ? 'حدد السعرات اليومية المطلوبة' : 'Set your daily target calories'}
             </Text>
             <TextInput
@@ -614,11 +696,11 @@ export default function DietScreen({ navigation }: any) {
               onChangeText={(text) => setCustomTargetCalories(text.replace(/[^0-9]/g, ''))}
               placeholder={isArabic ? 'مثال: 1000' : 'Example: 1000'}
               keyboardType="numeric"
-              style={styles.customCaloriesInput}
+              style={[styles.customCaloriesInput, { backgroundColor: colors.cardAlt, borderColor: colors.border, color: colors.text }]}
               maxLength={4}
               testID="input-custom-calories"
             />
-            <Text style={styles.customCaloriesHint}>
+            <Text style={[styles.customCaloriesHint, { color: colors.mutedText }]}>
               {isArabic
                 ? 'سيتم إنشاء النظام بحيث لا يتجاوز هذا الرقم يوميًا.'
                 : 'The plan will be generated to not exceed this number per day.'}
@@ -636,31 +718,31 @@ export default function DietScreen({ navigation }: any) {
   }
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <View style={styles.heroCard}>
+    <ScrollView style={[styles.container, { backgroundColor: colors.background }]} contentContainerStyle={styles.content}>
+      <View style={[styles.heroCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
         <View style={styles.heroIconContainer}>
           <Ionicons name="nutrition" size={48} color="#f59e0b" />
         </View>
-        <Text style={styles.heroTitle}>{isArabic ? 'خطتك الغذائية الذكية' : 'Your AI Diet Plan'}</Text>
-        <Text style={styles.heroSubtitle}>
+        <Text style={[styles.heroTitle, { color: colors.text }]}>{isArabic ? 'خطتك الغذائية الذكية' : 'Your AI Diet Plan'}</Text>
+        <Text style={[styles.heroSubtitle, { color: colors.mutedText }]}>
           {isArabic ? 'خطة غذائية مخصصة بناءً على نتائج فحوصاتك وبيانات جسمك' : 'Personalized nutrition plan based on your lab results and body data'}
         </Text>
       </View>
 
       <View style={styles.howItWorksSection}>
-        <Text style={styles.sectionTitle}>{isArabic ? 'كيف تعمل الخطة؟' : 'How It Works'}</Text>
+        <Text style={[styles.sectionTitle, { color: colors.text }]}>{isArabic ? 'كيف تعمل الخطة؟' : 'How It Works'}</Text>
         {[
           { icon: 'document-text' as const, bg: '#eff6ff', color: '#3b82f6', title: isArabic ? 'تحليل فحوصاتك' : 'Analyze Your Labs', desc: isArabic ? 'نحلل نتائج فحوصاتك لمعرفة النقص' : 'We analyze your lab results for deficiencies' },
           { icon: 'calculator' as const, bg: '#fef3c7', color: '#f59e0b', title: isArabic ? 'حساب احتياجاتك' : 'Calculate Your Needs', desc: isArabic ? 'BMR و TDEE بناءً على وزنك وطولك ونشاطك' : 'BMR & TDEE based on your profile' },
           { icon: 'leaf' as const, bg: '#f0fdf4', color: '#22c55e', title: isArabic ? 'خطة مخصصة لك' : 'Your Custom Plan', desc: isArabic ? '5 وجبات يومية مع مكملات وتوصيات' : '5 daily meals with supplements & tips' },
         ].map((item, idx) => (
-          <View key={idx} style={styles.stepItem}>
+          <View key={idx} style={[styles.stepItem, { backgroundColor: colors.card, borderColor: colors.border }]}>
             <View style={[styles.stepIcon, { backgroundColor: item.bg }]}>
               <Ionicons name={item.icon} size={20} color={item.color} />
             </View>
             <View style={styles.stepTextContainer}>
-              <Text style={styles.stepTitle}>{item.title}</Text>
-              <Text style={styles.stepDesc}>{item.desc}</Text>
+              <Text style={[styles.stepTitle, { color: colors.text }]}>{item.title}</Text>
+              <Text style={[styles.stepDesc, { color: colors.mutedText }]}>{item.desc}</Text>
             </View>
           </View>
         ))}
@@ -673,11 +755,11 @@ export default function DietScreen({ navigation }: any) {
 
       {savedPlansList.length > 0 && (
         <View style={styles.savedSection}>
-          <Text style={styles.sectionTitle}>{t('savedPlans')}</Text>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>{t('savedPlans')}</Text>
           {savedPlansList.map((sp) => (
             <TouchableOpacity
               key={sp.id}
-              style={styles.savedCard}
+              style={[styles.savedCard, { backgroundColor: colors.card, borderColor: colors.border }]}
               onPress={() => {
                 const parsed = typeof sp.planData === 'string' ? JSON.parse(sp.planData) : sp.planData;
                 setPlan(parsed);
@@ -708,34 +790,34 @@ const styles = StyleSheet.create({
   heroIconContainer: { width: 80, height: 80, borderRadius: 40, backgroundColor: '#fef3c7', justifyContent: 'center', alignItems: 'center', marginBottom: 12 },
   heroTitle: { fontSize: 22, fontWeight: '700', color: '#92400e', textAlign: 'center', marginBottom: 8 },
   heroSubtitle: { fontSize: 14, color: '#a16207', textAlign: 'center', lineHeight: 20 },
-  sectionTitle: { fontSize: 18, fontWeight: '700', color: '#1e293b', marginBottom: 12, textAlign: I18nManager.isRTL ? 'right' : 'left' },
+  sectionTitle: { fontSize: 18, fontWeight: '700', color: '#1e293b', marginBottom: 12, textAlign: isArabic ? 'right' : 'left' },
   howItWorksSection: { marginBottom: 20 },
-  stepItem: { flexDirection: I18nManager.isRTL ? 'row-reverse' : 'row', alignItems: 'center', backgroundColor: '#fff', borderRadius: 12, padding: 14, gap: 12, marginBottom: 8, elevation: 1, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.04, shadowRadius: 2 },
+  stepItem: { flexDirection: isArabic ? 'row-reverse' : 'row', alignItems: 'center', backgroundColor: '#fff', borderRadius: 12, padding: 14, gap: 12, marginBottom: 8, elevation: 1, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.04, shadowRadius: 2 },
   stepIcon: { width: 40, height: 40, borderRadius: 12, justifyContent: 'center', alignItems: 'center' },
-  stepTextContainer: { flex: 1, alignItems: I18nManager.isRTL ? 'flex-end' : 'flex-start' },
-  stepTitle: { fontSize: 15, fontWeight: '600', color: '#1e293b', textAlign: I18nManager.isRTL ? 'right' : 'left' },
-  stepDesc: { fontSize: 12, color: '#64748b', marginTop: 2, textAlign: I18nManager.isRTL ? 'right' : 'left' },
-  generateButton: { flexDirection: I18nManager.isRTL ? 'row-reverse' : 'row', backgroundColor: '#f59e0b', borderRadius: 14, paddingVertical: 16, alignItems: 'center', justifyContent: 'center', gap: 8, marginBottom: 16 },
+  stepTextContainer: { flex: 1, alignItems: isArabic ? 'flex-end' : 'flex-start' },
+  stepTitle: { fontSize: 15, fontWeight: '600', color: '#1e293b', textAlign: isArabic ? 'right' : 'left' },
+  stepDesc: { fontSize: 12, color: '#64748b', marginTop: 2, textAlign: isArabic ? 'right' : 'left' },
+  generateButton: { flexDirection: isArabic ? 'row-reverse' : 'row', backgroundColor: '#f59e0b', borderRadius: 14, paddingVertical: 16, alignItems: 'center', justifyContent: 'center', gap: 8, marginBottom: 16 },
   generateButtonText: { fontSize: 17, fontWeight: '700', color: '#fff' },
   generatingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 32, backgroundColor: '#f8fafc' },
   generatingTitle: { fontSize: 20, fontWeight: '700', color: '#1e293b', marginTop: 20, textAlign: 'center' },
   generatingDesc: { fontSize: 14, color: '#64748b', marginTop: 8, textAlign: 'center', lineHeight: 20 },
-  stepHeader: { flexDirection: I18nManager.isRTL ? 'row-reverse' : 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 },
+  stepHeader: { flexDirection: isArabic ? 'row-reverse' : 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 },
   stepCounter: { fontSize: 13, color: '#94a3b8', fontWeight: '500' },
   questTitle: { fontSize: 20, fontWeight: '700', color: '#1e293b', textAlign: 'center', marginBottom: 8 },
   questSubtitle: { fontSize: 14, color: '#64748b', textAlign: 'center', marginBottom: 20 },
-  optionCard: { flexDirection: I18nManager.isRTL ? 'row-reverse' : 'row', alignItems: 'center', backgroundColor: '#fff', borderRadius: 12, padding: 16, gap: 12, marginBottom: 10, borderWidth: 2, borderColor: '#e2e8f0' },
+  optionCard: { flexDirection: isArabic ? 'row-reverse' : 'row', alignItems: 'center', backgroundColor: '#fff', borderRadius: 12, padding: 16, gap: 12, marginBottom: 10, borderWidth: 2, borderColor: '#e2e8f0' },
   optionCardSelected: { backgroundColor: '#3b82f6', borderColor: '#3b82f6' },
-  optionTextContainer: { flex: 1, alignItems: I18nManager.isRTL ? 'flex-end' : 'flex-start' },
-  optionTitle: { fontSize: 16, fontWeight: '600', color: '#1e293b', textAlign: I18nManager.isRTL ? 'right' : 'left' },
+  optionTextContainer: { flex: 1, alignItems: isArabic ? 'flex-end' : 'flex-start' },
+  optionTitle: { fontSize: 16, fontWeight: '600', color: '#1e293b', textAlign: isArabic ? 'right' : 'left' },
   optionTitleSelected: { color: '#fff' },
-  optionDesc: { fontSize: 12, color: '#64748b', marginTop: 2, textAlign: I18nManager.isRTL ? 'right' : 'left' },
+  optionDesc: { fontSize: 12, color: '#64748b', marginTop: 2, textAlign: isArabic ? 'right' : 'left' },
   optionDescSelected: { color: '#dbeafe' },
-  nextButton: { flexDirection: I18nManager.isRTL ? 'row-reverse' : 'row', backgroundColor: '#3b82f6', borderRadius: 12, paddingVertical: 14, alignItems: 'center', justifyContent: 'center', gap: 6, marginTop: 16 },
+  nextButton: { flexDirection: isArabic ? 'row-reverse' : 'row', backgroundColor: '#3b82f6', borderRadius: 12, paddingVertical: 14, alignItems: 'center', justifyContent: 'center', gap: 6, marginTop: 16 },
   nextButtonText: { fontSize: 16, fontWeight: '600', color: '#fff' },
   continueButton: { backgroundColor: '#f59e0b', borderRadius: 12, paddingVertical: 14, paddingHorizontal: 32, marginTop: 20, width: '100%', alignItems: 'center' },
   continueButtonText: { fontSize: 16, fontWeight: '700', color: '#fff' },
-  allergyButtons: { flexDirection: I18nManager.isRTL ? 'row-reverse' : 'row', gap: 12, marginTop: 20 },
+  allergyButtons: { flexDirection: isArabic ? 'row-reverse' : 'row', gap: 12, marginTop: 20 },
   allergyChoice: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 20, borderRadius: 16, borderWidth: 2, borderColor: '#e2e8f0', backgroundColor: '#fff', gap: 8 },
   allergyChoiceSelected: { backgroundColor: '#ef4444', borderColor: '#ef4444' },
   allergyChoiceSelectedGreen: { backgroundColor: '#22c55e', borderColor: '#22c55e' },
@@ -746,7 +828,7 @@ const styles = StyleSheet.create({
   chipSelected: { backgroundColor: '#3b82f6', borderColor: '#3b82f6' },
   chipText: { fontSize: 14, fontWeight: '500', color: '#475569' },
   chipTextSelected: { color: '#fff' },
-  proteinCard: { flexDirection: I18nManager.isRTL ? 'row-reverse' : 'row', alignItems: 'center', gap: 8, paddingHorizontal: 20, paddingVertical: 14, borderRadius: 12, borderWidth: 1.5, borderColor: '#e2e8f0', backgroundColor: '#fff', minWidth: '45%' },
+  proteinCard: { flexDirection: isArabic ? 'row-reverse' : 'row', alignItems: 'center', gap: 8, paddingHorizontal: 20, paddingVertical: 14, borderRadius: 12, borderWidth: 1.5, borderColor: '#e2e8f0', backgroundColor: '#fff', minWidth: '45%' },
   proteinCardSelected: { backgroundColor: '#3b82f6', borderColor: '#3b82f6' },
   proteinText: { fontSize: 14, fontWeight: '600', color: '#475569' },
   proteinTextSelected: { color: '#fff' },
@@ -757,49 +839,52 @@ const styles = StyleSheet.create({
   disclaimerText: { fontSize: 14, color: '#64748b', textAlign: 'center', lineHeight: 22 },
   resultTitle: { fontSize: 22, fontWeight: '700', color: '#1e293b', textAlign: 'center', marginBottom: 16 },
   card: { backgroundColor: '#fff', borderRadius: 12, padding: 16, marginBottom: 12, elevation: 1, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 2 },
-  cardHeader: { flexDirection: I18nManager.isRTL ? 'row-reverse' : 'row', alignItems: 'center', gap: 8, marginBottom: 12 },
+  cardHeader: { flexDirection: isArabic ? 'row-reverse' : 'row', alignItems: 'center', gap: 8, marginBottom: 12 },
   cardTitle: { fontSize: 16, fontWeight: '700', color: '#1e293b' },
-  cardText: { fontSize: 14, color: '#475569', lineHeight: 20, textAlign: I18nManager.isRTL ? 'right' : 'left' },
-  calorieRow: { flexDirection: I18nManager.isRTL ? 'row-reverse' : 'row', justifyContent: 'space-around', marginBottom: 12 },
+  cardText: { fontSize: 14, color: '#475569', lineHeight: 20, textAlign: isArabic ? 'right' : 'left' },
+  calorieRow: { flexDirection: isArabic ? 'row-reverse' : 'row', justifyContent: 'space-around', marginBottom: 12 },
   calorieStat: { alignItems: 'center' },
   calorieValue: { fontSize: 20, fontWeight: '700', color: '#1e293b' },
   calorieLabel: { fontSize: 11, color: '#94a3b8', marginTop: 2 },
-  macroRow: { flexDirection: I18nManager.isRTL ? 'row-reverse' : 'row', justifyContent: 'center', gap: 8 },
+  macroRow: { flexDirection: isArabic ? 'row-reverse' : 'row', justifyContent: 'center', gap: 8 },
   macroBadge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12 },
   macroText: { fontSize: 12, fontWeight: '600' },
   mealItem: { borderTopWidth: 1, borderTopColor: '#f1f5f9', paddingTop: 12, marginTop: 8 },
-  mealOptionLabel: { fontSize: 11, fontWeight: '600', color: '#f59e0b', marginBottom: 4, textAlign: I18nManager.isRTL ? 'right' : 'left' },
-  mealName: { fontSize: 15, fontWeight: '600', color: '#1e293b', marginBottom: 4, textAlign: I18nManager.isRTL ? 'right' : 'left' },
-  mealDesc: { fontSize: 13, color: '#64748b', lineHeight: 18, marginBottom: 6, textAlign: I18nManager.isRTL ? 'right' : 'left' },
-  mealMacros: { flexDirection: I18nManager.isRTL ? 'row-reverse' : 'row', gap: 10 },
+  mealOptionLabel: { fontSize: 11, fontWeight: '600', color: '#f59e0b', marginBottom: 4, textAlign: isArabic ? 'right' : 'left' },
+  mealName: { fontSize: 15, fontWeight: '600', color: '#1e293b', marginBottom: 4, textAlign: isArabic ? 'right' : 'left' },
+  mealDesc: { fontSize: 13, color: '#64748b', lineHeight: 18, marginBottom: 6, textAlign: isArabic ? 'right' : 'left' },
+  mealMacros: { flexDirection: isArabic ? 'row-reverse' : 'row', gap: 10 },
   mealMacroText: { fontSize: 11, color: '#94a3b8', fontWeight: '500' },
-  mealBenefits: { fontSize: 12, color: '#22c55e', marginTop: 4, fontStyle: 'italic', textAlign: I18nManager.isRTL ? 'right' : 'left' },
+  mealBenefits: { fontSize: 12, color: '#22c55e', marginTop: 4, fontStyle: 'italic', textAlign: isArabic ? 'right' : 'left' },
   supplementItem: { borderTopWidth: 1, borderTopColor: '#f1f5f9', paddingTop: 10, marginTop: 8 },
-  supplementName: { fontSize: 15, fontWeight: '600', color: '#1e293b', textAlign: I18nManager.isRTL ? 'right' : 'left' },
-  supplementDetail: { fontSize: 13, color: '#64748b', marginTop: 2, textAlign: I18nManager.isRTL ? 'right' : 'left' },
-  supplementFoods: { fontSize: 12, color: '#22c55e', marginTop: 4, textAlign: I18nManager.isRTL ? 'right' : 'left' },
-  targetLabRow: { flexDirection: I18nManager.isRTL ? 'row-reverse' : 'row', alignItems: 'center', gap: 4, marginTop: 4 },
+  supplementName: { fontSize: 15, fontWeight: '600', color: '#1e293b', textAlign: isArabic ? 'right' : 'left' },
+  supplementDetail: { fontSize: 13, color: '#64748b', marginTop: 2, textAlign: isArabic ? 'right' : 'left' },
+  supplementFoods: { fontSize: 12, color: '#22c55e', marginTop: 4, textAlign: isArabic ? 'right' : 'left' },
+  targetLabRow: { flexDirection: isArabic ? 'row-reverse' : 'row', alignItems: 'center', gap: 4, marginTop: 4 },
   targetLabText: { fontSize: 12, color: '#6366f1', fontWeight: '500' },
-  scientificRow: { flexDirection: I18nManager.isRTL ? 'row-reverse' : 'row', alignItems: 'flex-start', gap: 4, marginTop: 4 },
-  scientificText: { fontSize: 11, color: '#8b5cf6', lineHeight: 16, flex: 1, textAlign: I18nManager.isRTL ? 'right' : 'left' },
-  macroRangeText: { fontSize: 11, color: '#94a3b8', marginTop: 4, fontWeight: '500', textAlign: I18nManager.isRTL ? 'right' : 'left' },
+  scientificRow: { flexDirection: isArabic ? 'row-reverse' : 'row', alignItems: 'flex-start', gap: 4, marginTop: 4 },
+  scientificText: { fontSize: 11, color: '#8b5cf6', lineHeight: 16, flex: 1, textAlign: isArabic ? 'right' : 'left' },
+  macroRangeText: { fontSize: 11, color: '#94a3b8', marginTop: 4, fontWeight: '500', textAlign: isArabic ? 'right' : 'left' },
   customCaloriesCard: { backgroundColor: '#fff', borderRadius: 12, padding: 14, borderWidth: 1, borderColor: '#e2e8f0', marginTop: 6 },
-  customCaloriesLabel: { fontSize: 14, fontWeight: '600', color: '#1e293b', marginBottom: 8, textAlign: I18nManager.isRTL ? 'right' : 'left' },
-  customCaloriesInput: { borderWidth: 1.5, borderColor: '#cbd5e1', borderRadius: 10, paddingHorizontal: 12, paddingVertical: 10, fontSize: 16, color: '#0f172a', backgroundColor: '#f8fafc', textAlign: I18nManager.isRTL ? 'right' : 'left' },
-  customCaloriesHint: { fontSize: 12, color: '#64748b', marginTop: 8, textAlign: I18nManager.isRTL ? 'right' : 'left' },
+  customCaloriesLabel: { fontSize: 14, fontWeight: '600', color: '#1e293b', marginBottom: 8, textAlign: isArabic ? 'right' : 'left' },
+  customCaloriesInput: { borderWidth: 1.5, borderColor: '#cbd5e1', borderRadius: 10, paddingHorizontal: 12, paddingVertical: 10, fontSize: 16, color: '#0f172a', backgroundColor: '#f8fafc', textAlign: isArabic ? 'right' : 'left' },
+  customCaloriesHint: { fontSize: 12, color: '#64748b', marginTop: 8, textAlign: isArabic ? 'right' : 'left' },
   tipItem: { borderTopWidth: 1, borderTopColor: '#f1f5f9', paddingTop: 10, marginTop: 8 },
-  tipCondition: { fontSize: 15, fontWeight: '600', color: '#1e293b', marginBottom: 4, textAlign: I18nManager.isRTL ? 'right' : 'left' },
-  tipAdvice: { fontSize: 13, color: '#475569', marginBottom: 2, textAlign: I18nManager.isRTL ? 'right' : 'left' },
-  tipAvoid: { fontSize: 12, color: '#ef4444', marginTop: 4, textAlign: I18nManager.isRTL ? 'right' : 'left' },
-  tipText: { fontSize: 13, color: '#475569', marginBottom: 4, textAlign: I18nManager.isRTL ? 'right' : 'left' },
-  refText: { fontSize: 12, color: '#94a3b8', marginBottom: 4, textAlign: I18nManager.isRTL ? 'right' : 'left' },
+  tipCondition: { fontSize: 15, fontWeight: '600', color: '#1e293b', marginBottom: 4, textAlign: isArabic ? 'right' : 'left' },
+  tipAdvice: { fontSize: 13, color: '#475569', marginBottom: 2, textAlign: isArabic ? 'right' : 'left' },
+  tipAvoid: { fontSize: 12, color: '#ef4444', marginTop: 4, textAlign: isArabic ? 'right' : 'left' },
+  tipText: { fontSize: 13, color: '#475569', marginBottom: 4, textAlign: isArabic ? 'right' : 'left' },
+  refText: { fontSize: 12, color: '#94a3b8', marginBottom: 4, textAlign: isArabic ? 'right' : 'left' },
   actionButtons: { gap: 10, marginTop: 8 },
-  saveButton: { flexDirection: I18nManager.isRTL ? 'row-reverse' : 'row', backgroundColor: '#22c55e', borderRadius: 12, paddingVertical: 14, alignItems: 'center', justifyContent: 'center', gap: 8 },
+  saveButton: { flexDirection: isArabic ? 'row-reverse' : 'row', backgroundColor: '#22c55e', borderRadius: 12, paddingVertical: 14, alignItems: 'center', justifyContent: 'center', gap: 8 },
   saveButtonText: { fontSize: 16, fontWeight: '600', color: '#fff' },
-  newPlanButton: { flexDirection: I18nManager.isRTL ? 'row-reverse' : 'row', backgroundColor: '#eff6ff', borderRadius: 12, paddingVertical: 14, alignItems: 'center', justifyContent: 'center', gap: 8 },
+  exportButton: { flexDirection: isArabic ? 'row-reverse' : 'row', backgroundColor: '#2563eb', borderRadius: 12, paddingVertical: 14, alignItems: 'center', justifyContent: 'center', gap: 8 },
+  exportButtonText: { fontSize: 16, fontWeight: '600', color: '#fff' },
+  newPlanButton: { flexDirection: isArabic ? 'row-reverse' : 'row', backgroundColor: '#eff6ff', borderRadius: 12, paddingVertical: 14, alignItems: 'center', justifyContent: 'center', gap: 8 },
   newPlanButtonText: { fontSize: 16, fontWeight: '600', color: '#3b82f6' },
+  monthlyNote: { fontSize: 12, marginTop: 10, textAlign: isArabic ? 'right' : 'left' },
   savedSection: { marginTop: 16 },
-  savedCard: { flexDirection: I18nManager.isRTL ? 'row-reverse' : 'row', alignItems: 'center', backgroundColor: '#fff', borderRadius: 12, padding: 14, gap: 12, marginBottom: 8, elevation: 1, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.04, shadowRadius: 2 },
-  savedCardTitle: { fontSize: 15, fontWeight: '600', color: '#1e293b', textAlign: I18nManager.isRTL ? 'right' : 'left' },
-  savedCardDate: { fontSize: 12, color: '#94a3b8', marginTop: 2, textAlign: I18nManager.isRTL ? 'right' : 'left' },
+  savedCard: { flexDirection: isArabic ? 'row-reverse' : 'row', alignItems: 'center', backgroundColor: '#fff', borderRadius: 12, padding: 14, gap: 12, marginBottom: 8, elevation: 1, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.04, shadowRadius: 2 },
+  savedCardTitle: { fontSize: 15, fontWeight: '600', color: '#1e293b', textAlign: isArabic ? 'right' : 'left' },
+  savedCardDate: { fontSize: 12, color: '#94a3b8', marginTop: 2, textAlign: isArabic ? 'right' : 'left' },
 });
