@@ -7,8 +7,8 @@ export interface GlobalExercise {
     videoUrl: string; // Remote URL to be streamed or downloaded
 }
 
-// Cloudflare R2 Public Development URL
-const VIDEO_BASE_URL = "https://pub-8183870d5f9f4c1196f1ca8347faa84b.r2.dev";
+// Cloudflare R2 Custom Domain (CDN Enabled for fast loading)
+const VIDEO_BASE_URL = "https://assets.biotrack-ai.com";
 
 // Helper function to generate the correct video URL.
 // We expect folders inside R2 exactly matching the muscleGroupEn
