@@ -126,25 +126,58 @@ export const WorkoutStore = {
         return res.shareCode;
     },
 
-    // Import a group from a 6-character code
-    async importGroup(code: string): Promise<WorkoutGroup> {
+    // Share all groups bundled together
+    async shareAllGroups(): Promise<string> {
+        const groups = await this.getGroups();
+        if (groups.length === 0) throw new Error("No workout groups to share");
+
+        // Dynamically import api to avoid circular dependencies
+        const { api } = require('./api');
+
+        // We package the array of groups inside the exercises payload
+        // The groupName acts as a flag for the multi-group bundle
+        const res = await api.shareWorkout("All Workout Plans", groups);
+        return res.shareCode;
+    },
+
+    // Import a group (or multiple groups) from a 6-character code
+    async importGroup(code: string): Promise<void> {
         const { api } = require('./api');
         const res = await api.importSharedWorkout(code);
 
-        const groups = await this.getGroups();
+        const currentGroups = await this.getGroups();
+        let newGroupsToAdd: WorkoutGroup[] = [];
 
-        // Generate new unique IDs for the imported group and its exercises
-        const newGroup: WorkoutGroup = {
-            id: Date.now().toString(),
-            name: `${res.groupName} (Imported)`,
-            exercises: res.exercises.map((ex: any, index: number) => ({
-                ...ex,
-                id: Date.now().toString() + index.toString() + Math.random().toString(36).substr(2, 5),
-                dateAdded: new Date().toISOString()
-            })),
-        };
+        // Check if this is a bundled multi-group export
+        // Bundled exports have the groups inside the 'exercises' array
+        if (res.groupName === "All Workout Plans" && Array.isArray(res.exercises) && res.exercises.length > 0 && res.exercises[0].exercises) {
 
-        await this.saveGroups([...groups, newGroup]);
-        return newGroup;
+            // Loop through each group in the bundle
+            res.exercises.forEach((importedGroup: WorkoutGroup, groupIndex: number) => {
+                newGroupsToAdd.push({
+                    id: Date.now().toString() + groupIndex.toString(),
+                    name: `${importedGroup.name} (Imported)`,
+                    exercises: importedGroup.exercises.map((ex: any, exIndex: number) => ({
+                        ...ex,
+                        id: Date.now().toString() + groupIndex.toString() + exIndex.toString() + Math.random().toString(36).substr(2, 5),
+                        dateAdded: new Date().toISOString()
+                    })),
+                });
+            });
+
+        } else {
+            // Standard single-group import
+            newGroupsToAdd.push({
+                id: Date.now().toString(),
+                name: `${res.groupName} (Imported)`,
+                exercises: res.exercises.map((ex: any, index: number) => ({
+                    ...ex,
+                    id: Date.now().toString() + index.toString() + Math.random().toString(36).substr(2, 5),
+                    dateAdded: new Date().toISOString()
+                })),
+            });
+        }
+
+        await this.saveGroups([...currentGroups, ...newGroupsToAdd]);
     }
 };

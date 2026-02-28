@@ -142,6 +142,7 @@ export default function WorkoutPlansScreen() {
   const [importCode, setImportCode] = useState('');
   const [isImporting, setIsImporting] = useState(false);
   const [isSharing, setIsSharing] = useState<string | null>(null);
+  const [isSharingAll, setIsSharingAll] = useState(false);
 
   const loadGroups = useCallback(async () => {
     const data = await WorkoutStore.getGroups();
@@ -224,8 +225,41 @@ export default function WorkoutPlansScreen() {
     }
   };
 
+  const handleShareAllGroups = async () => {
+    setIsSharingAll(true);
+    try {
+      const code = await WorkoutStore.shareAllGroups();
+      const message = isArabic
+        ? `🚀 شاركت جميع جداول التمارين الخاصة بي على تطبيق BioTrack AI خطوة بخطوة!\n\nلتحميل جميع الجداول دفعة واحدة، افتح التطبيق وأدخل هذا الكود: ${code}`
+        : `🚀 I've shared ALL my custom workout routines on BioTrack AI!\n\nTo download my complete workout program, open the app and enter this code: ${code}`;
+
+      await Share.share({ message });
+    } catch (error: any) {
+      Alert.alert(isArabic ? "خطأ" : "Error", error.message || (isArabic ? "فشلت عملية المشاركة" : "Failed to share workouts"));
+    } finally {
+      setIsSharingAll(false);
+    }
+  };
+
   return (
     <ScrollView style={[styles.container, { backgroundColor: colors.background }]} contentContainerStyle={styles.content}>
+      {groups.length > 0 && (
+        <TouchableOpacity
+          style={[styles.shareAllBtn, { backgroundColor: colors.primary }]}
+          onPress={handleShareAllGroups}
+          disabled={isSharingAll}
+        >
+          {isSharingAll ? (
+            <ActivityIndicator color="#fff" style={{ marginRight: 8 }} />
+          ) : (
+            <Ionicons name="share-social" size={20} color="#fff" style={{ marginRight: 8, marginLeft: isArabic ? 8 : 0 }} />
+          )}
+          <Text style={styles.shareAllText}>
+            {isArabic ? "📤 مشاركة جميع جداولي" : "📤 Share All My Workouts"}
+          </Text>
+        </TouchableOpacity>
+      )}
+
       <View style={[styles.importContainer, { backgroundColor: colors.card, borderColor: colors.border }]}>
         <Text style={[styles.importTitle, { color: colors.text, textAlign: isArabic ? 'right' : 'left' }]}>
           {isArabic ? "📥 استيراد جدول تمارين" : "📥 Import Workout Plan"}
@@ -352,6 +386,25 @@ const styles = StyleSheet.create({
   },
   groupTitle: {
     fontSize: 20,
+    fontWeight: 'bold',
+  },
+
+  shareAllBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 14,
+    borderRadius: 12,
+    marginBottom: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  shareAllText: {
+    color: '#fff',
+    fontSize: 16,
     fontWeight: 'bold',
   },
 
