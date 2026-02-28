@@ -22,13 +22,13 @@ interface Reminder {
   isCompleted: boolean;
 }
 
-const isArabic = I18nManager.isRTL;
 
 export default function RemindersScreen() {
   const { t, i18n } = useTranslation();
   const { colors } = useAppTheme();
   const queryClient = useQueryClient();
   const isArabic = isArabicLanguage();
+  const styles = getStyles(isArabic);
 
   const { data: reminders, isLoading } = useQuery({
     queryKey: ['reminders'],
@@ -138,14 +138,14 @@ export default function RemindersScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (isArabic: boolean) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8fafc'
+    backgroundColor: '#f8fafc',
   },
   header: {
     padding: 16,
-    flexDirection: isArabic ? 'row-reverse' : 'row',
+    flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center'
   },
@@ -171,7 +171,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
-    flexDirection: isArabic ? 'row-reverse' : 'row',
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     shadowColor: '#000',
@@ -187,7 +187,7 @@ const styles = StyleSheet.create({
     flex: 1
   },
   reminderHeader: {
-    flexDirection: isArabic ? 'row-reverse' : 'row',
+    flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 8
   },
@@ -196,8 +196,8 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#1e293b',
     marginHorizontal: 8,
-    textAlign: isArabic ? 'right' : 'left'
-  },
+    textAlign: 'left',
+    },
   reminderDetails: {
     marginLeft: isArabic ? 0 : 32,
     marginRight: isArabic ? 32 : 0
@@ -205,8 +205,8 @@ const styles = StyleSheet.create({
   dueText: {
     fontSize: 14,
     color: '#64748b',
-    textAlign: isArabic ? 'right' : 'left'
-  },
+    textAlign: 'left',
+    },
   overdueText: {
     color: '#dc2626',
     fontWeight: '600'
@@ -240,7 +240,7 @@ const styles = StyleSheet.create({
     marginTop: 16
   },
   disclaimerSmall: {
-    flexDirection: isArabic ? 'row-reverse' : 'row',
+    flexDirection: 'row',
     alignItems: 'flex-start',
     paddingHorizontal: 16,
     paddingBottom: 12,
@@ -251,6 +251,6 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: '#94a3b8',
     lineHeight: 16,
-    textAlign: isArabic ? 'right' : 'left',
-  },
+    textAlign: 'left',
+    },
 });

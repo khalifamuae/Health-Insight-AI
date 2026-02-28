@@ -286,3 +286,119 @@
     inset: -1px;
   }
 }
+
+/* ============================================
+   RTL (Arabic) Layout Fixes
+   Only applies when dir="rtl" is set on <html>
+   ============================================ */
+
+/* Base text alignment for RTL */
+[dir="rtl"] body {
+  text-align: right;
+}
+
+/* Fix Sheet/Drawer close button position in RTL */
+[dir="rtl"] [data-radix-collection-item] {
+  text-align: right;
+}
+
+/* Sheet close button: flip from right to left in RTL */
+[dir="rtl"] .absolute.right-4.top-4 {
+  right: auto;
+  left: 1rem;
+}
+
+/* Flex items with gap — ensure proper RTL flow */
+[dir="rtl"] .flex.items-center.gap-2,
+[dir="rtl"] .flex.items-center.gap-3,
+[dir="rtl"] .flex.items-center.gap-1,
+[dir="rtl"] .flex.items-center.gap-1\.5 {
+  flex-direction: row;
+}
+
+/* Space-x utilities need reversal in RTL */
+[dir="rtl"] .space-x-2 > :not([hidden]) ~ :not([hidden]) {
+  --tw-space-x-reverse: 1;
+}
+[dir="rtl"] .space-x-3 > :not([hidden]) ~ :not([hidden]) {
+  --tw-space-x-reverse: 1;
+}
+[dir="rtl"] .space-x-4 > :not([hidden]) ~ :not([hidden]) {
+  --tw-space-x-reverse: 1;
+}
+
+/* Card text alignment */
+[dir="rtl"] .min-w-0 {
+  text-align: right;
+}
+
+/* Tables RTL */
+[dir="rtl"] th,
+[dir="rtl"] td {
+  text-align: right;
+}
+
+/* Input fields should be RTL aligned */
+[dir="rtl"] input:not([dir="ltr"]),
+[dir="rtl"] textarea:not([dir="ltr"]),
+[dir="rtl"] select:not([dir="ltr"]) {
+  text-align: right;
+}
+
+/* Badge and pill items */
+[dir="rtl"] .rounded-full {
+  direction: rtl;
+}
+
+/* Form labels */
+[dir="rtl"] label {
+  text-align: right;
+}
+
+/* Popover and dropdown menus */
+[dir="rtl"] [role="menu"],
+[dir="rtl"] [role="listbox"] {
+  text-align: right;
+}
+
+/* Ensure paragraphs and headings follow RTL */
+[dir="rtl"] p,
+[dir="rtl"] h1,
+[dir="rtl"] h2,
+[dir="rtl"] h3,
+[dir="rtl"] h4,
+[dir="rtl"] span:not([dir="ltr"]) {
+  text-align: right;
+}
+
+/* Fix items that explicitly use left/right positioning */
+[dir="rtl"] .left-0 {
+  left: auto;
+  right: 0;
+}
+
+/* Fix margin utilities */
+[dir="rtl"] .ml-auto {
+  margin-left: unset;
+  margin-right: auto;
+}
+[dir="rtl"] .mr-auto {
+  margin-right: unset;
+  margin-left: auto;
+}
+[dir="rtl"] .ml-2 {
+  margin-left: unset;
+  margin-right: 0.5rem;
+}
+[dir="rtl"] .ml-3 {
+  margin-left: unset;
+  margin-right: 0.75rem;
+}
+[dir="rtl"] .mr-2 {
+  margin-right: unset;
+  margin-left: 0.5rem;
+}
+[dir="rtl"] .mr-3 {
+  margin-right: unset;
+  margin-left: 0.75rem;
+}

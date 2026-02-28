@@ -83,6 +83,7 @@ const parseApiResponse = async <T>(response: Response, defaultErrorPrefix = 'API
     }
 
     if (trimmed.startsWith('<')) {
+      console.error(`[API] Server returned HTML error (${response.status}):\n`, trimmed.substring(0, 500));
       throw new Error(`Server returned HTML error (${response.status})`);
     }
 
@@ -98,6 +99,7 @@ const parseApiResponse = async <T>(response: Response, defaultErrorPrefix = 'API
   }
 
   if (trimmed.startsWith('<')) {
+    console.error(`[API] Server returned HTML instead of JSON (${response.status}):\n`, trimmed.substring(0, 500));
     throw new Error(`Server returned HTML instead of JSON (${response.status})`);
   }
 
@@ -135,7 +137,7 @@ const uploadMultipart = async (
 export const api = {
   async get<T>(endpoint: string): Promise<T> {
     const headers = await getHeaders();
-    const response = await fetch(`${API_BASE_URL}${endpoint}`, { 
+    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
       headers,
       credentials: 'include',
     });

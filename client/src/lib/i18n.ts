@@ -10,8 +10,8 @@ const resources = {
       appDescription: "AI-Powered Health Analysis",
       warning: "Warning",
       appPurpose: "This app is for health tracking and awareness purposes only.",
-      medicalDisclaimer: "This app does not replace professional medical advice. Always consult a healthcare provider.",
-      
+      medicalDisclaimer: "For informational purposes only, not medical advice. This app does not replace professional medical advice. Always consult a healthcare provider.",
+
       // Navigation
       dashboard: "Dashboard",
       myTests: "My Tests",
@@ -21,7 +21,7 @@ const resources = {
       subscription: "Subscription",
       logout: "Logout",
       login: "Login",
-      
+
       // Dashboard
       welcomeBack: "Welcome back",
       totalTests: "Total Tests",
@@ -30,7 +30,7 @@ const resources = {
       pendingReminders: "Pending Reminders",
       recentUploads: "Recent Uploads",
       quickStats: "Quick Stats",
-      
+
       // Tests
       testName: "Test Name",
       yourValue: "Your Value",
@@ -43,7 +43,7 @@ const resources = {
       high: "High",
       slightlyHigh: "Slightly High",
       slightlyLow: "Slightly Low",
-      
+
       // Categories
       vitamins: "Vitamins",
       minerals: "Minerals",
@@ -54,7 +54,7 @@ const resources = {
       blood: "Blood Tests",
       coagulation: "Coagulation",
       special: "Special Tests",
-      
+
       // Sorting
       sortBy: "Sort by",
       importance: "Importance",
@@ -62,7 +62,7 @@ const resources = {
       oldest: "Oldest",
       byStatus: "By Status",
       byCategory: "By Category",
-      
+
       // Upload
       uploadTitle: "Upload Lab Results",
       uploadDescription: "Upload your PDF lab results and our AI will analyze them",
@@ -70,7 +70,7 @@ const resources = {
       processing: "Processing...",
       analysisComplete: "Analysis Complete",
       testsFound: "tests found",
-      
+
       // Profile
       personalInfo: "Personal Information",
       name: "Name",
@@ -84,7 +84,7 @@ const resources = {
       female: "Female",
       changePhoto: "Change Photo",
       saveChanges: "Save Changes",
-      
+
       // Subscription
       currentPlan: "Current Plan",
       freePlan: "Free Plan",
@@ -112,12 +112,12 @@ const resources = {
       proFeature9: "Full Arabic & English support",
       proFeature10: "Dark mode interface",
       whyUpgrade: "Why upgrade to Pro?",
-      
+
       // Reminders
       upcomingReminders: "Upcoming Reminders",
       dueDate: "Due Date",
       noReminders: "No upcoming reminders",
-      
+
       // Levels
       level1: "Level 1: Essential Tests",
       level2: "Level 2: General Health",
@@ -126,7 +126,7 @@ const resources = {
       level5: "Level 5: Advanced Vitamins & Minerals",
       level6: "Level 6: Heart & Coagulation",
       level7: "Level 7: Special Tests",
-      
+
       // Common
       loading: "Loading...",
       error: "Error",
@@ -149,7 +149,7 @@ const resources = {
       reminderError: "Failed to set reminder",
       home: "Home",
       upload: "Upload",
-      
+
       // Uploaded Files History
       uploadedFiles: "Uploaded Files",
       processed: "Processed",
@@ -161,7 +161,7 @@ const resources = {
       retry: "Retry",
       retryFailed: "Retry failed. Please try again.",
       pleaseUploadPdf: "Please upload a PDF file",
-      
+
       // Compare
       compare: "Compare",
       compareResults: "Compare Results",
@@ -314,7 +314,7 @@ const resources = {
       shareSuccess: "Shared successfully",
       copiedToClipboard: "Copied to clipboard",
       copyFailed: "Failed to copy",
-      
+
       // Auth
       authCreateAccount: "Create Account",
       authWelcomeBack: "Welcome Back",
@@ -363,8 +363,8 @@ const resources = {
       appDescription: "تحليل صحي مدعوم بالذكاء الاصطناعي",
       warning: "تحذير",
       appPurpose: "هذا التطبيق لمتابعة الصحة ولأغراض التوعوية فقط.",
-      medicalDisclaimer: "لا يغني هذا التطبيق عن الاستشارة الطبية. استشر طبيبك دائماً.",
-      
+      medicalDisclaimer: "لأغراض المعرفة فقط، ليس استشارة طبية. استشر طبيبك دائماً.",
+
       // Navigation
       dashboard: "لوحة التحكم",
       myTests: "فحوصاتي",
@@ -374,7 +374,7 @@ const resources = {
       subscription: "الاشتراك",
       logout: "تسجيل خروج",
       login: "تسجيل دخول",
-      
+
       // Dashboard
       welcomeBack: "مرحباً بعودتك",
       totalTests: "إجمالي الفحوصات",
@@ -383,7 +383,7 @@ const resources = {
       pendingReminders: "تذكيرات قادمة",
       recentUploads: "آخر الملفات",
       quickStats: "إحصائيات سريعة",
-      
+
       // Tests
       testName: "اسم الفحص",
       yourValue: "قيمتك",
@@ -396,7 +396,7 @@ const resources = {
       high: "مرتفع",
       slightlyHigh: "مرتفع بشكل بسيط",
       slightlyLow: "منخفض بشكل بسيط",
-      
+
       // Categories
       vitamins: "الفيتامينات",
       minerals: "المعادن",
@@ -407,7 +407,7 @@ const resources = {
       blood: "فحوصات الدم",
       coagulation: "التخثر",
       special: "فحوصات خاصة",
-      
+
       // Sorting
       sortBy: "ترتيب حسب",
       importance: "الأهمية",
@@ -415,7 +415,7 @@ const resources = {
       oldest: "الأقدم",
       byStatus: "الحالة",
       byCategory: "التصنيف",
-      
+
       // Upload
       uploadTitle: "رفع نتائج التحاليل",
       uploadDescription: "ارفع ملف PDF لنتائج تحاليلك وسيقوم الذكاء الاصطناعي بتحليلها",
@@ -423,7 +423,7 @@ const resources = {
       processing: "جاري المعالجة...",
       analysisComplete: "اكتمل التحليل",
       testsFound: "فحص تم استخراجه",
-      
+
       // Profile
       personalInfo: "المعلومات الشخصية",
       name: "الاسم",
@@ -437,7 +437,7 @@ const resources = {
       female: "أنثى",
       changePhoto: "تغيير الصورة",
       saveChanges: "حفظ التغييرات",
-      
+
       // Subscription
       currentPlan: "خطتك الحالية",
       freePlan: "مجاني",
@@ -465,12 +465,12 @@ const resources = {
       proFeature9: "دعم كامل للعربية والإنجليزية",
       proFeature10: "واجهة الوضع الداكن",
       whyUpgrade: "لماذا الترقية إلى Pro؟",
-      
+
       // Reminders
       upcomingReminders: "التذكيرات القادمة",
       dueDate: "تاريخ الاستحقاق",
       noReminders: "لا توجد تذكيرات قادمة",
-      
+
       // Levels
       level1: "المستوى الأول: الفحوصات الأساسية",
       level2: "المستوى الثاني: الصحة العامة",
@@ -479,7 +479,7 @@ const resources = {
       level5: "المستوى الخامس: الفيتامينات والمعادن المتقدمة",
       level6: "المستوى السادس: القلب والتخثر",
       level7: "المستوى السابع: الفحوصات الخاصة",
-      
+
       // Common
       loading: "جاري التحميل...",
       error: "خطأ",
@@ -502,7 +502,7 @@ const resources = {
       reminderError: "فشل في تعيين التذكير",
       home: "الرئيسية",
       upload: "رفع",
-      
+
       // Uploaded Files History
       uploadedFiles: "الملفات المرفوعة",
       processed: "تمت المعالجة",
@@ -514,7 +514,7 @@ const resources = {
       retry: "إعادة المحاولة",
       retryFailed: "فشلت إعادة المحاولة. يرجى المحاولة مرة أخرى.",
       pleaseUploadPdf: "يرجى رفع ملف PDF",
-      
+
       // Compare
       compare: "مقارنة",
       compareResults: "مقارنة النتائج",
@@ -667,7 +667,7 @@ const resources = {
       shareSuccess: "تمت المشاركة بنجاح",
       copiedToClipboard: "تم النسخ إلى الحافظة",
       copyFailed: "فشل في النسخ",
-      
+
       // Auth
       authCreateAccount: "إنشاء حساب",
       authWelcomeBack: "مرحباً بعودتك",

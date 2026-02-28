@@ -5,7 +5,7 @@ import bcrypt from "bcryptjs";
 import { storage } from "./storage";
 import { setupAuth, isAuthenticated, registerAuthRoutes, createApiToken } from "./replit_integrations/auth";
 import { authStorage } from "./replit_integrations/auth/storage";
-import { analyzeLabPdf } from "./pdfAnalyzer";
+import { analyzeLabPdf, analyzeLabImage } from "./pdfAnalyzer";
 import { analyzeInBodyPdf, analyzeInBodyImage } from "./inbodyAnalyzer";
 import { generateDietPlan } from "./dietPlanGenerator";
 import { getPrivacyPolicyHTML, getPrivacyPolicyArabicHTML, getTermsOfServiceHTML, getTermsOfServiceArabicHTML, getSupportPageHTML, getAccountDeletionHTML } from "./legalPages";
@@ -875,44 +875,7 @@ export async function registerRoutes(
       let testsCreated = 0;
 
       // Create test results and reminders
-      for (const extracted of extractedTests) {
-        const def = defMap.get(extracted.testId);
-        if (!def) continue;
-
-        // Determine status
-        let status: "normal" | "low" | "high" = "normal";
-        if (def.normalRangeMin !== null && def.normalRangeMax !== null && extracted.value !== null) {
-          if (extracted.value < def.normalRangeMin) status = "low";
-          else if (extracted.value > def.normalRangeMax) status = "high";
-        }
-
-        // Use extracted date if available, otherwise use current date
-        const testDate = extracted.testDate ? new Date(extracted.testDate) : defaultTestDate;
-
-        // Create test result
-        await storage.createTestResult({
-          userId,
-          testId: extracted.testId,
-          value: extracted.value,
-          valueText: extracted.valueText,
-          status,
-          testDate,
-          pdfFileName: fileName,
-        });
-        testsCreated++;
-
-        // Create reminder based on recheck interval
-        if (def.recheckMonths) {
-          const dueDate = new Date(testDate);
-          dueDate.setMonth(dueDate.getMonth() + def.recheckMonths);
-
-          await storage.createReminder({
-            userId,
-            testId: extracted.testId,
-            dueDate,
-          });
-        }
-      }
+      testsCreated = await saveExtractedLabTests(userId, fileName, extractedTests);
 
       // Update status to success
       await storage.updateUploadedPdfStatus(pdfId, "success", testsCreated);
@@ -925,6 +888,48 @@ export async function registerRoutes(
       await storage.updateUploadedPdfStatus(pdfId, "failed", undefined, errorMessage);
       throw error;
     }
+  }
+
+  async function saveExtractedLabTests(userId: string, fileName: string, extractedTests: any[]): Promise<number> {
+    const definitions = await storage.getTestDefinitions();
+    const defMap = new Map(definitions.map(d => [d.id, d]));
+    const defaultTestDate = new Date();
+    let testsCreated = 0;
+
+    for (const extracted of extractedTests) {
+      const def = defMap.get(extracted.testId);
+      if (!def) continue;
+
+      let status: "normal" | "low" | "high" = "normal";
+      if (def.normalRangeMin !== null && def.normalRangeMax !== null && extracted.value !== null) {
+        if (extracted.value < def.normalRangeMin) status = "low";
+        else if (extracted.value > def.normalRangeMax) status = "high";
+      }
+
+      const testDate = extracted.testDate ? new Date(extracted.testDate) : defaultTestDate;
+
+      await storage.createTestResult({
+        userId,
+        testId: extracted.testId,
+        value: extracted.value,
+        valueText: extracted.valueText,
+        status,
+        testDate,
+        pdfFileName: fileName,
+      });
+      testsCreated++;
+
+      if (def.recheckMonths) {
+        const dueDate = new Date(testDate);
+        dueDate.setMonth(dueDate.getMonth() + def.recheckMonths);
+        await storage.createReminder({
+          userId,
+          testId: extracted.testId,
+          dueDate,
+        });
+      }
+    }
+    return testsCreated;
   }
 
   async function ensureInBodyDefinitions() {
@@ -1149,8 +1154,13 @@ export async function registerRoutes(
         let testsExtracted = 0;
 
         if (mode === "lab") {
-          const result = await processPdfFromRecord(fileRecord.id, userId, file.buffer, normalizedFileName);
-          testsExtracted = result.testsExtracted;
+          if (isImage) {
+            const extractedTests = await analyzeLabImage(file.buffer, file.mimetype || "image/jpeg");
+            testsExtracted = await saveExtractedLabTests(userId, normalizedFileName, extractedTests);
+          } else {
+            const result = await processPdfFromRecord(fileRecord.id, userId, file.buffer, normalizedFileName);
+            testsExtracted = result.testsExtracted;
+          }
         } else {
           const extractedMetrics = await analyzeInBodyImage(file.buffer, file.mimetype || "image/jpeg");
           testsExtracted = await saveInBodyMetricsFromExtraction(userId, normalizedFileName, extractedMetrics);

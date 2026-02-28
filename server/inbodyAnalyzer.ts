@@ -68,6 +68,12 @@ export async function analyzeInBodyPdf(pdfBuffer: Buffer): Promise<ExtractedInBo
       throw new Error("SCANNED_PDF");
     }
 
+    // Limit text to prevent OpenAI token overflow
+    const maxTextLength = 10000;
+    const truncatedText = pdfText.length > maxTextLength
+      ? pdfText.substring(0, maxTextLength) + "\n\n[... truncated ...]"
+      : pdfText;
+
     const response = await openai.chat.completions.create({
       model: "gpt-4o",
       messages: [
@@ -95,7 +101,7 @@ export async function analyzeInBodyPdf(pdfBuffer: Buffer): Promise<ExtractedInBo
         },
         {
           role: "user",
-          content: `حلل هذا التقرير واستخرج قياسات InBody:\n\n${pdfText}`,
+          content: `حلل هذا التقرير واستخرج قياسات InBody:\n\n${truncatedText}`,
         },
       ],
       temperature: 0.1,

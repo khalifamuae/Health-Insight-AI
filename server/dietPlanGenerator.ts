@@ -219,7 +219,19 @@ export async function generateDietPlan(userData: UserHealthData): Promise<DietPl
   const age = userData.age || 30;
   const gender = userData.gender || "male";
 
+  // Extract InBody metrics if available in the test results
+  const pbfTest = userData.testResults.find(t => t.testId === "inbody-pbf" || (t.testId && t.testId.includes("pbf")));
+  const smmTest = userData.testResults.find(t => t.testId === "inbody-smm" || (t.testId && t.testId.includes("smm")));
+  const visceralTest = userData.testResults.find(t => t.testId === "inbody-vf" || (t.testId && t.testId.includes("visceral")));
+
+  const inbodyPbf = pbfTest?.value || null;
+  const inbodySmm = smmTest?.value || null;
+  const inbodyVisceral = visceralTest?.value || null;
+
   const { hasSevere: hasSevereDeficiency, list: severeDeficiencyList } = detectSevereDeficiencies(userData.testResults);
+
+  // Retrieve verifiable clinical context from RAG Memory System
+  const knowledgeContext = await searchRelevantKnowledge(userData.testResults, goal);
 
   const bmr = Math.round(calculateBMR(weight, height, age, gender));
   const tdee = calculateTDEE(bmr, activityLevel);
@@ -238,10 +250,10 @@ export async function generateDietPlan(userData: UserHealthData): Promise<DietPl
   const currentProteinPerKg = mealPreference === "high_protein"
     ? (goal === "muscle_gain" ? 2.4 : 2.2)
     : mealPreference === "low_carb" ? 1.8
-    : mealPreference === "keto" ? 1.6
-    : mealPreference === "vegetarian" ? 1.4
-    : goal === "weight_loss" ? 2.0
-    : goal === "muscle_gain" ? 2.2 : 1.6;
+      : mealPreference === "keto" ? 1.6
+        : mealPreference === "vegetarian" ? 1.4
+          : goal === "weight_loss" ? 2.0
+            : goal === "muscle_gain" ? 2.2 : 1.6;
   const currentMinCarbGrams = mealPreference === "keto" ? Math.round(weight * 0.3)
     : mealPreference === "low_carb" ? Math.round(weight * 1.5) : 0;
 
@@ -421,11 +433,11 @@ export async function generateDietPlan(userData: UserHealthData): Promise<DietPl
 
 ⸻ البروتوكول السريري (Clinical Protocol) - اتبعه بالترتيب: ⸻
 
-📋 المرحلة 1: التقييم السريري (Clinical Assessment)
-- تحليل شامل لجميع نتائج التحاليل المخبرية: تحديد القيم الطبيعية، النقص (Deficiency)، الارتفاع (Excess)
-- تقييم الترابطات بين المؤشرات الحيوية (Biomarker Correlations): مثال: انخفاض الفيريتين + انخفاض الهيموجلوبين = أنيميا نقص الحديد
-- أعطِ الأولوية لتصحيح أي خلل أيضي قبل التوصية بعجز أو فائض حراري
-- اكتب "healthSummary" يتضمن: تقييم سريري شامل بناءً على التحاليل (القيم الطبيعية، ما يحتاج تحسين، الترابطات بين النتائج، الأولويات العلاجية الغذائية)
+📋 المرحلة 1: التقييم السريري والجسدي (Clinical & Physical Assessment)
+- تحليل شامل (في حال توفر نتائج تحاليل): تحديد القيم الطبيعية، النقص، الارتفاع، والترابطات.
+- (في حال عدم توفر تحاليل): اعتمد التقييم على الوزن، الطول، العمر، ومستوى النشاط لتحديد الاحتياجات.
+- أعطِ الأولوية لتصحيح أي خلل أيضي قبل التوصية بعجز أو فائض حراري.
+- اكتب "healthSummary" يتضمن: تقييم شمولي لحالة المستخدم يعتمد على المعطيات المتوفرة (التحاليل إن وجدت، أو الملف الجسدي والهدف).
 
 📊 المرحلة 2: حسابات الطاقة المتقدمة (Advanced Energy Calculations)
 - BMR = ${bmr} سعرة (معادلة Mifflin-St Jeor 1990 - المرجع الذهبي لحساب الأيض الأساسي)
@@ -451,9 +463,9 @@ ${goal === "weight_loss" ? "- استخدم عجزاً معتدلاً فقط (AMD
 - اكتب "nutrientInteractions" تتضمن قائمة بالتفاعلات الغذائية المهمة لهذا المستخدم
 
 🍽️ المرحلة 5: تصميم البروتوكول الغذائي (Dietary Protocol Design)
-- اربط كل توصية غذائية بسبب سريري واضح من التحاليل
-- مثال: نقص فيتامين D → أطعمة غنية بفيتامين D مع مصدر دهون | انخفاض الحديد → مصادر حديد + فيتامين C لتحسين الامتصاص
-- في "benefits" لكل وجبة: اذكر بوضوح السبب السريري والتحليل المرتبط
+- اربط كل توصية غذائية بسبب مرجعي (من التحاليل الطبية إن وجدت، أو استناداً لهدف المستخدم وحالته البدنية).
+- في حال توفر تحاليل: عالج النواقص (مثال: نقص فيتامين D → أطعمة غنية به مع دهون).
+- في "benefits" لكل وجبة: اذكر الفائدة الصحية بوضوح وتوافقها مع حالة المستخدم (أو التحليل المرتبط إن وجد).
 - في "preparationTip" لكل وجبة: اذكر نصيحة تحضير تحسّن القيمة الغذائية أو التوافر الحيوي
 - في "fiber" لكل وجبة: اذكر كمية الألياف بالجرام
 - اكتب "mealTimingAdvice" يتضمن: توصيات التوقيت الغذائي (Chrononutrition) - أفضل أوقات تناول الوجبات بناءً على الإيقاع اليومي والهدف
@@ -465,6 +477,9 @@ ${goal === "weight_loss" ? "- استخدم عجزاً معتدلاً فقط (AMD
 البروتين المفضل: ${proteinListAr}
 ${carbPrefs.length > 0 ? `الكربوهيدرات المفضلة: ${carbListAr}` : ""}
 BMI: ${bmi} (${bmiCategoryLabels[bmiCategory].ar})
+${inbodyPbf ? `نسبة الدهون (PBF): ${inbodyPbf}%` : ""}
+${inbodySmm ? `كتلة العضلات (SMM): ${inbodySmm} كجم` : ""}
+${inbodyVisceral ? `الدهون الحشوية: ${inbodyVisceral}` : ""}
 
 السعرات المستهدفة: ${targetCalories} سعرة حرارية يومياً
 البروتين: ${macros.protein.grams}جم | الكاربوهيدرات: ${macros.carbs.grams}جم | الدهون: ${macros.fats.grams}جم
@@ -485,14 +500,15 @@ ${customCalorieInstruction}
 - ${mealPreference === "keto" ? "⚠️ نظام كيتو: الكربوهيدرات منخفضة جداً " + macros.carbs.grams + " جرام/يوم (~" + macros.carbs.percentage + "% فقط) لإدخال الجسم في حالة الكيتوسيز. الدهون الصحية هي المصدر الرئيسي للطاقة (" + macros.fats.percentage + "% = " + macros.fats.grams + " جرام/يوم). ركز على: زيت الزيتون، الأفوكادو، المكسرات، الزبدة، جبن كامل الدسم. تجنب تماماً: الأرز، الخبز، المعكرونة، البطاطس، السكريات، الفواكه عالية السكر. الخضروات المسموحة: ورقية فقط (سبانخ، خس، بروكلي، كوسا، خيار)" : ""}
 - ${mealPreference === "balanced" || mealPreference === "custom_macros" || (!["high_protein", "low_carb", "keto", "vegetarian"].includes(mealPreference)) ? "نظام متوازن (AMDR): وزّع العناصر الغذائية بشكل متوازن - بروتين " + macros.protein.percentage + "%، كربوهيدرات " + macros.carbs.percentage + "%، دهون " + macros.fats.percentage + "%" : ""}
 - ${mealPreference === "vegetarian" ? "جميع الوجبات نباتية - لا لحوم أو دواجن أو أسماك. اعتمد على البقوليات والحبوب والمكسرات كمصادر بروتين" : ""}
-- ركز على الأطعمة التي تحسّن النواقص الموجودة في التحاليل وتساعد على تعويضها طبيعياً مع مراعاة التوافر الحيوي
-- حلّل نتائج الفحوصات وصمم الوجبات لمعالجة النواقص مع تحسين الامتصاص: إذا كان الحديد منخفض أضف مصادر حديد مع فيتامين C، إذا كان فيتامين د منخفض أضف أطعمة غنية به مع دهون صحية
+- ركز على تلبية الاحتياجات الكلية للجسم. وفي حال توفر تحاليل توضح وجود نواقص، ركز على الأطعمة التي تعوضها طبيعياً مع مراعاة التوافر الحيوي.
+- إذا توفرت بيانات InBody (نسبة الدهون أو كتلة العضلات)، قم بتصميم الماكروز والوجبات لترميم التكوين الجسماني واشرح ذلك بوضوح في "intakeAlignment".
+- إذا توفرت نتائج فحوصات: صمم الوجبات لمعالجة النواقص مع تحسين الامتصاص.
 ${hasAllergies && allergyList ? `- ⚠️ حساسية المستخدم (وفق FARE Guidelines): ${allergyList}. يُمنع منعاً باتاً وضع أي مكون يسبب الحساسية في أي وجبة أو بديل يحتوي على نفس البروتين المسبب` : ""}
 - قدم وجبات عملية وسهلة التحضير ومتوفرة في المنطقة العربية
 - ⚠️ قاعدة إلزامية: يجب كتابة كل مكون بالجرامات بدقة في وصف الوجبة لضمان عدم تجاوز السعرات الحرارية المحددة. مثال: "150 جرام صدر دجاج مشوي، 80 جرام أرز بسمتي، 100 جرام خضروات مشكلة، 10 مل زيت زيتون". لا تكتب "قطعة دجاج" أو "طبق أرز" - يجب تحديد الوزن بالجرام لكل مكون
 - تأكد أن مجموع سعرات المكونات بالجرامات يتطابق مع السعرات المعلنة لكل وجبة
 - اذكر القيم الغذائية (بروتين، كارب، دهون، ألياف) بالجرام لكل وجبة
-- اذكر الفوائد الصحية لكل وجبة وارتباطها بتحسين نتائج الفحوصات المحددة
+- اذكر الفوائد الصحية لكل وجبة وارتباطها بالهدف العام للجسم أو بتحسين نتائج الفحوصات (إن وجدت).
 - أضف "preparationTip" لكل وجبة: نصيحة تحضير تحسّن القيمة الغذائية أو التوافر الحيوي${supplementInstruction}
 - لكل مكمل أضف "timingAdvice" (أفضل وقت للتناول) و "interactions" (التفاعلات مع أدوية أو مكملات أخرى)
 - لكل نقص أضف "absorptionTip" (نصيحة لتحسين الامتصاص بناءً على الأدلة العلمية)
@@ -515,10 +531,11 @@ ${hasAllergies && allergyList ? `- ⚠️ حساسية المستخدم (وفق 
 6. حقل "fiber" = كمية الألياف بالجرام (رقم)
 7. حقل "preparationTip" = نصيحة تحضير تحسّن القيمة الغذائية أو التوافر الحيوي
 8. المثال أدناه يعرض خيارين فقط للاختصار، لكن يجب كتابة 5 خيارات كاملة لكل وجبة
+9. في حال عدم وجود تحاليل مخبرية أو عدم وجود نواقص ومكملات مقترحة، أرجع مصفوفة فارغة [] في حقلي "deficiencies" و "supplements"
 
 أرجع JSON بالشكل التالي (المثال يعرض 2 من 5 خيارات - اكتب 5 كاملة):
 {
-  "healthSummary": "تقييم سريري شامل بناءً على التحاليل المخبرية مع الترابطات بين المؤشرات",
+  "healthSummary": "تقييم سريري شامل بناءً على التحاليل المخبرية (إن وجدت) أو الملف الجسدي العام",
   "summary": "ملخص عام إيجابي عن البروتوكول الغذائي",
   "goalDescription": "وصف مختصر للهدف والبروتوكول بأسلوب تحفيزي مبني على الأدلة",
   "intakeAlignment": "شرح مفصل: التوافق بين السعرات والهدف والحالة الأيضية",
@@ -529,9 +546,9 @@ ${hasAllergies && allergyList ? `- ⚠️ حساسية المستخدم (وفق 
       {"name": "شوفان بالموز والعسل", "description": "60 جرام شوفان، 200 مل حليب قليل الدسم، موزة واحدة، 15 جرام عسل", "calories": 420, "protein": 15, "carbs": 62, "fats": 12, "fiber": 6, "benefits": "غني بالألياف القابلة للذوبان (بيتا-جلوكان) يساعد في تحسين مستوى الكولسترول", "preparationTip": "انقع الشوفان ليلاً لتقليل حمض الفيتيك وزيادة امتصاص المعادن"},
       {"name": "بيض مسلوق مع خبز أسمر", "description": "3 بيضات مسلوقة، شريحتين خبز أسمر، 50 جرام خيار، 50 جرام طماطم", "calories": 400, "protein": 24, "carbs": 35, "fats": 18, "fiber": 4, "benefits": "مصدر ممتاز للبروتين الكامل والكولين لدعم العضلات ووظائف الكبد", "preparationTip": "أضف الطماطم كمصدر فيتامين C لتحسين امتصاص الحديد من البيض"}
     ],
-    "lunch": [{"name": "اسم وصفي", "description": "مكونات بالجرامات", "calories": 0, "protein": 0, "carbs": 0, "fats": 0, "fiber": 0, "benefits": "فائدة صحية مرتبطة بالتحاليل", "preparationTip": "نصيحة تحضير"}],
-    "dinner": [{"name": "اسم وصفي", "description": "مكونات بالجرامات", "calories": 0, "protein": 0, "carbs": 0, "fats": 0, "fiber": 0, "benefits": "فائدة صحية مرتبطة بالتحاليل", "preparationTip": "نصيحة تحضير"}],
-    "snacks": [{"name": "اسم وصفي", "description": "مكونات بالجرامات", "calories": 0, "protein": 0, "carbs": 0, "fats": 0, "fiber": 0, "benefits": "فائدة صحية مرتبطة بالتحاليل", "preparationTip": "نصيحة تحضير"}]
+    "lunch": [{"name": "اسم وصفي", "description": "مكونات بالجرامات", "calories": 0, "protein": 0, "carbs": 0, "fats": 0, "fiber": 0, "benefits": "فائدة صحية مرتبطة بالتحاليل أو الهدف الجسدي", "preparationTip": "نصيحة تحضير"}],
+    "dinner": [{"name": "اسم وصفي", "description": "مكونات بالجرامات", "calories": 0, "protein": 0, "carbs": 0, "fats": 0, "fiber": 0, "benefits": "فائدة صحية مرتبطة بالتحاليل أو الهدف الجسدي", "preparationTip": "نصيحة تحضير"}],
+    "snacks": [{"name": "اسم وصفي", "description": "مكونات بالجرامات", "calories": 0, "protein": 0, "carbs": 0, "fats": 0, "fiber": 0, "benefits": "فائدة صحية مرتبطة بالتحاليل أو الهدف الجسدي", "preparationTip": "نصيحة تحضير"}]
   },
   "mealTimingAdvice": "توصيات التوقيت الغذائي (Chrononutrition): أفضل أوقات تناول الوجبات بناءً على الإيقاع اليومي والهدف",
   "tips": ["نصيحة مع السبب الصحي والمرجع العلمي"],
@@ -539,16 +556,18 @@ ${hasAllergies && allergyList ? `- ⚠️ حساسية المستخدم (وفق 
   "conditionTips": [{"condition": "اسم الحالة", "advice": ["نصيحة 1"], "avoidFoods": ["طعام يفضل تقليله"], "scientificReason": "السبب العلمي المبني على الأدلة لهذه التوصية"}],
   "nutrientInteractions": ["الحديد + فيتامين C = تحسين الامتصاص بنسبة 2-6 أضعاف (Hallberg 1991)", "تجنب الكالسيوم مع الحديد في نفس الوجبة (Cook & Reddy 2001)"],
   "references": ["Mifflin-St Jeor (1990) - معادلة حساب BMR", "ACSM Guidelines - معاملات النشاط البدني", "ASPEN Clinical Guidelines - التغذية السريرية", "ISSN Position Stand - البروتين والأداء الرياضي", "Hallberg 1991 - امتصاص الحديد", "Cook & Reddy 2001 - تفاعلات الكالسيوم والحديد", "ADA 2005 - توصيات الألياف الغذائية", "Endocrine Society - فيتامين د", "EFSA - توصيات الماء", "AMDR - نطاقات المغذيات الكبرى المقبولة", "FARE Guidelines - إرشادات الحساسية الغذائية"]
-}`
+}
+
+${knowledgeContext ? `\n⸻ قاعدة المعرفة السريرية المسترجعة: ⸻\nاستخدم الرؤى السريرية التالية من المراجع الطبية المعتمدة لإثراء البروتوكول الغذائي:\n${knowledgeContext}` : ""}`
     : `You are a Professor of Clinical Nutrition and Preventive Medicine, board-certified by the American Society for Parenteral and Enteral Nutrition (ASPEN) and member of the International Society of Sports Nutrition (ISSN). You work with Evidence-Based Medicine methodology and design personalized therapeutic dietary protocols based on laboratory results and anthropometric measurements.
 
 ⸻ CLINICAL PROTOCOL (follow in order): ⸻
 
-PHASE 1: Clinical Assessment
-- Comprehensive analysis of ALL lab results: identify normal values, deficiencies, elevated values
-- Evaluate Biomarker Correlations: e.g., low ferritin + low hemoglobin = iron-deficiency anemia
-- PRIORITIZE correcting any metabolic imbalance BEFORE recommending calorie deficit or surplus
-- Write "healthSummary": comprehensive clinical assessment based on lab results (normal values, areas for improvement, correlations between results, nutritional therapeutic priorities)
+PHASE 1: Clinical & Physical Assessment
+- IF LAB RESULTS ARE PROVIDED: Comprehensive analysis identifying normal values, deficiencies, elevated values, and biomarker correlations.
+- IF NO LAB RESULTS: Base the assessment entirely on age, gender, height, weight, activity level, and the primary goal.
+- PRIORITIZE correcting any metabolic imbalance BEFORE recommending calorie deficit or surplus.
+- Write "healthSummary": comprehensive assessment based on available data (lab results if present, or physical profile & goal).
 
 PHASE 2: Advanced Energy Calculations
 - BMR = ${bmr} kcal (Mifflin-St Jeor equation 1990 - gold standard for basal metabolic rate)
@@ -574,9 +593,9 @@ PHASE 4: Bioavailability Optimization
 - Write "nutrientInteractions" containing a list of important nutrient interactions for this user
 
 PHASE 5: Dietary Protocol Design
-- Link EVERY dietary recommendation to a clear clinical reason from lab results
-- Example: Low Vitamin D → Vitamin D-rich foods with a fat source | Low Iron → iron sources + Vitamin C for enhanced absorption
-- In "benefits" for each meal: clearly state the clinical reason and linked lab result
+- Link EVERY dietary recommendation to a clear reason (either from lab results if provided, or from the user's physical profile & goal).
+- IF LAB RESULTS PROVIDED: Address deficiencies (e.g., Low Vitamin D → Vitamin D-rich foods with a fat source).
+- In "benefits" for each meal: clearly state the health benefit and how it aligns with the user's condition (or linked lab result if present).
 - In "preparationTip" for each meal: provide a preparation tip that improves nutritional value or bioavailability
 - In "fiber" for each meal: specify fiber content in grams
 - Write "mealTimingAdvice": Chrononutrition recommendations - optimal meal timing based on circadian rhythm and goal
@@ -588,6 +607,9 @@ Meal Preference: ${preferenceLabels[mealPreference]?.en || mealPreference}
 Protein Preferences: ${proteinListEn}
 ${carbPrefs.length > 0 ? `Carb Preferences: ${carbListEn}` : ""}
 BMI: ${bmi} (${bmiCategoryLabels[bmiCategory].en})
+${inbodyPbf ? `Body Fat Percentage (PBF): ${inbodyPbf}%` : ""}
+${inbodySmm ? `Skeletal Muscle Mass (SMM): ${inbodySmm} kg` : ""}
+${inbodyVisceral ? `Visceral Fat: ${inbodyVisceral}` : ""}
 
 Target Calories: ${targetCalories} kcal/day
 Protein: ${macros.protein.grams}g | Carbs: ${macros.carbs.grams}g | Fats: ${macros.fats.grams}g
@@ -608,14 +630,15 @@ Protocol Instructions:
 - ${mealPreference === "keto" ? "KETO PLAN: Very low carbs at " + macros.carbs.grams + "g/day (~" + macros.carbs.percentage + "% only) to put the body into ketosis. Healthy fats are the primary energy source (" + macros.fats.percentage + "% = " + macros.fats.grams + "g/day). Focus on: olive oil, avocado, nuts, butter, full-fat cheese. STRICTLY AVOID: rice, bread, pasta, potatoes, sugars, high-sugar fruits. Allowed vegetables: leafy only (spinach, lettuce, broccoli, zucchini, cucumber)" : ""}
 - ${mealPreference === "balanced" || mealPreference === "custom_macros" || (!["high_protein", "low_carb", "keto", "vegetarian"].includes(mealPreference)) ? "BALANCED PLAN (AMDR): Distribute nutrients evenly - Protein " + macros.protein.percentage + "%, Carbs " + macros.carbs.percentage + "%, Fats " + macros.fats.percentage + "%" : ""}
 - ${mealPreference === "vegetarian" ? "All meals must be vegetarian - no meat, poultry, or fish. Rely on legumes, grains, and nuts as protein sources" : ""}
-- Focus on foods that address deficiencies found in lab results and compensate naturally with bioavailability optimization
-- Analyze test results and design meals to treat deficiencies with enhanced absorption: if Iron is low add iron sources with Vitamin C, if Vitamin D is low add foods rich in it with healthy fats
+- Focus on foods that meet overall macro needs. If lab results show deficiencies, prioritize foods that compensate naturally.
+- If InBody data (Body Fat Percentage or Muscle Mass) is provided, heavily dictate the macronutrient focus (protein volume and carbs) directly around improving body composition and explain this in the intake alignment. 
+- If lab results are provided: Analyze and design meals to treat deficiencies with enhanced absorption.
 ${hasAllergies && allergyList ? `- ALLERGY WARNING (per FARE Guidelines): User is allergic to: ${allergyList}. You MUST NOT include any allergen-containing ingredient or cross-reactive allergen protein in any meal` : ""}
 - Provide practical, easy-to-prepare meals
 - MANDATORY RULE: Every ingredient in the meal description MUST be specified in grams. Example: "150g grilled chicken breast, 80g basmati rice, 100g mixed vegetables, 10ml olive oil". Do NOT write "a piece of chicken" or "a plate of rice" - specify the exact weight in grams for every single ingredient
 - Ensure the total calories from gram-specified ingredients match the declared calories for each meal
 - Include macronutrient breakdown (protein, carbs, fats, fiber) in grams for each meal
-- Mention health benefits of each meal and link them to specific lab result improvements
+- Mention health benefits of each meal and link them to the overall physical goal or specific lab result improvements (if provided).
 - Add "preparationTip" for each meal: a preparation tip that improves nutritional value or bioavailability${supplementInstruction}
 - For each supplement add "timingAdvice" (optimal time to take) and "interactions" (interactions with medications or other supplements)
 - For each deficiency add "absorptionTip" (evidence-based tip to improve absorption)
@@ -638,10 +661,11 @@ CRITICAL RULES:
 6. "fiber" = fiber content in grams (number)
 7. "preparationTip" = preparation tip that improves nutritional value or bioavailability
 8. The example below shows only 2 options for brevity, but you MUST write 5 COMPLETE options for each meal
+9. If there are no lab results provided, or if no deficiencies/supplements are needed, return an empty array [] for both "deficiencies" and "supplements" fields.
 
 Return JSON in this format (example shows 2 of 5 options - write all 5 complete):
 {
-  "healthSummary": "Comprehensive clinical assessment based on lab results with biomarker correlations",
+  "healthSummary": "Comprehensive clinical assessment based on lab results (if provided) or general physical profile",
   "summary": "Positive summary of the dietary protocol",
   "goalDescription": "Brief evidence-based motivating description of the goal and protocol",
   "intakeAlignment": "Detailed explanation of calorie alignment with goal and metabolic status",
@@ -652,17 +676,19 @@ Return JSON in this format (example shows 2 of 5 options - write all 5 complete)
       {"name": "Oatmeal with Banana and Honey", "description": "60g oats, 200ml low-fat milk, 1 banana, 15g honey", "calories": 420, "protein": 15, "carbs": 62, "fats": 12, "fiber": 6, "benefits": "Rich in soluble fiber (beta-glucan), helps improve cholesterol levels", "preparationTip": "Soak oats overnight to reduce phytic acid and improve mineral absorption"},
       {"name": "Boiled Eggs with Brown Toast", "description": "3 boiled eggs, 2 slices brown bread, 50g cucumber, 50g tomato", "calories": 400, "protein": 24, "carbs": 35, "fats": 18, "fiber": 4, "benefits": "Excellent source of complete protein and choline for muscle and liver support", "preparationTip": "Add tomato as a vitamin C source to improve iron absorption from eggs"}
     ],
-    "lunch": [{"name": "Descriptive meal name", "description": "ingredients with grams", "calories": 0, "protein": 0, "carbs": 0, "fats": 0, "fiber": 0, "benefits": "health benefit linked to lab results", "preparationTip": "preparation tip"}],
-    "dinner": [{"name": "Descriptive meal name", "description": "ingredients with grams", "calories": 0, "protein": 0, "carbs": 0, "fats": 0, "fiber": 0, "benefits": "health benefit linked to lab results", "preparationTip": "preparation tip"}],
-    "snacks": [{"name": "Descriptive meal name", "description": "ingredients with grams", "calories": 0, "protein": 0, "carbs": 0, "fats": 0, "fiber": 0, "benefits": "health benefit linked to lab results", "preparationTip": "preparation tip"}]
+    "lunch": [{"name": "Descriptive meal name", "description": "ingredients with grams", "calories": 0, "protein": 0, "carbs": 0, "fats": 0, "fiber": 0, "benefits": "health benefit linked to lab results or physical goal", "preparationTip": "preparation tip"}],
+    "dinner": [{"name": "Descriptive meal name", "description": "ingredients with grams", "calories": 0, "protein": 0, "carbs": 0, "fats": 0, "fiber": 0, "benefits": "health benefit linked to lab results or physical goal", "preparationTip": "preparation tip"}],
+    "snacks": [{"name": "Descriptive meal name", "description": "ingredients with grams", "calories": 0, "protein": 0, "carbs": 0, "fats": 0, "fiber": 0, "benefits": "health benefit linked to lab results or physical goal", "preparationTip": "preparation tip"}]
   },
   "mealTimingAdvice": "Chrononutrition recommendations: optimal meal timing based on circadian rhythm and goal",
   "tips": ["tip with health reason and scientific reference"],
   "warnings": ["We recommend following up on X with your doctor for peace of mind"],
   "conditionTips": [{"condition": "Condition (positive framing)", "advice": ["tip 1"], "avoidFoods": ["food to reduce"], "scientificReason": "Evidence-based scientific reason for this recommendation"}],
   "nutrientInteractions": ["Iron + Vitamin C = improved absorption by 2-6x (Hallberg 1991)", "Avoid calcium with iron in the same meal (Cook & Reddy 2001)"],
-  "references": ["Mifflin-St Jeor (1990) - BMR calculation", "ACSM Guidelines - Physical activity factors", "ASPEN Clinical Guidelines - Clinical nutrition", "ISSN Position Stand - Protein and athletic performance", "Hallberg 1991 - Iron absorption", "Cook & Reddy 2001 - Calcium-iron interactions", "ADA 2005 - Dietary fiber recommendations", "Endocrine Society - Vitamin D", "EFSA - Water intake recommendations", "AMDR - Acceptable macronutrient distribution ranges", "FARE Guidelines - Food allergy management"]
-}`;
+  "references": ["Mifflin-St Jeor equation (1990)", "ACSM Guidelines for Exercise Testing", "ASPEN Clinical Guidelines", "ISSN Position Stand on protein", "Hallberg (1991)", "Cook & Reddy (2001)", "ADA 2005 dietary fiber", "Endocrine Society Clinical Practice", "EFSA dietary reference values", "AMDR macronutrient ranges", "FARE Guidelines for Food Allergies"]
+}
+
+${knowledgeContext ? `\n⸻ RETRIEVED CLINICAL KNOWLEDGE BASE: ⸻\nIncorporate the following clinical insights from verified medical literature into your dietary protocol:\n${knowledgeContext}` : ""}`;
 
   const userContent = isArabic
     ? `بيانات المستخدم:
@@ -693,12 +719,12 @@ ${testsDescription || "لا توجد نتائج تحاليل متوفرة"}
 - فحوصات غير طبيعية: ${abnormalTests.length}
 
 المطلوب:
-1. ابدأ بتحليل الحالة الصحية من التحاليل (healthSummary)
+1. ابدأ بتحليل الحالة الصحية من التحاليل (إن وجدت، وإلا بناءً على الملف الجسدي) (healthSummary)
 2. تحقق من أن السعرات آمنة (لا تقل عن BMR = ${bmr}) وتتوافق مع الحالة الصحية (intakeAlignment)
 3. صمم نظام غذائي مخصص 100% لهذا المستخدم
 4. استخدم فقط البروتينات التي اختارها: [${proteinListAr}]
 5. استخدم فقط الكربوهيدرات التي اختارها: [${carbPrefs.length > 0 ? carbListAr : "لم يحدد"}]
-6. اربط كل وجبة وتوصية بسبب صحي واضح من التحاليل
+6. اربط كل وجبة وتوصية بسبب صحي (من التحاليل إن وجدت، أو بناءً على الهدف والملف الجسدي)
 7. عالج النواقص من خلال الغذاء الطبيعي أولاً
 8. اقترح مكملات فقط عند الحاجة الفعلية (بلغة إرشادية)
 9. قدم بالضبط 5 خيارات متنوعة لكل وجبة (فطور = 5، غداء = 5، عشاء = 5، وجبات خفيفة = 5) المجموع 20 خيار - لا تقدم أقل من 5
@@ -732,42 +758,23 @@ Summary:
 - Abnormal tests: ${abnormalTests.length}
 
 Requirements:
-1. Start with health analysis from lab results (healthSummary)
+1. Start with health analysis from lab results (if available) or general physical profile (healthSummary)
 2. Verify calories are safe (not below BMR = ${bmr}) and aligned with health status (intakeAlignment)
 3. Design a 100% personalized diet plan for this specific user
 4. Use ONLY the proteins they selected: [${proteinListEn}]
 5. Use ONLY the carbs they selected: [${carbPrefs.length > 0 ? carbListEn : "not specified"}]
-6. Link every meal and recommendation to a clear health reason from lab results
+6. Link every meal and recommendation to a clear health reason (from lab results if available, or based on goal/profile)
 7. Treat deficiencies through natural food first
 8. Suggest supplements ONLY when truly needed (use guiding language)
 9. Provide EXACTLY 5 varied options for each meal (breakfast = 5, lunch = 5, dinner = 5, snacks = 5) Total 20 options - do NOT provide fewer than 5
 10. Add scientific references in "references"
 ${hasCustomTargetCalories && normalizedCustomTargetCalories ? `11. Mandatory: Keep average total daily calories at or below ${normalizedCustomTargetCalories} kcal` : ""}`;
 
-  let knowledgeContext = "";
-  try {
-    knowledgeContext = await searchRelevantKnowledge(
-      userData.testResults.map(t => ({
-        testName: t.testName,
-        status: t.status,
-        category: t.category,
-      })),
-      goal
-    );
-    if (knowledgeContext) {
-      console.log(`[KnowledgeEngine] Found relevant knowledge context (${knowledgeContext.length} chars)`);
-    }
-  } catch (err) {
-    console.warn("[KnowledgeEngine] Failed to fetch knowledge context:", err);
+  if (knowledgeContext) {
+    console.log(`[KnowledgeEngine] Found relevant knowledge context (${knowledgeContext.length} chars)`);
   }
 
-  const knowledgeSection = knowledgeContext
-    ? isArabic
-      ? `\n\n--- معلومات علمية من قاعدة المعرفة (استخدمها لتحسين التوصيات) ---\n${knowledgeContext}`
-      : `\n\n--- Scientific Knowledge from Knowledge Base (use to enhance recommendations) ---\n${knowledgeContext}`
-    : "";
-
-  const finalUserContent = userContent + knowledgeSection;
+  const finalUserContent = userContent; // knowledgeSection removed from here
 
   console.log("Calling OpenAI for diet plan generation...");
   const callStart = Date.now();
@@ -777,12 +784,15 @@ ${hasCustomTargetCalories && normalizedCustomTargetCalories ? `11. Mandatory: Ke
       { role: "system", content: systemPrompt },
       { role: "user", content: finalUserContent },
     ],
-    max_completion_tokens: 16384,
-    temperature: 0.4,
+    response_format: { type: "json_object" },
+    temperature: 0.2, // Slightly increased logic to allow RAG flexibility
+    max_completion_tokens: 8000,
   });
-  console.log(`OpenAI response received in ${((Date.now() - callStart) / 1000).toFixed(1)}s`);
 
-  const content = response.choices[0]?.message?.content || "{}";
+  const content = response.choices[0]?.message?.content;
+  if (!content) {
+    throw new Error("No content generated by AI");
+  }
 
   try {
     const jsonMatch = content.match(/\{[\s\S]*\}/);

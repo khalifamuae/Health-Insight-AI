@@ -415,7 +415,7 @@ export async function dailyLearningJob(): Promise<void> {
 }
 
 export async function searchRelevantKnowledge(
-  testResults: { testName: string; status: string; category: string }[],
+  testResults: { testId?: string; testName: string; status: string; category: string }[],
   fitnessGoal: string
 ): Promise<string> {
   const abnormalTests = testResults.filter((t) => t.status === "low" || t.status === "high");

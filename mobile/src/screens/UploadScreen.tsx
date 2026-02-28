@@ -24,13 +24,13 @@ type SelectedUploadFile = {
   mimeType?: string;
 };
 
-const isArabic = I18nManager.isRTL;
 
 export default function UploadScreen({ navigation }: any) {
   const { t, i18n } = useTranslation();
   const { colors, isDark } = useAppTheme();
   const { isAccepted, accept } = useAIConsent();
   const isArabic = isArabicLanguage();
+  const styles = getStyles(isArabic);
   const queryClient = useQueryClient();
   const [selectedFile, setSelectedFile] = useState<SelectedUploadFile | null>(null);
 
@@ -253,7 +253,7 @@ export default function UploadScreen({ navigation }: any) {
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (isArabic: boolean) => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#f8fafc',
@@ -287,7 +287,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   securityBadge: {
-    flexDirection: isArabic ? 'row-reverse' : 'row',
+    flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#f0fdf4',
     paddingVertical: 6,
@@ -302,7 +302,7 @@ const styles = StyleSheet.create({
     color: '#16a34a',
   },
   selectButton: {
-    flexDirection: isArabic ? 'row-reverse' : 'row',
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: '#fff',
@@ -321,7 +321,7 @@ const styles = StyleSheet.create({
     marginHorizontal: 8,
   },
   fileCard: {
-    flexDirection: isArabic ? 'row-reverse' : 'row',
+    flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#fff',
     borderRadius: 12,
@@ -336,10 +336,10 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#1e293b',
     marginHorizontal: 12,
-    textAlign: isArabic ? 'right' : 'left',
-  },
+    textAlign: 'left',
+    },
   uploadButton: {
-    flexDirection: isArabic ? 'row-reverse' : 'row',
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: '#3b82f6',

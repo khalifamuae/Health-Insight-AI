@@ -91,12 +91,12 @@ const getCategoryIcon = (category: string): keyof typeof Ionicons.glyphMap => {
   return icons[category] || 'ellipse';
 };
 
-const isArabic = I18nManager.isRTL;
 
 export default function CompareScreen() {
   const { t, i18n } = useTranslation();
   const { colors, isDark } = useAppTheme();
   const isArabic = isArabicLanguage();
+  const styles = getStyles(isArabic);
   const [dateCalendar, setDateCalendar] = useState<CalendarType>('gregorian');
   const [compareTab, setCompareTab] = useState<'lab' | 'inbody'>('lab');
 
@@ -412,7 +412,7 @@ export default function CompareScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (isArabic: boolean) => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#f8fafc',
@@ -429,7 +429,7 @@ const styles = StyleSheet.create({
     borderBottomColor: '#e2e8f0',
   },
   headerRow: {
-    flexDirection: isArabic ? 'row-reverse' : 'row',
+    flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
   },
@@ -439,7 +439,7 @@ const styles = StyleSheet.create({
     color: '#1e293b',
   },
   topTabsRow: {
-    flexDirection: isArabic ? 'row-reverse' : 'row',
+    flexDirection: 'row',
     gap: 8,
     paddingHorizontal: 16,
     paddingVertical: 10,
@@ -449,7 +449,7 @@ const styles = StyleSheet.create({
   },
   topTab: {
     flex: 1,
-    flexDirection: isArabic ? 'row-reverse' : 'row',
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 6,
@@ -471,7 +471,7 @@ const styles = StyleSheet.create({
     color: '#fff',
   },
   legendRow: {
-    flexDirection: isArabic ? 'row-reverse' : 'row',
+    flexDirection: 'row',
     justifyContent: 'center',
     gap: 16,
     paddingVertical: 10,
@@ -480,7 +480,7 @@ const styles = StyleSheet.create({
     borderBottomColor: '#e2e8f0',
   },
   legendItem: {
-    flexDirection: isArabic ? 'row-reverse' : 'row',
+    flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
   },
@@ -505,13 +505,13 @@ const styles = StyleSheet.create({
     borderColor: '#e2e8f0',
   },
   cardHeader: {
-    flexDirection: isArabic ? 'row-reverse' : 'row',
+    flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 14,
   },
   cardTitleRow: {
-    flexDirection: isArabic ? 'row-reverse' : 'row',
+    flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
     flex: 1,
@@ -521,10 +521,10 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#1e293b',
     flex: 1,
-    textAlign: isArabic ? 'right' : 'left',
-  },
+    textAlign: 'left',
+    },
   changeBadge: {
-    flexDirection: isArabic ? 'row-reverse' : 'row',
+    flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 8,
     paddingVertical: 4,
@@ -539,11 +539,11 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: '#64748b',
     marginBottom: 10,
-    textAlign: isArabic ? 'right' : 'left',
+    textAlign: 'left',
     fontWeight: '600',
   },
   valuesGrid: {
-    flexDirection: isArabic ? 'row-reverse' : 'row',
+    flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
   },
@@ -614,7 +614,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 40,
   },
   disclaimerSmall: {
-    flexDirection: isArabic ? 'row-reverse' : 'row',
+    flexDirection: 'row',
     alignItems: 'flex-start',
     paddingHorizontal: 16,
     paddingTop: 12,
@@ -625,6 +625,6 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: '#94a3b8',
     lineHeight: 16,
-    textAlign: isArabic ? 'right' : 'left',
-  },
+    textAlign: 'left',
+    },
 });

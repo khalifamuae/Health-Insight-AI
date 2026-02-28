@@ -31,14 +31,7 @@ export default function RootNavigator() {
   };
 
   return (
-    <Stack.Navigator
-      screenOptions={{
-        headerShown: false,
-        contentStyle: {
-          direction: isArabic ? 'rtl' : 'ltr',
-        },
-      }}
-    >
+    <Stack.Navigator screenOptions={{ headerShown: false }}>
       {isAuthenticated ? (
         <>
           <Stack.Screen name="Main" component={TabNavigator} />

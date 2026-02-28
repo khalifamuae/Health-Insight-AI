@@ -45,7 +45,7 @@ const testNameMapping: Record<string, string> = {
   "vitamin k": "vitamin-k",
   "vitamin c": "vitamin-c",
   "ascorbic acid": "vitamin-c",
-  
+
   // Vitamins (Arabic)
   "فيتامين د": "vitamin-d",
   "فيتامين د3": "vitamin-d",
@@ -57,7 +57,7 @@ const testNameMapping: Record<string, string> = {
   "فيتامين هـ": "vitamin-e",
   "فيتامين ك": "vitamin-k",
   "فيتامين ج": "vitamin-c",
-  
+
   // Minerals (English)
   "calcium": "calcium",
   "magnesium": "magnesium",
@@ -67,7 +67,7 @@ const testNameMapping: Record<string, string> = {
   "phosphorus": "phosphorus",
   "copper": "copper",
   "selenium": "selenium",
-  
+
   // Minerals (Arabic)
   "الكالسيوم": "calcium",
   "المغنيسيوم": "magnesium",
@@ -77,7 +77,7 @@ const testNameMapping: Record<string, string> = {
   "الفوسفور": "phosphorus",
   "النحاس": "copper",
   "السيلينيوم": "selenium",
-  
+
   // Hormones (English)
   "tsh": "tsh",
   "thyroid stimulating hormone": "tsh",
@@ -99,7 +99,7 @@ const testNameMapping: Record<string, string> = {
   "gh": "growth-hormone",
   "pth": "pth",
   "parathyroid hormone": "pth",
-  
+
   // Hormones (Arabic)
   "هرمون الغدة الدرقية": "tsh",
   "التستوستيرون": "testosterone",
@@ -108,7 +108,7 @@ const testNameMapping: Record<string, string> = {
   "الاستراديول": "estradiol",
   "البروجسترون": "progesterone",
   "البرولاكتين": "prolactin",
-  
+
   // Organ Functions (English)
   "glucose": "glucose",
   "fasting glucose": "glucose",
@@ -140,7 +140,7 @@ const testNameMapping: Record<string, string> = {
   "albumin": "albumin",
   "total protein": "total-protein",
   "uric acid": "uric-acid",
-  
+
   // Organ Functions (Arabic)
   "السكر الصائم": "glucose",
   "سكر الدم": "glucose",
@@ -153,7 +153,7 @@ const testNameMapping: Record<string, string> = {
   "الألبومين": "albumin",
   "البروتين الكلي": "total-protein",
   "حمض اليوريك": "uric-acid",
-  
+
   // Lipids (English)
   "cholesterol": "total-cholesterol",
   "total cholesterol": "total-cholesterol",
@@ -166,14 +166,14 @@ const testNameMapping: Record<string, string> = {
   "triglycerides": "triglycerides",
   "tg": "triglycerides",
   "vldl": "vldl",
-  
+
   // Lipids (Arabic)
   "الكوليسترول": "total-cholesterol",
   "الكوليسترول الكلي": "total-cholesterol",
   "الكوليسترول الضار": "ldl",
   "الكوليسترول النافع": "hdl",
   "الدهون الثلاثية": "triglycerides",
-  
+
   // Blood Tests (English)
   "hemoglobin": "hemoglobin",
   "hb": "hemoglobin",
@@ -197,7 +197,7 @@ const testNameMapping: Record<string, string> = {
   "rdw": "rdw",
   "esr": "esr",
   "erythrocyte sedimentation rate": "esr",
-  
+
   // Blood Tests (Arabic)
   "الهيموجلوبين": "hemoglobin",
   "خضاب الدم": "hemoglobin",
@@ -205,16 +205,16 @@ const testNameMapping: Record<string, string> = {
   "كريات الدم البيضاء": "wbc",
   "الصفائح الدموية": "platelets",
   "سرعة الترسيب": "esr",
-  
+
   // Immunity (English)
   "crp": "crp",
   "c-reactive protein": "crp",
   "hs-crp": "hs-crp",
   "high sensitivity crp": "hs-crp",
-  
+
   // Immunity (Arabic)
   "بروتين سي التفاعلي": "crp",
-  
+
   // Coagulation (English)
   "pt": "pt",
   "prothrombin time": "pt",
@@ -224,7 +224,7 @@ const testNameMapping: Record<string, string> = {
   "partial thromboplastin time": "ptt",
   "d-dimer": "d-dimer",
   "fibrinogen": "fibrinogen",
-  
+
   // Coagulation (Arabic)
   "زمن البروثرومبين": "pt",
   "الفيبرينوجين": "fibrinogen",
@@ -232,18 +232,107 @@ const testNameMapping: Record<string, string> = {
 
 function findTestId(testName: string): string | null {
   const normalized = testName.toLowerCase().trim();
-  
+
   if (testNameMapping[normalized]) {
     return testNameMapping[normalized];
   }
-  
+
   for (const [key, value] of Object.entries(testNameMapping)) {
     if (normalized.includes(key) || key.includes(normalized)) {
       return value;
     }
   }
-  
+
   return null;
+}
+
+export async function analyzeLabImage(
+  imageBuffer: Buffer,
+  mimeType: string
+): Promise<ExtractedTest[]> {
+  try {
+    const base64 = imageBuffer.toString("base64");
+    const dataUrl = `data:${mimeType};base64,\${base64}`;
+
+    const response = await openai.chat.completions.create({
+      model: "gpt-4o",
+      messages: [
+        {
+          role: "system",
+          content: `أنت محلل نتائج تحاليل طبية متخصص من الصور. مهمتك استخراج جميع نتائج الفحوصات من صورة التقرير المختبري.
+
+لكل فحص تجده، استخرج:
+- testName: اسم الفحص (بالعربية أو الإنجليزية كما يظهر)
+- value: القيمة الرقمية (رقم)
+- valueText: القيمة النصية إن لم تكن رقمية (مثل "Positive", "Negative", "إيجابي", "سلبي")
+- unit: وحدة القياس
+- testDate: تاريخ الفحص إن وجد بصيغة YYYY-MM-DD
+
+أنواع الفحوصات التي يجب البحث عنها:
+1. الفيتامينات: Vitamin D, Vitamin B12, Folic Acid, Iron, Ferritin, Vitamin A, E, K, C
+2. المعادن: Calcium, Magnesium, Zinc, Sodium, Potassium, Phosphorus, Copper, Selenium
+3. الهرمونات: TSH, T3, T4, Free T4, Testosterone, Cortisol, Insulin, Estradiol, Progesterone, Prolactin
+4. وظائف الكبد: ALT, AST, ALP, GGT, Bilirubin, Albumin, Total Protein
+5. وظائف الكلى: Creatinine, BUN, Uric Acid
+6. الدهون: Cholesterol, LDL, HDL, Triglycerides
+7. السكر: Glucose, Fasting Blood Sugar, HbA1c
+8. صورة الدم: Hemoglobin, RBC, WBC, Platelets, MCV, MCH, MCHC, RDW, ESR
+9. التخثر والمناعة: PT, PTT, INR, CRP, hs-CRP
+
+تعليمات مهمة:
+- استخرج القيمة الفعلية فقط، وليس المعدل الطبيعي (Reference Range)
+- القيم تكون عادة في عمود "Result" أو "نتيجة" أو "القيمة"
+- تعامل مع الأسماء بالعربية والإنجليزية
+- إذا كان الرقم مثل "5.5" حوله إلى 5.5 رقمياً
+
+أرجع JSON array فقط. مثال:
+[
+  {"testName": "Vitamin D", "value": 35.5, "valueText": null, "unit": "ng/mL", "testDate": "2026-01-15"}
+]
+إذا لم تجد أي نتائج، أرجع: []`,
+        },
+        {
+          role: "user",
+          content: [
+            { type: "text", text: "حلل صورة التقرير المختبري هذه واستخرج جميع نتائج الفحوصات المطلوبة فقط." },
+            { type: "image_url", image_url: { url: dataUrl } },
+          ] as any,
+        },
+      ],
+      temperature: 0.1,
+      max_completion_tokens: 4000,
+    });
+
+    const content = response.choices[0]?.message?.content || "[]";
+    let parsed: any[];
+    try {
+      const jsonMatch = content.match(/\\[[\\s\\S]*\\]/);
+      parsed = jsonMatch ? JSON.parse(jsonMatch[0]) : [];
+    } catch (parseError) {
+      console.error("Failed to parse AI image response:", content);
+      parsed = [];
+    }
+
+    const extractedTests: ExtractedTest[] = [];
+    for (const test of parsed) {
+      const testName = (test.testName || "").trim();
+      const testId = findTestId(testName);
+      if (testId) {
+        const numericValue = typeof test.value === "number" ? test.value :
+          typeof test.value === "string" ? parseFloat(test.value) : null;
+        extractedTests.push({
+          testId,
+          value: !isNaN(numericValue as number) ? numericValue : null,
+          valueText: test.valueText || null,
+          testDate: test.testDate || null,
+        });
+      }
+    }
+    return extractedTests;
+  } catch (error) {
+    console.error("Image analysis error:", error);
+    throw new Error("IMAGE_ANALYSIS_FAILED");
+  }
 }
 
 export async function analyzeLabPdf(pdfBuffer: Buffer): Promise<ExtractedTest[]> {
@@ -257,7 +346,7 @@ export async function analyzeLabPdf(pdfBuffer: Buffer): Promise<ExtractedTest[]>
     const alphanumericChars = pdfText.replace(/[^a-zA-Z0-9\u0600-\u06FF]/g, "").length;
     const totalChars = pdfText.length;
     const textDensity = alphanumericChars / totalChars;
-    
+
     if (textDensity < 0.1) {
       console.error("Low text density - PDF may be scanned or image-based");
       throw new Error("SCANNED_PDF");
@@ -265,22 +354,28 @@ export async function analyzeLabPdf(pdfBuffer: Buffer): Promise<ExtractedTest[]>
 
     console.log("Extracted PDF text length:", pdfText.length, "Density:", textDensity.toFixed(2));
 
+    // Limit text to prevent OpenAI token overflow
+    const maxTextLength = 15000;
+    const truncatedText = pdfText.length > maxTextLength
+      ? pdfText.substring(0, maxTextLength) + "\n\n[... truncated ...]"
+      : pdfText;
+
     const response = await openai.chat.completions.create({
       model: "gpt-4o",
       messages: [
         {
           role: "system",
-          content: `أنت محلل نتائج تحاليل طبية متخصص. مهمتك استخراج جميع نتائج الفحوصات من التقرير المختبري.
+          content: `أنت محلل نتائج تحاليل طبية متخصص.مهمتك استخراج جميع نتائج الفحوصات من التقرير المختبري.
 
 لكل فحص تجده، استخرج:
-- testName: اسم الفحص (بالعربية أو الإنجليزية كما يظهر)
-- value: القيمة الرقمية (رقم)
-- valueText: القيمة النصية إن لم تكن رقمية (مثل "Positive", "Negative", "إيجابي", "سلبي")
-- unit: وحدة القياس
-- testDate: تاريخ الفحص إن وجد بصيغة YYYY-MM-DD
+        - testName: اسم الفحص(بالعربية أو الإنجليزية كما يظهر)
+        - value: القيمة الرقمية(رقم)
+        - valueText: القيمة النصية إن لم تكن رقمية(مثل "Positive", "Negative", "إيجابي", "سلبي")
+        - unit: وحدة القياس
+        - testDate: تاريخ الفحص إن وجد بصيغة YYYY - MM - DD
 
 أنواع الفحوصات التي يجب البحث عنها:
-1. الفيتامينات: Vitamin D, Vitamin B12, Vitamin B1, Vitamin B6, Folic Acid, Vitamin A, Vitamin E, Vitamin K, Vitamin C
+        1. الفيتامينات: Vitamin D, Vitamin B12, Vitamin B1, Vitamin B6, Folic Acid, Vitamin A, Vitamin E, Vitamin K, Vitamin C
 2. المعادن: Calcium, Magnesium, Iron, Zinc, Phosphorus, Sodium, Potassium, Chloride
 3. الهرمونات: TSH, T3, T4, Free T4, Testosterone, Estrogen, Progesterone, FSH, LH, Cortisol, Insulin, DHEA
 4. وظائف الكبد: ALT, AST, ALP, GGT, Bilirubin, Albumin, Total Protein
@@ -288,28 +383,28 @@ export async function analyzeLabPdf(pdfBuffer: Buffer): Promise<ExtractedTest[]>
 6. الدهون: Cholesterol, LDL, HDL, Triglycerides
 7. السكر: Glucose, Fasting Glucose, HbA1c
 8. صورة الدم: Hemoglobin, RBC, WBC, Platelets, MCV, MCH, MCHC, RDW, ESR, Hematocrit
-9. التخثر: PT, INR, PTT, D-Dimer, Fibrinogen
-10. المناعة: CRP, hs-CRP
+9. التخثر: PT, INR, PTT, D - Dimer, Fibrinogen
+10. المناعة: CRP, hs - CRP
 
 تعليمات مهمة:
-- استخرج القيمة الفعلية فقط، وليس المعدل الطبيعي (Reference Range)
-- القيم تكون عادة في عمود "Result" أو "نتيجة" أو "القيمة"
-- المعدل الطبيعي يكون في عمود "Reference" أو "Normal" أو "المعدل الطبيعي" - لا تستخرجه
-- تعامل مع الأسماء بالعربية والإنجليزية
-- إذا كان الرقم مثل "5.5" حوله إلى 5.5
+        - استخرج القيمة الفعلية فقط، وليس المعدل الطبيعي(Reference Range)
+        - القيم تكون عادة في عمود "Result" أو "نتيجة" أو "القيمة"
+        - المعدل الطبيعي يكون في عمود "Reference" أو "Normal" أو "المعدل الطبيعي" - لا تستخرجه
+        - تعامل مع الأسماء بالعربية والإنجليزية
+        - إذا كان الرقم مثل "5.5" حوله إلى 5.5 رقمياً
 
-أرجع JSON array فقط. مثال:
-[
-  {"testName": "Vitamin D", "value": 35.5, "valueText": null, "unit": "ng/mL", "testDate": "2026-01-15"},
-  {"testName": "HbA1c", "value": 5.7, "valueText": null, "unit": "%", "testDate": null},
-  {"testName": "فيتامين ب12", "value": 450, "valueText": null, "unit": "pg/mL", "testDate": null}
-]
+أرجع JSON array فقط.مثال:
+        [
+          { "testName": "Vitamin D", "value": 35.5, "valueText": null, "unit": "ng/mL", "testDate": "2026-01-15" },
+          { "testName": "HbA1c", "value": 5.7, "valueText": null, "unit": "%", "testDate": null },
+          { "testName": "فيتامين ب12", "value": 450, "valueText": null, "unit": "pg/mL", "testDate": null }
+        ]
 
 إذا لم تجد أي نتائج، أرجع: []`
         },
         {
           role: "user",
-          content: `حلل هذا التقرير المختبري واستخرج جميع نتائج الفحوصات:\n\n${pdfText}`
+          content: `حلل هذا التقرير المختبري واستخرج جميع نتائج الفحوصات: \n\n${truncatedText}`
         }
       ],
       max_completion_tokens: 4000,
@@ -318,7 +413,7 @@ export async function analyzeLabPdf(pdfBuffer: Buffer): Promise<ExtractedTest[]>
 
     const content = response.choices[0]?.message?.content || "[]";
     console.log("AI Response:", content.substring(0, 500));
-    
+
     let parsed: any[];
     try {
       const jsonMatch = content.match(/\[[\s\S]*\]/);
@@ -331,15 +426,15 @@ export async function analyzeLabPdf(pdfBuffer: Buffer): Promise<ExtractedTest[]>
     console.log("Parsed tests count:", parsed.length);
 
     const extractedTests: ExtractedTest[] = [];
-    
+
     for (const test of parsed) {
       const testName = (test.testName || "").trim();
       const testId = findTestId(testName);
-      
+
       if (testId) {
-        const numericValue = typeof test.value === "number" ? test.value : 
-                            typeof test.value === "string" ? parseFloat(test.value) : null;
-        
+        const numericValue = typeof test.value === "number" ? test.value :
+          typeof test.value === "string" ? parseFloat(test.value) : null;
+
         extractedTests.push({
           testId,
           value: !isNaN(numericValue as number) ? numericValue : null,

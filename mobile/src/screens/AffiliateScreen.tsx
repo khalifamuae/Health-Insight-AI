@@ -43,10 +43,11 @@ interface AffiliateDashboard {
   }>;
 }
 
-const isArabic = I18nManager.isRTL;
 
 export default function AffiliateScreen() {
   const { t, i18n } = useTranslation();
+  const isArabic = isArabicLanguage();
+  const styles = getStyles(isArabic);
   const queryClient = useQueryClient();
   const [dateCalendar, setDateCalendar] = useState<CalendarType>('gregorian');
   const [showWithdrawModal, setShowWithdrawModal] = useState(false);
@@ -332,7 +333,7 @@ export default function AffiliateScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (isArabic: boolean) => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#f8fafc',
@@ -366,11 +367,11 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   codeActions: {
-    flexDirection: isArabic ? 'row-reverse' : 'row',
+    flexDirection: 'row',
     gap: 12,
   },
   codeButton: {
-    flexDirection: isArabic ? 'row-reverse' : 'row',
+    flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#3b82f6',
     paddingHorizontal: 16,
@@ -387,7 +388,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   statsGrid: {
-    flexDirection: isArabic ? 'row-reverse' : 'row',
+    flexDirection: 'row',
     gap: 8,
     marginBottom: 16,
   },
@@ -422,7 +423,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   infoRow: {
-    flexDirection: isArabic ? 'row-reverse' : 'row',
+    flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingVertical: 8,
@@ -439,7 +440,7 @@ const styles = StyleSheet.create({
     color: '#1e293b',
   },
   withdrawButton: {
-    flexDirection: isArabic ? 'row-reverse' : 'row',
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: '#7c3aed',
@@ -464,10 +465,10 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#1e293b',
     marginBottom: 12,
-    textAlign: isArabic ? 'right' : 'left',
-  },
+    textAlign: 'left',
+    },
   stepRow: {
-    flexDirection: isArabic ? 'row-reverse' : 'row',
+    flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 12,
     gap: 12,
@@ -489,8 +490,8 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 14,
     color: '#475569',
-    textAlign: isArabic ? 'right' : 'left',
-  },
+    textAlign: 'left',
+    },
   section: {
     backgroundColor: '#fff',
     borderRadius: 12,
@@ -498,7 +499,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   listItem: {
-    flexDirection: isArabic ? 'row-reverse' : 'row',
+    flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingVertical: 10,
@@ -509,14 +510,14 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     color: '#22c55e',
-    textAlign: isArabic ? 'right' : 'left',
-  },
+    textAlign: 'left',
+    },
   listDate: {
     fontSize: 12,
     color: '#94a3b8',
     marginTop: 2,
-    textAlign: isArabic ? 'right' : 'left',
-  },
+    textAlign: 'left',
+    },
   listSubAmount: {
     fontSize: 14,
     color: '#64748b',
@@ -543,7 +544,7 @@ const styles = StyleSheet.create({
     paddingBottom: 40,
   },
   modalHeader: {
-    flexDirection: isArabic ? 'row-reverse' : 'row',
+    flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 20,
@@ -558,8 +559,8 @@ const styles = StyleSheet.create({
     color: '#64748b',
     marginBottom: 8,
     marginTop: 12,
-    textAlign: isArabic ? 'right' : 'left',
-  },
+    textAlign: 'left',
+    },
   modalInput: {
     backgroundColor: '#f8fafc',
     borderRadius: 8,
@@ -567,14 +568,14 @@ const styles = StyleSheet.create({
     fontSize: 16,
     borderWidth: 1,
     borderColor: '#e2e8f0',
-    textAlign: isArabic ? 'right' : 'left',
-  },
+    textAlign: 'left',
+    },
   modalInputMultiline: {
     height: 80,
     textAlignVertical: 'top',
   },
   methodButtons: {
-    flexDirection: isArabic ? 'row-reverse' : 'row',
+    flexDirection: 'row',
     gap: 8,
   },
   methodButton: {

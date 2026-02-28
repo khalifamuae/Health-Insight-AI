@@ -41,7 +41,6 @@ interface UserProfile {
 const BASE_URL = 'https://health-insight-ai.replit.app';
 const BLOOD_TYPE_OPTIONS = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
 
-const isArabic = I18nManager.isRTL;
 
 export default function ProfileScreen({ navigation }: { navigation: any }) {
   const { t, i18n } = useTranslation();
@@ -49,6 +48,7 @@ export default function ProfileScreen({ navigation }: { navigation: any }) {
   const { logout } = useAuth();
   const { mode: themeMode, setMode: setThemeMode, isDark, colors } = useAppTheme();
   const isArabic = isArabicLanguage();
+  const styles = getStyles(isArabic);
 
   const [age, setAge] = useState('');
   const [displayName, setDisplayName] = useState('');
@@ -562,10 +562,10 @@ export default function ProfileScreen({ navigation }: { navigation: any }) {
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (isArabic: boolean) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8fafc'
+    backgroundColor: '#f8fafc',
   },
   content: {
     padding: 16
@@ -595,7 +595,7 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     paddingHorizontal: 12,
     fontSize: 16,
-    textAlign: isArabic ? 'right' : 'left',
+    textAlign: 'left',
     marginBottom: 6,
   },
   name: {
@@ -621,7 +621,7 @@ const styles = StyleSheet.create({
     elevation: 2
   },
   subscriptionHeader: {
-    flexDirection: isArabic ? 'row-reverse' : 'row',
+    flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 8
   },
@@ -661,8 +661,8 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#1e293b',
     marginBottom: 16,
-    textAlign: isArabic ? 'right' : 'left'
-  },
+    textAlign: 'left',
+    },
   inputGroup: {
     marginBottom: 16
   },
@@ -670,8 +670,8 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#64748b',
     marginBottom: 8,
-    textAlign: isArabic ? 'right' : 'left'
-  },
+    textAlign: 'left',
+    },
   input: {
     backgroundColor: '#f8fafc',
     borderRadius: 8,
@@ -679,15 +679,15 @@ const styles = StyleSheet.create({
     fontSize: 16,
     borderWidth: 1,
     borderColor: '#e2e8f0',
-    textAlign: isArabic ? 'right' : 'left'
-  },
+    textAlign: 'left',
+    },
   selectorInput: {
     backgroundColor: '#f8fafc',
     borderRadius: 8,
     padding: 12,
     borderWidth: 1,
     borderColor: '#e2e8f0',
-    flexDirection: isArabic ? 'row-reverse' : 'row',
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
   },
@@ -699,19 +699,19 @@ const styles = StyleSheet.create({
     color: '#94a3b8',
   },
   row: {
-    flexDirection: isArabic ? 'row-reverse' : 'row',
+    flexDirection: 'row',
     justifyContent: 'space-between'
   },
   halfWidth: {
     width: '48%'
   },
   genderButtons: {
-    flexDirection: isArabic ? 'row-reverse' : 'row',
+    flexDirection: 'row',
     justifyContent: 'space-between'
   },
   genderButton: {
     flex: 1,
-    flexDirection: isArabic ? 'row-reverse' : 'row',
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     padding: 12,
@@ -733,7 +733,7 @@ const styles = StyleSheet.create({
     color: '#fff'
   },
   saveButton: {
-    flexDirection: isArabic ? 'row-reverse' : 'row',
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: '#22c55e',
@@ -748,7 +748,7 @@ const styles = StyleSheet.create({
     marginHorizontal: 8
   },
   settingItem: {
-    flexDirection: isArabic ? 'row-reverse' : 'row',
+    flexDirection: 'row',
     alignItems: 'center',
     paddingVertical: 12,
     borderBottomWidth: 1,
@@ -759,10 +759,10 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#1e293b',
     marginHorizontal: 12,
-    textAlign: isArabic ? 'right' : 'left'
-  },
+    textAlign: 'left',
+    },
   affiliateCard: {
-    flexDirection: isArabic ? 'row-reverse' : 'row',
+    flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#faf5ff',
     borderRadius: 12,
@@ -784,16 +784,16 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     color: '#7c3aed',
-    textAlign: isArabic ? 'right' : 'left',
-  },
+    textAlign: 'left',
+    },
   affiliateSubtitle: {
     fontSize: 12,
     color: '#64748b',
     marginTop: 2,
-    textAlign: isArabic ? 'right' : 'left',
-  },
+    textAlign: 'left',
+    },
   logoutButton: {
-    flexDirection: isArabic ? 'row-reverse' : 'row',
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: '#fef2f2',
@@ -809,7 +809,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   fitnessGoalButton: {
-    flexDirection: isArabic ? 'row-reverse' : 'row',
+    flexDirection: 'row',
     alignItems: 'center',
     padding: 12,
     borderRadius: 8,
@@ -834,7 +834,7 @@ const styles = StyleSheet.create({
     color: '#ef4444',
   },
   disclaimerSmall: {
-    flexDirection: isArabic ? 'row-reverse' : 'row',
+    flexDirection: 'row',
     alignItems: 'flex-start',
     paddingHorizontal: 4,
     paddingTop: 16,
@@ -845,8 +845,8 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: '#94a3b8',
     lineHeight: 16,
-    textAlign: isArabic ? 'right' : 'left',
-  },
+    textAlign: 'left',
+    },
   modalBackdrop: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.35)',
@@ -863,10 +863,10 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#1e293b',
     marginBottom: 12,
-    textAlign: isArabic ? 'right' : 'left',
-  },
+    textAlign: 'left',
+    },
   bloodTypeGrid: {
-    flexDirection: isArabic ? 'row-reverse' : 'row',
+    flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 8,
   },
@@ -892,7 +892,7 @@ const styles = StyleSheet.create({
   },
   bloodTypeCloseBtn: {
     marginTop: 14,
-    alignSelf: isArabic ? 'flex-start' : 'flex-end',
+    alignSelf: 'flex-end',
   },
   bloodTypeCloseBtnText: {
     color: '#64748b',

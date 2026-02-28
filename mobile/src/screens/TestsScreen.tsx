@@ -412,19 +412,19 @@ function buildFriendlyExplanation(test: AllTestData, isArabic: boolean): string 
 
   const statusLine = !test.hasResult || test.status === 'pending'
     ? (isArabic
-        ? 'الحالة الحالية: لا توجد نتيجة حديثة لهذا الفحص حتى الآن.'
-        : 'Current status: No recent result yet for this test.')
+      ? 'الحالة الحالية: لا توجد نتيجة حديثة لهذا الفحص حتى الآن.'
+      : 'Current status: No recent result yet for this test.')
     : test.status === 'normal'
       ? (isArabic
-          ? 'الحالة الحالية: النتيجة ضمن المعدل الطبيعي.'
-          : 'Current status: Your result is within the normal range.')
+        ? 'الحالة الحالية: النتيجة ضمن المعدل الطبيعي.'
+        : 'Current status: Your result is within the normal range.')
       : test.status === 'high'
         ? (isArabic
-            ? 'الحالة الحالية: النتيجة أعلى من المعدل الطبيعي.'
-            : 'Current status: Your result is above the normal range.')
+          ? 'الحالة الحالية: النتيجة أعلى من المعدل الطبيعي.'
+          : 'Current status: Your result is above the normal range.')
         : (isArabic
-            ? 'الحالة الحالية: النتيجة أقل من المعدل الطبيعي.'
-            : 'Current status: Your result is below the normal range.');
+          ? 'الحالة الحالية: النتيجة أقل من المعدل الطبيعي.'
+          : 'Current status: Your result is below the normal range.');
 
   const roleText = isArabic
     ? `هذا الفحص من نوع ${categoryLabel} ويساعدك تفهم جزء مهم من صحتك.`
@@ -453,9 +453,9 @@ function buildFriendlyExplanation(test: AllTestData, isArabic: boolean): string 
   return [roleText, valueLine, rangeLine, statusLine, adviceLine, disclaimerLine].join('\n\n');
 }
 
-const StatusBadge = ({ status, hasResult }: { status: string; hasResult: boolean }) => {
+const StatusBadge = ({ status, hasResult, styles }: { status: string; hasResult: boolean; styles: any }) => {
   const { t } = useTranslation();
-  
+
   if (!hasResult) {
     return (
       <View style={[styles.badge, styles.pendingBadge]}>
@@ -464,7 +464,7 @@ const StatusBadge = ({ status, hasResult }: { status: string; hasResult: boolean
       </View>
     );
   }
-  
+
   if (status === 'normal') {
     return (
       <View style={[styles.badge, styles.normalBadge]}>
@@ -473,7 +473,7 @@ const StatusBadge = ({ status, hasResult }: { status: string; hasResult: boolean
       </View>
     );
   }
-  
+
   return (
     <View style={[styles.badge, styles.abnormalBadge]}>
       <Ionicons name="close-circle" size={12} color="#dc2626" />
@@ -531,13 +531,13 @@ function getStatusScore(test: AllTestData): number {
   return 2;
 }
 
-const isArabic = I18nManager.isRTL;
 
 export default function TestsScreen() {
   const { t, i18n } = useTranslation();
   const { colors, isDark } = useAppTheme();
   const queryClient = useQueryClient();
   const isArabic = isArabicLanguage();
+  const styles = getStyles(isArabic);
   const [dateCalendar, setDateCalendar] = useState<CalendarType>('gregorian');
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [isCategoryMenuOpen, setIsCategoryMenuOpen] = useState(false);
@@ -570,7 +570,7 @@ export default function TestsScreen() {
         .catch(() => setDateCalendar('gregorian'));
     }, [])
   );
-  
+
   const categories = ['all', 'inbody', 'vitamins', 'minerals', 'hormones', 'organ_functions', 'lipids', 'immunity', 'blood', 'coagulation', 'special'];
 
   const remindersByTest = useMemo(() => {
@@ -716,9 +716,9 @@ export default function TestsScreen() {
       ? formatAppDate(existingReminder.dueDate, i18n.language, dateCalendar)
       : null;
     const detailsBorderColor = (item.status === 'high' || item.status === 'low') && isDark ? '#7f1d1d' : colors.border;
-    
+
     return (
-      <View 
+      <View
         style={[
           styles.testCard,
           { backgroundColor: colors.card, borderColor: colors.border },
@@ -727,7 +727,7 @@ export default function TestsScreen() {
           (item.status === 'high' || item.status === 'low') && styles.testCardAbnormal
           ,
           (item.status === 'high' || item.status === 'low') && isDark && { backgroundColor: '#3f1d1d', borderColor: '#7f1d1d' }
-        ]} 
+        ]}
         testID={`card-test-${item.testId}`}
       >
         <Text style={[styles.testDateTop, { color: colors.mutedText }]}>
@@ -758,9 +758,9 @@ export default function TestsScreen() {
               <Text style={styles.infoButtonText}>!</Text>
             </TouchableOpacity>
           </View>
-          <StatusBadge status={item.status} hasResult={item.hasResult} />
+          <StatusBadge status={item.status} hasResult={item.hasResult} styles={styles} />
         </View>
-        
+
         <View style={[styles.testDetails, { borderTopColor: detailsBorderColor }]}>
           <View style={styles.categoryRow}>
             <View style={[styles.categoryDot, { backgroundColor: categoryColor }]} />
@@ -768,7 +768,7 @@ export default function TestsScreen() {
               {inBodyTest ? (isArabic ? 'قياسات InBody' : 'InBody Metrics') : t(item.category)}
             </Text>
           </View>
-          
+
           <View style={styles.valuesRow}>
             <View style={styles.valueBox}>
               <Text style={[styles.valueLabel, { color: colors.mutedText }]}>{t('yourValue')}</Text>
@@ -780,7 +780,7 @@ export default function TestsScreen() {
                 {item.hasResult ? `${item.value} ${item.unit || ''}` : '0'}
               </Text>
             </View>
-            
+
             <View style={styles.valueBox}>
               <Text style={[styles.valueLabel, { color: colors.mutedText }]}>{t('normalRange')}</Text>
               <Text style={[styles.rangeText, { color: colors.mutedText }]}>
@@ -993,10 +993,10 @@ export default function TestsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (isArabic: boolean) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8fafc'
+    backgroundColor: '#f8fafc',
   },
   header: {
     padding: 16,
@@ -1008,13 +1008,13 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: 'bold',
     color: '#1e293b',
-    textAlign: isArabic ? 'right' : 'left'
+    textAlign: 'left',
   },
   count: {
     fontSize: 14,
     color: '#64748b',
     marginTop: 4,
-    textAlign: isArabic ? 'right' : 'left'
+    textAlign: 'left',
   },
   categorySection: {
     backgroundColor: '#fff',
@@ -1024,7 +1024,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
   },
   categoryMenuButton: {
-    flexDirection: isArabic ? 'row-reverse' : 'row',
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     backgroundColor: '#eff6ff',
@@ -1040,7 +1040,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#1e40af',
     marginHorizontal: 8,
-    textAlign: isArabic ? 'right' : 'left',
+    textAlign: 'left',
   },
   categoryMenuList: {
     marginTop: 8,
@@ -1051,7 +1051,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   categoryMenuItem: {
-    flexDirection: isArabic ? 'row-reverse' : 'row',
+    flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 12,
     paddingVertical: 10,
@@ -1066,14 +1066,14 @@ const styles = StyleSheet.create({
     color: '#334155',
   },
   sortBar: {
-    flexDirection: isArabic ? 'row-reverse' : 'row',
-    justifyContent: isArabic ? 'flex-start' : 'flex-end',
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
     paddingHorizontal: 16,
     paddingVertical: 8,
     backgroundColor: '#f8fafc',
   },
   sortButton: {
-    flexDirection: isArabic ? 'row-reverse' : 'row',
+    flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#eff6ff',
     paddingHorizontal: 12,
@@ -1107,13 +1107,14 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: '#334155',
     fontWeight: '600',
-    textAlign: isArabic ? 'right' : 'left',
+    textAlign: 'left',
   },
   sortMenuItemTextActive: {
     color: '#1d4ed8',
   },
   listContent: {
-    padding: 16
+    padding: 16,
+    paddingBottom: 100,
   },
   testCard: {
     backgroundColor: '#fff',
@@ -1137,7 +1138,7 @@ const styles = StyleSheet.create({
     borderColor: '#fecaca'
   },
   testHeader: {
-    flexDirection: isArabic ? 'row-reverse' : 'row',
+    flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 12,
     gap: 10
@@ -1160,11 +1161,11 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#1e293b',
     flex: 1,
-    textAlign: isArabic ? 'right' : 'left'
+    textAlign: 'left',
   },
   testNameRow: {
     flex: 1,
-    flexDirection: isArabic ? 'row-reverse' : 'row',
+    flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
   },
@@ -1185,7 +1186,7 @@ const styles = StyleSheet.create({
     lineHeight: 12,
   },
   inbodyBadge: {
-    flexDirection: isArabic ? 'row-reverse' : 'row',
+    flexDirection: 'row',
     alignItems: 'center',
     gap: 3,
     backgroundColor: '#ecfeff',
@@ -1238,7 +1239,7 @@ const styles = StyleSheet.create({
     paddingTop: 12
   },
   categoryRow: {
-    flexDirection: isArabic ? 'row-reverse' : 'row',
+    flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 10,
     gap: 6
@@ -1254,7 +1255,7 @@ const styles = StyleSheet.create({
     fontWeight: '500'
   },
   valuesRow: {
-    flexDirection: isArabic ? 'row-reverse' : 'row',
+    flexDirection: 'row',
     justifyContent: 'space-between',
     marginBottom: 8
   },
@@ -1265,13 +1266,13 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: '#94a3b8',
     marginBottom: 2,
-    textAlign: isArabic ? 'right' : 'left'
+    textAlign: 'left',
   },
   valueText: {
     fontSize: 16,
     fontWeight: '600',
     color: '#1e293b',
-    textAlign: isArabic ? 'right' : 'left'
+    textAlign: 'left',
   },
   valueTextPending: {
     color: '#94a3b8'
@@ -1282,18 +1283,18 @@ const styles = StyleSheet.create({
   rangeText: {
     fontSize: 14,
     color: '#64748b',
-    textAlign: isArabic ? 'right' : 'left'
+    textAlign: 'left',
   },
   dateText: {
     fontSize: 12,
     color: '#94a3b8',
-    textAlign: isArabic ? 'right' : 'left'
+    textAlign: 'left',
   },
   testDateTop: {
     fontSize: 12,
     color: '#64748b',
     marginBottom: 8,
-    textAlign: isArabic ? 'right' : 'left',
+    textAlign: 'left',
     fontWeight: '600',
   },
   reminderRow: {
@@ -1301,8 +1302,8 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   reminderButton: {
-    alignSelf: isArabic ? 'flex-end' : 'flex-start',
-    flexDirection: isArabic ? 'row-reverse' : 'row',
+    alignSelf: 'flex-start',
+    flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#3b82f6',
     borderRadius: 8,
@@ -1318,7 +1319,7 @@ const styles = StyleSheet.create({
   reminderDateText: {
     fontSize: 11,
     color: '#475569',
-    textAlign: isArabic ? 'right' : 'left',
+    textAlign: 'left',
   },
   modalBackdrop: {
     flex: 1,
@@ -1335,14 +1336,14 @@ const styles = StyleSheet.create({
     fontSize: 17,
     fontWeight: '700',
     color: '#1e293b',
-    textAlign: isArabic ? 'right' : 'left',
+    textAlign: 'left',
   },
   modalHint: {
     fontSize: 12,
     color: '#64748b',
     marginTop: 6,
     marginBottom: 10,
-    textAlign: isArabic ? 'right' : 'left',
+    textAlign: 'left',
   },
   modalInput: {
     borderWidth: 1,
@@ -1354,7 +1355,7 @@ const styles = StyleSheet.create({
     color: '#0f172a',
   },
   modalButtons: {
-    flexDirection: isArabic ? 'row-reverse' : 'row',
+    flexDirection: 'row',
     justifyContent: 'flex-end',
     gap: 8,
     marginTop: 12,
@@ -1399,7 +1400,7 @@ const styles = StyleSheet.create({
     marginTop: 16
   },
   disclaimerSmall: {
-    flexDirection: isArabic ? 'row-reverse' : 'row',
+    flexDirection: 'row',
     alignItems: 'flex-start',
     paddingHorizontal: 16,
     paddingTop: 12,
@@ -1410,6 +1411,6 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: '#94a3b8',
     lineHeight: 16,
-    textAlign: isArabic ? 'right' : 'left',
+    textAlign: 'left',
   },
 });

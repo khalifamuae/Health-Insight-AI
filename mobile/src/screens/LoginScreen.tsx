@@ -28,12 +28,12 @@ interface LoginScreenProps {
 
 type SignupStep = 'form' | 'verify';
 
-const isArabic = I18nManager.isRTL;
 
 export default function LoginScreen({ onLogin }: LoginScreenProps) {
   const { t, i18n } = useTranslation();
   const { colors, isDark } = useAppTheme();
   const isArabic = isArabicLanguage();
+  const styles = getStyles(isArabic);
   const [isLoading, setIsLoading] = useState(false);
   const [isSignUp, setIsSignUp] = useState(false);
   const [signupStep, setSignupStep] = useState<SignupStep>('form');
@@ -551,10 +551,10 @@ export default function LoginScreen({ onLogin }: LoginScreenProps) {
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (isArabic: boolean) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8fafc'
+    backgroundColor: '#f8fafc',
   },
   scrollContent: {
     flexGrow: 1,
@@ -588,7 +588,7 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   trustBadgesRow: {
-    flexDirection: isArabic ? 'row-reverse' : 'row',
+    flexDirection: 'row',
     justifyContent: 'center',
     marginBottom: 20,
     gap: 16,
@@ -624,12 +624,12 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   nameRow: {
-    flexDirection: isArabic ? 'row-reverse' : 'row',
+    flexDirection: 'row',
     gap: 10,
     marginBottom: 12,
   },
   inputContainer: {
-    flexDirection: isArabic ? 'row-reverse' : 'row',
+    flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#f1f5f9',
     borderRadius: 12,
@@ -754,7 +754,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   languageButton: {
-    flexDirection: isArabic ? 'row-reverse' : 'row',
+    flexDirection: 'row',
     alignItems: 'center',
     padding: 10,
     gap: 6,

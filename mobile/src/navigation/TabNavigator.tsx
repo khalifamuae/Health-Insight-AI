@@ -11,9 +11,9 @@ import TestsScreen from '../screens/TestsScreen';
 import UploadScreen from '../screens/UploadScreen';
 import DietScreen from '../screens/DietScreen';
 import ProfileScreen from '../screens/ProfileScreen';
-import ExercisesScreen from '../screens/ExercisesScreen';
 import MyDietPlansScreen from '../screens/MyDietPlansScreen';
 import WorkoutPlansScreen from '../screens/WorkoutPlansScreen';
+import WorkoutBuilderScreen from '../screens/WorkoutBuilderScreen';
 
 const Tab = createBottomTabNavigator();
 
@@ -34,7 +34,7 @@ export default function TabNavigator({ navigation }: any) {
     navigation.navigate('Compare');
   };
 
-  const navigateToTab = (screenName: 'Diet' | 'Exercises' | 'Profile') => {
+  const navigateToTab = (screenName: 'Diet' | 'WorkoutBuilder' | 'Profile') => {
     setIsMenuVisible(false);
     navigation.navigate({
       name: 'Main',
@@ -52,7 +52,7 @@ export default function TabNavigator({ navigation }: any) {
   };
 
   const navigateToExercisesDesigner = () => {
-    navigateToTab('Exercises');
+    navigateToTab('WorkoutBuilder');
   };
 
   const renderMenuTrigger = () => (
@@ -72,25 +72,22 @@ export default function TabNavigator({ navigation }: any) {
           tabBarActiveTintColor: colors.primary,
           tabBarInactiveTintColor: isDark ? 'rgba(148,163,184,0.95)' : '#64748b',
           tabBarHideOnKeyboard: true,
-          sceneStyle: {
-            direction: isArabic ? 'rtl' : 'ltr',
-          },
           tabBarLabel: ({ color }) => {
             const labels: Record<string, string> = isArabic
               ? {
-                  Home: 'الرئيسية',
-                  Upload: 'رفع\nالملف',
-                  DietTable: 'جدولي\nالغذائي',
-                  WorkoutTable: 'جدول\nتماريني',
-                  Tests: 'الفحوصات',
-                }
+                Home: 'الرئيسية',
+                Upload: 'رفع\nالملف',
+                DietTable: 'جدولي\nالغذائي',
+                WorkoutTable: 'جدول\nتماريني',
+                Tests: 'الفحوصات',
+              }
               : {
-                  Home: 'Home',
-                  Upload: 'Upload',
-                  DietTable: 'My\nDiet',
-                  WorkoutTable: 'My\nWorkout',
-                  Tests: 'Tests',
-                };
+                Home: 'Home',
+                Upload: 'Upload',
+                DietTable: 'My\nDiet',
+                WorkoutTable: 'My\nWorkout',
+                Tests: 'Tests',
+              };
             return (
               <Text
                 numberOfLines={2}
@@ -101,7 +98,6 @@ export default function TabNavigator({ navigation }: any) {
                   styles.tabCustomLabel,
                   {
                     color,
-                    writingDirection: isArabic ? 'rtl' : 'ltr',
                     fontSize: isArabic ? 9.5 : 9,
                     lineHeight: 11,
                   },
@@ -168,12 +164,17 @@ export default function TabNavigator({ navigation }: any) {
           headerTitleStyle: {
             color: colors.text,
             fontWeight: '600',
-            writingDirection: isArabic ? 'rtl' : 'ltr',
           },
           headerTintColor: colors.text,
           headerTitleAlign: 'center',
-          headerRight: undefined,
           headerLeft: renderMenuTrigger,
+          headerRight: undefined,
+          headerLeftContainerStyle: {
+            paddingHorizontal: 6,
+          },
+          headerRightContainerStyle: {
+            paddingHorizontal: 6,
+          },
         })}
       >
         <Tab.Screen
@@ -206,15 +207,6 @@ export default function TabNavigator({ navigation }: any) {
           }}
         />
         <Tab.Screen
-          name="Exercises"
-          component={ExercisesScreen}
-          options={{
-            title: isArabic ? 'التمارين' : 'Exercises',
-            tabBarButton: () => null,
-            tabBarItemStyle: { display: 'none' },
-          }}
-        />
-        <Tab.Screen
           name="DietTable"
           component={MyDietPlansScreen}
           options={{
@@ -222,6 +214,15 @@ export default function TabNavigator({ navigation }: any) {
             tabBarIcon: ({ color }: { color: string; size: number }) => (
               <Ionicons name="book" size={22} color={color} />
             ),
+          }}
+        />
+        <Tab.Screen
+          name="WorkoutBuilder"
+          component={WorkoutBuilderScreen}
+          options={{
+            title: isArabic ? 'تصميم الجدول' : 'Workout Builder',
+            tabBarButton: () => null,
+            tabBarItemStyle: { display: 'none' },
           }}
         />
         <Tab.Screen
@@ -274,7 +275,7 @@ export default function TabNavigator({ navigation }: any) {
             style={[
               styles.menuPanelHost,
               {
-                alignItems: isArabic ? 'flex-end' : 'flex-start',
+                alignItems: 'flex-start',
               },
             ]}
           >
@@ -284,171 +285,165 @@ export default function TabNavigator({ navigation }: any) {
                 {
                   width: drawerWidth,
                   borderColor: colors.border,
-                  direction: isArabic ? 'rtl' : 'ltr',
                   ...(isArabic
                     ? {
-                        borderLeftWidth: 1,
-                        borderRightWidth: 0,
-                        borderTopLeftRadius: 30,
-                        borderBottomLeftRadius: 30,
-                      }
+                      borderLeftWidth: 1,
+                      borderRightWidth: 0,
+                      borderTopLeftRadius: 30,
+                      borderBottomLeftRadius: 30,
+                    }
                     : {
-                        borderLeftWidth: 0,
-                        borderRightWidth: 1,
-                        borderTopRightRadius: 30,
-                        borderBottomRightRadius: 30,
-                      }),
+                      borderRightWidth: 1,
+                      borderLeftWidth: 0,
+                      borderTopRightRadius: 30,
+                      borderBottomRightRadius: 30,
+                    }),
                 },
               ]}
             >
-            <BlurView
-              intensity={70}
-              tint={glassTint}
-              experimentalBlurMethod="dimezisBlurView"
-              style={StyleSheet.absoluteFillObject}
-            />
-            <View
-              style={[
-                StyleSheet.absoluteFillObject,
-                { backgroundColor: glassOverlayColor },
-              ]}
-            />
+              <BlurView
+                intensity={70}
+                tint={glassTint}
+                experimentalBlurMethod="dimezisBlurView"
+                style={StyleSheet.absoluteFillObject}
+              />
+              <View
+                style={[
+                  StyleSheet.absoluteFillObject,
+                  { backgroundColor: glassOverlayColor },
+                ]}
+              />
 
-            <ScrollView
-              style={styles.menuScroll}
-              contentContainerStyle={styles.menuPanelContent}
-              showsVerticalScrollIndicator={false}
-            >
-              <View style={[styles.menuHeader, { flexDirection: isArabic ? 'row-reverse' : 'row' }]}>
-                <Text
-                  style={[
-                    styles.menuTitle,
-                    {
-                      color: colors.text,
-                      textAlign: isArabic ? 'right' : 'left',
-                      writingDirection: isArabic ? 'rtl' : 'ltr',
-                    },
-                  ]}
-                >
-                  {isArabic ? 'القائمة' : 'Menu'}
-                </Text>
+              <ScrollView
+                style={styles.menuScroll}
+                contentContainerStyle={styles.menuPanelContent}
+                showsVerticalScrollIndicator={false}
+              >
+                <View style={[styles.menuHeader, { flexDirection: 'row' }]}>
+                  <Text
+                    style={[
+                      styles.menuTitle,
+                      {
+                        color: colors.text,
+                        textAlign: 'left',
+                      },
+                    ]}
+                  >
+                    {isArabic ? 'القائمة' : 'Menu'}
+                  </Text>
+                  <TouchableOpacity
+                    onPress={() => setIsMenuVisible(false)}
+                    style={[styles.closeButton, { borderColor: colors.border, backgroundColor: colors.cardAlt }]}
+                    testID="button-close-side-menu"
+                  >
+                    <Ionicons name="close" size={18} color={colors.text} />
+                  </TouchableOpacity>
+                </View>
+
                 <TouchableOpacity
-                  onPress={() => setIsMenuVisible(false)}
-                  style={[styles.closeButton, { borderColor: colors.border, backgroundColor: colors.cardAlt }]}
-                  testID="button-close-side-menu"
+                  style={[
+                    styles.menuItem,
+                    {
+                      borderBottomColor: menuDividerColor,
+                      flexDirection: 'row',
+                    },
+                  ]}
+                  onPress={navigateToCompare}
+                  testID="button-menu-compare"
                 >
-                  <Ionicons name="close" size={18} color={colors.text} />
+                  <Ionicons name="git-compare" size={18} color={colors.primary} />
+                  <Text
+                    numberOfLines={1}
+                    style={[
+                      styles.menuItemText,
+                      {
+                        color: colors.text,
+                        textAlign: 'left',
+                      },
+                    ]}
+                  >
+                    {isArabic ? 'المقارنات' : 'Comparisons'}
+                  </Text>
                 </TouchableOpacity>
-              </View>
 
-              <TouchableOpacity
-                style={[
-                  styles.menuItem,
-                  {
-                    borderBottomColor: menuDividerColor,
-                    flexDirection: isArabic ? 'row-reverse' : 'row',
-                  },
-                ]}
-                onPress={navigateToCompare}
-                testID="button-menu-compare"
-              >
-                <Ionicons name="git-compare" size={18} color={colors.primary} />
-                <Text
-                  numberOfLines={1}
+                <TouchableOpacity
                   style={[
-                    styles.menuItemText,
+                    styles.menuItem,
                     {
-                      color: colors.text,
-                      textAlign: isArabic ? 'right' : 'left',
-                      writingDirection: isArabic ? 'rtl' : 'ltr',
+                      borderBottomColor: menuDividerColor,
+                      flexDirection: 'row',
                     },
                   ]}
+                  onPress={navigateToDietDesigner}
+                  testID="button-menu-diet-designer"
                 >
-                  {isArabic ? 'المقارنات' : 'Comparisons'}
-                </Text>
-              </TouchableOpacity>
+                  <Ionicons name="nutrition" size={18} color={colors.primary} />
+                  <Text
+                    numberOfLines={1}
+                    style={[
+                      styles.menuItemText,
+                      {
+                        color: colors.text,
+                        textAlign: 'left',
+                      },
+                    ]}
+                  >
+                    {isArabic ? 'تصميم جدول غذائي' : 'Diet Designer'}
+                  </Text>
+                </TouchableOpacity>
 
-              <TouchableOpacity
-                style={[
-                  styles.menuItem,
-                  {
-                    borderBottomColor: menuDividerColor,
-                    flexDirection: isArabic ? 'row-reverse' : 'row',
-                  },
-                ]}
-                onPress={navigateToDietDesigner}
-                testID="button-menu-diet-designer"
-              >
-                <Ionicons name="nutrition" size={18} color={colors.primary} />
-                <Text
-                  numberOfLines={1}
+                <TouchableOpacity
                   style={[
-                    styles.menuItemText,
+                    styles.menuItem,
                     {
-                      color: colors.text,
-                      textAlign: isArabic ? 'right' : 'left',
-                      writingDirection: isArabic ? 'rtl' : 'ltr',
+                      borderBottomColor: menuDividerColor,
+                      flexDirection: 'row',
                     },
                   ]}
+                  onPress={navigateToExercisesDesigner}
+                  testID="button-menu-exercises-designer"
                 >
-                  {isArabic ? 'تصميم جدول غذائي' : 'Diet Designer'}
-                </Text>
-              </TouchableOpacity>
+                  <Ionicons name="barbell" size={18} color={colors.primary} />
+                  <Text
+                    numberOfLines={1}
+                    style={[
+                      styles.menuItemText,
+                      {
+                        color: colors.text,
+                        textAlign: 'left',
+                      },
+                    ]}
+                  >
+                    {isArabic ? 'تصميم جدول تمارين' : 'Workout Designer'}
+                  </Text>
+                </TouchableOpacity>
 
-              <TouchableOpacity
-                style={[
-                  styles.menuItem,
-                  {
-                    borderBottomColor: menuDividerColor,
-                    flexDirection: isArabic ? 'row-reverse' : 'row',
-                  },
-                ]}
-                onPress={navigateToExercisesDesigner}
-                testID="button-menu-exercises-designer"
-              >
-                <Ionicons name="barbell" size={18} color={colors.primary} />
-                <Text
-                  numberOfLines={1}
+                <TouchableOpacity
                   style={[
-                    styles.menuItemText,
+                    styles.menuItem,
                     {
-                      color: colors.text,
-                      textAlign: isArabic ? 'right' : 'left',
-                      writingDirection: isArabic ? 'rtl' : 'ltr',
+                      borderBottomColor: menuDividerColor,
+                      flexDirection: 'row',
                     },
                   ]}
+                  onPress={navigateToProfile}
+                  testID="button-menu-profile"
                 >
-                  {isArabic ? 'تصميم جدول تمارين' : 'Workout Designer'}
-                </Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={[
-                  styles.menuItem,
-                  {
-                    borderBottomColor: menuDividerColor,
-                    flexDirection: isArabic ? 'row-reverse' : 'row',
-                  },
-                ]}
-                onPress={navigateToProfile}
-                testID="button-menu-profile"
-              >
-                <Ionicons name="person" size={18} color={colors.primary} />
-                <Text
-                  numberOfLines={1}
-                  style={[
-                    styles.menuItemText,
-                    {
-                      color: colors.text,
-                      textAlign: isArabic ? 'right' : 'left',
-                      writingDirection: isArabic ? 'rtl' : 'ltr',
-                    },
-                  ]}
-                >
-                  {t('profileTab')}
-                </Text>
-              </TouchableOpacity>
-            </ScrollView>
+                  <Ionicons name="person" size={18} color={colors.primary} />
+                  <Text
+                    numberOfLines={1}
+                    style={[
+                      styles.menuItemText,
+                      {
+                        color: colors.text,
+                        textAlign: 'left',
+                      },
+                    ]}
+                  >
+                    {t('profileTab')}
+                  </Text>
+                </TouchableOpacity>
+              </ScrollView>
             </View>
           </View>
         </View>
