@@ -22,19 +22,19 @@ export const EXERCISE_REGISTRY: GlobalExercise[] = [
     // ==========================================
     // Shoulders (أكتاف)
     // ==========================================
-    { id: 'shoulders-1', titleEn: 'Front Raise (Dumbbell)', titleAr: 'رفرفة أمامي بالدمبل', muscleGroupEn: 'Shoulders', muscleGroupAr: 'أكتاف', videoUrl: getVideoUrl('Shoulders', 'Front Raise (Dumbbell).mp4') },
+    // { id: 'shoulders-1', titleEn: 'Front Raise (Dumbbell)', titleAr: 'رفرفة أمامي بالدمبل', muscleGroupEn: 'Shoulders', muscleGroupAr: 'أكتاف', videoUrl: getVideoUrl('Shoulders', 'Front Raise (Dumbbell).mp4') }, // Missing from R2
     { id: 'shoulders-2', titleEn: 'Dumbbell Upright Row', titleAr: 'سحب عمودي بالدمبل', muscleGroupEn: 'Shoulders', muscleGroupAr: 'أكتاف', videoUrl: getVideoUrl('Shoulders', 'Dumbbell Upright Row.mp4') },
     { id: 'shoulders-3', titleEn: 'Dumbbell Overhead Standard', titleAr: 'ضغط أكتاف بالدمبل', muscleGroupEn: 'Shoulders', muscleGroupAr: 'أكتاف', videoUrl: getVideoUrl('Shoulders', 'Dumbbell Overhead Standard.mp4') },
     { id: 'shoulders-4', titleEn: 'Barbell Upright Row', titleAr: 'سحب عمودي بالبار', muscleGroupEn: 'Shoulders', muscleGroupAr: 'أكتاف', videoUrl: getVideoUrl('Shoulders', 'Barbell Upright Row.mp4') },
     { id: 'shoulders-5', titleEn: 'Barbell Overhead Press Standing', titleAr: 'ضغط أكتاف بالبار (وقوف)', muscleGroupEn: 'Shoulders', muscleGroupAr: 'أكتاف', videoUrl: getVideoUrl('Shoulders', 'Barbell Overhead Press Standing.mp4') },
     { id: 'shoulders-6', titleEn: 'Arnold Press Dumbbell', titleAr: 'ضغط أرنولد بالدمبل', muscleGroupEn: 'Shoulders', muscleGroupAr: 'أكتاف', videoUrl: getVideoUrl('Shoulders', 'Arnold Press Dumbbell.mp4') },
-    { id: 'shoulders-7', titleEn: 'Military Press (Seated - Smith Machine)', titleAr: 'ضغط أكتاف (جلوس على جهاز سميث)', muscleGroupEn: 'Shoulders', muscleGroupAr: 'أكتاف', videoUrl: getVideoUrl('Shoulders', 'Military Press (Seated - Smith Machine).mp4') },
+    // { id: 'shoulders-7', titleEn: 'Military Press (Seated - Smith Machine)', titleAr: 'ضغط أكتاف (جلوس على جهاز سميث)', muscleGroupEn: 'Shoulders', muscleGroupAr: 'أكتاف', videoUrl: getVideoUrl('Shoulders', 'Military Press (Seated - Smith Machine).mp4') }, // Missing from R2
     { id: 'shoulders-8', titleEn: 'Lateral Raises (Machine)', titleAr: 'رفرفة جانبي (جهاز)', muscleGroupEn: 'Shoulders', muscleGroupAr: 'أكتاف', videoUrl: getVideoUrl('Shoulders', 'Lateral Raises (Machine).mp4') },
     { id: 'shoulders-9', titleEn: 'Lateral Raises (Dumbbell)', titleAr: 'رفرفة جانبي بالدمبل', muscleGroupEn: 'Shoulders', muscleGroupAr: 'أكتاف', videoUrl: getVideoUrl('Shoulders', 'Lateral Raises (Dumbbell).mp4') },
     { id: 'shoulders-10', titleEn: 'Lateral Raises (Cable)', titleAr: 'رفرفة جانبي بالكابل', muscleGroupEn: 'Shoulders', muscleGroupAr: 'أكتاف', videoUrl: getVideoUrl('Shoulders', 'Lateral Raises (Cable).mp4') },
     { id: 'shoulders-11', titleEn: 'Kettelbell Overhead Press', titleAr: 'ضغط أكتاف بالكتل بيل', muscleGroupEn: 'Shoulders', muscleGroupAr: 'أكتاف', videoUrl: getVideoUrl('Shoulders', 'Kettelbell Overhead Press.mp4') },
     { id: 'shoulders-12', titleEn: 'Front Raise (Weighted Plate)', titleAr: 'رفرفة أمامي (بالطارة)', muscleGroupEn: 'Shoulders', muscleGroupAr: 'أكتاف', videoUrl: getVideoUrl('Shoulders', 'Front Raise (Weighted Plate).mp4') },
-    { id: 'shoulders-13', titleEn: 'Rear Delt Fly Machine', titleAr: 'كتف خلفي (جهاز فراشة عكسي)', muscleGroupEn: 'Shoulders', muscleGroupAr: 'أكتاف', videoUrl: getVideoUrl('Shoulders', 'Rear Delt Fly Machine.mp4') },
+    // { id: 'shoulders-13', titleEn: 'Rear Delt Fly Machine', titleAr: 'كتف خلفي (جهاز فراشة عكسي)', muscleGroupEn: 'Shoulders', muscleGroupAr: 'أكتاف', videoUrl: getVideoUrl('Shoulders', 'Rear Delt Fly Machine.mp4') }, // Missing from R2
     { id: 'shoulders-14', titleEn: 'Rear Delt Fly (Reverse Pec Deck)', titleAr: 'كتف خلفي (جهاز الرفرفة)', muscleGroupEn: 'Shoulders', muscleGroupAr: 'أكتاف', videoUrl: getVideoUrl('Shoulders', 'Rear Delt Fly (Reverse Pec Deck).mp4') },
 
     // ==========================================
@@ -117,7 +117,7 @@ export const EXERCISE_REGISTRY: GlobalExercise[] = [
     { id: 'arms-4', titleEn: 'Barbell Hold', titleAr: 'ثبات تحمل بالبار', muscleGroupEn: 'Forearms', muscleGroupAr: 'سواعد', videoUrl: getVideoUrl('Arms', 'Barbell Hold.mp4') },
     { id: 'arms-5', titleEn: 'Barbell Curl Standard', titleAr: 'باي بالبار (وقوف)', muscleGroupEn: 'Biceps', muscleGroupAr: 'باي', videoUrl: getVideoUrl('Arms', 'Barbell Curl Standard.mp4') },
     { id: 'arms-6', titleEn: 'Band Pushups', titleAr: 'ضغط بمقاومة الشريط (أول)', muscleGroupEn: 'Chest', muscleGroupAr: 'صدر', videoUrl: getVideoUrl('Arms', 'Band Pushups.mp4') },
-    { id: 'arms-7', titleEn: 'Band Pushups ', titleAr: 'ضغط بمقاومة الشريط (ثاني)', muscleGroupEn: 'Chest', muscleGroupAr: 'صدر', videoUrl: getVideoUrl('Arms', 'Band Pushups .mp4') },
+    // { id: 'arms-7', titleEn: 'Band Pushups ', titleAr: 'ضغط بمقاومة الشريط (ثاني)', muscleGroupEn: 'Chest', muscleGroupAr: 'صدر', videoUrl: getVideoUrl('Arms', 'Band Pushups .mp4') }, // Duplicate/Typo in R2 upload
     { id: 'arms-8', titleEn: 'Dumbbell Spider Curl', titleAr: 'باي عنكبوت بالدمبل', muscleGroupEn: 'Biceps', muscleGroupAr: 'باي', videoUrl: getVideoUrl('Arms', 'Dumbbell Spider Curl.mp4') },
     { id: 'arms-9', titleEn: 'Dumbbell Overhead Press Version 1', titleAr: 'انتبه: ضغط أكتاف بالدمبل', muscleGroupEn: 'Shoulders', muscleGroupAr: 'أكتاف', videoUrl: getVideoUrl('Arms', 'Dumbbell Overhead Press Version 1.mp4') },
     { id: 'arms-10', titleEn: 'Dumbbell Hammer Curl', titleAr: 'باي مطرقة بالدمبل', muscleGroupEn: 'Biceps', muscleGroupAr: 'باي', videoUrl: getVideoUrl('Arms', 'Dumbbell Hammer Curl.mp4') },
