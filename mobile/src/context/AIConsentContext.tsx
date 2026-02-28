@@ -3,8 +3,7 @@ import * as SecureStore from 'expo-secure-store';
 
 export type AIConsentStatus = 'unknown' | 'accepted' | 'declined';
 
-const AI_CONSENT_KEY = 'aiDataProcessingConsentV1';
-const AI_CONSENT_HIDE_PROMPT_KEY = 'aiDataProcessingConsentHidePromptV1';
+const AI_CONSENT_KEY = 'aiDataProcessingConsentV2';
 
 interface AIConsentContextType {
   status: AIConsentStatus;
@@ -28,7 +27,7 @@ export function AIConsentProvider({ children }: { children: React.ReactNode }) {
 
     Promise.all([
       SecureStore.getItemAsync(AI_CONSENT_KEY),
-      SecureStore.getItemAsync(AI_CONSENT_HIDE_PROMPT_KEY),
+      SecureStore.getItemAsync('aiDataProcessingConsentHidePromptV2'),
     ])
       .then(([consentValue, hidePromptValue]) => {
         if (!mounted) return;
@@ -64,13 +63,9 @@ export function AIConsentProvider({ children }: { children: React.ReactNode }) {
 
   const hidePromptForever = async () => {
     setHidePrompt(true);
-    await SecureStore.setItemAsync(AI_CONSENT_HIDE_PROMPT_KEY, '1');
+    await SecureStore.setItemAsync('aiDataProcessingConsentHidePromptV2', '1');
 
-    // If the user has not selected a consent status yet, default to decline for privacy.
-    if (status === 'unknown') {
-      setStatus('declined');
-      await SecureStore.setItemAsync(AI_CONSENT_KEY, 'declined');
-    }
+    // Default to unknown if they just hid it instead of actively declining
   };
 
   const value = useMemo(

@@ -55,27 +55,27 @@ function AppNavigator() {
   const { isDark, colors } = useAppTheme();
   const navTheme = isDark
     ? {
-        ...DarkTheme,
-        colors: {
-          ...DarkTheme.colors,
-          primary: colors.primary,
-          background: colors.background,
-          card: colors.card,
-          text: colors.text,
-          border: colors.border,
-        },
-      }
+      ...DarkTheme,
+      colors: {
+        ...DarkTheme.colors,
+        primary: colors.primary,
+        background: colors.background,
+        card: colors.card,
+        text: colors.text,
+        border: colors.border,
+      },
+    }
     : {
-        ...DefaultTheme,
-        colors: {
-          ...DefaultTheme.colors,
-          primary: colors.primary,
-          background: colors.background,
-          card: colors.card,
-          text: colors.text,
-          border: colors.border,
-        },
-      };
+      ...DefaultTheme,
+      colors: {
+        ...DefaultTheme.colors,
+        primary: colors.primary,
+        background: colors.background,
+        card: colors.card,
+        text: colors.text,
+        border: colors.border,
+      },
+    };
 
   return (
     <NavigationContainer theme={navTheme}>
@@ -100,24 +100,19 @@ function AIConsentModal() {
       statusBarTranslucent
       hardwareAccelerated
       presentationStyle="overFullScreen"
-      onRequestClose={() => {}}
+      onRequestClose={() => { }}
     >
       <View style={styles.backdrop}>
         <View style={styles.card}>
-          <Text style={[styles.title, { textAlign: isArabic ? 'right' : 'left', writingDirection: isArabic ? 'rtl' : 'ltr' }]}>
+          <Text style={[styles.title]}>
             {isArabic ? '🔒 الموافقة على معالجة البيانات بالذكاء الاصطناعي' : '🔒 AI Data Processing Consent'}
           </Text>
-          <Text style={[styles.body, { textAlign: isArabic ? 'right' : 'left', writingDirection: isArabic ? 'rtl' : 'ltr' }]}>
+          <Text style={[styles.body]}>
             {isArabic
-              ? 'يستخدم هذا التطبيق خدمات ذكاء اصطناعي من جهات خارجية (OpenAI و Google Cloud) لتحليل التقارير الصحية المرفوعة وإنشاء الإرشاد الغذائي.\n\nقد يتم إرسال البيانات التالية بشكل آمن:\n• تقارير الفحوصات المرفوعة (PDF أو صور)\n• القيم الصحية المستخرجة\n• المعلومات الصحية التي يدخلها المستخدم\n\nلا يتم بيع البيانات أو مشاركتها لأغراض تسويقية.\n\nفي حال الرفض، ستفقد ميزات:\n• رفع الملفات وتحليلها\n• توليد جدول غذائي توعوي وتعليمي\n\nبالمتابعة، أنت توافق على هذه المعالجة.'
-              : 'This app uses third-party AI services (OpenAI, Google Cloud) to analyze uploaded health reports and generate nutritional guidance.\n\nThe following data may be sent securely:\n• Uploaded lab reports (PDF or images)\n• Extracted health values\n• User-input health information\n\nNo data is sold or shared for marketing purposes.\n\nIf you decline, you will lose these features:\n• File upload and AI analysis\n• Educational AI diet-plan generation\n\nBy continuing, you agree to this processing.'}
+              ? 'يستخدم هذا التطبيق خدمات الذكاء الاصطناعي التابعة لجهات خارجية (OpenAI و Google Cloud) لتحليل التقارير الصحية المرفوعة وإنشاء إرشادات غذائية.\n\nقد يتم إرسال البيانات التالية بشكل آمن:\n• تقارير الفحوصات المرفوعة (PDF أو صور)\n• القيم الصحية المستخرجة\n• المعلومات الصحية التي يدخلها المستخدم\n\nلا يتم بيع البيانات أو مشاركتها لأغراض تسويقية.\n\nبالمتابعة، أنت توافق على هذه المعالجة.'
+              : 'This app uses third-party AI services (OpenAI, Google Cloud) to analyze uploaded health reports and generate nutritional guidance.\n\nThe following data may be sent securely:\n• Uploaded lab reports (PDF or images)\n• Extracted health values\n• User-input health information\n\nNo data is sold or shared for marketing purposes.\n\nBy continuing, you agree to this processing.'}
           </Text>
-          <View
-            style={[
-              styles.actions,
-              { flexDirection: isArabic ? 'row-reverse' : 'row', justifyContent: isArabic ? 'flex-start' : 'flex-end' },
-            ]}
-          >
+          <View style={styles.actions}>
             <TouchableOpacity style={styles.declineBtn} onPress={decline} testID="button-ai-consent-decline">
               <Text style={styles.declineText}>{isArabic ? 'رفض' : 'Decline'}</Text>
             </TouchableOpacity>
@@ -126,7 +121,7 @@ function AIConsentModal() {
               onPress={hidePromptForever}
               testID="button-ai-consent-hide-forever"
             >
-              <Text style={styles.hidePromptText}>{isArabic ? 'عدم الإظهار مرة أخرى' : "Don't show again"}</Text>
+              <Text style={styles.hidePromptText}>{isArabic ? 'عدم الإظهار مرة أخرى' : "Don't ask me again"}</Text>
             </TouchableOpacity>
             <TouchableOpacity style={styles.agreeBtn} onPress={accept} testID="button-ai-consent-agree">
               <Text style={styles.agreeText}>{isArabic ? 'موافقة' : 'Agree'}</Text>
