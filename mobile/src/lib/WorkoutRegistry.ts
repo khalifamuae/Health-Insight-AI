@@ -1,5 +1,5 @@
 export interface GlobalExercise {
-    id: string; // e.g., 'chest-1'
+    id: string; // The URL-encoded filename (without extension if preferred, but here we use exact filename)
     titleEn: string;
     titleAr: string;
     muscleGroupEn: string;
@@ -11,64 +11,136 @@ export interface GlobalExercise {
 const VIDEO_BASE_URL = "https://pub-8183870d5f9f4c1196f1ca8347faa84b.r2.dev";
 
 // Helper function to generate the correct video URL.
-// We expect folders inside R2 exactly matching the muscleGroupEn (lowercase)
-// and inside them, the MP4 files matching the exercise id exactly.
-// Example: https://pub-8183870d5f9f4c1196f1ca8347faa84b.r2.dev/chest/chest-1.mp4
-const getVideoUrl = (muscleGroupEn: string, id: string) => {
-    const folderName = muscleGroupEn.toLowerCase();
-    return `${VIDEO_BASE_URL}/${folderName}/${id}.mp4`;
+// We expect folders inside R2 exactly matching the muscleGroupEn
+const getVideoUrl = (folderName: string, fileName: string) => {
+    // encodeURIComponent ensures spaces and special characters are valid in the URL
+    return `${VIDEO_BASE_URL}/${folderName}/${encodeURIComponent(fileName)}`;
 };
 
-// Grouping Categories: 
-// 1. Chest (صدر)
-// 2. Back (ظهر)
-// 3. Legs (أرجل)
-// 4. Shoulders (أكتاف)
-// 5. Biceps (باي)
-// 6. Triceps (تراي)
-// 7. Forearms (سواعد)
-// 8. Calves (بطات)
-
 export const EXERCISE_REGISTRY: GlobalExercise[] = [
-    // --- CHEST (صدر) ---
-    { id: 'chest-1', titleEn: 'Barbell Bench Press', titleAr: 'ضغط الصدر بالبار مستوي', muscleGroupEn: 'Chest', muscleGroupAr: 'صدر', videoUrl: getVideoUrl('Chest', 'chest-1') },
-    { id: 'chest-2', titleEn: 'Incline Dumbbell Press', titleAr: 'ضغط بالدمبلز صدر علوي', muscleGroupEn: 'Chest', muscleGroupAr: 'صدر', videoUrl: getVideoUrl('Chest', 'chest-2') },
-    { id: 'chest-3', titleEn: 'Cable Crossover', titleAr: 'تفتيح بالكابل', muscleGroupEn: 'Chest', muscleGroupAr: 'صدر', videoUrl: getVideoUrl('Chest', 'chest-3') },
-    { id: 'chest-4', titleEn: 'Dumbbell Pullover', titleAr: 'بول أوفر بالدمبل', muscleGroupEn: 'Chest', muscleGroupAr: 'صدر', videoUrl: getVideoUrl('Chest', 'chest-4') },
 
-    // --- BACK (ظهر) ---
-    { id: 'back-1', titleEn: 'Lat Pulldown', titleAr: 'سحب ظهر واسع', muscleGroupEn: 'Back', muscleGroupAr: 'ظهر', videoUrl: getVideoUrl('Back', 'back-1') },
-    { id: 'back-2', titleEn: 'Barbell Row', titleAr: 'سحب بالبار', muscleGroupEn: 'Back', muscleGroupAr: 'ظهر', videoUrl: getVideoUrl('Back', 'back-2') },
-    { id: 'back-3', titleEn: 'Seated Cable Row', titleAr: 'سحب أرضي ضيق', muscleGroupEn: 'Back', muscleGroupAr: 'ظهر', videoUrl: getVideoUrl('Back', 'back-3') },
-    { id: 'back-4', titleEn: 'Deadlift', titleAr: 'رفعة مميتة', muscleGroupEn: 'Back', muscleGroupAr: 'ظهر', videoUrl: getVideoUrl('Back', 'back-4') },
+    // ==========================================
+    // 1-file Shoulders (أكتاف)
+    // ==========================================
+    { id: 'shoulders-1', titleEn: 'Front Raise (Dumbbell)', titleAr: 'رفرفة أمامي بالدمبل', muscleGroupEn: 'Shoulders', muscleGroupAr: 'أكتاف', videoUrl: getVideoUrl('1-file Shoulders', 'Front Raise (Dumbbell).mp4') },
+    { id: 'shoulders-2', titleEn: 'Dumbbell Upright Row', titleAr: 'سحب عمودي بالدمبل', muscleGroupEn: 'Shoulders', muscleGroupAr: 'أكتاف', videoUrl: getVideoUrl('1-file Shoulders', 'Dumbbell Upright Row.mp4') },
+    { id: 'shoulders-3', titleEn: 'Dumbbell Overhead Standard', titleAr: 'ضغط أكتاف بالدمبل', muscleGroupEn: 'Shoulders', muscleGroupAr: 'أكتاف', videoUrl: getVideoUrl('1-file Shoulders', 'Dumbbell Overhead Standard.mp4') },
+    { id: 'shoulders-4', titleEn: 'Barbell Upright Row', titleAr: 'سحب عمودي بالبار', muscleGroupEn: 'Shoulders', muscleGroupAr: 'أكتاف', videoUrl: getVideoUrl('1-file Shoulders', 'Barbell Upright Row.mp4') },
+    { id: 'shoulders-5', titleEn: 'Barbell Overhead Press Standing', titleAr: 'ضغط أكتاف بالبار (وقوف)', muscleGroupEn: 'Shoulders', muscleGroupAr: 'أكتاف', videoUrl: getVideoUrl('1-file Shoulders', 'Barbell Overhead Press Standing.mp4') },
+    { id: 'shoulders-6', titleEn: 'Arnold Press Dumbbell', titleAr: 'ضغط أرنولد بالدمبل', muscleGroupEn: 'Shoulders', muscleGroupAr: 'أكتاف', videoUrl: getVideoUrl('1-file Shoulders', 'Arnold Press Dumbbell.mp4') },
+    { id: 'shoulders-7', titleEn: 'Military Press (Seated - Smith Machine)', titleAr: 'ضغط أكتاف (جلوس على جهاز سميث)', muscleGroupEn: 'Shoulders', muscleGroupAr: 'أكتاف', videoUrl: getVideoUrl('1-file Shoulders', 'Military Press (Seated - Smith Machine).mp4') },
+    { id: 'shoulders-8', titleEn: 'Lateral Raises (Machine)', titleAr: 'رفرفة جانبي (جهاز)', muscleGroupEn: 'Shoulders', muscleGroupAr: 'أكتاف', videoUrl: getVideoUrl('1-file Shoulders', 'Lateral Raises (Machine).mp4') },
+    { id: 'shoulders-9', titleEn: 'Lateral Raises (Dumbbell)', titleAr: 'رفرفة جانبي بالدمبل', muscleGroupEn: 'Shoulders', muscleGroupAr: 'أكتاف', videoUrl: getVideoUrl('1-file Shoulders', 'Lateral Raises (Dumbbell).mp4') },
+    { id: 'shoulders-10', titleEn: 'Lateral Raises (Cable)', titleAr: 'رفرفة جانبي بالكابل', muscleGroupEn: 'Shoulders', muscleGroupAr: 'أكتاف', videoUrl: getVideoUrl('1-file Shoulders', 'Lateral Raises (Cable).mp4') },
+    { id: 'shoulders-11', titleEn: 'Kettelbell Overhead Press', titleAr: 'ضغط أكتاف بالكتل بيل', muscleGroupEn: 'Shoulders', muscleGroupAr: 'أكتاف', videoUrl: getVideoUrl('1-file Shoulders', 'Kettelbell Overhead Press.mp4') },
+    { id: 'shoulders-12', titleEn: 'Front Raise (Weighted Plate)', titleAr: 'رفرفة أمامي (بالطارة)', muscleGroupEn: 'Shoulders', muscleGroupAr: 'أكتاف', videoUrl: getVideoUrl('1-file Shoulders', 'Front Raise (Weighted Plate).mp4') },
+    { id: 'shoulders-13', titleEn: 'Rear Delt Fly Machine', titleAr: 'كتف خلفي (جهاز فراشة عكسي)', muscleGroupEn: 'Shoulders', muscleGroupAr: 'أكتاف', videoUrl: getVideoUrl('1-file Shoulders', 'Rear Delt Fly Machine.mp4') },
+    { id: 'shoulders-14', titleEn: 'Rear Delt Fly (Reverse Pec Deck)', titleAr: 'كتف خلفي (جهاز الرفرفة)', muscleGroupEn: 'Shoulders', muscleGroupAr: 'أكتاف', videoUrl: getVideoUrl('1-file Shoulders', 'Rear Delt Fly (Reverse Pec Deck).mp4') },
 
-    // --- LEGS (أرجل) ---
-    { id: 'legs-1', titleEn: 'Barbell Squat', titleAr: 'سكوات بالبار', muscleGroupEn: 'Legs', muscleGroupAr: 'أرجل', videoUrl: getVideoUrl('Legs', 'legs-1') },
-    { id: 'legs-2', titleEn: 'Leg Press', titleAr: 'دفع بالقدمين', muscleGroupEn: 'Legs', muscleGroupAr: 'أرجل', videoUrl: getVideoUrl('Legs', 'legs-2') },
-    { id: 'legs-3', titleEn: 'Leg Extension', titleAr: 'رفرفة أمامي', muscleGroupEn: 'Legs', muscleGroupAr: 'أرجل', videoUrl: getVideoUrl('Legs', 'legs-3') },
-    { id: 'legs-4', titleEn: 'Lying Leg Curl', titleAr: 'رفرفة خلفي', muscleGroupEn: 'Legs', muscleGroupAr: 'أرجل', videoUrl: getVideoUrl('Legs', 'legs-4') },
+    // ==========================================
+    // 2-file Legs (أرجل)
+    // ==========================================
+    { id: 'legs-1', titleEn: 'Barbell March', titleAr: 'مسير بالبار', muscleGroupEn: 'Legs', muscleGroupAr: 'أرجل', videoUrl: getVideoUrl('2-file Legs', 'Barbell March.mp4') },
+    { id: 'legs-2', titleEn: 'Barbell Hip Thrust', titleAr: 'دفع الورك بالبار', muscleGroupEn: 'Legs', muscleGroupAr: 'أرجل', videoUrl: getVideoUrl('2-file Legs', 'Barbell Hip Thrust.mp4') },
+    { id: 'legs-3', titleEn: 'Barbell Front Squat', titleAr: 'سكوات أمامي بالبار', muscleGroupEn: 'Legs', muscleGroupAr: 'أرجل', videoUrl: getVideoUrl('2-file Legs', 'Barbell Front Squat.mp4') },
+    { id: 'legs-4', titleEn: 'Barbell Bulgarian Split Squat', titleAr: 'سكوات بلغاري بالبار', muscleGroupEn: 'Legs', muscleGroupAr: 'أرجل', videoUrl: getVideoUrl('2-file Legs', 'Barbell Bulgarian Split Squat.mp4') },
+    { id: 'legs-5', titleEn: 'Barbell Back Squat', titleAr: 'سكوات خلفي بالبار', muscleGroupEn: 'Legs', muscleGroupAr: 'أرجل', videoUrl: getVideoUrl('2-file Legs', 'Barbell Back Squat.mp4') },
+    { id: 'legs-6', titleEn: 'Air Bike Sprint', titleAr: 'دراجة هوائية (اير بايك)', muscleGroupEn: 'Cardio', muscleGroupAr: 'كارديو', videoUrl: getVideoUrl('2-file Legs', 'Air Bike Sprint.mp4') },
+    { id: 'legs-7', titleEn: 'Dumbbell Goblet Squat', titleAr: 'سكوات جوبليت بالدمبل', muscleGroupEn: 'Legs', muscleGroupAr: 'أرجل', videoUrl: getVideoUrl('2-file Legs', 'Dumbbell Goblet Squat.mp4') },
+    { id: 'legs-8', titleEn: 'Dumbbell Bulgarian Split Squat', titleAr: 'سكوات بلغاري بالدمبل', muscleGroupEn: 'Legs', muscleGroupAr: 'أرجل', videoUrl: getVideoUrl('2-file Legs', 'Dumbbell Bulgarian Split Squat.mp4') },
+    { id: 'legs-9', titleEn: 'Cyclying', titleAr: 'دراجة ثابتة', muscleGroupEn: 'Cardio', muscleGroupAr: 'كارديو', videoUrl: getVideoUrl('2-file Legs', 'Cyclying.mp4') },
+    { id: 'legs-10', titleEn: 'Cable Leg Kickback', titleAr: 'ركل الساق للخلف بالكابل', muscleGroupEn: 'Legs', muscleGroupAr: 'أرجل', videoUrl: getVideoUrl('2-file Legs', 'Cable Leg Kickback.mp4') },
+    { id: 'legs-11', titleEn: 'Barbell Romanian Deadlift', titleAr: 'رفعة مميتة رومانية بالبار', muscleGroupEn: 'Legs', muscleGroupAr: 'أرجل', videoUrl: getVideoUrl('2-file Legs', 'Barbell Romanian Deadlift.mp4') },
+    { id: 'legs-12', titleEn: 'Barbell Reverse Lunges', titleAr: 'طعن خلفي بالبار', muscleGroupEn: 'Legs', muscleGroupAr: 'أرجل', videoUrl: getVideoUrl('2-file Legs', 'Barbell Reverse Lunges.mp4') },
+    { id: 'legs-13', titleEn: 'KettleBell Hold March', titleAr: 'مسير مع حمل الكتل بيل', muscleGroupEn: 'Legs', muscleGroupAr: 'أرجل', videoUrl: getVideoUrl('2-file Legs', 'KettleBell Hold March.mp4') },
+    { id: 'legs-14', titleEn: 'Hip Abduction Machine', titleAr: 'جهاز فتح الحوض', muscleGroupEn: 'Legs', muscleGroupAr: 'أرجل', videoUrl: getVideoUrl('2-file Legs', 'Hip Abduction Machine.mp4') },
+    { id: 'legs-15', titleEn: 'Hack Squat Machine', titleAr: 'جهاز هاك سكوات', muscleGroupEn: 'Legs', muscleGroupAr: 'أرجل', videoUrl: getVideoUrl('2-file Legs', 'Hack Squat Machine.mp4') },
+    { id: 'legs-16', titleEn: 'Elliptical HIIT Machine', titleAr: 'جهاز الاوبتيراك', muscleGroupEn: 'Cardio', muscleGroupAr: 'كارديو', videoUrl: getVideoUrl('2-file Legs', 'Elliptical HIIT Machine.mp4') },
+    { id: 'legs-17', titleEn: 'Dumbbell Jump Squat', titleAr: 'سكوات قفز بالدمبل', muscleGroupEn: 'Legs', muscleGroupAr: 'أرجل', videoUrl: getVideoUrl('2-file Legs', 'Dumbbell Jump Squat.mp4') },
+    { id: 'legs-18', titleEn: 'Dumbbell Hip Hinge', titleAr: 'انحناء الورك بالدمبل', muscleGroupEn: 'Legs', muscleGroupAr: 'أرجل', videoUrl: getVideoUrl('2-file Legs', 'Dumbbell Hip Hinge.mp4') },
+    { id: 'legs-19', titleEn: 'Rope Wave', titleAr: 'حبال المقاومة (باتل روب)', muscleGroupEn: 'Cardio', muscleGroupAr: 'كارديو', videoUrl: getVideoUrl('2-file Legs', 'Rope Wave.mp4') },
+    { id: 'legs-20', titleEn: 'Lying Leg Curl Machine', titleAr: 'جهاز رفرفة خلفي تمدد', muscleGroupEn: 'Legs', muscleGroupAr: 'أرجل', videoUrl: getVideoUrl('2-file Legs', 'Lying Leg Curl Machine.mp4') },
+    { id: 'legs-21', titleEn: 'Leg Press Machine', titleAr: 'جهاز دفع القدمين', muscleGroupEn: 'Legs', muscleGroupAr: 'أرجل', videoUrl: getVideoUrl('2-file Legs', 'Leg Press Machine.mp4') },
+    { id: 'legs-22', titleEn: 'Leg Extension Machine', titleAr: 'جهاز رفرفة أمامي', muscleGroupEn: 'Legs', muscleGroupAr: 'أرجل', videoUrl: getVideoUrl('2-file Legs', 'Leg Extension Machine.mp4') },
+    { id: 'legs-23', titleEn: 'Kettlebell Swing', titleAr: 'أرجحة الكتل بيل', muscleGroupEn: 'Legs', muscleGroupAr: 'أرجل', videoUrl: getVideoUrl('2-file Legs', 'Kettlebell Swing.mp4') },
+    { id: 'legs-24', titleEn: 'Kettlebell Lift Up', titleAr: 'رفع الكتل بيل', muscleGroupEn: 'Legs', muscleGroupAr: 'أرجل', videoUrl: getVideoUrl('2-file Legs', 'Kettlebell Lift Up.mp4') },
+    { id: 'legs-25', titleEn: 'StepMill Machine Version 1', titleAr: 'جهاز صعود الدرج', muscleGroupEn: 'Cardio', muscleGroupAr: 'كارديو', videoUrl: getVideoUrl('2-file Legs', 'StepMill Machine Version 1.mp4') },
+    { id: 'legs-26', titleEn: 'Step-Ups (Weighted)', titleAr: 'صعود الدرجة (بالأوزان)', muscleGroupEn: 'Legs', muscleGroupAr: 'أرجل', videoUrl: getVideoUrl('2-file Legs', 'Step-Ups (Weighted).mp4') },
+    { id: 'legs-27', titleEn: 'Seated Overhead Press', titleAr: 'انتبه: فيديو ضغط أكتاف', muscleGroupEn: 'Shoulders', muscleGroupAr: 'أكتاف', videoUrl: getVideoUrl('2-file Legs', 'Seated Overhead Press.mp4') },
+    { id: 'legs-28', titleEn: 'Seated Leg Curl Machine', titleAr: 'جهاز رفرفة خلفي جلوس', muscleGroupEn: 'Legs', muscleGroupAr: 'أرجل', videoUrl: getVideoUrl('2-file Legs', 'Seated Leg Curl Machine.mp4') },
+    { id: 'legs-29', titleEn: 'Run on Treadmill', titleAr: 'جري على السير', muscleGroupEn: 'Cardio', muscleGroupAr: 'كارديو', videoUrl: getVideoUrl('2-file Legs', 'Run on Treadmill.mp4') },
+    { id: 'legs-30', titleEn: 'Rowing Machine', titleAr: 'جهاز التجديف', muscleGroupEn: 'Cardio', muscleGroupAr: 'كارديو', videoUrl: getVideoUrl('2-file Legs', 'Rowing Machine.mp4') },
+    { id: 'legs-31', titleEn: 'Walk On Treadmill', titleAr: 'مشي على السير', muscleGroupEn: 'Cardio', muscleGroupAr: 'كارديو', videoUrl: getVideoUrl('2-file Legs', 'Walk On Treadmill.mp4') },
+    { id: 'legs-32', titleEn: 'Tricep Pushdown (Cable - Rope)', titleAr: 'سحب تراي بالحبل', muscleGroupEn: 'Triceps', muscleGroupAr: 'تراي', videoUrl: getVideoUrl('2-file Legs', 'Tricep Pushdown (Cable - Rope).mp4') },
+    { id: 'legs-33', titleEn: 'Stiff-Legged Deadlift Machine', titleAr: 'جهاز الرفعة المميتة', muscleGroupEn: 'Legs', muscleGroupAr: 'أرجل', videoUrl: getVideoUrl('2-file Legs', 'Stiff-Legged Deadlift Machine.mp4') },
+    { id: 'legs-34', titleEn: 'StepMill Machine', titleAr: 'جهاز تسلق الدرج', muscleGroupEn: 'Cardio', muscleGroupAr: 'كارديو', videoUrl: getVideoUrl('2-file Legs', 'StepMill Machine.mp4') },
 
-    // --- SHOULDERS (أكتاف) ---
-    { id: 'shoulders-1', titleEn: 'Overhead Press', titleAr: 'ضغط أكتاف بالبار', muscleGroupEn: 'Shoulders', muscleGroupAr: 'أكتاف', videoUrl: getVideoUrl('Shoulders', 'shoulders-1') },
-    { id: 'shoulders-2', titleEn: 'Dumbbell Lateral Raise', titleAr: 'رفرفة جانبي', muscleGroupEn: 'Shoulders', muscleGroupAr: 'أكتاف', videoUrl: getVideoUrl('Shoulders', 'shoulders-2') },
-    { id: 'shoulders-3', titleEn: 'Dumbbell Front Raise', titleAr: 'رفرفة أمامي بالدمبلز', muscleGroupEn: 'Shoulders', muscleGroupAr: 'أكتاف', videoUrl: getVideoUrl('Shoulders', 'shoulders-3') },
-    { id: 'shoulders-4', titleEn: 'Reverse Pec Deck', titleAr: 'كتف خلفي بالجهاز', muscleGroupEn: 'Shoulders', muscleGroupAr: 'أكتاف', videoUrl: getVideoUrl('Shoulders', 'shoulders-4') },
+    // ==========================================
+    // 3-file Chest (صدر)
+    // ==========================================
+    { id: 'chest-1', titleEn: 'Dumbbell Bench Press (Decline)', titleAr: 'تجميع صدر سفلي بالدمبل', muscleGroupEn: 'Chest', muscleGroupAr: 'صدر', videoUrl: getVideoUrl('3-file Chest', 'Dumbbell Bench Press (Decline).mp4') },
+    { id: 'chest-2', titleEn: 'Dumbbell Bench Press (Bench)', titleAr: 'تجميع صدر مستوي بالدمبل', muscleGroupEn: 'Chest', muscleGroupAr: 'صدر', videoUrl: getVideoUrl('3-file Chest', 'Dumbbell Bench Press (Bench ).mp4') },
+    { id: 'chest-3', titleEn: 'Dips (Chest focus - leaning forward)', titleAr: 'متوازي (ميل للأمام لصدر)', muscleGroupEn: 'Chest', muscleGroupAr: 'صدر', videoUrl: getVideoUrl('3-file Chest', 'Dips (Chest focus - leaning forward).mp4') },
+    { id: 'chest-4', titleEn: 'Cable Crossover (High to Low)', titleAr: 'تفتيح صدر كابل (عالي لأسفل)', muscleGroupEn: 'Chest', muscleGroupAr: 'صدر', videoUrl: getVideoUrl('3-file Chest', 'Cable Crossover (High to Low).mp4') },
+    { id: 'chest-5', titleEn: 'Barbell Incline Bench Press', titleAr: 'ضغط صدر علوي بالبار', muscleGroupEn: 'Chest', muscleGroupAr: 'صدر', videoUrl: getVideoUrl('3-file Chest', 'Barbell Incline Bench Press.mp4') },
+    { id: 'chest-6', titleEn: 'Barbell Bench Press Flat', titleAr: 'ضغط صدر مستوي بالبار', muscleGroupEn: 'Chest', muscleGroupAr: 'صدر', videoUrl: getVideoUrl('3-file Chest', 'Barbell Bench Press Flat.mp4') },
+    { id: 'chest-7', titleEn: 'Svend Press Chest', titleAr: 'ضغط سفيند للصدر', muscleGroupEn: 'Chest', muscleGroupAr: 'صدر', videoUrl: getVideoUrl('3-file Chest', 'Svend Press Chest.mp4') },
+    { id: 'chest-8', titleEn: 'Pec Deck Machine Fly', titleAr: 'جهاز فراشة الصدر', muscleGroupEn: 'Chest', muscleGroupAr: 'صدر', videoUrl: getVideoUrl('3-file Chest', 'Pec Deck Machine Fly.mp4') },
+    { id: 'chest-9', titleEn: 'Dumbbell Flys Incline', titleAr: 'تفتيح صدر علوي بالدمبل', muscleGroupEn: 'Chest', muscleGroupAr: 'صدر', videoUrl: getVideoUrl('3-file Chest', 'Dumbbell Flys Incline.mp4') },
+    { id: 'chest-10', titleEn: 'Dumbbell Flys Flat', titleAr: 'تفتيح صدر مستوي بالدمبل', muscleGroupEn: 'Chest', muscleGroupAr: 'صدر', videoUrl: getVideoUrl('3-file Chest', 'Dumbbell Flys Flat.mp4') },
+    { id: 'chest-11', titleEn: 'Dumbbell Bench Press Incline', titleAr: 'تجميع صدر علوي بالدمبل', muscleGroupEn: 'Chest', muscleGroupAr: 'صدر', videoUrl: getVideoUrl('3-file Chest', 'Dumbbell Bench Press Incline.mp4') },
 
-    // --- BICEPS (باي) ---
-    { id: 'biceps-1', titleEn: 'Barbell Curl', titleAr: 'بار باي', muscleGroupEn: 'Biceps', muscleGroupAr: 'باي', videoUrl: getVideoUrl('Biceps', 'biceps-1') },
-    { id: 'biceps-2', titleEn: 'Dumbbell Hammer Curl', titleAr: 'شاكوش بالدمبلز', muscleGroupEn: 'Biceps', muscleGroupAr: 'باي', videoUrl: getVideoUrl('Biceps', 'biceps-2') },
-    { id: 'biceps-3', titleEn: 'Preacher Curl', titleAr: 'ارتكاز على الجهاز', muscleGroupEn: 'Biceps', muscleGroupAr: 'باي', videoUrl: getVideoUrl('Biceps', 'biceps-3') },
+    // ==========================================
+    // 4-file Back (ظهر)
+    // ==========================================
+    { id: 'back-1', titleEn: 'Deadlift Sumo Barbell', titleAr: 'رفعة مميتة (سومو) بالبار', muscleGroupEn: 'Back', muscleGroupAr: 'ظهر', videoUrl: getVideoUrl('4-file Back', 'Deadlift Sumo Barbell.mp4') },
+    { id: 'back-2', titleEn: 'Deadlift Barbell', titleAr: 'رفعة مميتة بالبار', muscleGroupEn: 'Back', muscleGroupAr: 'ظهر', videoUrl: getVideoUrl('4-file Back', 'Deadlift Barbell .mp4') },
+    { id: 'back-3', titleEn: 'Chin Up Leg Folded', titleAr: 'عقلة عكسي (ثني الأرجل)', muscleGroupEn: 'Back', muscleGroupAr: 'ظهر', videoUrl: getVideoUrl('4-file Back', 'Chin Up Leg Folded.mp4') },
+    { id: 'back-4', titleEn: 'Cable Face Pull', titleAr: 'سحب كابل للوجه', muscleGroupEn: 'Shoulders', muscleGroupAr: 'أكتاف', videoUrl: getVideoUrl('4-file Back', 'Cable Face Pull.mp4') },
+    { id: 'back-5', titleEn: 'Barbell Shrug', titleAr: 'رفرفة كتف علوي (شراغز) بالبار', muscleGroupEn: 'Back', muscleGroupAr: 'ظهر', videoUrl: getVideoUrl('4-file Back', 'Barbell Shrug.mp4') },
+    { id: 'back-6', titleEn: 'Barbell Bent Over Row', titleAr: 'سحب بار انحناء', muscleGroupEn: 'Back', muscleGroupAr: 'ظهر', videoUrl: getVideoUrl('4-file Back', 'Barbell Bent Over Row.mp4') },
+    { id: 'back-7', titleEn: 'Rear Delt Fly With Dumbbell', titleAr: 'كتف خلفي انحناء بالدمبل', muscleGroupEn: 'Shoulders', muscleGroupAr: 'أكتاف', videoUrl: getVideoUrl('4-file Back', 'Rear Delt Fly With Dumbbell.mp4') },
+    { id: 'back-8', titleEn: 'Pull Up', titleAr: 'عقلة (سحب أمامي)', muscleGroupEn: 'Back', muscleGroupAr: 'ظهر', videoUrl: getVideoUrl('4-file Back', 'Pull Up.mp4') },
+    { id: 'back-9', titleEn: 'Lat Pull Down Wide Grip', titleAr: 'سحب ظهر واسع جهاز', muscleGroupEn: 'Back', muscleGroupAr: 'ظهر', videoUrl: getVideoUrl('4-file Back', 'Lat Pull Down Wide Grip.mp4') },
+    { id: 'back-10', titleEn: 'Hyperextensions (Back Extensions)', titleAr: 'جهاز قطنية (ظهر سفلي)', muscleGroupEn: 'Back', muscleGroupAr: 'ظهر', videoUrl: getVideoUrl('4-file Back', 'Hyperextensions (Back Extensions).mp4') },
+    { id: 'back-11', titleEn: 'Good Morning Barbell', titleAr: 'تمرين صباح الخير بالبار (قطنية)', muscleGroupEn: 'Back', muscleGroupAr: 'ظهر', videoUrl: getVideoUrl('4-file Back', 'Good Morning Barbell.mp4') },
+    { id: 'back-12', titleEn: 'Dumbbell Shrug', titleAr: 'ترابيس بالدمبل', muscleGroupEn: 'Back', muscleGroupAr: 'ظهر', videoUrl: getVideoUrl('4-file Back', 'Dumbbell Shrug.mp4') },
+    { id: 'back-13', titleEn: 'T-Bar Row', titleAr: 'سحب تي بار', muscleGroupEn: 'Back', muscleGroupAr: 'ظهر', videoUrl: getVideoUrl('4-file Back', 'T-Bar Row.mp4') },
+    { id: 'back-14', titleEn: 'Seated Chest Supported Machine', titleAr: 'سحب ظهر بجهاز الدعم', muscleGroupEn: 'Back', muscleGroupAr: 'ظهر', videoUrl: getVideoUrl('4-file Back', 'Seated Chest Supported Machine.mp4') },
 
-    // --- TRICEPS (تراي) ---
-    { id: 'triceps-1', titleEn: 'Triceps Pushdown', titleAr: 'سحب تراي بالكابل', muscleGroupEn: 'Triceps', muscleGroupAr: 'تراي', videoUrl: getVideoUrl('Triceps', 'triceps-1') },
-    { id: 'triceps-2', titleEn: 'Overhead Extension', titleAr: 'تراي خلف الرأس', muscleGroupEn: 'Triceps', muscleGroupAr: 'تراي', videoUrl: getVideoUrl('Triceps', 'triceps-2') },
-    { id: 'triceps-3', titleEn: 'Dumbbell Kickback', titleAr: 'ركل للخلف بالدمبل', muscleGroupEn: 'Triceps', muscleGroupAr: 'تراي', videoUrl: getVideoUrl('Triceps', 'triceps-3') },
+    // ==========================================
+    // 5-file Arms (ذراع - تراي وباي)
+    // ==========================================
+    { id: 'arms-1', titleEn: 'Close-Grip Bench Press Barbell', titleAr: 'ضغط صدر ضيق (للتراي)', muscleGroupEn: 'Triceps', muscleGroupAr: 'تراي', videoUrl: getVideoUrl('5-file Arms', 'Close-Grip Bench Press Barbell.mp4') },
+    { id: 'arms-2', titleEn: 'Cable Wood Chop', titleAr: 'كابل تقطيع لخارجي (خواصر)', muscleGroupEn: 'Abs', muscleGroupAr: 'بطن', videoUrl: getVideoUrl('5-file Arms', 'Cable Wood Chop.mp4') },
+    { id: 'arms-3', titleEn: 'Cable Curl (Straight Bar)', titleAr: 'باي كابل (بار مستقيم)', muscleGroupEn: 'Biceps', muscleGroupAr: 'باي', videoUrl: getVideoUrl('5-file Arms', 'Cable Curl (Straight Bar).mp4') },
+    { id: 'arms-4', titleEn: 'Barbell Hold', titleAr: 'ثبات تحمل بالبار', muscleGroupEn: 'Forearms', muscleGroupAr: 'سواعد', videoUrl: getVideoUrl('5-file Arms', 'Barbell Hold.mp4') },
+    { id: 'arms-5', titleEn: 'Barbell Curl Standard', titleAr: 'باي بالبار (وقوف)', muscleGroupEn: 'Biceps', muscleGroupAr: 'باي', videoUrl: getVideoUrl('5-file Arms', 'Barbell Curl Standard.mp4') },
+    { id: 'arms-6', titleEn: 'Band Pushups', titleAr: 'ضغط بمقاومة الشريط (أول)', muscleGroupEn: 'Chest', muscleGroupAr: 'صدر', videoUrl: getVideoUrl('5-file Arms', 'Band Pushups.mp4') },
+    { id: 'arms-7', titleEn: 'Band Pushups ', titleAr: 'ضغط بمقاومة الشريط (ثاني)', muscleGroupEn: 'Chest', muscleGroupAr: 'صدر', videoUrl: getVideoUrl('5-file Arms', 'Band Pushups .mp4') },
+    { id: 'arms-8', titleEn: 'Dumbbell Spider Curl', titleAr: 'باي عنكبوت بالدمبل', muscleGroupEn: 'Biceps', muscleGroupAr: 'باي', videoUrl: getVideoUrl('5-file Arms', 'Dumbbell Spider Curl.mp4') },
+    { id: 'arms-9', titleEn: 'Dumbbell Overhead Press Version 1', titleAr: 'انتبه: ضغط أكتاف بالدمبل', muscleGroupEn: 'Shoulders', muscleGroupAr: 'أكتاف', videoUrl: getVideoUrl('5-file Arms', 'Dumbbell Overhead Press Version 1.mp4') },
+    { id: 'arms-10', titleEn: 'Dumbbell Hammer Curl', titleAr: 'باي مطرقة بالدمبل', muscleGroupEn: 'Biceps', muscleGroupAr: 'باي', videoUrl: getVideoUrl('5-file Arms', 'Dumbbell Hammer Curl.mp4') },
+    { id: 'arms-11', titleEn: 'Dumbbell Curl', titleAr: 'باي تبادل بالدمبل', muscleGroupEn: 'Biceps', muscleGroupAr: 'باي', videoUrl: getVideoUrl('5-file Arms', 'Dumbbell Curl.mp4') },
+    { id: 'arms-12', titleEn: 'Concentration Curl (Seated)', titleAr: 'باي ارتكاز دمبل جلوس', muscleGroupEn: 'Biceps', muscleGroupAr: 'باي', videoUrl: getVideoUrl('5-file Arms', 'Concentration Curl (Seated).mp4') },
+    { id: 'arms-13', titleEn: 'Tricep Pushdown (Cable - Straight Bar)', titleAr: 'سحب تراي كابل (بار مستقيم)', muscleGroupEn: 'Triceps', muscleGroupAr: 'تراي', videoUrl: getVideoUrl('5-file Arms', 'Tricep Pushdown (Cable - Straight Bar).mp4') },
+    { id: 'arms-14', titleEn: 'Skull Crushers (EZ Bar)', titleAr: 'تراي خلف الرأس بالبار الزجزاج', muscleGroupEn: 'Triceps', muscleGroupAr: 'تراي', videoUrl: getVideoUrl('5-file Arms', 'Skull Crushers (EZ Bar).mp4') },
+    { id: 'arms-15', titleEn: 'Single Arm Pull Rope', titleAr: 'سحب ظهر يد واحدة حبل', muscleGroupEn: 'Back', muscleGroupAr: 'ظهر', videoUrl: getVideoUrl('5-file Arms', 'Single Arm Pull Rope.mp4') },
+    { id: 'arms-16', titleEn: 'Preacher Curl Ez Bar', titleAr: 'باي ارتكاز بالبار الزجزاج', muscleGroupEn: 'Biceps', muscleGroupAr: 'باي', videoUrl: getVideoUrl('5-file Arms', 'Preacher Curl Ez Bar.mp4') },
+    { id: 'arms-17', titleEn: 'Overhead Tricep Extension (Dumbbell)', titleAr: 'تراي خلف الرأس بالدمبل', muscleGroupEn: 'Triceps', muscleGroupAr: 'تراي', videoUrl: getVideoUrl('5-file Arms', 'Overhead Tricep Extension (Dumbbell).mp4') },
+    { id: 'arms-18', titleEn: 'Landmine Press (Single Arm)', titleAr: 'ضغط لاندمين بيد واحدة', muscleGroupEn: 'Shoulders', muscleGroupAr: 'أكتاف', videoUrl: getVideoUrl('5-file Arms', 'Landmine Press (Single Arm).mp4') },
+    { id: 'arms-19', titleEn: 'Wide Dumbbell Push up', titleAr: 'ضغط واسع مستندا على دمبل', muscleGroupEn: 'Chest', muscleGroupAr: 'صدر', videoUrl: getVideoUrl('5-file Arms', 'Wide Dumbbell Push up.mp4') },
+    { id: 'arms-20', titleEn: 'Weighted Push up', titleAr: 'ضغط بوزن إضافي', muscleGroupEn: 'Chest', muscleGroupAr: 'صدر', videoUrl: getVideoUrl('5-file Arms', 'Weighted Push up.mp4') },
 
-    // --- FOREARMS (سواعد) ---
-    { id: 'forearms-1', titleEn: 'Wrist Curl', titleAr: 'طي الريست للداخل', muscleGroupEn: 'Forearms', muscleGroupAr: 'سواعد', videoUrl: getVideoUrl('Forearms', 'forearms-1') },
-    { id: 'forearms-2', titleEn: 'Reverse Wrist Curl', titleAr: 'طي الريست للخارج', muscleGroupEn: 'Forearms', muscleGroupAr: 'سواعد', videoUrl: getVideoUrl('Forearms', 'forearms-2') },
+    // ==========================================
+    // 6-file Abs (بطن)
+    // ==========================================
+    { id: 'abs-1', titleEn: 'Plank Hold Weighted', titleAr: 'ثبات بلانك بالوزن', muscleGroupEn: 'Abs', muscleGroupAr: 'بطن', videoUrl: getVideoUrl('6-file Abs', 'Plank Hold Weighted.mp4') },
+    { id: 'abs-2', titleEn: 'Kettlebell Sit-Ups To Press', titleAr: 'تمارين بطن مع رفع الكتل بيل', muscleGroupEn: 'Abs', muscleGroupAr: 'بطن', videoUrl: getVideoUrl('6-file Abs', 'Kettlebell Sit-Ups To Press.mp4') },
+    { id: 'abs-3', titleEn: 'Hanging Leg Raise', titleAr: 'رفع الأرجل (تعلق)', muscleGroupEn: 'Abs', muscleGroupAr: 'بطن', videoUrl: getVideoUrl('6-file Abs', 'Hanging Leg Raise.mp4') },
+    { id: 'abs-4', titleEn: 'Captain’s Chair Leg Raises', titleAr: 'رفع أرجل بجهاز العقلة', muscleGroupEn: 'Abs', muscleGroupAr: 'بطن', videoUrl: getVideoUrl('6-file Abs', 'Captain’s Chair Leg Raises.mp4') },
+    { id: 'abs-5', titleEn: 'Cable Crunch (Kneeling)', titleAr: 'كرانش بطن بالكابل', muscleGroupEn: 'Abs', muscleGroupAr: 'بطن', videoUrl: getVideoUrl('6-file Abs', 'Cable Crunch (Kneeling).mp4') },
+    { id: 'abs-6', titleEn: 'Ab Roll Workout', titleAr: 'تمرين عجلة البطن', muscleGroupEn: 'Abs', muscleGroupAr: 'بطن', videoUrl: getVideoUrl('6-file Abs', 'Ab Roll Workout.mp4') },
+    { id: 'abs-7', titleEn: 'Russian Twist Weighted', titleAr: 'تويست روسي بالوزن', muscleGroupEn: 'Abs', muscleGroupAr: 'بطن', videoUrl: getVideoUrl('6-file Abs', 'Russian Twist Weighted.mp4') },
 
-    // --- CALVES (بطات) ---
-    { id: 'calves-1', titleEn: 'Standing Calf Raise', titleAr: 'سمانة وقوف', muscleGroupEn: 'Calves', muscleGroupAr: 'بطات', videoUrl: getVideoUrl('Calves', 'calves-1') },
-    { id: 'calves-2', titleEn: 'Seated Calf Raise', titleAr: 'سمانة جلوس', muscleGroupEn: 'Calves', muscleGroupAr: 'بطات', videoUrl: getVideoUrl('Calves', 'calves-2') },
 ];
