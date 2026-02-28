@@ -97,7 +97,14 @@
           "iCloudContainerEnvironment": "Production"
         }
       ],
-      "expo-font"
+      "expo-font",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "The app accesses your photos to let you share them with your friends.",
+          "cameraPermission": "The app accessing your camera lets you take photos and record videos."
+        }
+      ]
     ],
     "owner": "khalifamuae"
   }
