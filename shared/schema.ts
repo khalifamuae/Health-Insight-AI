@@ -1,5 +1,5 @@
 import { sql, relations } from "drizzle-orm";
-import { pgTable, text, varchar, integer, timestamp, boolean, real, pgEnum } from "drizzle-orm/pg-core";
+import { pgTable, text, varchar, integer, timestamp, boolean, real, pgEnum, jsonb } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -12,7 +12,7 @@ export const testStatusEnum = pgEnum("test_status", ["normal", "low", "high"]);
 export const subscriptionPlanEnum = pgEnum("subscription_plan", ["free", "basic", "premium", "pro"]);
 export const testCategoryEnum = pgEnum("test_category", [
   "vitamins",
-  "minerals", 
+  "minerals",
   "hormones",
   "organ_functions",
   "lipids",
@@ -151,10 +151,21 @@ export const savedDietPlans = pgTable("saved_diet_plans", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+// Shared workout routines
+export const sharedWorkouts = pgTable("shared_workouts", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  shareCode: varchar("share_code", { length: 6 }).notNull().unique(),
+  authorId: varchar("author_id").notNull(),
+  groupName: text("group_name").notNull(),
+  exercises: jsonb("exercises").notNull(),
+  downloads: integer("downloads").default(0),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 // Knowledge domains
 export const knowledgeDomainEnum = pgEnum("knowledge_domain", [
   "nutrition",
-  "aerobic_training", 
+  "aerobic_training",
   "resistance_training",
   "vitamins_minerals",
   "hormones"
@@ -227,6 +238,7 @@ export const userProfilesRelations = relations(userProfiles, ({ many }) => ({
   reminders: many(reminders),
   uploadedPdfs: many(uploadedPdfs),
   savedDietPlans: many(savedDietPlans),
+  sharedWorkouts: many(sharedWorkouts),
 }));
 
 export const testDefinitionsRelations = relations(testDefinitions, ({ many }) => ({
@@ -270,6 +282,13 @@ export const savedDietPlansRelations = relations(savedDietPlans, ({ one }) => ({
   }),
 }));
 
+export const sharedWorkoutsRelations = relations(sharedWorkouts, ({ one }) => ({
+  author: one(userProfiles, {
+    fields: [sharedWorkouts.authorId],
+    references: [userProfiles.id],
+  }),
+}));
+
 export const insertKnowledgeBaseSchema = createInsertSchema(knowledgeBase).omit({
   id: true,
   createdAt: true,
@@ -300,6 +319,12 @@ export const insertUploadedPdfSchema = createInsertSchema(uploadedPdfs).omit({
 
 export const insertSavedDietPlanSchema = createInsertSchema(savedDietPlans).omit({
   id: true,
+  createdAt: true,
+});
+
+export const insertSharedWorkoutSchema = createInsertSchema(sharedWorkouts).omit({
+  id: true,
+  downloads: true,
   createdAt: true,
 });
 
@@ -371,3 +396,6 @@ export type Referral = typeof referrals.$inferSelect;
 export type AffiliateCommission = typeof affiliateCommissions.$inferSelect;
 export type WithdrawalRequest = typeof withdrawalRequests.$inferSelect;
 export type WithdrawalStatus = "pending" | "approved" | "rejected" | "paid";
+
+export type SharedWorkout = typeof sharedWorkouts.$inferSelect;
+export type InsertSharedWorkout = z.infer<typeof insertSharedWorkoutSchema>;

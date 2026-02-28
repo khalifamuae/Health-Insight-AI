@@ -11,7 +11,7 @@ import { generateDietPlan } from "./dietPlanGenerator";
 import { getPrivacyPolicyHTML, getPrivacyPolicyArabicHTML, getTermsOfServiceHTML, getTermsOfServiceArabicHTML, getSupportPageHTML, getAccountDeletionHTML } from "./legalPages";
 import { desc, eq, and, gte, sql } from "drizzle-orm";
 import { db } from "./db";
-import { userProfiles, testDefinitions, type TestDefinition } from "@shared/schema";
+import { userProfiles, testDefinitions, type TestDefinition, sharedWorkouts } from "@shared/schema";
 import crypto from "crypto";
 import { emailVerificationCodes } from "@shared/schema";
 import { getResendClient } from "./resendClient";
@@ -1626,6 +1626,64 @@ export async function registerRoutes(
   app.get("/api/admin/withdrawals", isAuthenticated, async (req: any, res: Response) => { ... });
   app.patch("/api/admin/withdrawals/:id", isAuthenticated, async (req: any, res: Response) => { ... });
   */
+
+  // ===== Shared Workouts Endpoints =====
+  app.post("/api/workouts/share", isAuthenticated, async (req: any, res: Response) => {
+    try {
+      const { groupName, exercises } = req.body;
+      const userId = req.user.id;
+
+      if (!groupName || !exercises || !Array.isArray(exercises) || exercises.length === 0) {
+        return res.status(400).json({ error: "Invalid workout data provided." });
+      }
+
+      // Generate a unique 6-character uppercase alphanumeric code
+      const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+      let shareCode = '';
+      for (let i = 0; i < 6; i++) {
+        shareCode += characters.charAt(Math.floor(Math.random() * characters.length));
+      }
+
+      await db.insert(sharedWorkouts).values({
+        shareCode,
+        authorId: userId,
+        groupName,
+        exercises: JSON.stringify(exercises),
+      });
+
+      res.status(201).json({ shareCode });
+    } catch (error) {
+      console.error("Error sharing workout:", error);
+      res.status(500).json({ error: "Failed to share workout." });
+    }
+  });
+
+  app.get("/api/workouts/shared/:code", isAuthenticated, async (req: any, res: Response) => {
+    try {
+      const code = req.params.code.toUpperCase();
+      const sharedWorkout = await db.query.sharedWorkouts.findFirst({
+        where: eq(sharedWorkouts.shareCode, code),
+      });
+
+      if (!sharedWorkout) {
+        return res.status(404).json({ error: "Workout code not found." });
+      }
+
+      // Increment download counter
+      await db.update(sharedWorkouts)
+        .set({ downloads: sql`${sharedWorkouts.downloads} + 1` })
+        .where(eq(sharedWorkouts.shareCode, code));
+
+      res.json({
+        groupName: sharedWorkout.groupName,
+        exercises: typeof sharedWorkout.exercises === 'string' ? JSON.parse(sharedWorkout.exercises) : sharedWorkout.exercises,
+        downloads: (sharedWorkout.downloads || 0) + 1,
+      });
+    } catch (error) {
+      console.error("Error fetching shared workout:", error);
+      res.status(500).json({ error: "Failed to fetch shared workout." });
+    }
+  });
 
   app.get("/api/health", async (_req: Request, res: Response) => {
     try {

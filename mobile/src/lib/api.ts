@@ -216,6 +216,14 @@ export const api = {
         type: 'application/pdf',
       });
     }
+  },
+
+  async shareWorkout(groupName: string, exercises: any[]): Promise<{ shareCode: string }> {
+    return this.post('/api/workouts/share', { groupName, exercises });
+  },
+
+  async importSharedWorkout(code: string): Promise<{ groupName: string, exercises: any[], downloads: number }> {
+    return this.get(`/api/workouts/shared/${code}`);
   }
 };
 

@@ -112,5 +112,39 @@ export const WorkoutStore = {
             return g;
         });
         await this.saveGroups(updatedGroups);
+    },
+
+    // Share a group to the cloud and get a 6-character code
+    async shareGroup(groupId: string): Promise<string> {
+        const groups = await this.getGroups();
+        const group = groups.find(g => g.id === groupId);
+        if (!group) throw new Error("Workout group not found");
+
+        // Dynamically import api to avoid circular dependencies
+        const { api } = require('./api');
+        const res = await api.shareWorkout(group.name, group.exercises);
+        return res.shareCode;
+    },
+
+    // Import a group from a 6-character code
+    async importGroup(code: string): Promise<WorkoutGroup> {
+        const { api } = require('./api');
+        const res = await api.importSharedWorkout(code);
+
+        const groups = await this.getGroups();
+
+        // Generate new unique IDs for the imported group and its exercises
+        const newGroup: WorkoutGroup = {
+            id: Date.now().toString(),
+            name: `${res.groupName} (Imported)`,
+            exercises: res.exercises.map((ex: any, index: number) => ({
+                ...ex,
+                id: Date.now().toString() + index.toString() + Math.random().toString(36).substr(2, 5),
+                dateAdded: new Date().toISOString()
+            })),
+        };
+
+        await this.saveGroups([...groups, newGroup]);
+        return newGroup;
     }
 };

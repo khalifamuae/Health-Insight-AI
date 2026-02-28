@@ -1,5 +1,5 @@
 import React, { useCallback, useState } from 'react';
-import { Alert, StyleSheet, Text, TouchableOpacity, View, ScrollView } from 'react-native';
+import { Alert, StyleSheet, Text, TouchableOpacity, View, ScrollView, TextInput, Share, ActivityIndicator } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
@@ -139,6 +139,9 @@ export default function WorkoutPlansScreen() {
   const isArabic = isArabicLanguage();
   const [groups, setGroups] = useState<WorkoutGroup[]>([]);
   const [expandedGroupIds, setExpandedGroupIds] = useState<string[]>([]);
+  const [importCode, setImportCode] = useState('');
+  const [isImporting, setIsImporting] = useState(false);
+  const [isSharing, setIsSharing] = useState<string | null>(null);
 
   const loadGroups = useCallback(async () => {
     const data = await WorkoutStore.getGroups();
@@ -184,9 +187,71 @@ export default function WorkoutPlansScreen() {
     loadGroups();
   };
 
+  const handleImport = async () => {
+    if (!importCode.trim()) return;
+    setIsImporting(true);
+    try {
+      await WorkoutStore.importGroup(importCode.trim());
+      Alert.alert(
+        isArabic ? "تم الاستيراد بنجاح" : "Import Successful",
+        isArabic ? "تم إضافة الجدول إلى خطتك." : "The workout plan has been added."
+      );
+      setImportCode('');
+      loadGroups();
+    } catch (error: any) {
+      Alert.alert(
+        isArabic ? "خطأ في الاستيراد" : "Import Error",
+        error.message || (isArabic ? "كود غير صالح أو حدث خطأ" : "Invalid code or error occurred")
+      );
+    } finally {
+      setIsImporting(false);
+    }
+  };
+
+  const handleShareGroup = async (groupId: string, groupName: string) => {
+    setIsSharing(groupId);
+    try {
+      const code = await WorkoutStore.shareGroup(groupId);
+      const message = isArabic
+        ? `🔥 قمت بمشاركة جدول تماريني (${groupName}) على تطبيق BioTrack AI!\n\nلتحميل الجدول فوراً، افتح التطبيق وأدخل هذا الكود: ${code}`
+        : `🔥 I've shared my custom workout plan (${groupName}) on BioTrack AI!\n\nTo download it, open the app and enter this code: ${code}`;
+
+      await Share.share({ message });
+    } catch (error: any) {
+      Alert.alert("Error", error.message || "Failed to share workout plan");
+    } finally {
+      setIsSharing(null);
+    }
+  };
 
   return (
     <ScrollView style={[styles.container, { backgroundColor: colors.background }]} contentContainerStyle={styles.content}>
+      <View style={[styles.importContainer, { backgroundColor: colors.card, borderColor: colors.border }]}>
+        <Text style={[styles.importTitle, { color: colors.text, textAlign: isArabic ? 'right' : 'left' }]}>
+          {isArabic ? "📥 استيراد جدول تمارين" : "📥 Import Workout Plan"}
+        </Text>
+        <View style={[styles.importRow, { flexDirection: isArabic ? 'row-reverse' : 'row' }]}>
+          <TextInput
+            style={[styles.importInput, { color: colors.text, borderColor: colors.border, backgroundColor: colors.background, textAlign: isArabic ? 'right' : 'left', marginLeft: isArabic ? 10 : 0, marginRight: isArabic ? 0 : 10 }]}
+            placeholder={isArabic ? "أدخل الكود هنا (مثال: X9K2)" : "Enter code here (e.g. X9K2)"}
+            placeholderTextColor={colors.mutedText}
+            value={importCode}
+            onChangeText={setImportCode}
+            autoCapitalize="characters"
+            maxLength={6}
+          />
+          <TouchableOpacity
+            style={[styles.importBtn, { backgroundColor: colors.primary, opacity: isImporting ? 0.7 : 1 }]}
+            onPress={handleImport}
+            disabled={isImporting || !importCode.trim()}
+          >
+            <Text style={styles.importBtnText}>
+              {isImporting ? (isArabic ? 'جاري...' : 'Wait...') : (isArabic ? 'حمل' : 'Import')}
+            </Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+
       {groups.length === 0 ? (
         <View style={[styles.emptyCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
           <Ionicons name="barbell-outline" size={42} color={colors.mutedText} />
@@ -214,9 +279,18 @@ export default function WorkoutPlansScreen() {
                   />
                   <Text style={[styles.groupTitle, { color: colors.text }]}>{group.name}</Text>
                 </View>
-                <TouchableOpacity onPress={() => handleDeleteGroup(group.id)} style={{ padding: 4 }}>
-                  <Ionicons name="trash" size={20} color="#ef4444" />
-                </TouchableOpacity>
+                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                  <TouchableOpacity onPress={() => handleShareGroup(group.id, group.name)} style={{ padding: 4, marginRight: 12 }}>
+                    {isSharing === group.id ? (
+                      <ActivityIndicator size="small" color={colors.primary} />
+                    ) : (
+                      <Ionicons name="share-social-outline" size={20} color={colors.primary} />
+                    )}
+                  </TouchableOpacity>
+                  <TouchableOpacity onPress={() => handleDeleteGroup(group.id)} style={{ padding: 4 }}>
+                    <Ionicons name="trash" size={20} color="#ef4444" />
+                  </TouchableOpacity>
+                </View>
               </TouchableOpacity>
 
               {isExpanded && (
@@ -279,6 +353,42 @@ const styles = StyleSheet.create({
   groupTitle: {
     fontSize: 20,
     fontWeight: 'bold',
+  },
+
+  importContainer: {
+    padding: 16,
+    borderWidth: 1,
+    borderRadius: 12,
+    marginBottom: 20,
+  },
+  importTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginBottom: 10,
+  },
+  importRow: {
+    alignItems: 'center',
+    width: '100%',
+  },
+  importInput: {
+    flex: 1,
+    height: 44,
+    borderWidth: 1,
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    fontSize: 16,
+  },
+  importBtn: {
+    height: 44,
+    paddingHorizontal: 20,
+    borderRadius: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  importBtnText: {
+    color: '#fff',
+    fontWeight: 'bold',
+    fontSize: 14,
   },
 
   exerciseCard: {
