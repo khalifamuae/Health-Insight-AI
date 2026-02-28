@@ -16,7 +16,7 @@ import crypto from "crypto";
 import { emailVerificationCodes } from "@shared/schema";
 import { getResendClient } from "./resendClient";
 
-const upload = multer({ 
+const upload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 10 * 1024 * 1024 }, // 10MB limit
   fileFilter: (_req, file, cb) => {
@@ -29,11 +29,11 @@ const upload = multer({
 
 const uploadReport = multer({
   storage: multer.memoryStorage(),
-  limits: { fileSize: 10 * 1024 * 1024 },
+  limits: { fileSize: 20 * 1024 * 1024 }, // Allowed 20MB for images
   fileFilter: (_req, file, cb) => {
     const isPdfMime = file.mimetype === "application/pdf";
     const isPdfName = file.originalname.toLowerCase().endsWith(".pdf");
-    const isImageMime = file.mimetype.startsWith("image/");
+    const isImageMime = file.mimetype.toLowerCase().startsWith("image/");
     if ((isPdfMime && isPdfName) || isImageMime) return cb(null, true);
     cb(new Error("Only PDF or image files are allowed"));
   }
@@ -170,16 +170,16 @@ function rateLimit(windowMs: number, maxRequests: number) {
     const key = `${req.ip}:${req.path}`;
     const now = Date.now();
     const entry = rateLimitStore.get(key);
-    
+
     if (!entry || now > entry.resetAt) {
       rateLimitStore.set(key, { count: 1, resetAt: now + windowMs });
       return next();
     }
-    
+
     if (entry.count >= maxRequests) {
       return res.status(429).json({ error: "Too many requests. Please try again later." });
     }
-    
+
     entry.count++;
     return next();
   };
@@ -230,8 +230,8 @@ export async function registerRoutes(
       const profile = await storage.getUserProfile(userId);
       if (!profile) return res.status(404).json({ error: 'User not found' });
       const user = {
-        claims: { sub: userId, email: profile.email || "demo@biotrack.ai", first_name: profile.firstName || "", last_name: profile.lastName || "", exp: Math.floor(Date.now()/1000) + 86400 },
-        expires_at: Math.floor(Date.now()/1000) + 86400,
+        claims: { sub: userId, email: profile.email || "demo@biotrack.ai", first_name: profile.firstName || "", last_name: profile.lastName || "", exp: Math.floor(Date.now() / 1000) + 86400 },
+        expires_at: Math.floor(Date.now() / 1000) + 86400,
         access_token: "dev_token",
         refresh_token: "dev_refresh"
       };
@@ -326,8 +326,11 @@ export async function registerRoutes(
       if (!emailRegex.test(email)) {
         return res.status(400).json({ error: "Invalid email format" });
       }
-      if (password.length < 6) {
-        return res.status(400).json({ error: "Password must be at least 6 characters" });
+      if (password.length < 8) {
+        return res.status(400).json({ error: "Password must be at least 8 characters" });
+      }
+      if (!/[a-zA-Z]/.test(password) || !/[0-9]/.test(password)) {
+        return res.status(400).json({ error: "Password must contain at least one letter and one number" });
       }
       if (!firstName || !lastName) {
         return res.status(400).json({ error: "First name and last name are required" });
@@ -375,8 +378,8 @@ export async function registerRoutes(
       await db.delete(emailVerificationCodes).where(eq(emailVerificationCodes.email, email));
 
       const user = {
-        claims: { sub: userId, email, first_name: firstName.trim(), last_name: lastName.trim(), exp: Math.floor(Date.now()/1000) + 86400 * 30 },
-        expires_at: Math.floor(Date.now()/1000) + 86400 * 30,
+        claims: { sub: userId, email, first_name: firstName.trim(), last_name: lastName.trim(), exp: Math.floor(Date.now() / 1000) + 86400 * 30 },
+        expires_at: Math.floor(Date.now() / 1000) + 86400 * 30,
         access_token: crypto.randomUUID(),
         refresh_token: crypto.randomUUID()
       };
@@ -384,8 +387,8 @@ export async function registerRoutes(
       req.login(user, (err: any) => {
         if (err) return res.status(500).json({ error: "Registration failed" });
         const apiToken = createApiToken(userId);
-        res.json({ 
-          success: true, 
+        res.json({
+          success: true,
           token: apiToken,
           user: { id: userId, email, firstName: firstName.trim(), lastName: lastName.trim(), subscription: profile.subscriptionPlan }
         });
@@ -416,8 +419,8 @@ export async function registerRoutes(
       }
 
       const user = {
-        claims: { sub: profile.id, email: profile.email, first_name: profile.firstName || "", last_name: profile.lastName || "", exp: Math.floor(Date.now()/1000) + 86400 * 30 },
-        expires_at: Math.floor(Date.now()/1000) + 86400 * 30,
+        claims: { sub: profile.id, email: profile.email, first_name: profile.firstName || "", last_name: profile.lastName || "", exp: Math.floor(Date.now() / 1000) + 86400 * 30 },
+        expires_at: Math.floor(Date.now() / 1000) + 86400 * 30,
         access_token: crypto.randomUUID(),
         refresh_token: crypto.randomUUID()
       };
@@ -470,7 +473,7 @@ export async function registerRoutes(
     try {
       const userId = req.user.claims.sub;
       let profile = await storage.getUserProfile(userId);
-      
+
       if (!profile) {
         const trialEnd = new Date();
         trialEnd.setDate(trialEnd.getDate() + 15);
@@ -484,7 +487,7 @@ export async function registerRoutes(
           trialEndsAt: trialEnd,
         });
       }
-      
+
       res.json(profile);
     } catch (error) {
       console.error("Error fetching profile:", error);
@@ -496,7 +499,21 @@ export async function registerRoutes(
     try {
       const userId = req.user.claims.sub;
       const { phone, age, weight, height, gender, fitnessGoal, activityLevel, mealPreference, hasAllergies, allergies, proteinPreference, proteinPreferences, carbPreferences, bloodType, firstName, lastName, profileImagePath } = req.body;
-      
+
+      // Input validation
+      if (age !== undefined && age !== null && (typeof age !== 'number' || isNaN(age) || age < 1 || age > 150)) {
+        return res.status(400).json({ error: "Invalid age" });
+      }
+      if (weight !== undefined && weight !== null && (typeof weight !== 'number' || isNaN(weight) || weight < 1 || weight > 500)) {
+        return res.status(400).json({ error: "Invalid weight" });
+      }
+      if (height !== undefined && height !== null && (typeof height !== 'number' || isNaN(height) || height < 30 || height > 300)) {
+        return res.status(400).json({ error: "Invalid height" });
+      }
+      if (gender !== undefined && gender !== null && !['male', 'female'].includes(gender)) {
+        return res.status(400).json({ error: "Invalid gender" });
+      }
+
       const profile = await storage.upsertUserProfile({
         id: userId,
         firstName,
@@ -517,7 +534,7 @@ export async function registerRoutes(
         carbPreferences,
         bloodType,
       });
-      
+
       res.json(profile);
     } catch (error) {
       console.error("Error updating profile:", error);
@@ -530,19 +547,19 @@ export async function registerRoutes(
     const profile = await storage.getUserProfile(userId);
     const rawPlan = profile?.subscriptionPlan || 'free';
     const plan = (rawPlan === 'basic' || rawPlan === 'premium') ? 'pro' : rawPlan;
-    
+
     if (plan !== 'free') {
       const expiresAt = profile?.subscriptionExpiresAt;
       if (!expiresAt || new Date(expiresAt) > new Date()) {
         return { hasAccess: true };
       }
     }
-    
+
     const trialEndsAt = profile?.trialEndsAt;
     if (trialEndsAt && new Date(trialEndsAt) > new Date()) {
       return { hasAccess: true };
     }
-    
+
     return {
       hasAccess: false,
       reason: "Your free trial has expired. Please subscribe to view your data.",
@@ -591,13 +608,13 @@ export async function registerRoutes(
       if (!access.hasAccess) {
         return res.status(403).json({ error: "SUBSCRIPTION_REQUIRED", message: access.reason, messageAr: access.reasonAr });
       }
-      
+
       // Get all test definitions (ordered by importance and category)
       const definitions = await storage.getTestDefinitions();
-      
+
       // Get user's test results
       const userTests = await storage.getTestResultsByUser(userId);
-      
+
       // Create map of latest user test results by testId
       const userTestMap = new Map<string, any>();
       for (const test of userTests) {
@@ -606,7 +623,7 @@ export async function registerRoutes(
           userTestMap.set(test.testId, test);
         }
       }
-      
+
       // Merge all definitions with user values
       const allTests = definitions.map((def, index) => {
         const userTest = userTestMap.get(def.id);
@@ -633,7 +650,7 @@ export async function registerRoutes(
           order: index,
         };
       });
-      
+
       res.json(allTests);
     } catch (error) {
       console.error("Error fetching all tests:", error);
@@ -679,11 +696,11 @@ export async function registerRoutes(
       const tests = await storage.getLatestTestResultsByUser(userId);
       const userReminders = await storage.getRemindersByUser(userId);
       const pdfs = await storage.getUploadedPdfsByUser(userId);
-      
+
       const thirtyDaysAgo = new Date();
       thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-      
-      const recentUploads = pdfs.filter(p => 
+
+      const recentUploads = pdfs.filter(p =>
         p.createdAt && new Date(p.createdAt) > thirtyDaysAgo
       ).length;
 
@@ -742,7 +759,7 @@ export async function registerRoutes(
     try {
       const userId = req.user.claims.sub;
       const testResultId = req.params.id;
-      
+
       await storage.deleteTestResult(testResultId, userId);
       res.json({ success: true });
     } catch (error) {
@@ -888,7 +905,7 @@ export async function registerRoutes(
         if (def.recheckMonths) {
           const dueDate = new Date(testDate);
           dueDate.setMonth(dueDate.getMonth() + def.recheckMonths);
-          
+
           await storage.createReminder({
             userId,
             testId: extracted.testId,
@@ -977,11 +994,11 @@ export async function registerRoutes(
       const profile = await storage.getUserProfile(userId);
       const plan = profile?.subscriptionPlan || "free";
       const filesUploaded = profile?.filesUploaded || 0;
-      
+
       const limits: Record<string, number> = { free: 3, basic: 20, premium: Infinity, pro: Infinity };
       if (filesUploaded >= limits[plan]) {
-        return res.status(403).json({ 
-          error: "Upload limit reached", 
+        return res.status(403).json({
+          error: "Upload limit reached",
           message: "Please upgrade your subscription to upload more files"
         });
       }
@@ -1001,15 +1018,15 @@ export async function registerRoutes(
         // Process the PDF
         const result = await processPdfFromRecord(pdfRecord.id, userId, file.buffer, file.originalname);
 
-        res.json({ 
-          success: true, 
+        res.json({
+          success: true,
           testsExtracted: result.testsExtracted,
           pdfId: pdfRecord.id,
           message: `Successfully extracted ${result.testsExtracted} test results`
         });
       } catch (error) {
         console.error("Error analyzing PDF:", error);
-        res.status(500).json({ 
+        res.status(500).json({
           error: "Failed to analyze PDF",
           pdfId: pdfRecord.id,
           message: "The file was saved but could not be processed. You can retry later."
@@ -1191,14 +1208,14 @@ export async function registerRoutes(
       try {
         const result = await processPdfFromRecord(id, userId, file.buffer, pdfRecord.fileName);
 
-        res.json({ 
-          success: true, 
+        res.json({
+          success: true,
           testsExtracted: result.testsExtracted,
           message: `Successfully extracted ${result.testsExtracted} test results`
         });
       } catch (error) {
         console.error("Error retrying PDF analysis:", error);
-        res.status(500).json({ 
+        res.status(500).json({
           error: "Failed to analyze PDF",
           message: "Retry failed. Please try again later."
         });
@@ -1236,8 +1253,13 @@ export async function registerRoutes(
         });
       }
 
+      // Check for existing pending/processing job to prevent abuse
+      const existingJob = await storage.getLatestPendingJob(userId);
+      if (existingJob) {
+        return res.json({ jobId: existingJob.id, status: existingJob.status });
+      }
+
       const job = await storage.createDietPlanJob(userId, language);
-      
       if (!profile?.weight || !profile?.height || !profile?.age || !profile?.gender) {
         await storage.updateDietPlanJob(job.id, { status: "failed", error: "MISSING_PROFILE_DATA" });
         return res.status(400).json({ error: "MISSING_PROFILE_DATA", message: language === "ar" ? "يرجى إكمال بيانات الملف الشخصي (الوزن، الطول، العمر، الجنس) قبل إنشاء خطة غذائية" : "Please complete your profile data (weight, height, age, gender) before generating a diet plan" });
@@ -1598,24 +1620,15 @@ export async function registerRoutes(
   app.get("/api/health", async (_req: Request, res: Response) => {
     try {
       const dbCheck = await db.execute(sql`SELECT 1`);
-      const uptime = process.uptime();
-      const memUsage = process.memoryUsage();
       res.json({
         status: "ok",
         timestamp: new Date().toISOString(),
-        uptime: Math.floor(uptime),
-        memory: {
-          heapUsed: Math.round(memUsage.heapUsed / 1024 / 1024),
-          heapTotal: Math.round(memUsage.heapTotal / 1024 / 1024),
-          rss: Math.round(memUsage.rss / 1024 / 1024),
-        },
         database: dbCheck ? "connected" : "error",
       });
     } catch (error: any) {
       res.status(500).json({
         status: "error",
         timestamp: new Date().toISOString(),
-        error: error.message,
       });
     }
   });
