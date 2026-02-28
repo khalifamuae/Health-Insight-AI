@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Modal,
 import { useTranslation } from 'react-i18next';
 import { Ionicons } from '@expo/vector-icons';
 import { BlurView } from 'expo-blur';
+import { Video, ResizeMode } from 'expo-av';
 import { useAppTheme } from '../context/ThemeContext';
 import { isArabicLanguage } from '../lib/isArabic';
 import { GlobalExercise, EXERCISE_REGISTRY } from '../lib/WorkoutRegistry';
@@ -23,6 +24,7 @@ export default function WorkoutBuilderScreen({ navigation }: any) {
     const [userGroups, setUserGroups] = useState<WorkoutGroup[]>([]);
     const [selectedUserGroupId, setSelectedUserGroupId] = useState<string | null>(null);
     const [newGroupName, setNewGroupName] = useState('');
+    const [previewExId, setPreviewExId] = useState<string | null>(null);
 
     // Group exercises by muscle
     const groupedExercises = EXERCISE_REGISTRY.reduce((acc, ex) => {
@@ -35,9 +37,7 @@ export default function WorkoutBuilderScreen({ navigation }: any) {
     const loadUserGroups = async () => {
         const groups = await WorkoutStore.getGroups();
         setUserGroups(groups);
-        if (groups.length > 0 && !selectedUserGroupId) {
-            setSelectedUserGroupId(groups[0].id);
-        }
+        // We INTENTIONALLY do not auto-select the first group so the user is FORCED to explicitly select or create one
     };
 
     const handleAddPress = (exercise: GlobalExercise) => {
@@ -112,14 +112,35 @@ export default function WorkoutBuilderScreen({ navigation }: any) {
                         {expandedGroup === muscleGroupName && (
                             <View style={styles.accordionContent}>
                                 {groupedExercises[muscleGroupName].map((ex) => (
-                                    <View key={ex.id} style={[styles.exerciseRow, { borderBottomColor: colors.border }]}>
-                                        <View style={styles.exerciseInfo}>
-                                            <Ionicons name="barbell" size={20} color={colors.primary} style={{ marginRight: 8, marginLeft: isArabic ? 8 : 0 }} />
-                                            <Text style={[styles.exerciseTitle, { color: colors.text }]}>{isArabic ? ex.titleAr : ex.titleEn}</Text>
+                                    <View key={ex.id} style={[styles.exerciseItemContainer, { borderBottomColor: colors.border }]}>
+                                        <View style={[styles.exerciseRow, { flexDirection: isArabic ? 'row-reverse' : 'row' }]}>
+                                            <View style={[styles.exerciseInfo, { flexDirection: isArabic ? 'row-reverse' : 'row' }]}>
+                                                <Ionicons name="barbell" size={20} color={colors.primary} style={{ marginLeft: isArabic ? 8 : 0, marginRight: isArabic ? 0 : 8 }} />
+                                                <Text style={[styles.exerciseTitle, { color: colors.text, textAlign: isArabic ? 'right' : 'left' }]}>{isArabic ? ex.titleAr : ex.titleEn}</Text>
+                                            </View>
+                                            <View style={{ flexDirection: isArabic ? 'row-reverse' : 'row', alignItems: 'center' }}>
+                                                <TouchableOpacity onPress={() => setPreviewExId(previewExId === ex.id ? null : ex.id)} style={styles.previewButton}>
+                                                    <Ionicons name={previewExId === ex.id ? "chevron-up-circle-outline" : "play-circle-outline"} size={26} color={colors.text} />
+                                                </TouchableOpacity>
+                                                <TouchableOpacity onPress={() => handleAddPress(ex)} style={styles.addButton}>
+                                                    <Ionicons name="add-circle" size={28} color={colors.primary} />
+                                                </TouchableOpacity>
+                                            </View>
                                         </View>
-                                        <TouchableOpacity onPress={() => handleAddPress(ex)} style={styles.addButton}>
-                                            <Ionicons name="add-circle" size={28} color={colors.primary} />
-                                        </TouchableOpacity>
+
+                                        {/* Video Preview Section */}
+                                        {previewExId === ex.id && (
+                                            <View style={styles.previewContainer}>
+                                                <Video
+                                                    source={{ uri: ex.videoUrl }}
+                                                    style={styles.previewVideo}
+                                                    useNativeControls
+                                                    resizeMode={ResizeMode.COVER}
+                                                    isLooping
+                                                    shouldPlay
+                                                />
+                                            </View>
+                                        )}
                                     </View>
                                 ))}
                             </View>
@@ -245,12 +266,15 @@ const styles = StyleSheet.create({
         paddingHorizontal: 16,
         paddingBottom: 8,
     },
+    exerciseItemContainer: {
+        borderBottomWidth: StyleSheet.hairlineWidth,
+        paddingBottom: 8,
+    },
     exerciseRow: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
         paddingVertical: 12,
-        borderBottomWidth: StyleSheet.hairlineWidth,
     },
     exerciseInfo: {
         flexDirection: 'row',
@@ -259,9 +283,26 @@ const styles = StyleSheet.create({
     },
     exerciseTitle: {
         fontSize: 16,
+        flex: 1,
+    },
+    previewButton: {
+        padding: 4,
+        marginHorizontal: 8,
     },
     addButton: {
         padding: 4,
+    },
+    previewContainer: {
+        width: '100%',
+        height: 200,
+        borderRadius: 12,
+        overflow: 'hidden',
+        marginBottom: 12,
+        backgroundColor: '#000',
+    },
+    previewVideo: {
+        width: '100%',
+        height: '100%',
     },
     modalOverlay: {
         flex: 1,
