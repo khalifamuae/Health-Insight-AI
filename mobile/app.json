@@ -18,9 +18,9 @@
       "bundleIdentifier": "com.biotrack.ai",
       "buildNumber": "1",
       "infoPlist": {
-        "NSHealthShareUsageDescription": "BioTrack AI uses your health data to provide personalized lab result analysis and diet plans.",
-        "NSCameraUsageDescription": "BioTrack AI needs camera access to scan lab result documents.",
-        "NSPhotoLibraryUsageDescription": "BioTrack AI needs photo library access to upload lab result images.",
+        "NSHealthShareUsageDescription": "BioTrack AI uses your health data to provide personalized lab result analysis. / التطبيق يستخدم بياناتك الصحية لتحليل النتائج المخبرية بدقة.",
+        "NSCameraUsageDescription": "BioTrack AI needs camera access to scan lab results. / يحتاج التطبيق للوصول إلى الكاميرا لمسح الفحوصات الطبية.",
+        "NSPhotoLibraryUsageDescription": "BioTrack AI needs photo library access to upload lab result images. / يحتاج التطبيق للوصول لمكتبة الصور لرفع صور الفحوصات.",
         "ITSAppUsesNonExemptEncryption": false,
         "SKAdNetworkItems": []
       },
@@ -101,8 +101,8 @@
       [
         "expo-image-picker",
         {
-          "photosPermission": "The app accesses your photos to let you share them with your friends.",
-          "cameraPermission": "The app accessing your camera lets you take photos and record videos."
+          "photosPermission": "The app needs to access your photos to upload lab reports. / يحتاج التطبيق إلى الوصول للصور لرفع الفحوصات الطبية.",
+          "cameraPermission": "The app needs to access your camera to scan physical lab test documents. / يحتاج التطبيق للوصول إلى الكاميرا لمسح وقراءة الفحوصات الطبية المطبوعة."
         }
       ]
     ],
