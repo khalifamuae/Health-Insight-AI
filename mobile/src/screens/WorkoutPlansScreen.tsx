@@ -73,7 +73,7 @@ const ExerciseCard = ({ savedExercise, globalExercise, groupId, onRemove }: { sa
   return (
     <View style={[styles.exerciseCard, { backgroundColor: colors.background, borderColor: colors.border }]}>
       <View style={styles.exerciseHeader}>
-        <Text style={[styles.exerciseTitle, { color: colors.text }]}>
+        <Text style={[styles.exerciseTitle, { color: colors.text, textAlign: isArabic ? 'right' : 'left', writingDirection: isArabic ? 'rtl' : 'ltr' }]}>
           {isArabic ? globalExercise.titleAr : globalExercise.titleEn}
         </Text>
         <View style={styles.exerciseActions}>
@@ -108,13 +108,13 @@ const ExerciseCard = ({ savedExercise, globalExercise, groupId, onRemove }: { sa
 
       <View style={[styles.statsRow, { backgroundColor: colors.card, borderColor: colors.border }]}>
         <View style={styles.statBox}>
-          <Text style={[styles.statValue, { color: colors.text }]}>{savedExercise.sets}</Text>
-          <Text style={[styles.statLabel, { color: colors.mutedText }]}>{isArabic ? "جولات (Sets)" : "Sets"}</Text>
+          <Text style={[styles.statValue, { color: colors.text, textAlign: isArabic ? 'right' : 'center', width: '100%' }]}>{savedExercise.sets}</Text>
+          <Text style={[styles.statLabel, { color: colors.mutedText, textAlign: isArabic ? 'right' : 'center', width: '100%' }]}>{isArabic ? "جولات (Sets)" : "Sets"}</Text>
         </View>
         <View style={[styles.statDivider, { backgroundColor: colors.border }]} />
         <View style={styles.statBox}>
-          <Text style={[styles.statValue, { color: colors.text }]}>{savedExercise.reps}</Text>
-          <Text style={[styles.statLabel, { color: colors.mutedText }]}>{isArabic ? "تكرار (Reps)" : "Reps"}</Text>
+          <Text style={[styles.statValue, { color: colors.text, textAlign: isArabic ? 'right' : 'center', width: '100%' }]}>{savedExercise.reps}</Text>
+          <Text style={[styles.statLabel, { color: colors.mutedText, textAlign: isArabic ? 'right' : 'center', width: '100%' }]}>{isArabic ? "تكرار (Reps)" : "Reps"}</Text>
         </View>
       </View>
 
@@ -254,7 +254,7 @@ export default function WorkoutPlansScreen() {
           ) : (
             <Ionicons name="share-social" size={20} color="#fff" style={{ marginRight: 8, marginLeft: isArabic ? 8 : 0 }} />
           )}
-          <Text style={styles.shareAllText}>
+          <Text style={[styles.shareAllText, { textAlign: isArabic ? 'right' : 'left' }]}>
             {isArabic ? "📤 مشاركة جميع جداولي" : "📤 Share All My Workouts"}
           </Text>
         </TouchableOpacity>
@@ -279,7 +279,7 @@ export default function WorkoutPlansScreen() {
             onPress={handleImport}
             disabled={isImporting || !importCode.trim()}
           >
-            <Text style={styles.importBtnText}>
+            <Text style={[styles.importBtnText, { textAlign: isArabic ? 'right' : 'left' }]}>
               {isImporting ? (isArabic ? 'جاري...' : 'Wait...') : (isArabic ? 'حمل' : 'Import')}
             </Text>
           </TouchableOpacity>
@@ -289,10 +289,10 @@ export default function WorkoutPlansScreen() {
       {groups.length === 0 ? (
         <View style={[styles.emptyCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
           <Ionicons name="barbell-outline" size={42} color={colors.mutedText} />
-          <Text style={[styles.emptyTitle, { color: colors.text }]}>
+          <Text style={[styles.emptyTitle, { color: colors.text, textAlign: isArabic ? 'right' : 'left', width: '100%' }]}>
             {isArabic ? 'جدولك فارغ حالياً' : 'Your plan is empty'}
           </Text>
-          <Text style={[styles.emptyDesc, { color: colors.mutedText }]}>
+          <Text style={[styles.emptyDesc, { color: colors.mutedText, textAlign: isArabic ? 'right' : 'left', width: '100%' }]}>
             {isArabic
               ? 'اذهب إلى "تصميم الجدول" لاختيار التمارين وتحديد التكرارات وبناء مجموعاتك المخصصة.'
               : 'Go to the "Workout Builder" to select exercises, set reps, and build your custom groups.'}
@@ -311,7 +311,7 @@ export default function WorkoutPlansScreen() {
                     color={colors.text}
                     style={{ marginRight: 8, marginLeft: isArabic ? 8 : 0 }}
                   />
-                  <Text style={[styles.groupTitle, { color: colors.text }]}>{group.name}</Text>
+                  <Text style={[styles.groupTitle, { color: colors.text, textAlign: isArabic ? 'right' : 'left', writingDirection: isArabic ? 'rtl' : 'ltr' }]}>{group.name}</Text>
                 </View>
                 <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                   <TouchableOpacity onPress={() => handleShareGroup(group.id, group.name)} style={{ padding: 4, marginRight: 12 }}>
@@ -329,7 +329,7 @@ export default function WorkoutPlansScreen() {
 
               {isExpanded && (
                 group.exercises.length === 0 ? (
-                  <Text style={{ color: colors.mutedText, textAlign: 'center', marginVertical: 10 }}>
+                  <Text style={{ color: colors.mutedText, textAlign: isArabic ? 'right' : 'center', width: '100%', marginVertical: 10 }}>
                     {isArabic ? "لا توجد تمارين هنا." : "No exercises here."}
                   </Text>
                 ) : (

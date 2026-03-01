@@ -193,15 +193,15 @@ export default function WorkoutBuilderScreen({ navigation }: any) {
                                     style={[styles.groupSelector, { borderColor: selectedUserGroupId === g.id ? colors.primary : colors.border }]}
                                     onPress={() => setSelectedUserGroupId(g.id)}
                                 >
-                                    <Text style={{ color: selectedUserGroupId === g.id ? colors.primary : colors.text }}>{g.name}</Text>
-                                    {selectedUserGroupId === g.id && <Ionicons name="checkmark-circle" size={20} color={colors.primary} />}
+                                    <Text style={{ flex: 1, color: selectedUserGroupId === g.id ? colors.primary : colors.text, textAlign: isArabic ? 'right' : 'left' }}>{g.name}</Text>
+                                    {selectedUserGroupId === g.id && <Ionicons name="checkmark-circle" size={20} color={colors.primary} style={{ marginLeft: isArabic ? 0 : 8, marginRight: isArabic ? 8 : 0 }} />}
                                 </TouchableOpacity>
                             ))}
                             <TouchableOpacity
                                 style={[styles.groupSelector, { borderColor: selectedUserGroupId === 'NEW' ? colors.primary : colors.border }]}
                                 onPress={() => setSelectedUserGroupId('NEW')}
                             >
-                                <Text style={{ color: selectedUserGroupId === 'NEW' ? colors.primary : colors.text }}>{isArabic ? '+ مجموعة جديدة' : '+ New Group'}</Text>
+                                <Text style={{ flex: 1, color: selectedUserGroupId === 'NEW' ? colors.primary : colors.text, textAlign: isArabic ? 'right' : 'left' }}>{isArabic ? '+ مجموعة جديدة' : '+ New Group'}</Text>
                             </TouchableOpacity>
                         </ScrollView>
 
@@ -219,7 +219,7 @@ export default function WorkoutBuilderScreen({ navigation }: any) {
                         )}
 
                         <TouchableOpacity style={styles.saveBtn} onPress={handleSaveExercise}>
-                            <Text style={styles.saveBtnText}>{isArabic ? 'إضافة إلى جدولي' : 'Add to My Plan'}</Text>
+                            <Text style={[styles.saveBtnText, { textAlign: isArabic ? 'right' : 'left' }]}>{isArabic ? 'إضافة إلى جدولي' : 'Add to My Plan'}</Text>
                         </TouchableOpacity>
 
                     </BlurView>
