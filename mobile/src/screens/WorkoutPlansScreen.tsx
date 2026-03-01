@@ -261,12 +261,12 @@ export default function WorkoutPlansScreen() {
       )}
 
       <View style={[styles.importContainer, { backgroundColor: colors.card, borderColor: colors.border }]}>
-        <Text style={[styles.importTitle, { color: colors.text, textAlign: isArabic ? 'right' : 'left' }]}>
+        <Text style={[styles.importTitle, { color: colors.text, textAlign: isArabic ? 'right' : 'left', writingDirection: isArabic ? 'rtl' : 'ltr', width: '100%' }]}>
           {isArabic ? "📥 استيراد جدول تمارين" : "📥 Import Workout Plan"}
         </Text>
         <View style={[styles.importRow, { flexDirection: isArabic ? 'row-reverse' : 'row' }]}>
           <TextInput
-            style={[styles.importInput, { color: colors.text, borderColor: colors.border, backgroundColor: colors.background, textAlign: isArabic ? 'right' : 'left', marginLeft: isArabic ? 10 : 0, marginRight: isArabic ? 0 : 10 }]}
+            style={[styles.importInput, { color: colors.text, borderColor: colors.border, backgroundColor: colors.background, textAlign: isArabic ? 'right' : 'left', writingDirection: isArabic ? 'rtl' : 'ltr', marginLeft: isArabic ? 10 : 0, marginRight: isArabic ? 0 : 10 }]}
             placeholder={isArabic ? "أدخل الكود هنا (مثال: X9K2)" : "Enter code here (e.g. X9K2)"}
             placeholderTextColor={colors.mutedText}
             value={importCode}

@@ -88,10 +88,10 @@ export default function WorkoutBuilderScreen({ navigation }: any) {
     return (
         <View style={[styles.container, { backgroundColor: colors.background }]}>
             <ScrollView contentContainerStyle={styles.content}>
-                <Text style={[styles.headerTitle, { color: colors.text }]}>
+                <Text style={[styles.headerTitle, { color: colors.text, textAlign: isArabic ? 'right' : 'left', writingDirection: isArabic ? 'rtl' : 'ltr' }]}>
                     {isArabic ? 'تصميم جدول التمارين' : 'Workout Builder'}
                 </Text>
-                <Text style={[styles.headerSubtitle, { color: colors.mutedText }]}>
+                <Text style={[styles.headerSubtitle, { color: colors.mutedText, textAlign: isArabic ? 'right' : 'left', writingDirection: isArabic ? 'rtl' : 'ltr' }]}>
                     {isArabic ? 'اختر العضلة لترى التمارين الخاصة بها وأضفها لجدولك.' : 'Select a muscle to view exercises and add them to your plan.'}
                 </Text>
 
@@ -101,7 +101,7 @@ export default function WorkoutBuilderScreen({ navigation }: any) {
                             style={styles.accordionHeader}
                             onPress={() => setExpandedGroup(expandedGroup === muscleGroupName ? null : muscleGroupName)}
                         >
-                            <Text style={[styles.accordionTitle, { color: colors.text }]}>{muscleGroupName}</Text>
+                            <Text style={[styles.accordionTitle, { color: colors.text, textAlign: isArabic ? 'right' : 'left', writingDirection: isArabic ? 'rtl' : 'ltr' }]}>{muscleGroupName}</Text>
                             <Ionicons
                                 name={expandedGroup === muscleGroupName ? 'chevron-up' : 'chevron-down'}
                                 size={24}
@@ -116,7 +116,7 @@ export default function WorkoutBuilderScreen({ navigation }: any) {
                                         <View style={[styles.exerciseRow, { flexDirection: isArabic ? 'row-reverse' : 'row' }]}>
                                             <View style={[styles.exerciseInfo, { flexDirection: isArabic ? 'row-reverse' : 'row' }]}>
                                                 <Ionicons name="barbell" size={20} color={colors.primary} style={{ marginLeft: isArabic ? 8 : 0, marginRight: isArabic ? 0 : 8 }} />
-                                                <Text style={[styles.exerciseTitle, { color: colors.text, textAlign: isArabic ? 'right' : 'left' }]}>{isArabic ? ex.titleAr : ex.titleEn}</Text>
+                                                <Text style={[styles.exerciseTitle, { color: colors.text, textAlign: isArabic ? 'right' : 'left', writingDirection: isArabic ? 'rtl' : 'ltr' }]}>{isArabic ? ex.titleAr : ex.titleEn}</Text>
                                             </View>
                                             <View style={{ flexDirection: isArabic ? 'row-reverse' : 'row', alignItems: 'center' }}>
                                                 <TouchableOpacity onPress={() => setPreviewExId(previewExId === ex.id ? null : ex.id)} style={styles.previewButton}>
@@ -207,9 +207,9 @@ export default function WorkoutBuilderScreen({ navigation }: any) {
 
                         {selectedUserGroupId === 'NEW' && (
                             <View style={{ marginBottom: 20 }}>
-                                <Text style={[styles.inputLabel, { color: colors.mutedText }]}>{isArabic ? 'اسم المجموعة (مثال: تمارين الصدر)' : 'Group Name (e.g. Chest Day)'}</Text>
+                                <Text style={[styles.inputLabel, { color: colors.mutedText, textAlign: isArabic ? 'right' : 'left' }]}>{isArabic ? 'اسم المجموعة (مثال: تمارين الصدر)' : 'Group Name (e.g. Chest Day)'}</Text>
                                 <TextInput
-                                    style={[styles.input, { color: colors.text, borderColor: colors.border, backgroundColor: colors.background, marginTop: 4 }]}
+                                    style={[styles.input, { color: colors.text, borderColor: colors.border, backgroundColor: colors.background, marginTop: 4, textAlign: isArabic ? 'right' : 'left' }]}
                                     value={newGroupName}
                                     onChangeText={setNewGroupName}
                                     placeholder={isArabic ? 'أدخل الاسم هنا...' : 'Enter name here...'}
