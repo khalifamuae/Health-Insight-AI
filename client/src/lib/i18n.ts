@@ -354,6 +354,26 @@ const resources = {
       // PDF Errors
       scannedPdfError: "This PDF appears to be scanned. Please upload a digital/text-based PDF.",
       analysisFailedError: "Failed to analyze this file. Please try again.",
+
+      // Admin Panel
+      adminPanel: "Admin Panel",
+      adminMode: "Admin Mode",
+      adminDashboard: "Dashboard",
+      adminUsers: "Users",
+      adminLabTests: "Lab Tests",
+      adminPdfLogs: "PDF Logs",
+      adminKnowledgeBase: "Knowledge Base",
+      adminAffiliates: "Affiliates",
+      adminJobsLogs: "Jobs & Logs",
+
+      // Admin Page Descriptions
+      adminDashDesc: "Overview of platform performance and key metrics",
+      adminUsersDesc: "Manage all registered users, view roles, and monitor account statuses",
+      adminTestsDesc: "Control the 50 supported biomarkers, edit importance levels, and adjust normal ranges",
+      adminPdfsDesc: "Monitor background PDF extraction jobs and view scanning errors",
+      adminKnowledgeDesc: "Inject scientific facts and medical guidelines into the AI's core logic",
+      adminAffiliatesDesc: "Manage referral networks and approve withdrawal requests",
+      adminJobsDesc: "Monitor automated background processes like Diet Plan generation and workout synchronization",
     }
   },
   ar: {
@@ -707,6 +727,26 @@ const resources = {
       // PDF Errors
       scannedPdfError: "يبدو أن هذا الملف ممسوح ضوئياً. يرجى رفع ملف PDF رقمي/نصي.",
       analysisFailedError: "فشل في تحليل هذا الملف. يرجى المحاولة مرة أخرى.",
+
+      // Admin Panel
+      adminPanel: "لوحة تحكم الإدارة",
+      adminMode: "وضع المسؤول",
+      adminDashboard: "الرئيسية",
+      adminUsers: "المستخدمين",
+      adminLabTests: "الفحوصات المخبرية",
+      adminPdfLogs: "سجلات رفع الـ PDF",
+      adminKnowledgeBase: "قاعدة المعرفة الذكية",
+      adminAffiliates: "نظام التسويق بالعمولة",
+      adminJobsLogs: "المهام والأنظمة الخلفية",
+
+      // Admin Page Descriptions
+      adminDashDesc: "نظرة عامة على أداء المنصة والإحصائيات الرئيسية المباشرة",
+      adminUsersDesc: "إدارة جميع المستخدمين المسجلين، وصلاحياتهم، ومراقبة حالة الاشتراكات",
+      adminTestsDesc: "التحكم في الـ 50 مؤشر حيوي المدعوم، وتعديل مستويات الأهمية والنطاقات الطبيعية للذكاء الاصطناعي",
+      adminPdfsDesc: "مراقبة مهام استخراج البيانات من ملفات الـ PDF المرفوعة وتتبع أي أخطاء في القراءة",
+      adminKnowledgeDesc: "حقن الحقائق العلمية والإرشادات الطبية الموثوقة لتوجيه إجابات وتحليلات الذكاء الاصطناعي",
+      adminAffiliatesDesc: "إدارة شبكة المسوقين، وعمولاتهم، والموافقة على طلبات السحب المالي أوتوماتيكياً",
+      adminJobsDesc: "مراقبة العمليات الآلية في الخلفية مثل بناء الجداول الغذائية ومزامنة التمارين للمستخدمين",
     }
   }
 };

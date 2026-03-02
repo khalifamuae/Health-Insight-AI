@@ -62,6 +62,7 @@ export const userProfiles = pgTable("user_profiles", {
   trialEndsAt: timestamp("trial_ends_at"),
   filesUploaded: integer("files_uploaded").default(0),
   dietPlansGenerated: integer("diet_plans_generated").default(0),
+  isAdmin: boolean("is_admin").default(false),
   dietPlansResetAt: timestamp("diet_plans_reset_at"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),

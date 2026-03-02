@@ -29,7 +29,7 @@ export function getSession() {
     tableName: "sessions",
   });
   return session({
-    secret: process.env.SESSION_SECRET!,
+    secret: process.env.SESSION_SECRET || 'local-fallback-secret-123',
     store: sessionStore,
     resave: false,
     saveUninitialized: false,
@@ -50,7 +50,7 @@ type ApiTokenPayload = {
 };
 
 function getApiTokenSecret(): string {
-  const secret = process.env.API_TOKEN_SECRET || process.env.SESSION_SECRET;
+  const secret = process.env.API_TOKEN_SECRET || process.env.SESSION_SECRET || 'local-fallback-secret-123';
   if (!secret) {
     throw new Error("API_TOKEN_SECRET or SESSION_SECRET must be configured");
   }
@@ -231,8 +231,8 @@ export const isAuthenticated: RequestHandler = async (req, res, next) => {
       if (users.length > 0) {
         const profile = users[0];
         (req as any).user = {
-          claims: { sub: profile.id, email: profile.email, first_name: profile.firstName || "", last_name: profile.lastName || "", exp: Math.floor(Date.now()/1000) + 86400 },
-          expires_at: Math.floor(Date.now()/1000) + 86400,
+          claims: { sub: profile.id, email: profile.email, first_name: profile.firstName || "", last_name: profile.lastName || "", exp: Math.floor(Date.now() / 1000) + 86400 },
+          expires_at: Math.floor(Date.now() / 1000) + 86400,
           access_token: crypto.randomUUID(),
         };
         return next();

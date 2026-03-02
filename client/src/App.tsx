@@ -24,6 +24,13 @@ import Compare from "@/pages/Compare";
 import Upload from "@/pages/Upload";
 import DietPlan from "@/pages/DietPlan";
 import MyDietSchedule from "@/pages/MyDietSchedule";
+import AdminDashboard from "@/pages/admin";
+import AdminUsers from "@/pages/admin/users";
+import AdminTests from "@/pages/admin/tests";
+import AdminPdfs from "@/pages/admin/pdfs";
+import AdminKnowledgeBase from "@/pages/admin/knowledge";
+import AdminAffiliates from "@/pages/admin/affiliates";
+import AdminJobs from "@/pages/admin/jobs";
 import Profile from "@/pages/Profile";
 import "./lib/i18n";
 import { useTranslation } from "react-i18next";
@@ -117,6 +124,7 @@ function AuthenticatedLayout({ children }: { children: React.ReactNode }) {
 function AppContent() {
   const { i18n } = useTranslation();
   const { isLoading, isAuthenticated } = useAuth();
+  const [location] = useLocation();
 
   useEffect(() => {
     document.documentElement.dir = i18n.language === "ar" ? "rtl" : "ltr";
@@ -133,6 +141,22 @@ function AppContent() {
 
   if (!isAuthenticated) {
     return <AuthPage />;
+  }
+
+  // Admin routes handle their own layout
+  if (location.startsWith("/admin")) {
+    return (
+      <Switch>
+        <Route path="/admin" component={AdminDashboard} />
+        <Route path="/admin/users" component={AdminUsers} />
+        <Route path="/admin/tests" component={AdminTests} />
+        <Route path="/admin/pdfs" component={AdminPdfs} />
+        <Route path="/admin/knowledge" component={AdminKnowledgeBase} />
+        <Route path="/admin/affiliates" component={AdminAffiliates} />
+        <Route path="/admin/jobs" component={AdminJobs} />
+        <Route component={NotFound} />
+      </Switch>
+    );
   }
 
   return (

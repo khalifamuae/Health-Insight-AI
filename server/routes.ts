@@ -15,6 +15,7 @@ import { userProfiles, testDefinitions, type TestDefinition, sharedWorkouts } fr
 import crypto from "crypto";
 import { emailVerificationCodes } from "@shared/schema";
 import { getResendClient } from "./resendClient";
+import adminRouter from "./routes/admin";
 
 const upload = multer({
   storage: multer.memoryStorage(),
@@ -205,6 +206,9 @@ export async function registerRoutes(
   await setupAuth(app);
   registerAuthRoutes(app);
 
+  // Register Admin Routes
+  app.use("/api/admin", adminRouter);
+
   // Auto-seed test definitions if table is empty
   try {
     const existingDefs = await storage.getTestDefinitions();
@@ -279,6 +283,10 @@ export async function registerRoutes(
         });
       } catch (emailErr) {
         console.error("Email send error:", emailErr);
+        if (process.env.NODE_ENV !== 'production') {
+          console.log(`\n\n[DEV MODE] EMAIL BYPASS: The verification code for ${email} is: ${code}\n\n`);
+          return res.json({ success: true, message: "Dev mode bypass: Check server console for code" });
+        }
         return res.status(500).json({ error: "Failed to send verification email" });
       }
 
