@@ -568,7 +568,8 @@ const getStyles = (isArabic: boolean) => StyleSheet.create({
     backgroundColor: '#f8fafc',
   },
   content: {
-    padding: 16
+    padding: 16,
+    paddingBottom: 100,
   },
   header: {
     alignItems: 'center',
