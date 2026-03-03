@@ -69,14 +69,22 @@ export default function HomeScreen({ navigation }: any) {
     queryFn: queries.reminders,
   });
 
+  const { data: uploadedPdfs } = useQuery({
+    queryKey: ['uploadedPdfs'],
+    queryFn: queries.uploadedPdfs,
+  });
+
   const tests = (userTests as any[]) || [];
   const remindersList = (reminders as any[]) || [];
+  const pdfsList = (uploadedPdfs as any[]) || [];
   const activeTests = tests.filter((t: any) => t.hasResult);
 
+  const totalTestsCount = activeTests.length;
   const normalCount = activeTests.filter((t: any) => t.status === 'normal').length;
   const abnormalCount = activeTests.filter((t: any) => t.status === 'high' || t.status === 'low').length;
   const frozenCount = tests.filter((t: any) => !t.hasResult || t.status === 'pending').length;
   const pendingReminders = remindersList.filter((r: any) => !r.sent && (!r.dueDate || new Date(r.dueDate) > new Date())).length;
+  const recentUploadsCount = pdfsList.length;
 
   return (
     <ScrollView style={[styles.container, { backgroundColor: colors.background }]} contentContainerStyle={styles.content}>
@@ -97,9 +105,11 @@ export default function HomeScreen({ navigation }: any) {
       </View>
 
       <View style={styles.statsGrid}>
+        <StatsCard icon="flask" title={t('totalTests')} value={totalTestsCount} color={isDark ? "rgba(255,255,255,0.9)" : "#3b82f6"} styles={styles} />
         <StatsCard icon="checkmark-circle" title={t('normal')} value={normalCount} color={isDark ? "rgba(255,255,255,0.9)" : "#334155"} styles={styles} />
         <StatsCard icon="alert-circle" title={t('abnormal')} value={abnormalCount} color={isDark ? "rgba(255,255,255,0.9)" : "#dc2626"} styles={styles} />
         <StatsCard icon="notifications" title={t('reminders.title')} value={pendingReminders} color={isDark ? "rgba(255,255,255,0.9)" : "#f59e0b"} styles={styles} />
+        <StatsCard icon="cloud-upload" title={t('recentUploads')} value={recentUploadsCount} color={isDark ? "rgba(255,255,255,0.9)" : "#8b5cf6"} styles={styles} />
         <StatsCard icon="pause-circle" title={t('frozenTests')} value={frozenCount} color={isDark ? "rgba(255,255,255,0.9)" : "#64748b"} styles={styles} />
       </View>
 
