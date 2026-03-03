@@ -1388,7 +1388,12 @@ export async function registerRoutes(
             await storage.updateDietPlanJob(job.id, { status: "processing" });
             console.log(`Diet plan job ${job.id} attempt ${attempt}/${maxRetries}...`);
 
-            const dietPlan = await generateDietPlan(planParams);
+            const dietPlan = await generateDietPlan(planParams, async (completedSections, partialMeals) => {
+              await storage.updateDietPlanJob(job.id, {
+                status: "partial",
+                planData: JSON.stringify({ completedSections, mealPlan: partialMeals }),
+              });
+            });
 
             const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
             await storage.updateDietPlanJob(job.id, {
@@ -1444,7 +1449,9 @@ export async function registerRoutes(
         return res.status(404).json({ error: "Job not found" });
       }
       if (job.status === "completed" && job.planData) {
-        res.json({ status: "completed", plan: JSON.parse(job.planData) });
+        res.json({ status: "completed", planData: JSON.parse(job.planData) });
+      } else if (job.status === "partial" && job.planData) {
+        res.json({ status: "partial", planData: JSON.parse(job.planData) });
       } else if (job.status === "failed") {
         res.json({ status: "failed", error: job.error });
       } else if (job.status === "processing") {

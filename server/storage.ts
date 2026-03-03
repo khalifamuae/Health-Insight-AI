@@ -373,7 +373,7 @@ export class DatabaseStorage implements IStorage {
       .from(dietPlanJobs)
       .where(and(
         eq(dietPlanJobs.userId, userId),
-        sql`${dietPlanJobs.status} IN ('pending', 'processing')`
+        sql`${dietPlanJobs.status} IN ('pending', 'processing', 'partial')`
       ))
       .orderBy(desc(dietPlanJobs.createdAt))
       .limit(1);
@@ -386,7 +386,7 @@ export class DatabaseStorage implements IStorage {
       .update(dietPlanJobs)
       .set({ status: "failed", error: "Server restarted during generation", completedAt: new Date() })
       .where(and(
-        sql`${dietPlanJobs.status} IN ('pending', 'processing')`,
+        sql`${dietPlanJobs.status} IN ('pending', 'processing', 'partial')`,
         sql`${dietPlanJobs.createdAt} < ${fiveMinutesAgo}`
       ))
       .returning();

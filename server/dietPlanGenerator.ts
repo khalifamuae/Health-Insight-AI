@@ -198,7 +198,57 @@ function detectSevereDeficiencies(testResults: UserHealthData["testResults"]): {
   return { hasSevere: severeList.length > 0, list: severeList };
 }
 
-export async function generateDietPlan(userData: UserHealthData): Promise<DietPlanResult> {
+function isMealSectionComplete(text: string, section: string): boolean {
+  const pattern = `"${section}"`;
+  const idx = text.indexOf(pattern);
+  if (idx === -1) return false;
+  const bracketStart = text.indexOf('[', idx);
+  if (bracketStart === -1) return false;
+  let depth = 0;
+  let inString = false;
+  let escaped = false;
+  for (let i = bracketStart; i < text.length; i++) {
+    const ch = text[i];
+    if (escaped) { escaped = false; continue; }
+    if (ch === '\\') { escaped = true; continue; }
+    if (ch === '"') { inString = !inString; continue; }
+    if (inString) continue;
+    if (ch === '[') depth++;
+    if (ch === ']') { depth--; if (depth === 0) return true; }
+  }
+  return false;
+}
+
+function extractMealSection(text: string, section: string): any[] | null {
+  const pattern = `"${section}"`;
+  const idx = text.indexOf(pattern);
+  if (idx === -1) return null;
+  const bracketStart = text.indexOf('[', idx);
+  if (bracketStart === -1) return null;
+  let depth = 0;
+  let inString = false;
+  let escaped = false;
+  for (let i = bracketStart; i < text.length; i++) {
+    const ch = text[i];
+    if (escaped) { escaped = false; continue; }
+    if (ch === '\\') { escaped = true; continue; }
+    if (ch === '"') { inString = !inString; continue; }
+    if (inString) continue;
+    if (ch === '[') depth++;
+    if (ch === ']') {
+      depth--;
+      if (depth === 0) {
+        try { return JSON.parse(text.substring(bracketStart, i + 1)); }
+        catch { return null; }
+      }
+    }
+  }
+  return null;
+}
+
+export type ProgressCallback = (completedSections: string[], partialMeals: Record<string, any[]>) => Promise<void>;
+
+export async function generateDietPlan(userData: UserHealthData, onProgress?: ProgressCallback): Promise<DietPlanResult> {
   const isArabic = userData.language === "ar";
   const goal = userData.fitnessGoal || "maintain";
   const activityLevel = userData.activityLevel || "sedentary";
@@ -490,7 +540,7 @@ ${customCalorieInstruction}
 تعليمات البروتوكول:
 - هذا البروتوكول الغذائي مصمم خصيصاً لهذا المستخدم بناءً على: الطول (${height}سم)، الوزن (${weight}كجم)، الجنس (${gender === "male" ? "ذكر" : "أنثى"})، العمر (${age})، الهدف (${goalDescriptions[goal].ar})، ونتائج الفحوصات المخبرية
 - صمم الوجبات بحيث تتوافق مع السعرات والماكرو والألياف المستهدفة أعلاه
-- ⚠️⚠️ قاعدة إلزامية: يجب تقديم بالضبط 3 خيارات مختلفة ومتنوعة لكل وجبة (فطور = 3 خيارات، غداء = 3 خيارات، عشاء = 3 خيارات، وجبات خفيفة = 3 خيارات). المجموع = 12 خيار وجبة. هذا شرط أساسي لا يمكن تجاوزه. لكي يختار المستخدم ما يناسبه ويغير يومياً${proteinInstruction}${carbInstruction}
+- ⚠️⚠️ قاعدة إلزامية: يجب تقديم بالضبط 5 خيارات مختلفة ومتنوعة لكل وجبة (فطور = 5 خيارات، غداء = 5 خيارات، عشاء = 5 خيارات، وجبات خفيفة = 5 خيارات). المجموع = 20 خيار وجبة. هذا شرط أساسي لا يمكن تجاوزه. لكي يختار المستخدم ما يناسبه ويغير يومياً${proteinInstruction}${carbInstruction}
 - ⚠️ قاعدة ذهبية: لا تضع أي مكون لم يختره المستخدم. النظام مبني فقط على اختيارات المستخدم من البروتين والكربوهيدرات. إذا لم يختر مصدراً معيناً، لا تدرجه في أي وجبة
 - ${goal === "weight_loss" ? "ركز على وجبات مشبعة ومنخفضة السعرات وغنية بالبروتين والألياف" : ""}
 - ${goal === "muscle_gain" ? "ركز على مصادر غذاء نظيفة وصحية فقط (لا وجبات سريعة، لا دهون مشبعة مفرطة)" : ""}
@@ -530,10 +580,10 @@ ${hasAllergies && allergyList ? `- ⚠️ حساسية المستخدم (وفق 
 5. حقل "benefits" = الفائدة الصحية المرتبطة بالتحاليل (مثل: "يساعد في تحسين الكولسترول")
 6. حقل "fiber" = كمية الألياف بالجرام (رقم)
 7. حقل "preparationTip" = نصيحة تحضير تحسّن القيمة الغذائية أو التوافر الحيوي
-8. المثال أدناه يعرض خيارين فقط للاختصار، لكن يجب كتابة 3 خيارات كاملة لكل وجبة
+8. المثال أدناه يعرض خيارين فقط للاختصار، لكن يجب كتابة 5 خيارات كاملة لكل وجبة
 9. في حال عدم وجود تحاليل مخبرية أو عدم وجود نواقص ومكملات مقترحة، أرجع مصفوفة فارغة [] في حقلي "deficiencies" و "supplements"
 
-أرجع JSON بالشكل التالي (المثال يعرض 2 من 3 خيارات - اكتب 3 كاملة):
+أرجع JSON بالشكل التالي (المثال يعرض 2 من 5 خيارات - اكتب 5 كاملة):
 {
   "healthSummary": "تقييم سريري شامل بناءً على التحاليل المخبرية (إن وجدت) أو الملف الجسدي العام",
   "summary": "ملخص عام إيجابي عن البروتوكول الغذائي",
@@ -620,7 +670,7 @@ ${customCalorieInstruction}
 Protocol Instructions:
 - This dietary protocol MUST be custom-designed for this specific user based on: Height (${height}cm), Weight (${weight}kg), Gender (${gender}), Age (${age}), Goal (${goalDescriptions[goal].en}), and their lab test results
 - Design meals that align with the calorie, macro, and fiber targets above
-- MANDATORY: Provide EXACTLY 3 different varied options for each meal (breakfast = 3 options, lunch = 3 options, dinner = 3 options, snacks = 3 options). Total = 12 meal options. This is a NON-NEGOTIABLE requirement. The user needs to choose and rotate daily${proteinInstruction}${carbInstruction}
+- MANDATORY: Provide EXACTLY 5 different varied options for each meal (breakfast = 5 options, lunch = 5 options, dinner = 5 options, snacks = 5 options). Total = 20 meal options. This is a NON-NEGOTIABLE requirement. The user needs to choose and rotate daily${proteinInstruction}${carbInstruction}
 - GOLDEN RULE: Do NOT include any ingredient the user did NOT select. The protocol is built EXCLUSIVELY from the user's protein and carbohydrate choices. If a source was not selected, it MUST NOT appear in any meal
 - ${goal === "weight_loss" ? "Focus on satiating, low-calorie meals rich in protein and fiber" : ""}
 - ${goal === "muscle_gain" ? "Focus on clean, healthy food sources ONLY (no fast food, no excessive saturated fats)" : ""}
@@ -654,16 +704,16 @@ ${hasAllergies && allergyList ? `- ALLERGY WARNING (per FARE Guidelines): User i
 
 CRITICAL RULES:
 1. You MUST NOT use "..." or any abbreviation in any field
-2. Every single one of the 12 meal options MUST have COMPLETE data in ALL fields (name, description, calories, protein, carbs, fats, fiber, benefits, preparationTip)
+2. Every single one of the 20 meal options MUST have COMPLETE data in ALL fields (name, description, calories, protein, carbs, fats, fiber, benefits, preparationTip)
 3. "name" = descriptive meal name (e.g., "Oatmeal with Banana and Honey"). NEVER use "Option 1" or "Option 2"
 4. "description" = ALL ingredients with gram weights (e.g., "60g oats, 200ml low-fat milk")
 5. "benefits" = health benefit linked to lab results (e.g., "Helps improve cholesterol levels")
 6. "fiber" = fiber content in grams (number)
 7. "preparationTip" = preparation tip that improves nutritional value or bioavailability
-8. The example below shows only 2 options for brevity, but you MUST write 3 COMPLETE options for each meal
+8. The example below shows only 2 options for brevity, but you MUST write 5 COMPLETE options for each meal
 9. If there are no lab results provided, or if no deficiencies/supplements are needed, return an empty array [] for both "deficiencies" and "supplements" fields.
 
-Return JSON in this format (example shows 2 of 3 options - write all 3 complete):
+Return JSON in this format (example shows 2 of 5 options - write all 5 complete):
 {
   "healthSummary": "Comprehensive clinical assessment based on lab results (if provided) or general physical profile",
   "summary": "Positive summary of the dietary protocol",
@@ -778,18 +828,60 @@ ${hasCustomTargetCalories && normalizedCustomTargetCalories ? `11. Mandatory: Ke
 
   console.log("Calling OpenAI for diet plan generation...");
   const callStart = Date.now();
-  const response = await openai.chat.completions.create({
-    model: "gpt-4o",
-    messages: [
-      { role: "system", content: systemPrompt },
-      { role: "user", content: finalUserContent },
-    ],
-    response_format: { type: "json_object" },
-    temperature: 0.2, // Slightly increased logic to allow RAG flexibility
-    max_completion_tokens: 12000,
-  });
 
-  const content = response.choices[0]?.message?.content;
+  let content: string;
+
+  if (onProgress) {
+    const stream = await openai.chat.completions.create({
+      model: "gpt-4o",
+      messages: [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: finalUserContent },
+      ],
+      response_format: { type: "json_object" },
+      temperature: 0.2,
+      max_completion_tokens: 16000,
+      stream: true,
+    });
+
+    let accumulated = '';
+    const completedSections: string[] = [];
+    const partialMeals: Record<string, any[]> = {};
+
+    for await (const chunk of stream) {
+      const delta = chunk.choices[0]?.delta?.content || '';
+      accumulated += delta;
+
+      for (const section of ['breakfast', 'lunch', 'dinner', 'snacks']) {
+        if (!completedSections.includes(section) && isMealSectionComplete(accumulated, section)) {
+          const meals = extractMealSection(accumulated, section);
+          if (meals && meals.length > 0) {
+            completedSections.push(section);
+            partialMeals[section] = meals;
+            console.log(`[Streaming] ${section} complete (${meals.length} options) at ${((Date.now() - callStart) / 1000).toFixed(1)}s`);
+            try { await onProgress([...completedSections], { ...partialMeals }); } catch (e) { console.warn("Progress callback error:", e); }
+          }
+        }
+      }
+    }
+
+    content = accumulated;
+    console.log(`[Streaming] Full response received at ${((Date.now() - callStart) / 1000).toFixed(1)}s`);
+  } else {
+    const response = await openai.chat.completions.create({
+      model: "gpt-4o",
+      messages: [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: finalUserContent },
+      ],
+      response_format: { type: "json_object" },
+      temperature: 0.2,
+      max_completion_tokens: 16000,
+    });
+
+    content = response.choices[0]?.message?.content || '';
+  }
+
   if (!content) {
     throw new Error("No content generated by AI");
   }
@@ -875,8 +967,8 @@ ${hasCustomTargetCalories && normalizedCustomTargetCalories ? `11. Mandatory: Ke
       throw new Error("DIET_PLAN_INCOMPLETE");
     }
 
-    if (incompleteMeals > 8) {
-      console.error(`REJECTED: ${incompleteMeals} out of 12 meal options have incomplete data`);
+    if (incompleteMeals > 15) {
+      console.error(`REJECTED: ${incompleteMeals} out of 20 meal options have incomplete data`);
       throw new Error("DIET_PLAN_INCOMPLETE");
     } else if (incompleteMeals > 0) {
       console.warn(`WARNING: ${incompleteMeals} meal options have incomplete data but proceeding anyway to prevent crash`);

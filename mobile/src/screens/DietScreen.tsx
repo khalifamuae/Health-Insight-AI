@@ -20,7 +20,7 @@ import { useAIConsent } from '../context/AIConsentContext';
 import { useAppTheme } from '../context/ThemeContext';
 import { formatAppDate, getDateCalendarPreference, type CalendarType } from '../lib/dateFormat';
 
-type Step = 'intro' | 'disclaimer' | 'activity' | 'allergy' | 'allergySelect' | 'proteinPref' | 'carbPref' | 'preference' | 'generating' | 'result';
+type Step = 'intro' | 'disclaimer' | 'activity' | 'allergy' | 'allergySelect' | 'proteinPref' | 'carbPref' | 'preference' | 'generating' | 'streaming' | 'result';
 
 interface SavedPlan {
   id: string;
@@ -100,6 +100,7 @@ export default function DietScreen({ navigation, route }: any) {
   const [jobId, setJobId] = useState<string | null>(null);
   const [selectedMeals, setSelectedMeals] = useState<Record<string, boolean>>({});
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const [streamingData, setStreamingData] = useState<{ completedSections: string[]; mealPlan: Record<string, any[]> } | null>(null);
 
   const { data: profile } = useQuery({ queryKey: ['profile'], queryFn: queries.profile });
   const { data: savedPlans } = useQuery<SavedPlan[]>({
@@ -172,15 +173,15 @@ export default function DietScreen({ navigation, route }: any) {
   }, [isArabic, navigation, route?.params?.openPlanData, route?.params?.openPlanNonce]);
 
   useEffect(() => {
-    if (jobId && step === 'generating') {
+    if (jobId && (step === 'generating' || step === 'streaming')) {
       pollingRef.current = setInterval(async () => {
         try {
           const result = await api.get<any>(`/api/diet-plan/job/${jobId}`);
           if (result.status === 'completed' && result.planData) {
             const parsed = typeof result.planData === 'string' ? JSON.parse(result.planData) : result.planData;
             setPlan(parsed);
+            setStreamingData(null);
 
-            // Auto-select the first option for each meal type
             const initialSelection: Record<string, boolean> = {};
             ['breakfast', 'lunch', 'dinner', 'snacks'].forEach((type) => {
               if (parsed.mealPlan?.[type]?.length > 0) {
@@ -192,14 +193,19 @@ export default function DietScreen({ navigation, route }: any) {
             setStep('result');
             setJobId(null);
             if (pollingRef.current) clearInterval(pollingRef.current);
+          } else if (result.status === 'partial' && result.planData) {
+            const partial = typeof result.planData === 'string' ? JSON.parse(result.planData) : result.planData;
+            setStreamingData(partial);
+            if (step !== 'streaming') setStep('streaming');
           } else if (result.status === 'failed') {
             Alert.alert(t('errors.dietPlanError'), result.error || '');
             setStep('intro');
+            setStreamingData(null);
             setJobId(null);
             if (pollingRef.current) clearInterval(pollingRef.current);
           }
         } catch (e) { }
-      }, 3000);
+      }, 2000);
       return () => { if (pollingRef.current) clearInterval(pollingRef.current); };
     }
   }, [jobId, step]);
@@ -356,6 +362,86 @@ export default function DietScreen({ navigation, route }: any) {
         <ActivityIndicator size="large" color="#f59e0b" />
         <Text style={[styles.generatingTitle, { color: colors.text }]}>{t('generating')}</Text>
         <Text style={[styles.generatingDesc, { color: colors.mutedText }]}>{t('generatingDesc')}</Text>
+      </View>
+    );
+  }
+
+  if (step === 'streaming' && streamingData) {
+    const allSections = ['breakfast', 'lunch', 'dinner', 'snacks'];
+    const completed = streamingData.completedSections || [];
+    const mealIcons: Record<string, string> = { breakfast: 'sunny', lunch: 'restaurant', dinner: 'moon', snacks: 'cafe' };
+    const sectionLabels: Record<string, { ar: string; en: string }> = {
+      breakfast: { ar: 'الفطور', en: 'Breakfast' },
+      lunch: { ar: 'الغداء', en: 'Lunch' },
+      dinner: { ar: 'العشاء', en: 'Dinner' },
+      snacks: { ar: 'وجبات خفيفة', en: 'Snacks' },
+    };
+    return (
+      <View style={styles.container}>
+        <ScrollView style={{ backgroundColor: colors.background }} contentContainerStyle={[styles.content, { paddingBottom: 80 }]}>
+          <View style={styles.streamingHeader}>
+            <ActivityIndicator size="small" color="#f59e0b" />
+            <Text style={[styles.streamingTitle, { color: colors.text }]}>
+              {isArabic ? 'جاري إنشاء خطتك الغذائية...' : 'Building your diet plan...'}
+            </Text>
+          </View>
+          <View style={styles.progressBar}>
+            <View style={[styles.progressFill, { width: `${(completed.length / 4) * 100}%` }]} />
+          </View>
+          <Text style={[styles.progressText, { color: colors.mutedText }]}>
+            {completed.length}/4 {isArabic ? 'أقسام مكتملة' : 'sections complete'}
+          </Text>
+
+          {allSections.map((section) => {
+            const isCompleted = completed.includes(section);
+            const meals = streamingData.mealPlan?.[section];
+
+            if (!isCompleted) {
+              return (
+                <View key={section} style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border, opacity: 0.5 }]}>
+                  <View style={styles.cardHeader}>
+                    <Ionicons name={mealIcons[section] as any} size={20} color="#9ca3af" />
+                    <Text style={[styles.cardTitle, { color: colors.mutedText }]}>
+                      {isArabic ? sectionLabels[section].ar : sectionLabels[section].en}
+                    </Text>
+                    <ActivityIndicator size="small" color="#f59e0b" style={{ marginLeft: 8 }} />
+                  </View>
+                  <View style={styles.skeletonContainer}>
+                    <View style={[styles.skeletonLine, { backgroundColor: isDark ? '#374151' : '#e5e7eb' }]} />
+                    <View style={[styles.skeletonLine, { backgroundColor: isDark ? '#374151' : '#e5e7eb', width: '60%' }]} />
+                  </View>
+                </View>
+              );
+            }
+
+            return (
+              <View key={section} style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
+                <View style={styles.cardHeader}>
+                  <Ionicons name={mealIcons[section] as any} size={20} color="#f59e0b" />
+                  <Text style={[styles.cardTitle, { color: colors.text }]}>
+                    {isArabic ? sectionLabels[section].ar : sectionLabels[section].en}
+                  </Text>
+                  <Ionicons name="checkmark-circle" size={18} color="#22c55e" style={{ marginLeft: 8 }} />
+                </View>
+                {meals && meals.map((meal: any, idx: number) => (
+                  <View key={idx} style={styles.mealItem}>
+                    <View style={styles.mealHeaderRow}>
+                      <Text style={styles.mealOptionLabel}>{t('mealOption')} {idx + 1}</Text>
+                    </View>
+                    <Text style={styles.mealName}>{meal.name}</Text>
+                    <Text style={[styles.mealDesc, { color: colors.text }]}>{meal.description}</Text>
+                    <View style={styles.mealMacros}>
+                      <Text style={styles.mealMacroText}>{meal.calories} kcal</Text>
+                      <Text style={styles.mealMacroText}>P:{meal.protein}g</Text>
+                      <Text style={styles.mealMacroText}>C:{meal.carbs}g</Text>
+                      <Text style={styles.mealMacroText}>F:{meal.fats}g</Text>
+                    </View>
+                  </View>
+                ))}
+              </View>
+            );
+          })}
+        </ScrollView>
       </View>
     );
   }
@@ -896,6 +982,13 @@ const styles = StyleSheet.create({
   generatingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 32, backgroundColor: '#f8fafc' },
   generatingTitle: { fontSize: 20, fontWeight: '700', color: '#1e293b', marginTop: 20, textAlign: 'center' },
   generatingDesc: { fontSize: 14, color: '#64748b', marginTop: 8, textAlign: 'center', lineHeight: 20 },
+  streamingHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, marginBottom: 12 },
+  streamingTitle: { fontSize: 18, fontWeight: '700', textAlign: 'center' },
+  progressBar: { height: 6, backgroundColor: '#e2e8f0', borderRadius: 3, marginBottom: 8, overflow: 'hidden' },
+  progressFill: { height: '100%', backgroundColor: '#f59e0b', borderRadius: 3 },
+  progressText: { fontSize: 13, textAlign: 'center', marginBottom: 16 },
+  skeletonContainer: { padding: 12, gap: 8 },
+  skeletonLine: { height: 14, borderRadius: 4, width: '80%' },
   stepHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 },
   stepCounter: { fontSize: 13, color: '#94a3b8', fontWeight: '500' },
   questTitle: { fontSize: 20, fontWeight: '700', color: '#1e293b', textAlign: 'center', marginBottom: 8 },
