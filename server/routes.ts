@@ -1692,7 +1692,7 @@ export async function registerRoutes(
   app.post("/api/workouts/share", isAuthenticated, async (req: any, res: Response) => {
     try {
       const { groupName, exercises } = req.body;
-      const userId = req.user.id;
+      const userId = req.user.claims?.sub || req.user.id;
 
       if (!groupName || !exercises || !Array.isArray(exercises) || exercises.length === 0) {
         return res.status(400).json({ error: "Invalid workout data provided." });
