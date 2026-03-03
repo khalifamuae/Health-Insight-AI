@@ -117,6 +117,15 @@ export default function DietScreen({ navigation, route }: any) {
       getDateCalendarPreference()
         .then(setDateCalendar)
         .catch(() => setDateCalendar('gregorian'));
+
+      if (step === 'intro' && !jobId) {
+        api.get<any>('/api/diet-plan/pending').then((res) => {
+          if (res?.hasPending && res.jobId) {
+            setJobId(res.jobId);
+            setStep('generating');
+          }
+        }).catch(() => {});
+      }
     }, [])
   );
 

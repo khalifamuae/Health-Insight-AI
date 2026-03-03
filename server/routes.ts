@@ -1364,11 +1364,8 @@ export async function registerRoutes(
 
       (async () => {
         const startTime = Date.now();
-        try {
-          await storage.updateDietPlanJob(job.id, { status: "processing" });
-          console.log(`Diet plan job ${job.id} started processing...`);
-
-          const dietPlan = await generateDietPlan({
+        const maxRetries = 2;
+        const planParams = {
             weight: profile?.weight ?? null,
             height: profile?.height ?? null,
             age: profile?.age ?? null,
@@ -1384,22 +1381,37 @@ export async function registerRoutes(
             customTargetCalories,
             language,
             testResults: testResultsData,
-          });
+        };
 
-          const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
-          await storage.updateDietPlanJob(job.id, {
-            status: "completed",
-            planData: JSON.stringify(dietPlan),
-          });
+        for (let attempt = 1; attempt <= maxRetries; attempt++) {
+          try {
+            await storage.updateDietPlanJob(job.id, { status: "processing" });
+            console.log(`Diet plan job ${job.id} attempt ${attempt}/${maxRetries}...`);
 
-          console.log(`Diet plan job ${job.id} completed in ${elapsed}s`);
-        } catch (error) {
-          const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
-          console.error(`Diet plan job ${job.id} failed after ${elapsed}s:`, error);
-          await storage.updateDietPlanJob(job.id, {
-            status: "failed",
-            error: error instanceof Error ? error.message : "Unknown error",
-          });
+            const dietPlan = await generateDietPlan(planParams);
+
+            const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
+            await storage.updateDietPlanJob(job.id, {
+              status: "completed",
+              planData: JSON.stringify(dietPlan),
+            });
+
+            console.log(`Diet plan job ${job.id} completed in ${elapsed}s (attempt ${attempt})`);
+            return;
+          } catch (error) {
+            const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
+            const errMsg = error instanceof Error ? error.message : "Unknown error";
+            console.error(`Diet plan job ${job.id} attempt ${attempt} failed after ${elapsed}s: ${errMsg}`);
+
+            if (attempt >= maxRetries) {
+              await storage.updateDietPlanJob(job.id, {
+                status: "failed",
+                error: errMsg,
+              });
+            } else {
+              console.log(`Retrying diet plan job ${job.id}...`);
+            }
+          }
         }
       })();
 
@@ -1407,6 +1419,19 @@ export async function registerRoutes(
     } catch (error) {
       console.error("Error starting diet plan job:", error);
       res.status(500).json({ error: "Failed to start diet plan generation" });
+    }
+  });
+
+  app.get("/api/diet-plan/pending", isAuthenticated, async (req: any, res: Response) => {
+    try {
+      const userId = req.user.claims?.sub || req.user.id;
+      const job = await storage.getLatestPendingJob(userId);
+      if (!job) {
+        return res.json({ hasPending: false });
+      }
+      res.json({ hasPending: true, jobId: job.id, status: job.status });
+    } catch (error) {
+      res.json({ hasPending: false });
     }
   });
 
