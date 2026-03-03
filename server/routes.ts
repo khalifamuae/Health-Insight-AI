@@ -550,6 +550,59 @@ export async function registerRoutes(
     }
   });
 
+  app.get("/api/user", isAuthenticated, async (req: any, res: Response) => {
+    try {
+      const userId = req.user.claims.sub;
+      let profile = await storage.getUserProfile(userId);
+      if (!profile) {
+        const trialEnd = new Date();
+        trialEnd.setDate(trialEnd.getDate() + 15);
+        profile = await storage.upsertUserProfile({
+          id: userId,
+          subscriptionPlan: "free",
+          filesUploaded: 0,
+          dietPlansGenerated: 0,
+          language: "ar",
+          trialStartedAt: new Date(),
+          trialEndsAt: trialEnd,
+        });
+      }
+      res.json(profile);
+    } catch (error) {
+      console.error("Error fetching profile:", error);
+      res.status(500).json({ error: "Failed to fetch profile" });
+    }
+  });
+
+  app.patch("/api/user", isAuthenticated, async (req: any, res: Response) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { phone, age, weight, height, gender, fitnessGoal, activityLevel, mealPreference, hasAllergies, allergies, proteinPreference, proteinPreferences, carbPreferences, bloodType, firstName, lastName, profileImagePath } = req.body;
+      if (age !== undefined && age !== null && (typeof age !== 'number' || isNaN(age) || age < 1 || age > 150)) {
+        return res.status(400).json({ error: "Invalid age" });
+      }
+      if (weight !== undefined && weight !== null && (typeof weight !== 'number' || isNaN(weight) || weight < 1 || weight > 500)) {
+        return res.status(400).json({ error: "Invalid weight" });
+      }
+      if (height !== undefined && height !== null && (typeof height !== 'number' || isNaN(height) || height < 30 || height > 300)) {
+        return res.status(400).json({ error: "Invalid height" });
+      }
+      if (gender !== undefined && gender !== null && !['male', 'female'].includes(gender)) {
+        return res.status(400).json({ error: "Invalid gender" });
+      }
+      const profile = await storage.upsertUserProfile({
+        id: userId,
+        firstName, lastName, profileImagePath, phone, age, weight, height, gender,
+        fitnessGoal, activityLevel, mealPreference, hasAllergies, allergies,
+        proteinPreference, proteinPreferences, carbPreferences, bloodType,
+      });
+      res.json(profile);
+    } catch (error) {
+      console.error("Error updating profile:", error);
+      res.status(500).json({ error: "Failed to update profile" });
+    }
+  });
+
   // Helper: check if user has active subscription or trial
   async function checkSubscriptionAccess(userId: string): Promise<{ hasAccess: boolean; reason?: string; reasonAr?: string }> {
     const profile = await storage.getUserProfile(userId);
