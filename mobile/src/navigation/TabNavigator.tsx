@@ -4,6 +4,8 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { useTranslation } from 'react-i18next';
 import { Ionicons } from '@expo/vector-icons';
 import { BlurView } from 'expo-blur';
+import { useAuth } from '../context/AuthContext';
+import { Alert } from 'react-native';
 
 import { useAppTheme } from '../context/ThemeContext';
 import HomeScreen from '../screens/HomeScreen';
@@ -19,6 +21,7 @@ const Tab = createBottomTabNavigator();
 
 export default function TabNavigator({ navigation }: any) {
   const { t, i18n } = useTranslation();
+  const { logout } = useAuth();
   const { colors, isDark } = useAppTheme();
   const normalizedLanguage = (i18n.resolvedLanguage || i18n.language || '').toLowerCase();
   const isArabic = normalizedLanguage.startsWith('ar');
@@ -441,6 +444,42 @@ export default function TabNavigator({ navigation }: any) {
                     ]}
                   >
                     {t('profileTab')}
+                  </Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[
+                    styles.menuItem,
+                    {
+                      borderBottomColor: 'transparent',
+                      flexDirection: 'row',
+                    },
+                  ]}
+                  onPress={() => {
+                    setIsMenuVisible(false);
+                    Alert.alert(
+                      isArabic ? 'تسجيل الخروج' : 'Logout',
+                      isArabic ? 'هل تريد تسجيل الخروج؟' : 'Are you sure you want to logout?',
+                      [
+                        { text: isArabic ? 'إلغاء' : 'Cancel', style: 'cancel' },
+                        { text: isArabic ? 'خروج' : 'Logout', style: 'destructive', onPress: () => logout() },
+                      ]
+                    );
+                  }}
+                  testID="button-menu-logout"
+                >
+                  <Ionicons name="log-out-outline" size={18} color="#ef4444" />
+                  <Text
+                    numberOfLines={1}
+                    style={[
+                      styles.menuItemText,
+                      {
+                        color: '#ef4444',
+                        textAlign: 'left',
+                      },
+                    ]}
+                  >
+                    {isArabic ? 'تسجيل الخروج' : 'Logout'}
                   </Text>
                 </TouchableOpacity>
               </ScrollView>

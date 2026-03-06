@@ -88,7 +88,7 @@ export default function ProfileScreen({ navigation }: { navigation: any }) {
   }, []);
 
   const updateMutation = useMutation({
-    mutationFn: (data: Partial<UserProfile>) => 
+    mutationFn: (data: Partial<UserProfile>) =>
       api.patch('/api/profile', data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['profile'] });
@@ -236,8 +236,8 @@ export default function ProfileScreen({ navigation }: { navigation: any }) {
           </Text>
         </View>
         <Text style={[styles.subscriptionRemaining, { color: secondaryText }]}>
-          {subInfo.remaining === Infinity 
-            ? '∞' 
+          {subInfo.remaining === Infinity
+            ? '∞'
             : `${Math.max(0, subInfo.remaining)} ${t('subscription.remaining')}`}
         </Text>
         {(profile?.subscriptionPlan || 'free') === 'free' && (
@@ -278,10 +278,10 @@ export default function ProfileScreen({ navigation }: { navigation: any }) {
               onPress={() => setGender('male')}
               testID="button-gender-male"
             >
-              <Ionicons 
-                name="male" 
-                size={20} 
-                color={gender === 'male' ? '#fff' : '#3b82f6'} 
+              <Ionicons
+                name="male"
+                size={20}
+                color={gender === 'male' ? '#fff' : '#3b82f6'}
               />
               <Text style={[
                 styles.genderButtonText,
@@ -295,10 +295,10 @@ export default function ProfileScreen({ navigation }: { navigation: any }) {
               onPress={() => setGender('female')}
               testID="button-gender-female"
             >
-              <Ionicons 
-                name="female" 
-                size={20} 
-                color={gender === 'female' ? '#fff' : '#ec4899'} 
+              <Ionicons
+                name="female"
+                size={20}
+                color={gender === 'female' ? '#fff' : '#ec4899'}
               />
               <Text style={[
                 styles.genderButtonText,
@@ -419,8 +419,8 @@ export default function ProfileScreen({ navigation }: { navigation: any }) {
 
       <View style={[styles.section, { backgroundColor: cardBg }]}>
         <Text style={[styles.sectionTitle, { color: primaryText }]}>{t('settings')}</Text>
-        
-        <TouchableOpacity 
+
+        <TouchableOpacity
           style={[styles.settingItem, { borderBottomColor: colors.border }]}
           onPress={toggleLanguage}
           testID="button-toggle-language"
@@ -569,7 +569,7 @@ const getStyles = (isArabic: boolean) => StyleSheet.create({
   },
   content: {
     padding: 16,
-    paddingBottom: 100,
+    paddingBottom: 120,
   },
   header: {
     alignItems: 'center',
@@ -663,7 +663,7 @@ const getStyles = (isArabic: boolean) => StyleSheet.create({
     color: '#1e293b',
     marginBottom: 16,
     textAlign: 'left',
-    },
+  },
   inputGroup: {
     marginBottom: 16
   },
@@ -672,7 +672,7 @@ const getStyles = (isArabic: boolean) => StyleSheet.create({
     color: '#64748b',
     marginBottom: 8,
     textAlign: 'left',
-    },
+  },
   input: {
     backgroundColor: '#f8fafc',
     borderRadius: 8,
@@ -681,7 +681,7 @@ const getStyles = (isArabic: boolean) => StyleSheet.create({
     borderWidth: 1,
     borderColor: '#e2e8f0',
     textAlign: 'left',
-    },
+  },
   selectorInput: {
     backgroundColor: '#f8fafc',
     borderRadius: 8,
@@ -761,7 +761,7 @@ const getStyles = (isArabic: boolean) => StyleSheet.create({
     color: '#1e293b',
     marginHorizontal: 12,
     textAlign: 'left',
-    },
+  },
   affiliateCard: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -786,13 +786,13 @@ const getStyles = (isArabic: boolean) => StyleSheet.create({
     fontWeight: '600',
     color: '#7c3aed',
     textAlign: 'left',
-    },
+  },
   affiliateSubtitle: {
     fontSize: 12,
     color: '#64748b',
     marginTop: 2,
     textAlign: 'left',
-    },
+  },
   logoutButton: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -847,7 +847,7 @@ const getStyles = (isArabic: boolean) => StyleSheet.create({
     color: '#94a3b8',
     lineHeight: 16,
     textAlign: 'left',
-    },
+  },
   modalBackdrop: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.35)',
@@ -865,7 +865,7 @@ const getStyles = (isArabic: boolean) => StyleSheet.create({
     color: '#1e293b',
     marginBottom: 12,
     textAlign: 'left',
-    },
+  },
   bloodTypeGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',

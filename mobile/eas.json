@@ -1,6 +1,7 @@
 {
   "cli": {
-    "version": ">= 3.0.0"
+    "version": ">= 3.0.0",
+    "appVersionSource": "remote"
   },
   "build": {
     "production": {
@@ -9,19 +10,23 @@
       },
       "android": {
         "buildType": "app-bundle"
-      }
+      },
+      "env": {
+        "API_URL": "https://health-insight-ai.replit.app"
+      },
+      "autoIncrement": true
     }
   },
   "submit": {
     "production": {
-      "android": {
-        "serviceAccountKeyPath": "./google-services.json",
-        "track": "production"
-      },
       "ios": {
         "appleId": "khalifamuae@gmail.com",
         "ascAppId": "6759469048",
         "appleTeamId": "TL3YF5A526"
+      },
+      "android": {
+        "serviceAccountKeyPath": "./google-services.json",
+        "track": "production"
       }
     }
   }

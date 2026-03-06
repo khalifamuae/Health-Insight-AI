@@ -19,6 +19,7 @@ import { api, queries } from '../lib/api';
 import { useAIConsent } from '../context/AIConsentContext';
 import { useAppTheme } from '../context/ThemeContext';
 import { formatAppDate, getDateCalendarPreference, type CalendarType } from '../lib/dateFormat';
+import DietPlanDisplay from '../components/DietPlanDisplay';
 
 type Step = 'intro' | 'disclaimer' | 'activity' | 'allergy' | 'allergySelect' | 'proteinPref' | 'carbPref' | 'preference' | 'generating' | 'streaming' | 'result';
 
@@ -98,7 +99,6 @@ export default function DietScreen({ navigation, route }: any) {
   const [customTargetCalories, setCustomTargetCalories] = useState('');
   const [plan, setPlan] = useState<any>(null);
   const [jobId, setJobId] = useState<string | null>(null);
-  const [selectedMeals, setSelectedMeals] = useState<Record<string, boolean>>({});
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const [streamingData, setStreamingData] = useState<{ completedSections: string[]; mealPlan: Record<string, any[]> } | null>(null);
 
@@ -125,7 +125,7 @@ export default function DietScreen({ navigation, route }: any) {
             setJobId(res.jobId);
             setStep('generating');
           }
-        }).catch(() => {});
+        }).catch(() => { });
       }
     }, [])
   );
@@ -151,16 +151,6 @@ export default function DietScreen({ navigation, route }: any) {
     try {
       const parsed = typeof incomingPlan === 'string' ? JSON.parse(incomingPlan) : incomingPlan;
       setPlan(parsed);
-
-      // Auto-select the first option for each meal type if they exist
-      const initialSelection: Record<string, boolean> = {};
-      ['breakfast', 'lunch', 'dinner', 'snacks'].forEach((type) => {
-        if (parsed.mealPlan?.[type]?.length > 0) {
-          initialSelection[`${type}-0`] = true;
-        }
-      });
-      setSelectedMeals(initialSelection);
-
       setStep('result');
     } catch {
       Alert.alert(
@@ -181,15 +171,6 @@ export default function DietScreen({ navigation, route }: any) {
             const parsed = typeof result.planData === 'string' ? JSON.parse(result.planData) : result.planData;
             setPlan(parsed);
             setStreamingData(null);
-
-            const initialSelection: Record<string, boolean> = {};
-            ['breakfast', 'lunch', 'dinner', 'snacks'].forEach((type) => {
-              if (parsed.mealPlan?.[type]?.length > 0) {
-                initialSelection[`${type}-0`] = true;
-              }
-            });
-            setSelectedMeals(initialSelection);
-
             setStep('result');
             setJobId(null);
             if (pollingRef.current) clearInterval(pollingRef.current);
@@ -318,33 +299,7 @@ export default function DietScreen({ navigation, route }: any) {
     return idx >= 0 ? idx + 1 : 0;
   };
 
-  const calculatorTotals = React.useMemo(() => {
-    if (!plan?.mealPlan) return { calories: 0, protein: 0, carbs: 0, fats: 0 };
-    let cal = 0, pro = 0, car = 0, fat = 0;
-    Object.keys(selectedMeals).forEach(key => {
-      if (selectedMeals[key]) {
-        const [type, idxStr] = key.split('-');
-        const idx = parseInt(idxStr, 10);
-        const meal = plan.mealPlan[type]?.[idx];
-        if (meal) {
-          cal += meal.calories || 0;
-          pro += meal.protein || 0;
-          car += meal.carbs || 0;
-          fat += meal.fats || 0;
-        }
-      }
-    });
-    return { calories: Math.round(cal), protein: Math.round(pro), carbs: Math.round(car), fats: Math.round(fat) };
-  }, [plan, selectedMeals]);
 
-  const toggleMealSelection = (mealType: string, idx: number) => {
-    setSelectedMeals(prev => {
-      const next = { ...prev };
-      const key = `${mealType}-${idx}`;
-      next[key] = !next[key];
-      return next;
-    });
-  };
 
   const renderStepHeader = (backStep: Step, totalSteps = 5) => (
     <View style={styles.stepHeader}>
@@ -450,208 +405,19 @@ export default function DietScreen({ navigation, route }: any) {
     return (
       <View style={styles.container}>
         <ScrollView style={{ backgroundColor: colors.background }} contentContainerStyle={styles.content}>
-          <Text style={[styles.resultTitle, { color: colors.text }]}>{t('dietPlanReady')}</Text>
+          <Text style={[styles.resultTitle, { color: colors.text, marginBottom: 16 }]}>{t('dietPlanReady')}</Text>
 
-          {plan.healthSummary && (
-            <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
-              <View style={styles.cardHeader}>
-                <Ionicons name="heart" size={20} color="#ef4444" />
-                <Text style={[styles.cardTitle, { color: colors.text }]}>{t('healthSummary')}</Text>
-              </View>
-              <Text style={[styles.cardText, { color: colors.mutedText }]}>{plan.healthSummary}</Text>
-            </View>
-          )}
+          <DietPlanDisplay
+            plan={plan}
+            colors={colors}
+            isDark={isDark}
+            t={t}
+            isArabicSystem={isArabic}
+          />
 
-          {plan.calories && (
-            <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
-              <View style={styles.cardHeader}>
-                <Ionicons name="flame" size={20} color="#f59e0b" />
-                <Text style={[styles.cardTitle, { color: colors.text }]}>{t('calories')}</Text>
-              </View>
-              <View style={styles.calorieRow}>
-                <View style={styles.calorieStat}>
-                  <Text style={styles.calorieValue}>{plan.calories.bmr}</Text>
-                  <Text style={styles.calorieLabel}>{t('bmr')}</Text>
-                </View>
-                <View style={styles.calorieStat}>
-                  <Text style={styles.calorieValue}>{plan.calories.tdee}</Text>
-                  <Text style={styles.calorieLabel}>{t('tdee')}</Text>
-                </View>
-                <View style={styles.calorieStat}>
-                  <Text style={[styles.calorieValue, { color: '#22c55e' }]}>{plan.calories.target}</Text>
-                  <Text style={styles.calorieLabel}>{t('target')}</Text>
-                </View>
-              </View>
-              {plan.macros && (
-                <View style={styles.macroRow}>
-                  <View style={[styles.macroBadge, { backgroundColor: '#dbeafe' }]}>
-                    <Text style={[styles.macroText, { color: '#2563eb' }]}>{t('protein')} {plan.macros.protein?.grams}g</Text>
-                  </View>
-                  <View style={[styles.macroBadge, { backgroundColor: '#fef3c7' }]}>
-                    <Text style={[styles.macroText, { color: '#d97706' }]}>{t('carbs')} {plan.macros.carbs?.grams}g</Text>
-                  </View>
-                  <View style={[styles.macroBadge, { backgroundColor: '#fce7f3' }]}>
-                    <Text style={[styles.macroText, { color: '#db2777' }]}>{t('fats')} {plan.macros.fats?.grams}g</Text>
-                  </View>
-                </View>
-              )}
-            </View>
-          )}
-
-          {plan.intakeAlignment && (
-            <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
-              <View style={styles.cardHeader}>
-                <Ionicons name="analytics" size={20} color="#6366f1" />
-                <Text style={[styles.cardTitle, { color: colors.text }]}>{t('intakeAlignment') || (isArabic ? 'مدى توافق الأكل مع الهدف' : 'Intake Alignment with Your Goal')}</Text>
-              </View>
-              <Text style={[styles.cardText, { color: colors.mutedText }]}>{plan.intakeAlignment}</Text>
-            </View>
-          )}
-
-          {plan.mealPlan && ['breakfast', 'lunch', 'dinner', 'snacks'].map((mealType) => {
-            const meals = plan.mealPlan[mealType];
-            if (!meals || meals.length === 0) return null;
-            const mealIcons: Record<string, string> = { breakfast: 'sunny', lunch: 'restaurant', dinner: 'moon', snacks: 'cafe' };
-            return (
-              <View key={mealType} style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
-                <View style={styles.cardHeader}>
-                  <Ionicons name={mealIcons[mealType] as any} size={20} color="#f59e0b" />
-                  <Text style={[styles.cardTitle, { color: colors.text }]}>{t(mealType)}</Text>
-                </View>
-                {meals.map((meal: any, idx: number) => {
-                  const isSelected = selectedMeals[`${mealType}-${idx}`];
-                  return (
-                    <TouchableOpacity
-                      key={idx}
-                      style={[
-                        styles.mealItem,
-                        isSelected && { borderColor: '#3b82f6', backgroundColor: isDark ? '#1e293b' : '#eff6ff', borderWidth: 1 }
-                      ]}
-                      activeOpacity={0.7}
-                      onPress={() => toggleMealSelection(mealType, idx)}
-                    >
-                      <View style={styles.mealHeaderRow}>
-                        <Text style={[styles.mealOptionLabel, isSelected && { color: '#3b82f6' }]}>
-                          {t('mealOption')} {idx + 1}
-                        </Text>
-                        <Ionicons
-                          name={isSelected ? "checkmark-circle" : "ellipse-outline"}
-                          size={22}
-                          color={isSelected ? "#3b82f6" : colors.mutedText}
-                        />
-                      </View>
-                      <Text style={styles.mealName}>{meal.name}</Text>
-                      <Text style={[styles.mealDesc, { color: colors.text }]}>{meal.description}</Text>
-                      <View style={styles.mealMacros}>
-                        <Text style={styles.mealMacroText}>{meal.calories} kcal</Text>
-                        <Text style={styles.mealMacroText}>P:{meal.protein}g</Text>
-                        <Text style={styles.mealMacroText}>C:{meal.carbs}g</Text>
-                        <Text style={styles.mealMacroText}>F:{meal.fats}g</Text>
-                      </View>
-                      {meal.benefits && <Text style={[styles.mealBenefits, { color: colors.mutedText }]}>{meal.benefits}</Text>}
-                    </TouchableOpacity>
-                  );
-                })}
-              </View>
-            );
-          })}
-
-          {plan.supplements && plan.supplements.length > 0 && (
-            <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
-              <View style={styles.cardHeader}>
-                <Ionicons name="medkit" size={20} color="#8b5cf6" />
-                <Text style={[styles.cardTitle, { color: colors.text }]}>{t('supplements')}</Text>
-              </View>
-              {plan.supplements.map((sup: any, idx: number) => (
-                <View key={idx} style={styles.supplementItem}>
-                  <Text style={styles.supplementName}>{sup.name}</Text>
-                  <Text style={styles.supplementDetail}>{sup.dosage} - {sup.reason}</Text>
-                  {sup.duration && <Text style={styles.supplementDetail}>{t('supplementDuration')}: {sup.duration}</Text>}
-                  {sup.targetLabValue && (
-                    <View style={styles.targetLabRow}>
-                      <Ionicons name="flask" size={12} color="#6366f1" />
-                      <Text style={styles.targetLabText}>{isArabic ? 'القيمة المستهدفة' : 'Target'}: {sup.targetLabValue}</Text>
-                    </View>
-                  )}
-                  {sup.scientificBasis && (
-                    <View style={styles.scientificRow}>
-                      <Ionicons name="school" size={12} color="#8b5cf6" />
-                      <Text style={styles.scientificText}>{sup.scientificBasis}</Text>
-                    </View>
-                  )}
-                  {sup.foodSources && sup.foodSources.length > 0 && (
-                    <Text style={styles.supplementFoods}>{t('supplementFoodSources')}: {sup.foodSources.join(', ')}</Text>
-                  )}
-                </View>
-              ))}
-            </View>
-          )}
-
-          {plan.conditionTips && plan.conditionTips.length > 0 && (
-            <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
-              <View style={styles.cardHeader}>
-                <Ionicons name="bulb" size={20} color="#22c55e" />
-                <Text style={[styles.cardTitle, { color: colors.text }]}>{t('conditionTips')}</Text>
-              </View>
-              {plan.conditionTips.map((tip: any, idx: number) => (
-                <View key={idx} style={styles.tipItem}>
-                  <Text style={styles.tipCondition}>{tip.condition}</Text>
-                  {tip.advice?.map((a: string, i: number) => (
-                    <Text key={i} style={styles.tipAdvice}>• {a}</Text>
-                  ))}
-                  {tip.avoidFoods && tip.avoidFoods.length > 0 && (
-                    <Text style={styles.tipAvoid}>{t('avoidFoods')}: {tip.avoidFoods.join(', ')}</Text>
-                  )}
-                </View>
-              ))}
-            </View>
-          )}
-
-          {plan.tips && plan.tips.length > 0 && (
-            <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
-              <View style={styles.cardHeader}>
-                <Ionicons name="information-circle" size={20} color="#3b82f6" />
-                <Text style={[styles.cardTitle, { color: colors.text }]}>{t('tips')}</Text>
-              </View>
-              {plan.tips.map((tip: string, idx: number) => (
-                <Text key={idx} style={styles.tipText}>• {tip}</Text>
-              ))}
-            </View>
-          )}
-
-          {plan.references && plan.references.length > 0 && (
-            <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border, marginBottom: 160 }]}>
-              <View style={styles.cardHeader}>
-                <Ionicons name="library" size={20} color="#6b7280" />
-                <Text style={[styles.cardTitle, { color: colors.text }]}>{t('scientificReferences') || 'Scientific References'}</Text>
-              </View>
-              <View style={styles.referencesList}>
-                {plan.references.map((ref: string, idx: number) => (
-                  <Text key={idx} style={[styles.referenceText, { color: colors.mutedText }]}>• {ref}</Text>
-                ))}
-              </View>
-            </View>
-          )}
         </ScrollView>
 
         <View style={[styles.calculatorBar, { backgroundColor: isDark ? '#1e293b' : '#ffffff', borderTopColor: colors.border }]}>
-          <View style={styles.calculatorHeader}>
-            <Text style={[styles.calculatorTitle, { color: colors.text }]}>{isArabic ? 'مجموع الوجبات المحددة' : 'Selected Meals Total'}</Text>
-            <Text style={[styles.calculatorCalText, { color: '#f59e0b' }]}>
-              <Ionicons name="flame" size={16} color="#f59e0b" /> {calculatorTotals.calories} {isArabic ? 'سعرة' : 'kcal'}
-            </Text>
-          </View>
-          <View style={styles.calculatorMacros}>
-            <View style={[styles.macroBadge, { backgroundColor: '#dbeafe' }]}>
-              <Text style={[styles.macroText, { color: '#2563eb' }]}>P {calculatorTotals.protein}g</Text>
-            </View>
-            <View style={[styles.macroBadge, { backgroundColor: '#fce7f3' }]}>
-              <Text style={[styles.macroText, { color: '#db2777' }]}>C {calculatorTotals.carbs}g</Text>
-            </View>
-            <View style={[styles.macroBadge, { backgroundColor: '#fef3c7' }]}>
-              <Text style={[styles.macroText, { color: '#d97706' }]}>F {calculatorTotals.fats}g</Text>
-            </View>
-          </View>
           <View style={styles.actionButtons}>
             <TouchableOpacity style={styles.saveButton} onPress={() => saveMutation.mutate()} testID="button-save-plan">
               <Ionicons name="save" size={20} color="#fff" />

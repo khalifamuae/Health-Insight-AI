@@ -9,6 +9,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import { queries } from '../lib/api';
 import { useAppTheme } from '../context/ThemeContext';
 import { formatAppDate, getDateCalendarPreference, type CalendarType } from '../lib/dateFormat';
+import DietPlanDisplay from '../components/DietPlanDisplay';
 
 interface SavedPlan {
   id: string;
@@ -19,10 +20,11 @@ interface SavedPlan {
 const isArabic = I18nManager.isRTL;
 
 export default function MyDietPlansScreen({ navigation }: any) {
-  const { i18n } = useTranslation();
-  const { colors } = useAppTheme();
+  const { t, i18n } = useTranslation();
+  const { colors, isDark } = useAppTheme();
   const isArabic = isArabicLanguage();
   const [dateCalendar, setDateCalendar] = useState<CalendarType>('gregorian');
+  const [expandedId, setExpandedId] = useState<string | null>(null);
 
   const { data: savedPlans, isLoading } = useQuery<SavedPlan[]>({
     queryKey: ['savedDietPlans'],
@@ -39,16 +41,8 @@ export default function MyDietPlansScreen({ navigation }: any) {
     }, [])
   );
 
-  const openSavedPlan = (planData: string | unknown) => {
-    try {
-      const parsed = typeof planData === 'string' ? JSON.parse(planData) : planData;
-      navigation.navigate('Diet', { openPlanData: parsed, openPlanNonce: Date.now() });
-    } catch {
-      Alert.alert(
-        isArabic ? 'تعذر فتح الخطة' : 'Unable to open plan',
-        isArabic ? 'هذا الجدول الغذائي غير صالح أو تالف.' : 'This saved plan is invalid or corrupted.'
-      );
-    }
+  const toggleExpand = (id: string) => {
+    setExpandedId(prev => prev === id ? null : id);
   };
 
   return (
@@ -79,27 +73,43 @@ export default function MyDietPlansScreen({ navigation }: any) {
           </Text>
         </View>
       ) : (
-        savedPlansList.map((plan, index) => (
-          <View key={plan.id} style={[styles.planCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-            <View style={styles.planHeader}>
-              <Text style={[styles.planTitle, { color: colors.text }]}>
-                {isArabic ? `الخطة رقم ${index + 1}` : `Plan #${index + 1}`}
-              </Text>
-              <Text style={[styles.planDate, { color: colors.mutedText }]}>
-                {formatAppDate(plan.createdAt, i18n.language, dateCalendar)}
-              </Text>
-            </View>
+        savedPlansList.map((plan, index) => {
+          const isExpanded = expandedId === plan.id;
+          let parsedPlan = null;
+          if (isExpanded) {
+            try {
+              parsedPlan = typeof plan.planData === 'string' ? JSON.parse(plan.planData) : plan.planData;
+            } catch (e) { }
+          }
 
-            <TouchableOpacity
-              style={styles.openButton}
-              onPress={() => openSavedPlan(plan.planData)}
-              testID={`button-open-saved-plan-${plan.id}`}
-            >
-              <Ionicons name="open-outline" size={18} color="#ffffff" />
-              <Text style={styles.openButtonText}>{isArabic ? 'فتح الجدول' : 'Open Plan'}</Text>
-            </TouchableOpacity>
-          </View>
-        ))
+          return (
+            <View key={plan.id} style={[styles.planCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+              <TouchableOpacity activeOpacity={0.7} style={styles.planHeader} onPress={() => toggleExpand(plan.id)}>
+                <View>
+                  <Text style={[styles.planTitle, { color: colors.text }]}>
+                    {isArabic ? `الخطة رقم ${savedPlansList.length - index}` : `Plan #${savedPlansList.length - index}`}
+                  </Text>
+                  <Text style={[styles.planDate, { color: colors.mutedText }]}>
+                    {formatAppDate(plan.createdAt, i18n.language, dateCalendar)}
+                  </Text>
+                </View>
+                <Ionicons name={isExpanded ? 'chevron-up' : 'chevron-down'} size={24} color={colors.text} />
+              </TouchableOpacity>
+
+              {isExpanded && parsedPlan && (
+                <View style={[styles.planContentContainer, { borderTopColor: colors.border }]}>
+                  <DietPlanDisplay
+                    plan={parsedPlan}
+                    colors={colors}
+                    isDark={isDark}
+                    t={t}
+                    isArabicSystem={isArabic}
+                  />
+                </View>
+              )}
+            </View>
+          );
+        })
       )}
     </ScrollView>
   );
@@ -171,20 +181,11 @@ const styles = StyleSheet.create({
   },
   planDate: {
     fontSize: 12,
+    marginTop: 4,
   },
-  openButton: {
-    backgroundColor: '#2563eb',
-    borderRadius: 10,
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-  },
-  openButtonText: {
-    color: '#ffffff',
-    fontSize: 14,
-    fontWeight: '700',
+  planContentContainer: {
+    marginTop: 12,
+    paddingTop: 12,
+    borderTopWidth: 1,
   },
 });
