@@ -1,12 +1,12 @@
 import React, { useCallback, useMemo, useState } from 'react';
 import { Alert, I18nManager, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { isArabicLanguage } from '../lib/isArabic';
 import { useFocusEffect } from '@react-navigation/native';
 
-import { queries } from '../lib/api';
+import { api, queries } from '../lib/api';
 import { useAppTheme } from '../context/ThemeContext';
 import { formatAppDate, getDateCalendarPreference, type CalendarType } from '../lib/dateFormat';
 import DietPlanDisplay from '../components/DietPlanDisplay';
@@ -25,6 +25,8 @@ export default function MyDietPlansScreen({ navigation }: any) {
   const isArabic = isArabicLanguage();
   const [dateCalendar, setDateCalendar] = useState<CalendarType>('gregorian');
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [translatingId, setTranslatingId] = useState<string | null>(null);
+  const queryClient = useQueryClient();
 
   const { data: savedPlans, isLoading } = useQuery<SavedPlan[]>({
     queryKey: ['savedDietPlans'],
@@ -41,8 +43,86 @@ export default function MyDietPlansScreen({ navigation }: any) {
     }, [])
   );
 
-  const toggleExpand = (id: string) => {
-    setExpandedId(prev => prev === id ? null : id);
+  const translateMutation = useMutation({
+    mutationFn: async ({ planId, targetLanguage }: { planId: string, targetLanguage: 'en' | 'ar' }) => {
+      const res = await api.post('/api/diet-plan/translate', { planId, targetLanguage });
+      return res;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['savedDietPlans'] });
+    },
+    onError: () => {
+      Alert.alert(
+        isArabic ? 'خطأ' : 'Error',
+        isArabic ? 'تعذر ترجمة الخطة الغذائية' : 'Failed to translate diet plan'
+      );
+    }
+  });
+
+  const toggleExpand = async (id: string, planData: any) => {
+    if (expandedId === id) {
+      setExpandedId(null);
+      return;
+    }
+
+    let parsedPlan = null;
+    try {
+      parsedPlan = typeof planData === 'string' ? JSON.parse(planData) : planData;
+    } catch (e) { }
+
+    if (parsedPlan) {
+      const planStr = JSON.stringify(parsedPlan);
+      const isPlanContentArabic = /[\u0600-\u06FF]/.test(planStr);
+
+      const needsTranslation = (isArabic && !isPlanContentArabic) || (!isArabic && isPlanContentArabic);
+
+      if (needsTranslation) {
+        setTranslatingId(id);
+        setExpandedId(id);
+        try {
+          await translateMutation.mutateAsync({
+            planId: id,
+            targetLanguage: isArabic ? 'ar' : 'en'
+          });
+        } catch (err) {
+          setExpandedId(null);
+        } finally {
+          setTranslatingId(null);
+        }
+        return;
+      }
+    }
+    setExpandedId(id);
+  };
+
+  const deleteMutation = useMutation({
+    mutationFn: async (id: string) => {
+      await api.delete(`/api/saved-diet-plans/${id}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['savedDietPlans'] });
+    },
+    onError: () => {
+      Alert.alert(
+        isArabic ? 'خطأ' : 'Error',
+        isArabic ? 'تعذر حذف الخطة الغذائية' : 'Failed to delete diet plan'
+      );
+    }
+  });
+
+  const handleDelete = (id: string) => {
+    Alert.alert(
+      isArabic ? 'حذف الخطة' : 'Delete Plan',
+      isArabic ? 'هل أنت متأكد من حذف هذه الخطة الغذائية؟' : 'Are you sure you want to delete this diet plan?',
+      [
+        { text: isArabic ? 'إلغاء' : 'Cancel', style: 'cancel' },
+        {
+          text: isArabic ? 'حذف' : 'Delete',
+          style: 'destructive',
+          onPress: () => deleteMutation.mutate(id)
+        }
+      ]
+    );
   };
 
   return (
@@ -84,27 +164,42 @@ export default function MyDietPlansScreen({ navigation }: any) {
 
           return (
             <View key={plan.id} style={[styles.planCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-              <TouchableOpacity activeOpacity={0.7} style={styles.planHeader} onPress={() => toggleExpand(plan.id)}>
-                <View>
-                  <Text style={[styles.planTitle, { color: colors.text }]}>
-                    {isArabic ? `الخطة رقم ${savedPlansList.length - index}` : `Plan #${savedPlansList.length - index}`}
-                  </Text>
-                  <Text style={[styles.planDate, { color: colors.mutedText }]}>
-                    {formatAppDate(plan.createdAt, i18n.language, dateCalendar)}
-                  </Text>
-                </View>
-                <Ionicons name={isExpanded ? 'chevron-up' : 'chevron-down'} size={24} color={colors.text} />
-              </TouchableOpacity>
+              <View style={styles.planHeaderContainer}>
+                <TouchableOpacity activeOpacity={0.7} style={styles.planHeader} onPress={() => toggleExpand(plan.id, plan.planData)}>
+                  <View>
+                    <Text style={[styles.planTitle, { color: colors.text }]}>
+                      {isArabic ? `الخطة رقم ${savedPlansList.length - index}` : `Plan #${savedPlansList.length - index}`}
+                    </Text>
+                    <Text style={[styles.planDate, { color: colors.mutedText }]}>
+                      {formatAppDate(plan.createdAt, i18n.language, dateCalendar)}
+                    </Text>
+                  </View>
+                  <Ionicons name={isExpanded ? 'chevron-up' : 'chevron-down'} size={24} color={colors.text} />
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.deleteButton}
+                  onPress={() => handleDelete(plan.id)}
+                  disabled={deleteMutation.isPending}
+                >
+                  <Ionicons name="trash-outline" size={20} color="#ef4444" />
+                </TouchableOpacity>
+              </View>
 
-              {isExpanded && parsedPlan && (
+              {isExpanded && (
                 <View style={[styles.planContentContainer, { borderTopColor: colors.border }]}>
-                  <DietPlanDisplay
-                    plan={parsedPlan}
-                    colors={colors}
-                    isDark={isDark}
-                    t={t}
-                    isArabicSystem={isArabic}
-                  />
+                  {translatingId === plan.id ? (
+                    <Text style={[styles.infoText, { color: colors.primary, marginVertical: 20 }]}>
+                      {isArabic ? 'جاري ترجمة الخطة لتناسب لغة التطبيق...' : 'Translating plan to match app language...'}
+                    </Text>
+                  ) : parsedPlan ? (
+                    <DietPlanDisplay
+                      plan={parsedPlan}
+                      colors={colors}
+                      isDark={isDark}
+                      t={t}
+                      isArabicSystem={isArabic}
+                    />
+                  ) : null}
                 </View>
               )}
             </View>
@@ -169,11 +264,21 @@ const styles = StyleSheet.create({
     padding: 14,
     gap: 10,
   },
+  planHeaderContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 8,
+  },
   planHeader: {
+    flex: 1,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     gap: 8,
+  },
+  deleteButton: {
+    padding: 6,
   },
   planTitle: {
     fontSize: 15,

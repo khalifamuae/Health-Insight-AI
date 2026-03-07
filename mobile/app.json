@@ -2,7 +2,7 @@
   "expo": {
     "name": "BioTrack AI",
     "slug": "biotrack-ai",
-    "version": "1.0.1",
+    "version": "1.0.2",
     "orientation": "portrait",
     "icon": "./assets/brand-icon.png",
     "userInterfaceStyle": "automatic",
@@ -16,7 +16,7 @@
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.biotrack.ai",
-      "buildNumber": "2",
+      "buildNumber": "3",
       "infoPlist": {
         "NSHealthShareUsageDescription": "BioTrack AI uses your health data to provide personalized lab result analysis. / التطبيق يستخدم بياناتك الصحية لتحليل النتائج المخبرية بدقة.",
         "NSCameraUsageDescription": "BioTrack AI needs camera access to scan lab results. / يحتاج التطبيق للوصول إلى الكاميرا لمسح الفحوصات الطبية.",

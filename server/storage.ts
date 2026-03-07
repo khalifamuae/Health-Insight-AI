@@ -41,30 +41,32 @@ import {
 export interface IStorage {
   getUser(id: string): Promise<User | undefined>;
   upsertUser(user: UpsertUser): Promise<User>;
-  
+
   getUserProfile(userId: string): Promise<UserProfile | undefined>;
   upsertUserProfile(profile: InsertUserProfile): Promise<UserProfile>;
-  
+
   getTestDefinitions(): Promise<TestDefinition[]>;
   getTestDefinitionById(id: string): Promise<TestDefinition | undefined>;
-  
+
   getTestResultsByUser(userId: string): Promise<TestResultWithDefinition[]>;
   getLatestTestResultsByUser(userId: string): Promise<TestResultWithDefinition[]>;
   createTestResult(result: InsertTestResult): Promise<TestResult>;
   deleteTestResult(id: string, userId: string): Promise<void>;
-  
+
   getRemindersByUser(userId: string): Promise<(Reminder & { testDefinition: TestDefinition })[]>;
   createReminder(reminder: InsertReminder): Promise<Reminder>;
   updateReminder(id: string, userId: string, updates: { sent?: boolean; sentAt?: Date | null }): Promise<void>;
   deleteReminder(id: string, userId: string): Promise<void>;
   deleteReminderByTest(userId: string, testId: string): Promise<void>;
-  
+
   getUploadedPdfsByUser(userId: string): Promise<UploadedPdf[]>;
   createUploadedPdf(pdf: InsertUploadedPdf): Promise<UploadedPdf>;
   incrementFilesUploaded(userId: string): Promise<void>;
-  
+
   getSavedDietPlans(userId: string): Promise<SavedDietPlan[]>;
+  getSavedDietPlan(id: string): Promise<SavedDietPlan | undefined>;
   saveDietPlan(userId: string, planData: string): Promise<SavedDietPlan>;
+  updateSavedDietPlan(id: string, updates: Partial<SavedDietPlan>): Promise<SavedDietPlan | null>;
   deleteSavedDietPlan(id: string, userId: string): Promise<void>;
 
   updateSubscription(userId: string, data: {
@@ -73,7 +75,7 @@ export interface IStorage {
     subscriptionProductId: string | null;
     subscriptionPlatform: string | null;
   }): Promise<void>;
-  
+
   addKnowledgeEntry(entry: InsertKnowledgeEntry): Promise<KnowledgeEntry>;
   addKnowledgeEntries(entries: InsertKnowledgeEntry[]): Promise<KnowledgeEntry[]>;
   searchKnowledge(domain: KnowledgeDomain, searchTerms: string[]): Promise<KnowledgeEntry[]>;
@@ -300,7 +302,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async updateUploadedPdfStatus(
-    id: string, 
+    id: string,
     status: "pending" | "processing" | "success" | "failed",
     testsExtracted?: number,
     errorMessage?: string
@@ -337,12 +339,29 @@ export class DatabaseStorage implements IStorage {
       .orderBy(desc(savedDietPlans.createdAt));
   }
 
+  async getSavedDietPlan(id: string): Promise<SavedDietPlan | undefined> {
+    const [plan] = await db
+      .select()
+      .from(savedDietPlans)
+      .where(eq(savedDietPlans.id, id));
+    return plan;
+  }
+
   async saveDietPlan(userId: string, planData: string): Promise<SavedDietPlan> {
     const [created] = await db
       .insert(savedDietPlans)
       .values({ userId, planData })
       .returning();
     return created;
+  }
+
+  async updateSavedDietPlan(id: string, updates: Partial<SavedDietPlan>): Promise<SavedDietPlan | null> {
+    const [updated] = await db
+      .update(savedDietPlans)
+      .set({ ...updates })
+      .where(eq(savedDietPlans.id, id))
+      .returning();
+    return updated || null;
   }
 
   async deleteSavedDietPlan(id: string, userId: string): Promise<void> {

@@ -7,7 +7,7 @@ import { setupAuth, isAuthenticated, registerAuthRoutes, createApiToken } from "
 import { authStorage } from "./replit_integrations/auth/storage";
 import { analyzeLabPdf, analyzeLabImage } from "./pdfAnalyzer";
 import { analyzeInBodyPdf, analyzeInBodyImage } from "./inbodyAnalyzer";
-import { generateDietPlan } from "./dietPlanGenerator";
+import { generateDietPlan, translateDietPlan } from "./dietPlanGenerator";
 import { getPrivacyPolicyHTML, getPrivacyPolicyArabicHTML, getTermsOfServiceHTML, getTermsOfServiceArabicHTML, getSupportPageHTML, getAccountDeletionHTML } from "./legalPages";
 import { desc, eq, and, gte, sql } from "drizzle-orm";
 import { db } from "./db";
@@ -1366,21 +1366,21 @@ export async function registerRoutes(
         const startTime = Date.now();
         const maxRetries = 2;
         const planParams = {
-            weight: profile?.weight ?? null,
-            height: profile?.height ?? null,
-            age: profile?.age ?? null,
-            gender: profile?.gender ?? null,
-            fitnessGoal: profile?.fitnessGoal ?? "maintain",
-            activityLevel: profile?.activityLevel ?? "sedentary",
-            mealPreference: profile?.mealPreference ?? "balanced",
-            hasAllergies: profile?.hasAllergies ?? false,
-            allergies: profile?.allergies ?? [],
-            proteinPreference: profile?.proteinPreference ?? "mixed",
-            proteinPreferences: profile?.proteinPreferences ?? [],
-            carbPreferences: profile?.carbPreferences ?? [],
-            customTargetCalories,
-            language,
-            testResults: testResultsData,
+          weight: profile?.weight ?? null,
+          height: profile?.height ?? null,
+          age: profile?.age ?? null,
+          gender: profile?.gender ?? null,
+          fitnessGoal: profile?.fitnessGoal ?? "maintain",
+          activityLevel: profile?.activityLevel ?? "sedentary",
+          mealPreference: profile?.mealPreference ?? "balanced",
+          hasAllergies: profile?.hasAllergies ?? false,
+          allergies: profile?.allergies ?? [],
+          proteinPreference: profile?.proteinPreference ?? "mixed",
+          proteinPreferences: profile?.proteinPreferences ?? [],
+          carbPreferences: profile?.carbPreferences ?? [],
+          customTargetCalories,
+          language,
+          testResults: testResultsData,
         };
 
         for (let attempt = 1; attempt <= maxRetries; attempt++) {
@@ -1437,6 +1437,39 @@ export async function registerRoutes(
       res.json({ hasPending: true, jobId: job.id, status: job.status });
     } catch (error) {
       res.json({ hasPending: false });
+    }
+  });
+
+  app.post("/api/diet-plan/translate", isAuthenticated, async (req: any, res: Response) => {
+    try {
+      const userId = req.user.claims?.sub || req.user.id;
+      const { planId, targetLanguage } = req.body;
+
+      if (!planId || !targetLanguage || (targetLanguage !== 'ar' && targetLanguage !== 'en')) {
+        return res.status(400).json({ error: "Invalid parameters" });
+      }
+
+      const plan = await storage.getSavedDietPlan(planId);
+      if (!plan || plan.userId !== userId) {
+        return res.status(404).json({ error: "Diet plan not found" });
+      }
+
+      let parsedPlan;
+      try {
+        parsedPlan = typeof plan.planData === 'string' ? JSON.parse(plan.planData) : plan.planData;
+      } catch (e) {
+        return res.status(400).json({ error: "Invalid plan data format" });
+      }
+
+      const translatedPlan = await translateDietPlan(parsedPlan, targetLanguage);
+
+      // Update the DB record so it stays translated
+      await storage.updateSavedDietPlan(planId, { planData: JSON.stringify(translatedPlan) });
+
+      res.json(translatedPlan);
+    } catch (error: any) {
+      console.error("Translation route error:", error);
+      res.status(500).json({ error: error.message || "Translation failed" });
     }
   });
 

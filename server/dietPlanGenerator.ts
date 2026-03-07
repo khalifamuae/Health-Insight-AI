@@ -951,8 +951,8 @@ ${hasCustomTargetCalories && normalizedCustomTargetCalories ? `11. Mandatory: Ke
         emptySections++;
         (sanitizedMealPlan as any)[section] = [{
           name: section === 'breakfast' ? (isArabic ? 'وجبة فطور متوازنة' : 'Balanced Breakfast') :
-                section === 'lunch' ? (isArabic ? 'وجبة غداء متوازنة' : 'Balanced Lunch') :
-                section === 'dinner' ? (isArabic ? 'وجبة عشاء متوازنة' : 'Balanced Dinner') :
+            section === 'lunch' ? (isArabic ? 'وجبة غداء متوازنة' : 'Balanced Lunch') :
+              section === 'dinner' ? (isArabic ? 'وجبة عشاء متوازنة' : 'Balanced Dinner') :
                 (isArabic ? 'وجبة خفيفة' : 'Healthy Snack'),
           description: isArabic ? 'وجبة صحية متوازنة تحتوي على بروتين وكربوهيدرات ودهون صحية' : 'A balanced healthy meal with protein, carbs and healthy fats',
           calories: Math.round((targetCalories || 2000) * (section === 'snacks' ? 0.1 : 0.3)),
@@ -1065,5 +1065,46 @@ ${hasCustomTargetCalories && normalizedCustomTargetCalories ? `11. Mandatory: Ke
     }
     console.error("Failed to parse diet plan response:", content?.slice(0, 500));
     throw new Error("DIET_PLAN_PARSE_ERROR");
+  }
+}
+
+export async function translateDietPlan(plan: any, targetLanguage: 'en' | 'ar'): Promise<any> {
+  const languageName = targetLanguage === 'ar' ? 'Arabic' : 'English';
+
+  const prompt = `Translate the following JSON diet plan into ${languageName}.
+You MUST strictly preserve the exact JSON structure, keys, numbers, and formatting.
+Only translate the text values. Do not change any JSON keys.
+Return ONLY valid JSON without Markdown blocks or any other explanation.
+
+JSON to translate:
+${JSON.stringify(plan)}
+`;
+
+  try {
+    const response = await openai.chat.completions.create({
+      model: "gpt-4o",
+      messages: [
+        {
+          role: "system",
+          content: "You are an expert medical translator. You translate complex nutritional JSON data perfectly, preserving all JSON structures and keys intact."
+        },
+        {
+          role: "user",
+          content: prompt
+        }
+      ],
+      response_format: { type: "json_object" },
+      temperature: 0.2,
+    });
+
+    const content = response.choices[0].message?.content;
+    if (!content) {
+      throw new Error("Translation failed to return content");
+    }
+
+    return JSON.parse(content);
+  } catch (error) {
+    console.error("DIET_PLAN_TRANSLATE_ERROR", error);
+    throw new Error("Failed to translate diet plan");
   }
 }
