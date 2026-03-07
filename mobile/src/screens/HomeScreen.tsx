@@ -162,6 +162,7 @@ const getStyles = (isArabic: boolean) => StyleSheet.create({
   },
   content: {
     padding: 16,
+    paddingBottom: 110,
   },
   header: {
     marginBottom: 16,
