@@ -7,7 +7,8 @@
   "build": {
     "production": {
       "ios": {
-        "distribution": "store"
+        "distribution": "store",
+         "autoIncrement": true
       },
       "android": {
         "buildType": "app-bundle"

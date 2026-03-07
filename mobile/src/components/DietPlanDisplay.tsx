@@ -17,6 +17,9 @@ export default function DietPlanDisplay({ plan, colors, isDark, t, isArabicSyste
     // Detect if the plan was generated in Arabic (based on content)
     const isPlanContentArabic = /[\u0600-\u06FF]/.test(plan.summary || plan.goalDescription || plan.healthSummary || '');
     const directionStyle = { direction: isPlanContentArabic ? 'rtl' : 'ltr' } as const;
+    const tAlign = isPlanContentArabic ? 'right' : 'left';
+    const flexDir = isPlanContentArabic ? 'row-reverse' : 'row';
+    const styles = React.useMemo(() => getStyles(tAlign, flexDir), [tAlign, flexDir]);
 
     useEffect(() => {
         const initialSelection: Record<string, boolean> = {};
@@ -274,7 +277,7 @@ export default function DietPlanDisplay({ plan, colors, isDark, t, isArabicSyste
     );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (tAlign: 'left' | 'right', flexDir: 'row' | 'row-reverse') => StyleSheet.create({
     container: {
         width: '100%',
         gap: 16,
@@ -286,7 +289,7 @@ const styles = StyleSheet.create({
         marginBottom: 4,
     },
     cardHeader: {
-        flexDirection: 'row',
+        flexDirection: flexDir,
         alignItems: 'center',
         marginBottom: 12,
         gap: 8,
@@ -294,13 +297,15 @@ const styles = StyleSheet.create({
     cardTitle: {
         fontSize: 18,
         fontWeight: '700',
+        textAlign: tAlign,
     },
     cardText: {
         fontSize: 14,
         lineHeight: 22,
+        textAlign: tAlign,
     },
     calorieRow: {
-        flexDirection: 'row',
+        flexDirection: flexDir,
         justifyContent: 'space-between',
         paddingTop: 8,
         borderTopWidth: 1,
@@ -321,7 +326,7 @@ const styles = StyleSheet.create({
         marginTop: 4,
     },
     macroRow: {
-        flexDirection: 'row',
+        flexDirection: flexDir,
         justifyContent: 'center',
         gap: 12,
         marginTop: 16,
@@ -343,7 +348,7 @@ const styles = StyleSheet.create({
         marginBottom: 10,
     },
     mealHeaderRow: {
-        flexDirection: 'row',
+        flexDirection: flexDir,
         justifyContent: 'space-between',
         alignItems: 'center',
         marginBottom: 6,
@@ -352,19 +357,22 @@ const styles = StyleSheet.create({
         fontSize: 14,
         fontWeight: '600',
         color: '#6b7280',
+        textAlign: tAlign,
     },
     mealName: {
         fontSize: 16,
         fontWeight: '700',
         marginBottom: 4,
+        textAlign: tAlign,
     },
     mealDesc: {
         fontSize: 13,
         lineHeight: 20,
         marginBottom: 8,
+        textAlign: tAlign,
     },
     mealMacros: {
-        flexDirection: 'row',
+        flexDirection: flexDir,
         flexWrap: 'wrap',
         gap: 8,
         marginBottom: 8,
@@ -383,6 +391,7 @@ const styles = StyleSheet.create({
         fontSize: 12,
         fontStyle: 'italic',
         lineHeight: 18,
+        textAlign: tAlign,
     },
     supplementItem: {
         marginBottom: 16,
@@ -391,13 +400,15 @@ const styles = StyleSheet.create({
         fontSize: 15,
         fontWeight: '600',
         marginBottom: 4,
+        textAlign: tAlign,
     },
     supplementDetail: {
         fontSize: 13,
         marginBottom: 2,
+        textAlign: tAlign,
     },
     targetLabRow: {
-        flexDirection: 'row',
+        flexDirection: flexDir,
         alignItems: 'center',
         gap: 6,
         marginTop: 4,
@@ -405,9 +416,10 @@ const styles = StyleSheet.create({
     targetLabText: {
         fontSize: 12,
         fontWeight: '600',
+        textAlign: tAlign,
     },
     scientificRow: {
-        flexDirection: 'row',
+        flexDirection: flexDir,
         alignItems: 'flex-start',
         gap: 6,
         marginTop: 4,
@@ -415,11 +427,13 @@ const styles = StyleSheet.create({
     scientificText: {
         fontSize: 12,
         flex: 1,
+        textAlign: tAlign,
     },
     supplementFoods: {
         fontSize: 12,
         marginTop: 6,
         fontStyle: 'italic',
+        textAlign: tAlign,
     },
     tipItem: {
         marginBottom: 12,
@@ -428,21 +442,25 @@ const styles = StyleSheet.create({
         fontSize: 15,
         fontWeight: '600',
         marginBottom: 6,
+        textAlign: tAlign,
     },
     tipAdvice: {
         fontSize: 14,
         lineHeight: 22,
         marginBottom: 4,
+        textAlign: tAlign,
     },
     tipAvoid: {
         fontSize: 13,
         fontStyle: 'italic',
         marginTop: 4,
+        textAlign: tAlign,
     },
     tipText: {
         fontSize: 14,
         lineHeight: 22,
         marginBottom: 8,
+        textAlign: tAlign,
     },
     referencesList: {
         gap: 6,
@@ -450,6 +468,7 @@ const styles = StyleSheet.create({
     referenceText: {
         fontSize: 12,
         lineHeight: 18,
+        textAlign: tAlign,
     },
     calculatorBox: {
         borderWidth: 1,
@@ -458,7 +477,7 @@ const styles = StyleSheet.create({
         marginTop: 8,
     },
     calculatorHeader: {
-        flexDirection: 'row',
+        flexDirection: flexDir,
         justifyContent: 'space-between',
         alignItems: 'center',
         marginBottom: 12,
@@ -466,15 +485,16 @@ const styles = StyleSheet.create({
     calculatorTitle: {
         fontSize: 16,
         fontWeight: '700',
+        textAlign: tAlign,
     },
     calculatorCalText: {
-        flexDirection: 'row',
+        flexDirection: flexDir,
         alignItems: 'center',
         fontSize: 16,
         fontWeight: '700',
     },
     calculatorMacros: {
-        flexDirection: 'row',
+        flexDirection: flexDir,
         justifyContent: 'flex-start',
         gap: 12,
     },

@@ -731,7 +731,7 @@ export default function DietScreen({ navigation, route }: any) {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#f8fafc' },
-  content: { padding: 16, paddingBottom: 32 },
+  content: { padding: 16, paddingBottom: 110 },
   heroCard: { backgroundColor: '#fffbeb', borderRadius: 16, padding: 24, alignItems: 'center', marginBottom: 20, borderWidth: 1, borderColor: '#fde68a' },
   heroIconContainer: { width: 80, height: 80, borderRadius: 40, backgroundColor: '#fef3c7', justifyContent: 'center', alignItems: 'center', marginBottom: 12 },
   heroTitle: { fontSize: 22, fontWeight: '700', color: '#92400e', textAlign: 'center', marginBottom: 8 },

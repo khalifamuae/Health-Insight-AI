@@ -216,7 +216,7 @@ const styles = StyleSheet.create({
   },
   content: {
     padding: 16,
-    paddingBottom: 28,
+    paddingBottom: 110,
     gap: 10,
   },
   noteCard: {
