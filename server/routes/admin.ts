@@ -30,12 +30,13 @@ router.use(async (req, res, next) => {
             .where(eq(userProfiles.id, (req.user as any).claims.sub))
             .limit(1);
 
-        if (!user || (!user.isAdmin && (req.user as any).claims.email !== "khalifamuae@gmail.com")) {
+        const adminEmail = process.env.ADMIN_EMAIL || "";
+        if (!user || (!user.isAdmin && (req.user as any).claims.email !== adminEmail)) {
             return res.status(403).json({ message: "Forbidden: Admin access only" });
         }
 
         // Safety net: Auto-promote developer email to admin if it's not set
-        if ((req.user as any).claims.email === "khalifamuae@gmail.com" && !user.isAdmin) {
+        if ((req.user as any).claims.email === adminEmail && !user.isAdmin) {
             await db.update(userProfiles)
                 .set({ isAdmin: true })
                 .where(eq(userProfiles.id, (req.user as any).claims.sub));

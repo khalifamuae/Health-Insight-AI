@@ -17,6 +17,13 @@ import { emailVerificationCodes } from "@shared/schema";
 import { getResendClient } from "./resendClient";
 import adminRouter from "./routes/admin";
 
+// Strip sensitive fields before sending profile to client
+function sanitizeProfile(profile: any) {
+  if (!profile) return profile;
+  const { passwordHash, ...safe } = profile;
+  return safe;
+}
+
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 10 * 1024 * 1024 }, // 10MB limit
@@ -30,7 +37,7 @@ const upload = multer({
 
 const uploadReport = multer({
   storage: multer.memoryStorage(),
-  limits: { fileSize: 20 * 1024 * 1024 }, // Allowed 20MB for images
+  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB limit for images
   fileFilter: (_req, file, cb) => {
     const isPdfMime = file.mimetype === "application/pdf";
     const isPdfName = file.originalname.toLowerCase().endsWith(".pdf");
@@ -496,7 +503,7 @@ export async function registerRoutes(
         });
       }
 
-      res.json(profile);
+      res.json(sanitizeProfile(profile));
     } catch (error) {
       console.error("Error fetching profile:", error);
       res.status(500).json({ error: "Failed to fetch profile" });
@@ -543,7 +550,7 @@ export async function registerRoutes(
         bloodType,
       });
 
-      res.json(profile);
+      res.json(sanitizeProfile(profile));
     } catch (error) {
       console.error("Error updating profile:", error);
       res.status(500).json({ error: "Failed to update profile" });
@@ -567,7 +574,7 @@ export async function registerRoutes(
           trialEndsAt: trialEnd,
         });
       }
-      res.json(profile);
+      res.json(sanitizeProfile(profile));
     } catch (error) {
       console.error("Error fetching profile:", error);
       res.status(500).json({ error: "Failed to fetch profile" });
@@ -596,7 +603,7 @@ export async function registerRoutes(
         fitnessGoal, activityLevel, mealPreference, hasAllergies, allergies,
         proteinPreference, proteinPreferences, carbPreferences, bloodType,
       });
-      res.json(profile);
+      res.json(sanitizeProfile(profile));
     } catch (error) {
       console.error("Error updating profile:", error);
       res.status(500).json({ error: "Failed to update profile" });
