@@ -1,1 +1,0 @@
-require("dotenv").config();const u=new(require("url").URL)("http://dummy");try{const p=process.env.DATABASE_URL;const pass=p.split("@")[0].split(":").slice(2).join(":");console.log("PASS_LEN:",pass.length);console.log("SPECIAL:",pass.replace(/[a-zA-Z0-9]/g,""))}catch(e){console.log("ERR",e.message)}
