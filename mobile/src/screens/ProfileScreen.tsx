@@ -266,6 +266,9 @@ export default function ProfileScreen({ navigation }: { navigation: any }) {
             onChangeText={setAge}
             keyboardType="number-pad"
             placeholder="25"
+            autoComplete="off"
+            textContentType="none"
+            autoCorrect={false}
             testID="input-age"
           />
         </View>
@@ -319,6 +322,9 @@ export default function ProfileScreen({ navigation }: { navigation: any }) {
               onChangeText={setHeight}
               keyboardType="number-pad"
               placeholder="170"
+              autoComplete="off"
+              textContentType="none"
+              autoCorrect={false}
               testID="input-height"
             />
           </View>
@@ -330,6 +336,9 @@ export default function ProfileScreen({ navigation }: { navigation: any }) {
               onChangeText={setWeight}
               keyboardType="number-pad"
               placeholder="70"
+              autoComplete="off"
+              textContentType="none"
+              autoCorrect={false}
               testID="input-weight"
             />
           </View>

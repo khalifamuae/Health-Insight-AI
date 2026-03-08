@@ -469,6 +469,9 @@ export default function LoginScreen({ onLogin }: LoginScreenProps) {
           keyboardType="number-pad"
           maxLength={6}
           autoFocus
+          autoComplete="off"
+          textContentType="oneTimeCode"
+          autoCorrect={false}
           testID="input-verification-code"
         />
       </View>
@@ -637,6 +640,9 @@ export default function LoginScreen({ onLogin }: LoginScreenProps) {
               keyboardType="number-pad"
               maxLength={6}
               autoFocus
+              autoComplete="off"
+              textContentType="oneTimeCode"
+              autoCorrect={false}
               testID="input-forgot-verification-code"
             />
           </View>
