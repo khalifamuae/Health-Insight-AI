@@ -1,0 +1,1 @@
+require("dotenv").config();const u=process.env.DATABASE_URL;const p=u.split("@")[0].split(":").slice(2).join(":");const e=p.replace(/[(]/g,"%28").replace(/[+]/g,"%2B").replace(/[?]/g,"%3F");const f=u.replace(p,e);require("fs").writeFileSync(".env","DATABASE_URL="+f+String.fromCharCode(10));console.log("DONE")
