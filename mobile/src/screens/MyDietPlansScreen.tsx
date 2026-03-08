@@ -166,7 +166,7 @@ export default function MyDietPlansScreen({ navigation }: any) {
             <View key={plan.id} style={[styles.planCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
               <View style={styles.planHeaderContainer}>
                 <TouchableOpacity activeOpacity={0.7} style={styles.planHeader} onPress={() => toggleExpand(plan.id, plan.planData)}>
-                  <View>
+                  <View style={{ flex: 1, alignItems: 'flex-start' }}>
                     <Text style={[styles.planTitle, { color: colors.text }]}>
                       {isArabic ? `الخطة رقم ${savedPlansList.length - index}` : `Plan #${savedPlansList.length - index}`}
                     </Text>
@@ -198,6 +198,7 @@ export default function MyDietPlansScreen({ navigation }: any) {
                       isDark={isDark}
                       t={t}
                       isArabicSystem={isArabic}
+                      forceLTR={true}
                     />
                   ) : null}
                 </View>
@@ -269,6 +270,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     gap: 8,
+    direction: 'ltr',
   },
   planHeader: {
     flex: 1,
@@ -276,6 +278,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     gap: 8,
+    direction: 'ltr',
   },
   deleteButton: {
     padding: 6,
@@ -283,10 +286,12 @@ const styles = StyleSheet.create({
   planTitle: {
     fontSize: 15,
     fontWeight: '700',
+    textAlign: 'left',
   },
   planDate: {
     fontSize: 12,
     marginTop: 4,
+    textAlign: 'left',
   },
   planContentContainer: {
     marginTop: 12,

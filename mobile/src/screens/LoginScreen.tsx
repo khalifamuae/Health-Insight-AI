@@ -437,6 +437,18 @@ export default function LoginScreen({ onLogin }: LoginScreenProps) {
       </View>
 
       <TouchableOpacity
+        style={styles.forgotPasswordContainer}
+        onPress={() => Alert.alert(
+          isArabic ? 'نسيت كلمة المرور؟' : 'Forgot Password?',
+          isArabic ? 'الرجاء التواصل مع الدعم الفني لاستعادة كلمة المرور الخاصة بك.' : 'Please contact support to reset your password.'
+        )}
+      >
+        <Text style={styles.forgotPasswordText}>
+          {isArabic ? 'نسيت كلمة المرور؟' : 'Forgot Password?'}
+        </Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity
         style={styles.loginButton}
         onPress={handleLogin}
         disabled={isLoading}
@@ -454,8 +466,8 @@ export default function LoginScreen({ onLogin }: LoginScreenProps) {
   );
 
   return (
-    <KeyboardAvoidingView 
-      style={[styles.container, { backgroundColor: colors.background }]} 
+    <KeyboardAvoidingView
+      style={[styles.container, { backgroundColor: colors.background }]}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
       <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
@@ -505,16 +517,16 @@ export default function LoginScreen({ onLogin }: LoginScreenProps) {
                 : renderVerifyStep()
               : renderLoginForm()}
 
-            <TouchableOpacity 
+            <TouchableOpacity
               onPress={() => {
                 setIsSignUp(!isSignUp);
                 resetForm();
-              }} 
+              }}
               style={styles.switchButton}
               testID="button-switch-auth-mode"
             >
-            <Text style={[styles.switchText, { color: colors.primary }]}>
-                {isSignUp 
+              <Text style={[styles.switchText, { color: colors.primary }]}>
+                {isSignUp
                   ? (isArabic ? 'لديك حساب بالفعل؟ تسجيل الدخول' : 'Already have an account? Sign In')
                   : (isArabic ? 'ليس لديك حساب؟ إنشاء حساب جديد' : "Don't have an account? Create Account")}
               </Text>
@@ -682,6 +694,17 @@ const getStyles = (isArabic: boolean) => StyleSheet.create({
   },
   switchText: {
     fontSize: 14,
+    color: '#3b82f6',
+    fontWeight: '500',
+  },
+  forgotPasswordContainer: {
+    alignSelf: 'flex-start',
+    marginBottom: 12,
+    marginTop: -4,
+    paddingHorizontal: 4,
+  },
+  forgotPasswordText: {
+    fontSize: 13,
     color: '#3b82f6',
     fontWeight: '500',
   },
