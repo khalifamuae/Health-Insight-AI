@@ -43,6 +43,10 @@ export interface DietPlanResult {
     tef: number;
     target: number;
     deficit_or_surplus: number;
+    breakfast: number;
+    lunch: number;
+    dinner: number;
+    snack: number;
   };
   macros: {
     protein: { grams: number; percentage: number };
@@ -297,6 +301,11 @@ export async function generateDietPlan(userData: UserHealthData, onProgress?: Pr
   const fiberTarget = calculateFiberTarget(targetCalories, gender);
   const waterTarget = calculateWaterIntake(weight, activityLevel);
 
+  const breakfastCalories = Math.round(targetCalories * 0.25);
+  const lunchCalories = Math.round(targetCalories * 0.35);
+  const dinnerCalories = Math.round(targetCalories * 0.30);
+  const snackCalories = targetCalories - breakfastCalories - lunchCalories - dinnerCalories;
+
   const currentProteinPerKg = mealPreference === "high_protein"
     ? (goal === "muscle_gain" ? 2.4 : 2.2)
     : mealPreference === "low_carb" ? 1.8
@@ -540,7 +549,32 @@ ${customCalorieInstruction}
 تعليمات البروتوكول:
 - هذا البروتوكول الغذائي مصمم خصيصاً لهذا المستخدم بناءً على: الطول (${height}سم)، الوزن (${weight}كجم)، الجنس (${gender === "male" ? "ذكر" : "أنثى"})، العمر (${age})، الهدف (${goalDescriptions[goal].ar})، ونتائج الفحوصات المخبرية
 - صمم الوجبات بحيث تتوافق مع السعرات والماكرو والألياف المستهدفة أعلاه
-- ⚠️⚠️ قاعدة إلزامية: يجب تقديم بالضبط 5 خيارات مختلفة ومتنوعة لكل وجبة (فطور = 5 خيارات، غداء = 5 خيارات، عشاء = 5 خيارات، وجبات خفيفة = 5 خيارات). المجموع = 20 خيار وجبة. هذا شرط أساسي لا يمكن تجاوزه. لكي يختار المستخدم ما يناسبه ويغير يومياً${proteinInstruction}${carbInstruction}
+
+⸻ قواعد الدقة العلمية (ممنوع التأليف أو التخمين): ⸻
+- ⚠️⚠️⚠️ أنت بروفيسور تغذية حقيقي. يُمنع منعاً باتاً تأليف أو تخمين السعرات الحرارية أو القيم الغذائية. يجب أن تكون كل قيمة مبنية على جداول التركيب الغذائي المعتمدة (USDA FoodData Central أو جداول مكافئة)
+- لكل مكون بالجرامات، احسب السعرات كالتالي: (وزن المكون بالجرام ÷ 100) × سعرات المكون لكل 100 جرام من جداول USDA
+- مثال الحساب الدقيق: 150 جرام صدر دجاج مشوي = (150÷100) × 165 = 248 سعرة، 31 بروتين × 1.5 = 46.5 جرام بروتين
+- بعد تحديد المكونات، اجمع سعرات كل مكون للتأكد أن المجموع = سعرات الوجبة المطلوبة. إذا لم يتطابق، عدّل أوزان المكونات حتى يتطابق
+- يُمنع كتابة "تقريباً" أو "حوالي" - كل رقم يجب أن يكون دقيقاً ومحسوباً
+- الماكرو (بروتين + كارب + دهون) يجب أن يتطابق حسابياً مع السعرات: (بروتين×4) + (كارب×4) + (دهون×9) ≈ سعرات الوجبة (هامش ±10 سعرات فقط)
+
+⸻ قواعد التنوع الحقيقي: ⸻
+- الخيارات الـ 5 لكل وجبة يجب أن تكون مختلفة تماماً في المكونات الرئيسية وأسلوب الطهي
+- يُمنع تكرار نفس المكون الرئيسي في أكثر من خيارين ضمن نفس الوجبة (مثلاً: لا تضع 3 خيارات كلها بالشوفان أو 3 خيارات كلها بالدجاج)
+- نوّع بين أساليب الطهي: مشوي، مسلوق، مخبوز، ستيم، طازج، مقلي بالهواء
+- نوّع بين المطابخ: عربية، متوسطية، آسيوية، صحية عالمية
+- كل خيار يجب أن يكون وجبة كاملة قائمة بذاتها (بروتين + كارب + خضار/فاكهة + دهون صحية)
+- اجعل كل وجبة عملية ويمكن تحضيرها في 15-30 دقيقة بمكونات متوفرة
+
+- ⚠️⚠️ قاعدة إلزامية: يجب تقديم بالضبط 5 خيارات مختلفة ومتنوعة لكل وجبة (فطور = 5 خيارات، غداء = 5 خيارات، عشاء = 5 خيارات، وجبات خفيفة = 5 خيارات). المجموع = 20 خيار وجبة. هذا شرط أساسي لا يمكن تجاوزه. لكي يختار المستخدم ما يناسبه ويغير يومياً
+- ⚠️⚠️⚠️ قاعدة السعرات الحرارية الأهم: يجب أن يكون مجموع سعرات (1 فطور + 1 غداء + 1 عشاء + 1 سناك) = ${targetCalories} سعرة بالضبط. لتحقيق ذلك:
+  * كل خيار فطور = ${breakfastCalories} سعرة بالضبط (25% من المستهدف)
+  * كل خيار غداء = ${lunchCalories} سعرة بالضبط (35% من المستهدف)
+  * كل خيار عشاء = ${dinnerCalories} سعرة بالضبط (30% من المستهدف)
+  * كل خيار سناك = ${snackCalories} سعرة بالضبط (10% من المستهدف)
+  * المجموع: ${breakfastCalories} + ${lunchCalories} + ${dinnerCalories} + ${snackCalories} = ${targetCalories} سعرة
+  * هذا يضمن أن المستخدم عندما يختار أي خيار من كل وجبة، المجموع الكلي = السعرات المستهدفة بالضبط
+  * لا يُسمح بأي انحراف في سعرات الوجبة عن القيمة المحددة أعلاه (هامش ±5 سعرات فقط)${proteinInstruction}${carbInstruction}
 - ⚠️ قاعدة ذهبية: لا تضع أي مكون لم يختره المستخدم. النظام مبني فقط على اختيارات المستخدم من البروتين والكربوهيدرات. إذا لم يختر مصدراً معيناً، لا تدرجه في أي وجبة
 - ${goal === "weight_loss" ? "ركز على وجبات مشبعة ومنخفضة السعرات وغنية بالبروتين والألياف" : ""}
 - ${goal === "muscle_gain" ? "ركز على مصادر غذاء نظيفة وصحية فقط (لا وجبات سريعة، لا دهون مشبعة مفرطة)" : ""}
@@ -584,6 +618,7 @@ ${hasAllergies && allergyList ? `- ⚠️ حساسية المستخدم (وفق 
 9. في حال عدم وجود تحاليل مخبرية أو عدم وجود نواقص ومكملات مقترحة، أرجع مصفوفة فارغة [] في حقلي "deficiencies" و "supplements"
 
 أرجع JSON بالشكل التالي (المثال يعرض 2 من 5 خيارات - اكتب 5 كاملة):
+⚠️ تذكير: كل خيار فطور = ${breakfastCalories} سعرة | غداء = ${lunchCalories} سعرة | عشاء = ${dinnerCalories} سعرة | سناك = ${snackCalories} سعرة | المجموع = ${targetCalories} سعرة
 {
   "healthSummary": "تقييم سريري شامل بناءً على التحاليل المخبرية (إن وجدت) أو الملف الجسدي العام",
   "summary": "ملخص عام إيجابي عن البروتوكول الغذائي",
@@ -593,12 +628,12 @@ ${hasAllergies && allergyList ? `- ⚠️ حساسية المستخدم (وفق 
   "supplements": [{"name": "اسم المكمل", "dosage": "الجرعة المقترحة", "reason": "سبب الحاجة مرتبط بالتحليل", "duration": "مدة الاستخدام", "foodSources": ["100 جرام سلمون = 600 وحدة دولية", "كوب حليب مدعم = 400 وحدة دولية", "بيضة واحدة = 40 وحدة دولية"], "targetLabValue": "فيتامين د: 30-50 نانوجرام/مل", "scientificBasis": "Endocrine Society Clinical Practice Guideline", "timingAdvice": "يُفضل تناوله مع الوجبة الرئيسية الدسمة لتحسين الامتصاص", "interactions": "يتعارض مع مضادات الحموضة - يُفضل الفصل بساعتين"}],
   "mealPlan": {
     "breakfast": [
-      {"name": "شوفان بالموز والعسل", "description": "60 جرام شوفان، 200 مل حليب قليل الدسم، موزة واحدة، 15 جرام عسل", "calories": 420, "protein": 15, "carbs": 62, "fats": 12, "fiber": 6, "benefits": "غني بالألياف القابلة للذوبان (بيتا-جلوكان) يساعد في تحسين مستوى الكولسترول", "preparationTip": "انقع الشوفان ليلاً لتقليل حمض الفيتيك وزيادة امتصاص المعادن"},
-      {"name": "بيض مسلوق مع خبز أسمر", "description": "3 بيضات مسلوقة، شريحتين خبز أسمر، 50 جرام خيار، 50 جرام طماطم", "calories": 400, "protein": 24, "carbs": 35, "fats": 18, "fiber": 4, "benefits": "مصدر ممتاز للبروتين الكامل والكولين لدعم العضلات ووظائف الكبد", "preparationTip": "أضف الطماطم كمصدر فيتامين C لتحسين امتصاص الحديد من البيض"}
+      {"name": "شوفان بالموز والعسل", "description": "60 جرام شوفان، 200 مل حليب قليل الدسم، موزة واحدة، 15 جرام عسل", "calories": ${breakfastCalories}, "protein": 15, "carbs": 62, "fats": 12, "fiber": 6, "benefits": "غني بالألياف القابلة للذوبان (بيتا-جلوكان) يساعد في تحسين مستوى الكولسترول", "preparationTip": "انقع الشوفان ليلاً لتقليل حمض الفيتيك وزيادة امتصاص المعادن"},
+      {"name": "بيض مسلوق مع خبز أسمر", "description": "3 بيضات مسلوقة، شريحتين خبز أسمر، 50 جرام خيار، 50 جرام طماطم", "calories": ${breakfastCalories}, "protein": 24, "carbs": 35, "fats": 18, "fiber": 4, "benefits": "مصدر ممتاز للبروتين الكامل والكولين لدعم العضلات ووظائف الكبد", "preparationTip": "أضف الطماطم كمصدر فيتامين C لتحسين امتصاص الحديد من البيض"}
     ],
-    "lunch": [{"name": "اسم وصفي", "description": "مكونات بالجرامات", "calories": 0, "protein": 0, "carbs": 0, "fats": 0, "fiber": 0, "benefits": "فائدة صحية مرتبطة بالتحاليل أو الهدف الجسدي", "preparationTip": "نصيحة تحضير"}],
-    "dinner": [{"name": "اسم وصفي", "description": "مكونات بالجرامات", "calories": 0, "protein": 0, "carbs": 0, "fats": 0, "fiber": 0, "benefits": "فائدة صحية مرتبطة بالتحاليل أو الهدف الجسدي", "preparationTip": "نصيحة تحضير"}],
-    "snacks": [{"name": "اسم وصفي", "description": "مكونات بالجرامات", "calories": 0, "protein": 0, "carbs": 0, "fats": 0, "fiber": 0, "benefits": "فائدة صحية مرتبطة بالتحاليل أو الهدف الجسدي", "preparationTip": "نصيحة تحضير"}]
+    "lunch": [{"name": "اسم وصفي", "description": "مكونات بالجرامات", "calories": ${lunchCalories}, "protein": 0, "carbs": 0, "fats": 0, "fiber": 0, "benefits": "فائدة صحية مرتبطة بالتحاليل أو الهدف الجسدي", "preparationTip": "نصيحة تحضير"}],
+    "dinner": [{"name": "اسم وصفي", "description": "مكونات بالجرامات", "calories": ${dinnerCalories}, "protein": 0, "carbs": 0, "fats": 0, "fiber": 0, "benefits": "فائدة صحية مرتبطة بالتحاليل أو الهدف الجسدي", "preparationTip": "نصيحة تحضير"}],
+    "snacks": [{"name": "اسم وصفي", "description": "مكونات بالجرامات", "calories": ${snackCalories}, "protein": 0, "carbs": 0, "fats": 0, "fiber": 0, "benefits": "فائدة صحية مرتبطة بالتحاليل أو الهدف الجسدي", "preparationTip": "نصيحة تحضير"}]
   },
   "mealTimingAdvice": "توصيات التوقيت الغذائي (Chrononutrition): أفضل أوقات تناول الوجبات بناءً على الإيقاع اليومي والهدف",
   "tips": ["نصيحة مع السبب الصحي والمرجع العلمي"],
@@ -670,7 +705,32 @@ ${customCalorieInstruction}
 Protocol Instructions:
 - This dietary protocol MUST be custom-designed for this specific user based on: Height (${height}cm), Weight (${weight}kg), Gender (${gender}), Age (${age}), Goal (${goalDescriptions[goal].en}), and their lab test results
 - Design meals that align with the calorie, macro, and fiber targets above
-- MANDATORY: Provide EXACTLY 5 different varied options for each meal (breakfast = 5 options, lunch = 5 options, dinner = 5 options, snacks = 5 options). Total = 20 meal options. This is a NON-NEGOTIABLE requirement. The user needs to choose and rotate daily${proteinInstruction}${carbInstruction}
+
+⸻ SCIENTIFIC ACCURACY RULES (NO fabrication or guessing): ⸻
+- You are a REAL professor of clinical nutrition. You MUST NOT fabricate or guess calorie counts or nutritional values. Every value MUST be based on official food composition databases (USDA FoodData Central or equivalent)
+- For each ingredient in grams, calculate calories as: (weight in grams ÷ 100) × calories per 100g from USDA tables
+- Example of precise calculation: 150g grilled chicken breast = (150÷100) × 165 = 248 kcal, 31g protein × 1.5 = 46.5g protein
+- After selecting ingredients, SUM each ingredient's calories to verify the total = the required meal calories. If it doesn't match, ADJUST ingredient weights until it matches
+- NEVER write "approximately" or "about" - every number must be precise and calculated
+- Macros (protein + carbs + fats) MUST match calories arithmetically: (protein×4) + (carbs×4) + (fats×9) ≈ meal calories (tolerance: ±10 kcal only)
+
+⸻ TRUE VARIETY RULES: ⸻
+- The 5 options for each meal MUST be completely different in main ingredients and cooking method
+- Do NOT repeat the same main ingredient in more than 2 options within the same meal (e.g., no 3 oatmeal breakfasts or 3 chicken lunches)
+- Vary cooking methods: grilled, boiled, baked, steamed, fresh/raw, air-fried
+- Vary cuisines: Arabic, Mediterranean, Asian, international healthy
+- Each option must be a complete standalone meal (protein + carb + vegetables/fruit + healthy fats)
+- Every meal should be practical and preparable in 15-30 minutes with commonly available ingredients
+
+- MANDATORY: Provide EXACTLY 5 different varied options for each meal (breakfast = 5 options, lunch = 5 options, dinner = 5 options, snacks = 5 options). Total = 20 meal options. This is a NON-NEGOTIABLE requirement. The user needs to choose and rotate daily
+- ⚠️⚠️⚠️ MOST CRITICAL CALORIE RULE: The sum of calories from (1 breakfast + 1 lunch + 1 dinner + 1 snack) MUST equal EXACTLY ${targetCalories} kcal. To achieve this:
+  * Every breakfast option = EXACTLY ${breakfastCalories} kcal (25% of target)
+  * Every lunch option = EXACTLY ${lunchCalories} kcal (35% of target)
+  * Every dinner option = EXACTLY ${dinnerCalories} kcal (30% of target)
+  * Every snack option = EXACTLY ${snackCalories} kcal (10% of target)
+  * Total: ${breakfastCalories} + ${lunchCalories} + ${dinnerCalories} + ${snackCalories} = ${targetCalories} kcal
+  * This ensures that when the user picks ANY option from each meal, the total daily calories = target calories EXACTLY
+  * NO deviation allowed from the specified calories per meal (tolerance: ±5 kcal only)${proteinInstruction}${carbInstruction}
 - GOLDEN RULE: Do NOT include any ingredient the user did NOT select. The protocol is built EXCLUSIVELY from the user's protein and carbohydrate choices. If a source was not selected, it MUST NOT appear in any meal
 - ${goal === "weight_loss" ? "Focus on satiating, low-calorie meals rich in protein and fiber" : ""}
 - ${goal === "muscle_gain" ? "Focus on clean, healthy food sources ONLY (no fast food, no excessive saturated fats)" : ""}
@@ -714,6 +774,7 @@ CRITICAL RULES:
 9. If there are no lab results provided, or if no deficiencies/supplements are needed, return an empty array [] for both "deficiencies" and "supplements" fields.
 
 Return JSON in this format (example shows 2 of 5 options - write all 5 complete):
+⚠️ REMINDER: Every breakfast = ${breakfastCalories} kcal | lunch = ${lunchCalories} kcal | dinner = ${dinnerCalories} kcal | snack = ${snackCalories} kcal | Total = ${targetCalories} kcal
 {
   "healthSummary": "Comprehensive clinical assessment based on lab results (if provided) or general physical profile",
   "summary": "Positive summary of the dietary protocol",
@@ -723,12 +784,12 @@ Return JSON in this format (example shows 2 of 5 options - write all 5 complete)
   "supplements": [{"name": "Supplement name", "dosage": "Suggested dosage", "reason": "Reason linked to lab result", "duration": "Duration", "foodSources": ["100g salmon = 600 IU vitamin D", "1 cup fortified milk = 400 IU", "1 egg = 40 IU"], "targetLabValue": "Vitamin D: 30-50 ng/mL", "scientificBasis": "Endocrine Society Clinical Practice Guideline", "timingAdvice": "Take with the fattiest meal of the day for optimal absorption", "interactions": "Conflicts with antacids - separate by 2 hours"}],
   "mealPlan": {
     "breakfast": [
-      {"name": "Oatmeal with Banana and Honey", "description": "60g oats, 200ml low-fat milk, 1 banana, 15g honey", "calories": 420, "protein": 15, "carbs": 62, "fats": 12, "fiber": 6, "benefits": "Rich in soluble fiber (beta-glucan), helps improve cholesterol levels", "preparationTip": "Soak oats overnight to reduce phytic acid and improve mineral absorption"},
-      {"name": "Boiled Eggs with Brown Toast", "description": "3 boiled eggs, 2 slices brown bread, 50g cucumber, 50g tomato", "calories": 400, "protein": 24, "carbs": 35, "fats": 18, "fiber": 4, "benefits": "Excellent source of complete protein and choline for muscle and liver support", "preparationTip": "Add tomato as a vitamin C source to improve iron absorption from eggs"}
+      {"name": "Oatmeal with Banana and Honey", "description": "60g oats, 200ml low-fat milk, 1 banana, 15g honey", "calories": ${breakfastCalories}, "protein": 15, "carbs": 62, "fats": 12, "fiber": 6, "benefits": "Rich in soluble fiber (beta-glucan), helps improve cholesterol levels", "preparationTip": "Soak oats overnight to reduce phytic acid and improve mineral absorption"},
+      {"name": "Boiled Eggs with Brown Toast", "description": "3 boiled eggs, 2 slices brown bread, 50g cucumber, 50g tomato", "calories": ${breakfastCalories}, "protein": 24, "carbs": 35, "fats": 18, "fiber": 4, "benefits": "Excellent source of complete protein and choline for muscle and liver support", "preparationTip": "Add tomato as a vitamin C source to improve iron absorption from eggs"}
     ],
-    "lunch": [{"name": "Descriptive meal name", "description": "ingredients with grams", "calories": 0, "protein": 0, "carbs": 0, "fats": 0, "fiber": 0, "benefits": "health benefit linked to lab results or physical goal", "preparationTip": "preparation tip"}],
-    "dinner": [{"name": "Descriptive meal name", "description": "ingredients with grams", "calories": 0, "protein": 0, "carbs": 0, "fats": 0, "fiber": 0, "benefits": "health benefit linked to lab results or physical goal", "preparationTip": "preparation tip"}],
-    "snacks": [{"name": "Descriptive meal name", "description": "ingredients with grams", "calories": 0, "protein": 0, "carbs": 0, "fats": 0, "fiber": 0, "benefits": "health benefit linked to lab results or physical goal", "preparationTip": "preparation tip"}]
+    "lunch": [{"name": "Descriptive meal name", "description": "ingredients with grams", "calories": ${lunchCalories}, "protein": 0, "carbs": 0, "fats": 0, "fiber": 0, "benefits": "health benefit linked to lab results or physical goal", "preparationTip": "preparation tip"}],
+    "dinner": [{"name": "Descriptive meal name", "description": "ingredients with grams", "calories": ${dinnerCalories}, "protein": 0, "carbs": 0, "fats": 0, "fiber": 0, "benefits": "health benefit linked to lab results or physical goal", "preparationTip": "preparation tip"}],
+    "snacks": [{"name": "Descriptive meal name", "description": "ingredients with grams", "calories": ${snackCalories}, "protein": 0, "carbs": 0, "fats": 0, "fiber": 0, "benefits": "health benefit linked to lab results or physical goal", "preparationTip": "preparation tip"}]
   },
   "mealTimingAdvice": "Chrononutrition recommendations: optimal meal timing based on circadian rhythm and goal",
   "tips": ["tip with health reason and scientific reference"],
@@ -758,6 +819,7 @@ ${hasAllergies && allergyList ? `- الحساسيات الغذائية: ${allerg
 - BMR (معدل الأيض الأساسي): ${bmr} سعرة (الحد الأدنى الآمن - لا يمكن النزول عنه)
 - TDEE (إجمالي الطاقة اليومية): ${tdee} سعرة
 - السعرات المستهدفة: ${targetCalories} سعرة/يوم (${delta > 0 ? "فائض +" + delta : delta < 0 ? "عجز " + delta : "ثبات"} سعرة)
+- توزيع السعرات على الوجبات: فطور = ${breakfastCalories} سعرة | غداء = ${lunchCalories} سعرة | عشاء = ${dinnerCalories} سعرة | سناك = ${snackCalories} سعرة
 - البروتين: ${macros.protein.grams}جم | الكاربوهيدرات: ${macros.carbs.grams}جم | الدهون: ${macros.fats.grams}جم
 ${hasSevereDeficiency ? `\n⚠️ تنبيه: تم اكتشاف نقص حاد في: ${severeDeficiencyList.join("، ")}. ${goal === "weight_loss" ? "تم تخفيف العجز الحراري لضمان تعويض النواقص أولاً." : "الأولوية تصحيح النواقص."}` : ""}
 
@@ -797,6 +859,7 @@ Energy Calculations:
 - BMR (Basal Metabolic Rate): ${bmr} kcal (minimum safe threshold - cannot go below this)
 - TDEE (Total Daily Energy Expenditure): ${tdee} kcal
 - Target Calories: ${targetCalories} kcal/day (${delta > 0 ? "surplus +" + delta : delta < 0 ? "deficit " + delta : "maintenance"} kcal)
+- Meal Calorie Distribution: Breakfast = ${breakfastCalories} kcal | Lunch = ${lunchCalories} kcal | Dinner = ${dinnerCalories} kcal | Snack = ${snackCalories} kcal
 - Protein: ${macros.protein.grams}g | Carbs: ${macros.carbs.grams}g | Fats: ${macros.fats.grams}g
 ${hasSevereDeficiency ? `\nWARNING: Severe deficiencies detected in: ${severeDeficiencyList.join(", ")}. ${goal === "weight_loss" ? "Calorie deficit reduced to ensure deficiency correction first." : "Priority is correcting deficiencies."}` : ""}
 
@@ -1009,6 +1072,10 @@ ${hasCustomTargetCalories && normalizedCustomTargetCalories ? `11. Mandatory: Ke
         tef,
         target: targetCalories,
         deficit_or_surplus: delta,
+        breakfast: breakfastCalories,
+        lunch: lunchCalories,
+        dinner: dinnerCalories,
+        snack: snackCalories,
       },
       macros: {
         ...macros,
