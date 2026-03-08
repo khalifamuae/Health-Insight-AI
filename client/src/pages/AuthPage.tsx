@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 import { Label } from "@/components/ui/label";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { LanguageToggle } from "@/components/LanguageToggle";
@@ -363,24 +364,23 @@ export default function AuthPage() {
                       <span className="text-sm text-muted-foreground truncate" dir="ltr">{email}</span>
                     </div>
 
-                    <div className="space-y-1">
-                      <Label htmlFor="verificationCode" className="text-xs">{t("authEnterCode")}</Label>
-                      <Input
-                        id="verificationCode"
-                        data-testid="input-verification-code"
-                        value={verificationCode}
-                        onChange={(e) => {
-                          const val = e.target.value.replace(/\D/g, '').slice(0, 6);
-                          setVerificationCode(val);
-                        }}
-                        className="h-12 text-center text-2xl tracking-[0.5em] font-mono"
-                        dir="ltr"
-                        placeholder="000000"
+                    <div className="space-y-2 flex flex-col items-center justify-center">
+                      <Label htmlFor="verificationCode" className="text-xs w-full text-right">{t("authEnterCode")}</Label>
+                      <InputOTP
                         maxLength={6}
-                        inputMode="numeric"
+                        value={verificationCode}
+                        onChange={setVerificationCode}
                         autoFocus
-                        required
-                      />
+                      >
+                        <InputOTPGroup dir="ltr">
+                          <InputOTPSlot index={0} className="w-10 h-12 text-lg sm:w-12 sm:h-14 sm:text-2xl" />
+                          <InputOTPSlot index={1} className="w-10 h-12 text-lg sm:w-12 sm:h-14 sm:text-2xl" />
+                          <InputOTPSlot index={2} className="w-10 h-12 text-lg sm:w-12 sm:h-14 sm:text-2xl" />
+                          <InputOTPSlot index={3} className="w-10 h-12 text-lg sm:w-12 sm:h-14 sm:text-2xl" />
+                          <InputOTPSlot index={4} className="w-10 h-12 text-lg sm:w-12 sm:h-14 sm:text-2xl" />
+                          <InputOTPSlot index={5} className="w-10 h-12 text-lg sm:w-12 sm:h-14 sm:text-2xl" />
+                        </InputOTPGroup>
+                      </InputOTP>
                     </div>
 
                     <p className="text-xs text-muted-foreground text-center">
