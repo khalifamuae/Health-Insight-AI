@@ -311,7 +311,10 @@ export async function registerRoutes(
       if (!email) return res.status(400).json({ error: "Email is required" });
 
       const existingUsers = await db.select().from(userProfiles).where(eq(userProfiles.email, email)).limit(1);
-      if (existingUsers.length === 0) return res.status(404).json({ error: "No account found with this email" });
+      if (existingUsers.length === 0) {
+        // Don't reveal whether account exists - return success anyway
+        return res.json({ success: true });
+      }
 
       const code = Math.floor(100000 + Math.random() * 900000).toString();
       const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
@@ -326,16 +329,17 @@ export async function registerRoutes(
           to: email,
           subject: "BioTrack AI - Password Reset Code / رمز استعادة كلمة المرور",
           html: `
-  < div style = "font-family: Arial, sans-serif; max-width: 480px; margin: 0 auto; padding: 32px; text-align: center;" >
-    <h2 style="color: #3b82f6;" > BioTrack AI </h2>
-      < p style = "font-size: 16px; color: #374151;" > Your password reset code is: </p>
-        < p style = "font-size: 16px; color: #374151; direction: rtl;" > رمز استعادة كلمة المرور الخاص بك: </p>
-          < div style = "background: #f3f4f6; border-radius: 12px; padding: 24px; margin: 24px 0;" >
-            <span style="font-size: 36px; font-weight: bold; letter-spacing: 8px; color: #3b82f6;" > ${code} </span>
+            <div style="font-family: Arial, sans-serif; max-width: 480px; margin: 0 auto; padding: 32px; text-align: center;">
+              <h2 style="color: #3b82f6;">BioTrack AI</h2>
+              <p style="font-size: 16px; color: #374151;">Your password reset code is:</p>
+              <p style="font-size: 16px; color: #374151; direction: rtl;">رمز استعادة كلمة المرور الخاص بك:</p>
+              <div style="background: #f3f4f6; border-radius: 12px; padding: 24px; margin: 24px 0;">
+                <span style="font-size: 36px; font-weight: bold; letter-spacing: 8px; color: #3b82f6;">${code}</span>
               </div>
-              < p style = "font-size: 14px; color: #6b7280;" > This code expires in 10 minutes.If you didn't request this, ignore this email.</p>
-                </div>
-                  `,
+              <p style="font-size: 14px; color: #6b7280;">This code expires in 10 minutes. If you didn't request this, ignore this email.</p>
+              <p style="font-size: 14px; color: #6b7280; direction: rtl;">ينتهي هذا الرمز خلال 10 دقائق. إذا لم تطلب ذلك، تجاهل هذا البريد.</p>
+            </div>
+          `,
         });
       } catch (emailErr) {
         console.error("Email send error:", emailErr);
@@ -363,8 +367,11 @@ export async function registerRoutes(
         return res.status(400).json({ error: "Email, code, and new password are required" });
       }
 
-      if (newPassword.length < 6) {
-        return res.status(400).json({ error: "Password must be at least 6 characters" });
+      if (newPassword.length < 8) {
+        return res.status(400).json({ error: "Password must be at least 8 characters" });
+      }
+      if (!/[a-zA-Z]/.test(newPassword) || !/[0-9]/.test(newPassword)) {
+        return res.status(400).json({ error: "Password must contain at least one letter and one number" });
       }
 
       const verificationRecord = await db.select()

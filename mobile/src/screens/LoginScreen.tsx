@@ -83,10 +83,10 @@ export default function LoginScreen({ onLogin }: LoginScreenProps) {
       );
       return;
     }
-    if (password.length < 6) {
+    if (password.length < 8 || !/[a-zA-Z]/.test(password) || !/[0-9]/.test(password)) {
       Alert.alert(
         isArabic ? 'خطأ' : 'Error',
-        isArabic ? 'كلمة المرور يجب أن تكون 6 أحرف على الأقل' : 'Password must be at least 6 characters'
+        isArabic ? 'كلمة المرور يجب أن تكون 8 أحرف على الأقل وتحتوي على حرف ورقم' : 'Password must be at least 8 characters with a letter and number'
       );
       return;
     }
@@ -289,10 +289,10 @@ export default function LoginScreen({ onLogin }: LoginScreenProps) {
       return;
     }
 
-    if (password.length < 6) {
+    if (password.length < 8 || !/[a-zA-Z]/.test(password) || !/[0-9]/.test(password)) {
       Alert.alert(
         isArabic ? 'خطأ' : 'Error',
-        isArabic ? 'كلمة المرور يجب أن تكون 6 أحرف على الأقل' : 'Password must be at least 6 characters'
+        isArabic ? 'كلمة المرور يجب أن تكون 8 أحرف على الأقل وتحتوي على حرف ورقم' : 'Password must be at least 8 characters with a letter and number'
       );
       return;
     }
