@@ -8,19 +8,17 @@ interface DietPlanDisplayProps {
     isDark: boolean;
     t: (key: string) => string;
     isArabicSystem: boolean;
-    forceLTR?: boolean;
 }
 
-export default function DietPlanDisplay({ plan, colors, isDark, t, isArabicSystem, forceLTR = false }: DietPlanDisplayProps) {
+export default function DietPlanDisplay({ plan, colors, isDark, t, isArabicSystem }: DietPlanDisplayProps) {
     const [selectedMeals, setSelectedMeals] = useState<Record<string, boolean>>({});
     const [calculatorTotals, setCalculatorTotals] = useState({ calories: 0, protein: 0, carbs: 0, fats: 0 });
 
     // Detect if the plan was generated in Arabic (based on content)
     const isPlanContentArabic = /[\u0600-\u06FF]/.test(plan.summary || plan.goalDescription || plan.healthSummary || '');
-    const effectiveIsArabic = forceLTR ? false : isPlanContentArabic;
-    const directionStyle = { direction: effectiveIsArabic ? 'rtl' : 'ltr' } as const;
-    const tAlign = effectiveIsArabic ? 'right' : 'left';
-    const flexDir = effectiveIsArabic ? 'row-reverse' : 'row';
+    const directionStyle = { direction: isPlanContentArabic ? 'rtl' : 'ltr' } as const;
+    const tAlign = isPlanContentArabic ? 'right' : 'left';
+    const flexDir = isPlanContentArabic ? 'row-reverse' : 'row';
     const styles = React.useMemo(() => getStyles(tAlign, flexDir), [tAlign, flexDir]);
 
     useEffect(() => {
