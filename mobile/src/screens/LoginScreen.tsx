@@ -35,7 +35,7 @@ export default function LoginScreen({ onLogin }: LoginScreenProps) {
   const { t, i18n } = useTranslation();
   const { colors, isDark } = useAppTheme();
   const isArabic = isArabicLanguage();
-  const styles = getStyles(isArabic);
+  const styles = getStyles(isArabic, isDark);
   const [isLoading, setIsLoading] = useState(false);
   const [authMode, setAuthMode] = useState<AuthMode>('login');
   const [signupStep, setSignupStep] = useState<SignupStep>('form');
@@ -862,7 +862,7 @@ export default function LoginScreen({ onLogin }: LoginScreenProps) {
   );
 }
 
-const getStyles = (isArabic: boolean) => StyleSheet.create({
+const getStyles = (isArabic: boolean, isDark: boolean) => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#f8fafc',
@@ -958,12 +958,12 @@ const getStyles = (isArabic: boolean) => StyleSheet.create({
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#f1f5f9',
+    backgroundColor: isDark ? '#1a2332' : '#f1f5f9',
     borderRadius: 12,
     paddingHorizontal: 14,
     marginBottom: 12,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: isDark ? '#2a3a4e' : '#e2e8f0',
   },
   inputIcon: {
     marginRight: isArabic ? 0 : 8,
@@ -973,7 +973,7 @@ const getStyles = (isArabic: boolean) => StyleSheet.create({
     flex: 1,
     paddingVertical: 14,
     fontSize: 15,
-    color: '#1e293b',
+    color: isDark ? '#f0f4f8' : '#1e293b',
   },
   inputRTL: {
     textAlign: 'right',
@@ -1044,7 +1044,7 @@ const getStyles = (isArabic: boolean) => StyleSheet.create({
     fontWeight: '700',
     letterSpacing: 12,
     paddingVertical: 16,
-    color: '#1e293b',
+    color: isDark ? '#f0f4f8' : '#1e293b',
     fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
   },
   checkEmailText: {
