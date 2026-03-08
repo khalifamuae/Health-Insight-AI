@@ -1,3 +1,4 @@
+
 import type { Express, Request, Response, RequestHandler } from "express";
 import { createServer, type Server } from "http";
 import multer from "multer";
@@ -175,7 +176,7 @@ const rateLimitStore = new Map<string, { count: number; resetAt: number }>();
 
 function rateLimit(windowMs: number, maxRequests: number) {
   return (req: any, res: Response, next: Function) => {
-    const key = `${req.ip}:${req.path}`;
+    const key = `${req.ip}:${req.path} `;
     const now = Date.now();
     const entry = rateLimitStore.get(key);
 
@@ -276,31 +277,127 @@ export async function registerRoutes(
           to: email,
           subject: "BioTrack AI - Verification Code / رمز التحقق",
           html: `
-            <div style="font-family: Arial, sans-serif; max-width: 480px; margin: 0 auto; padding: 32px; text-align: center;">
-              <h2 style="color: #10b981;">BioTrack AI</h2>
-              <p style="font-size: 16px; color: #374151;">Your verification code is:</p>
-              <p style="font-size: 16px; color: #374151; direction: rtl;">رمز التحقق الخاص بك:</p>
-              <div style="background: #f3f4f6; border-radius: 12px; padding: 24px; margin: 24px 0;">
-                <span style="font-size: 36px; font-weight: bold; letter-spacing: 8px; color: #10b981;">${code}</span>
+  < div style = "font-family: Arial, sans-serif; max-width: 480px; margin: 0 auto; padding: 32px; text-align: center;" >
+    <h2 style="color: #10b981;" > BioTrack AI </h2>
+      < p style = "font-size: 16px; color: #374151;" > Your verification code is: </p>
+        < p style = "font-size: 16px; color: #374151; direction: rtl;" > رمز التحقق الخاص بك: </p>
+          < div style = "background: #f3f4f6; border-radius: 12px; padding: 24px; margin: 24px 0;" >
+            <span style="font-size: 36px; font-weight: bold; letter-spacing: 8px; color: #10b981;" > ${code} </span>
               </div>
-              <p style="font-size: 14px; color: #6b7280;">This code expires in 10 minutes.</p>
-              <p style="font-size: 14px; color: #6b7280; direction: rtl;">ينتهي هذا الرمز خلال 10 دقائق.</p>
-            </div>
-          `,
+              < p style = "font-size: 14px; color: #6b7280;" > This code expires in 10 minutes.</p>
+                < p style = "font-size: 14px; color: #6b7280; direction: rtl;" > ينتهي هذا الرمز خلال 10 دقائق.</p>
+                  </div>
+                    `,
         });
       } catch (emailErr) {
         console.error("Email send error:", emailErr);
         if (process.env.NODE_ENV !== 'production') {
-          console.log(`\n\n[DEV MODE] EMAIL BYPASS: The verification code for ${email} is: ${code}\n\n`);
+          console.log(`\n\n[DEV MODE] EMAIL BYPASS: The verification code for ${email} is: ${code} \n\n`);
           return res.json({ success: true, message: "Dev mode bypass: Check server console for code" });
         }
         return res.status(500).json({ error: "Failed to send verification email" });
       }
 
       res.json({ success: true });
-    } catch (err) {
-      console.error("Send verification error:", err);
-      res.status(500).json({ error: "Failed to send verification code" });
+    } catch (error: any) {
+      console.error("Send verification error:", error);
+      res.status(500).json({ error: "Server error during verification setup" });
+    }
+  });
+
+  app.post("/api/auth/forgot-password", emailRateLimit, async (req: any, res: Response) => {
+    try {
+      const email = (req.body?.email || '').trim().toLowerCase();
+      if (!email) return res.status(400).json({ error: "Email is required" });
+
+      const existingUsers = await db.select().from(userProfiles).where(eq(userProfiles.email, email)).limit(1);
+      if (existingUsers.length === 0) return res.status(404).json({ error: "No account found with this email" });
+
+      const code = Math.floor(100000 + Math.random() * 900000).toString();
+      const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
+
+      await db.delete(emailVerificationCodes).where(eq(emailVerificationCodes.email, email));
+      await db.insert(emailVerificationCodes).values({ email, code, expiresAt });
+
+      try {
+        const { client, fromEmail } = await getResendClient();
+        await client.emails.send({
+          from: fromEmail || "BioTrack AI <noreply@resend.dev>",
+          to: email,
+          subject: "BioTrack AI - Password Reset Code / رمز استعادة كلمة المرور",
+          html: `
+  < div style = "font-family: Arial, sans-serif; max-width: 480px; margin: 0 auto; padding: 32px; text-align: center;" >
+    <h2 style="color: #3b82f6;" > BioTrack AI </h2>
+      < p style = "font-size: 16px; color: #374151;" > Your password reset code is: </p>
+        < p style = "font-size: 16px; color: #374151; direction: rtl;" > رمز استعادة كلمة المرور الخاص بك: </p>
+          < div style = "background: #f3f4f6; border-radius: 12px; padding: 24px; margin: 24px 0;" >
+            <span style="font-size: 36px; font-weight: bold; letter-spacing: 8px; color: #3b82f6;" > ${code} </span>
+              </div>
+              < p style = "font-size: 14px; color: #6b7280;" > This code expires in 10 minutes.If you didn't request this, ignore this email.</p>
+                </div>
+                  `,
+        });
+      } catch (emailErr) {
+        console.error("Email send error:", emailErr);
+        if (process.env.NODE_ENV !== 'production') {
+          console.log(`\n\n[DEV MODE] EMAIL BYPASS: The reset code for ${email} is: ${code} \n\n`);
+          return res.json({ success: true, message: "Dev mode bypass: Check server console for code" });
+        }
+        return res.status(500).json({ error: "Failed to send reset email" });
+      }
+
+      res.json({ success: true });
+    } catch (error: any) {
+      console.error("Forgot password error:", error);
+      res.status(500).json({ error: "Server error during password reset setup" });
+    }
+  });
+
+  app.post("/api/auth/reset-password", authRateLimit, async (req: any, res: Response) => {
+    try {
+      const email = (req.body?.email || '').trim().toLowerCase();
+      const code = (req.body?.code || '').trim();
+      const newPassword = req.body?.newPassword;
+
+      if (!email || !code || !newPassword) {
+        return res.status(400).json({ error: "Email, code, and new password are required" });
+      }
+
+      if (newPassword.length < 6) {
+        return res.status(400).json({ error: "Password must be at least 6 characters" });
+      }
+
+      const verificationRecord = await db.select()
+        .from(emailVerificationCodes)
+        .where(
+          and(
+            eq(emailVerificationCodes.email, email),
+            eq(emailVerificationCodes.code, code)
+          )
+        ).limit(1);
+
+      if (verificationRecord.length === 0) {
+        return res.status(400).json({ error: "Invalid verification code" });
+      }
+
+      if (new Date() > verificationRecord[0].expiresAt) {
+        return res.status(400).json({ error: "Verification code expired" });
+      }
+
+      const existingUsers = await db.select().from(userProfiles).where(eq(userProfiles.email, email)).limit(1);
+      if (existingUsers.length === 0) return res.status(404).json({ error: "No account found with this email" });
+
+      const hashedPassword = await bcrypt.hash(newPassword, 10);
+      await db.update(userProfiles)
+        .set({ passwordHash: hashedPassword })
+        .where(eq(userProfiles.id, existingUsers[0].id));
+
+      await db.delete(emailVerificationCodes).where(eq(emailVerificationCodes.email, email));
+
+      res.json({ success: true, message: "Password reset successfully" });
+    } catch (error: any) {
+      console.error("Reset password error:", error);
+      res.status(500).json({ error: "Server error during password reset" });
     }
   });
 
@@ -696,7 +793,7 @@ export async function registerRoutes(
       const allTests = definitions.map((def, index) => {
         const userTest = userTestMap.get(def.id);
         return {
-          id: userTest?.id || `empty-${def.id}`,
+          id: userTest?.id || `empty - ${def.id} `,
           testId: def.id,
           nameEn: def.nameEn,
           nameAr: def.nameAr,
@@ -1137,7 +1234,7 @@ export async function registerRoutes(
 
       const normalizedFileName = file.originalname.toLowerCase().includes("inbody")
         ? file.originalname
-        : `InBody-${file.originalname}`;
+        : `InBody - ${file.originalname} `;
 
       const pdfRecord = await storage.createUploadedPdf({
         userId,
@@ -1206,7 +1303,7 @@ export async function registerRoutes(
 
       const mode: "lab" | "inbody" = isImage ? "inbody" : "lab";
       const normalizedFileName = mode === "inbody" && !file.originalname.toLowerCase().includes("inbody")
-        ? `InBody-${file.originalname}`
+        ? `InBody - ${file.originalname} `
         : file.originalname;
 
       const fileRecord = await storage.createUploadedPdf({

@@ -26,7 +26,9 @@ interface LoginScreenProps {
   onLogin: (userData: any, token: string) => void;
 }
 
+type AuthMode = 'login' | 'signup' | 'forgot-password';
 type SignupStep = 'form' | 'verify';
+type ForgotPasswordStep = 'email' | 'verify' | 'reset';
 
 
 export default function LoginScreen({ onLogin }: LoginScreenProps) {
@@ -35,8 +37,9 @@ export default function LoginScreen({ onLogin }: LoginScreenProps) {
   const isArabic = isArabicLanguage();
   const styles = getStyles(isArabic);
   const [isLoading, setIsLoading] = useState(false);
-  const [isSignUp, setIsSignUp] = useState(false);
+  const [authMode, setAuthMode] = useState<AuthMode>('login');
   const [signupStep, setSignupStep] = useState<SignupStep>('form');
+  const [forgotPasswordStep, setForgotPasswordStep] = useState<ForgotPasswordStep>('email');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [passwordConfirm, setPasswordConfirm] = useState('');
@@ -55,6 +58,7 @@ export default function LoginScreen({ onLogin }: LoginScreenProps) {
     setPhone('');
     setVerificationCode('');
     setSignupStep('form');
+    setForgotPasswordStep('email');
   };
 
   const handleSendCode = async () => {
@@ -226,6 +230,109 @@ export default function LoginScreen({ onLogin }: LoginScreenProps) {
       }
 
       onLogin(data.user, data.token);
+    } catch {
+      Alert.alert(
+        isArabic ? 'خطأ' : 'Error',
+        isArabic ? 'فشل الاتصال بالخادم' : 'Failed to connect to server'
+      );
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleForgotPasswordSendCode = async () => {
+    if (!email.trim()) {
+      Alert.alert(
+        isArabic ? 'خطأ' : 'Error',
+        isArabic ? 'البريد الإلكتروني مطلوب' : 'Email is required'
+      );
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/auth/forgot-password`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: email.trim().toLowerCase() }),
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        let errorMsg = data.error || (isArabic ? 'حدث خطأ' : 'An error occurred');
+        if (response.status === 404) {
+          errorMsg = isArabic ? 'لا يوجد حساب بهذا البريد الإلكتروني' : 'No account found with this email';
+        }
+        Alert.alert(isArabic ? 'خطأ' : 'Error', errorMsg);
+        return;
+      }
+      Alert.alert(
+        isArabic ? 'تم' : 'Success',
+        isArabic ? 'تم إرسال رمز استعادة كلمة المرور إلى بريدك الإلكتروني' : 'Password reset code sent to your email'
+      );
+      setForgotPasswordStep('verify');
+    } catch {
+      Alert.alert(
+        isArabic ? 'خطأ' : 'Error',
+        isArabic ? 'فشل الاتصال بالخادم' : 'Failed to connect to server'
+      );
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleForgotPasswordVerifyAndReset = async () => {
+    if (verificationCode.length !== 6) {
+      Alert.alert(
+        isArabic ? 'خطأ' : 'Error',
+        isArabic ? 'رمز التحقق غير صحيح' : 'Invalid verification code'
+      );
+      return;
+    }
+
+    if (password.length < 6) {
+      Alert.alert(
+        isArabic ? 'خطأ' : 'Error',
+        isArabic ? 'كلمة المرور يجب أن تكون 6 أحرف على الأقل' : 'Password must be at least 6 characters'
+      );
+      return;
+    }
+
+    if (password !== passwordConfirm) {
+      Alert.alert(
+        isArabic ? 'خطأ' : 'Error',
+        isArabic ? 'كلمة المرور غير متطابقة' : 'Passwords do not match'
+      );
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/auth/reset-password`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: email.trim().toLowerCase(),
+          code: verificationCode.trim(),
+          newPassword: password
+        }),
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        const errorMsg = data.error === 'Verification code expired'
+          ? (isArabic ? 'انتهت صلاحية رمز التحقق. يرجى إعادة الإرسال' : 'Verification code expired. Please resend')
+          : data.error === 'Invalid verification code'
+            ? (isArabic ? 'رمز التحقق غير صحيح' : 'Invalid verification code')
+            : data.error || (isArabic ? 'حدث خطأ' : 'An error occurred');
+        Alert.alert(isArabic ? 'خطأ' : 'Error', errorMsg);
+        return;
+      }
+
+      Alert.alert(
+        isArabic ? 'نجاح' : 'Success',
+        isArabic ? 'تم تغيير كلمة المرور بنجاح، يمكنك الآن تسجيل الدخول.' : 'Password reset successfully, you can now sign in.'
+      );
+      setAuthMode('login');
+      resetForm();
     } catch {
       Alert.alert(
         isArabic ? 'خطأ' : 'Error',
@@ -437,6 +544,18 @@ export default function LoginScreen({ onLogin }: LoginScreenProps) {
       </View>
 
       <TouchableOpacity
+        style={styles.forgotPasswordContainer}
+        onPress={() => {
+          resetForm();
+          setAuthMode('forgot-password');
+        }}
+      >
+        <Text style={styles.forgotPasswordText}>
+          {isArabic ? 'نسيت كلمة المرور؟' : 'Forgot Password?'}
+        </Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity
         style={styles.loginButton}
         onPress={handleLogin}
         disabled={isLoading}
@@ -453,9 +572,182 @@ export default function LoginScreen({ onLogin }: LoginScreenProps) {
     </>
   );
 
+  const renderForgotPasswordFlow = () => {
+    if (forgotPasswordStep === 'email') {
+      return (
+        <>
+          <Text style={styles.verifyHint}>
+            {isArabic ? 'أدخل بريدك الإلكتروني لإرسال رمز استعادة كلمة المرور.' : 'Enter your email to receive a password reset code.'}
+          </Text>
+          <View style={styles.inputContainer}>
+            <Ionicons name="mail-outline" size={20} color="#94a3b8" style={styles.inputIcon} />
+            <TextInput
+              style={[styles.input, isArabic && styles.inputRTL]}
+              placeholder={isArabic ? 'البريد الإلكتروني' : 'Email'}
+              placeholderTextColor="#94a3b8"
+              value={email}
+              onChangeText={setEmail}
+              keyboardType="email-address"
+              autoCapitalize="none"
+              autoCorrect={false}
+              testID="input-forgot-email"
+            />
+          </View>
+
+          <TouchableOpacity
+            style={styles.loginButton}
+            onPress={handleForgotPasswordSendCode}
+            disabled={isLoading}
+            testID="button-forgot-send-code"
+          >
+            {isLoading ? (
+              <ActivityIndicator color="#fff" />
+            ) : (
+              <View style={styles.buttonContent}>
+                <Ionicons name="mail-outline" size={20} color="#fff" style={{ marginRight: 8 }} />
+                <Text style={styles.loginButtonText}>
+                  {isArabic ? 'إرسال الرمز' : 'Send Code'}
+                </Text>
+              </View>
+            )}
+          </TouchableOpacity>
+        </>
+      );
+    }
+
+    if (forgotPasswordStep === 'verify') {
+      return (
+        <>
+          <View style={styles.emailBadge}>
+            <Ionicons name="mail" size={18} color="#3b82f6" />
+            <Text style={styles.emailBadgeText}>{email}</Text>
+          </View>
+
+          <Text style={styles.verifyHint}>
+            {isArabic ? 'أدخل الرمز المكون من 6 أرقام المرسل إلى بريدك لتغيير كلمة المرور.' : 'Enter the 6-digit code sent to your email to reset your password.'}
+          </Text>
+
+          <View style={[styles.inputContainer, styles.codeInputContainer]}>
+            <TextInput
+              style={styles.codeInput}
+              placeholder="000000"
+              placeholderTextColor="#94a3b8"
+              value={verificationCode}
+              onChangeText={(text) => setVerificationCode(text.replace(/\D/g, '').slice(0, 6))}
+              keyboardType="number-pad"
+              maxLength={6}
+              autoFocus
+              testID="input-forgot-verification-code"
+            />
+          </View>
+
+          <View style={styles.verifyActions}>
+            <TouchableOpacity onPress={() => setForgotPasswordStep('email')} testID="button-forgot-back-to-email">
+              <View style={styles.backButton}>
+                <Ionicons name="arrow-back" size={16} color="#3b82f6" />
+                <Text style={styles.backButtonText}>{isArabic ? 'رجوع' : 'Back'}</Text>
+              </View>
+            </TouchableOpacity>
+
+            <TouchableOpacity onPress={handleForgotPasswordSendCode} disabled={isLoading} testID="button-forgot-resend-code">
+              <Text style={styles.resendText}>{isArabic ? 'إعادة إرسال الرمز' : 'Resend Code'}</Text>
+            </TouchableOpacity>
+          </View>
+
+          <TouchableOpacity
+            style={[styles.loginButton, { marginTop: 16 }]}
+            onPress={() => {
+              if (verificationCode.length === 6) {
+                setForgotPasswordStep('reset');
+              } else {
+                Alert.alert(
+                  isArabic ? 'خطأ' : 'Error',
+                  isArabic ? 'رمز التحقق يجب أن يتكون من 6 أرقام' : 'Verification code must be 6 digits'
+                );
+              }
+            }}
+            disabled={isLoading || verificationCode.length !== 6}
+            testID="button-forgot-next-step"
+          >
+            <View style={styles.buttonContent}>
+              <Text style={styles.loginButtonText}>
+                {isArabic ? 'التالي' : 'Next'}
+              </Text>
+              <Ionicons name="arrow-forward" size={20} color="#fff" style={{ marginLeft: 8 }} />
+            </View>
+          </TouchableOpacity>
+        </>
+      );
+    }
+
+    if (forgotPasswordStep === 'reset') {
+      return (
+        <>
+          <View style={styles.inputContainer}>
+            <Ionicons name="lock-closed-outline" size={20} color="#94a3b8" style={styles.inputIcon} />
+            <TextInput
+              style={[styles.input, { flex: 1 }, isArabic && styles.inputRTL]}
+              placeholder={isArabic ? 'كلمة المرور الجديدة' : 'New Password'}
+              placeholderTextColor="#94a3b8"
+              value={password}
+              onChangeText={setPassword}
+              secureTextEntry={!showPassword}
+              testID="input-forgot-password"
+            />
+            <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={styles.eyeIcon} testID="button-toggle-password">
+              <Ionicons name={showPassword ? 'eye-off-outline' : 'eye-outline'} size={20} color="#94a3b8" />
+            </TouchableOpacity>
+          </View>
+
+          <View style={styles.inputContainer}>
+            <Ionicons name="lock-closed-outline" size={20} color="#94a3b8" style={styles.inputIcon} />
+            <TextInput
+              style={[styles.input, isArabic && styles.inputRTL]}
+              placeholder={isArabic ? 'تأكيد كلمة المرور الجديدة' : 'Confirm New Password'}
+              placeholderTextColor="#94a3b8"
+              value={passwordConfirm}
+              onChangeText={setPasswordConfirm}
+              secureTextEntry={!showPassword}
+              testID="input-forgot-password-confirm"
+            />
+          </View>
+
+          <View style={styles.verifyActions}>
+            <TouchableOpacity onPress={() => setForgotPasswordStep('verify')} testID="button-forgot-back-to-verify">
+              <View style={styles.backButton}>
+                <Ionicons name="arrow-back" size={16} color="#3b82f6" />
+                <Text style={styles.backButtonText}>{isArabic ? 'رجوع' : 'Back'}</Text>
+              </View>
+            </TouchableOpacity>
+          </View>
+
+          <TouchableOpacity
+            style={[styles.loginButton, { marginTop: 16 }]}
+            onPress={handleForgotPasswordVerifyAndReset}
+            disabled={isLoading}
+            testID="button-forgot-reset-submit"
+          >
+            {isLoading ? (
+              <ActivityIndicator color="#fff" />
+            ) : (
+              <View style={styles.buttonContent}>
+                <Ionicons name="checkmark-circle-outline" size={20} color="#fff" style={{ marginRight: 8 }} />
+                <Text style={styles.loginButtonText}>
+                  {isArabic ? 'حفظ كلمة المرور' : 'Save Password'}
+                </Text>
+              </View>
+            )}
+          </TouchableOpacity>
+        </>
+      );
+    }
+
+    return null;
+  };
+
   return (
-    <KeyboardAvoidingView 
-      style={[styles.container, { backgroundColor: colors.background }]} 
+    <KeyboardAvoidingView
+      style={[styles.container, { backgroundColor: colors.background }]}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
       <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
@@ -492,33 +784,52 @@ export default function LoginScreen({ onLogin }: LoginScreenProps) {
 
           <View style={[styles.formContainer, { backgroundColor: colors.card, borderColor: colors.border }]}>
             <Text style={[styles.formTitle, { color: colors.text }]}>
-              {isSignUp
+              {authMode === 'signup'
                 ? signupStep === 'verify'
                   ? (isArabic ? 'تحقق من البريد الإلكتروني' : 'Verify Email')
                   : (isArabic ? 'إنشاء حساب جديد' : 'Create Account')
-                : (isArabic ? 'تسجيل الدخول' : 'Sign In')}
+                : authMode === 'forgot-password'
+                  ? (isArabic ? 'مساعدة في تسجيل الدخول' : 'Login Help')
+                  : (isArabic ? 'تسجيل الدخول' : 'Sign In')}
             </Text>
 
-            {isSignUp
+            {authMode === 'signup'
               ? signupStep === 'form'
                 ? renderSignupForm()
                 : renderVerifyStep()
-              : renderLoginForm()}
+              : authMode === 'forgot-password'
+                ? renderForgotPasswordFlow()
+                : renderLoginForm()}
 
-            <TouchableOpacity 
-              onPress={() => {
-                setIsSignUp(!isSignUp);
-                resetForm();
-              }} 
-              style={styles.switchButton}
-              testID="button-switch-auth-mode"
-            >
-            <Text style={[styles.switchText, { color: colors.primary }]}>
-                {isSignUp 
-                  ? (isArabic ? 'لديك حساب بالفعل؟ تسجيل الدخول' : 'Already have an account? Sign In')
-                  : (isArabic ? 'ليس لديك حساب؟ إنشاء حساب جديد' : "Don't have an account? Create Account")}
-              </Text>
-            </TouchableOpacity>
+            {authMode === 'forgot-password' ? (
+              <TouchableOpacity
+                onPress={() => {
+                  setAuthMode('login');
+                  resetForm();
+                }}
+                style={[styles.switchButton, { marginTop: 16 }]}
+                testID="button-back-to-login"
+              >
+                <Text style={[styles.switchText, { color: colors.primary }]}>
+                  {isArabic ? 'العودة لتسجيل الدخول' : 'Back to Sign In'}
+                </Text>
+              </TouchableOpacity>
+            ) : (
+              <TouchableOpacity
+                onPress={() => {
+                  setAuthMode(authMode === 'login' ? 'signup' : 'login');
+                  resetForm();
+                }}
+                style={styles.switchButton}
+                testID="button-switch-auth-mode"
+              >
+                <Text style={[styles.switchText, { color: colors.primary }]}>
+                  {authMode === 'signup'
+                    ? (isArabic ? 'لديك حساب بالفعل؟ تسجيل الدخول' : 'Already have an account? Sign In')
+                    : (isArabic ? 'ليس لديك حساب؟ إنشاء حساب جديد' : "Don't have an account? Create Account")}
+                </Text>
+              </TouchableOpacity>
+            )}
           </View>
 
           <Text style={styles.trialText}>
@@ -586,6 +897,22 @@ const getStyles = (isArabic: boolean) => StyleSheet.create({
     color: '#64748b',
     textAlign: 'center',
     marginBottom: 20,
+  },
+  passwordOptions: {
+    flexDirection: isArabic ? 'row-reverse' : 'row',
+    justifyContent: 'flex-end',
+    marginTop: 8,
+  },
+  forgotPasswordContainer: {
+    flexDirection: isArabic ? 'row-reverse' : 'row',
+    justifyContent: 'flex-end',
+    marginTop: 8,
+    paddingVertical: 8,
+  },
+  forgotPasswordText: {
+    fontSize: 14,
+    color: '#3b82f6',
+    fontWeight: '600',
   },
   trustBadgesRow: {
     flexDirection: 'row',
