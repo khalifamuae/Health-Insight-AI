@@ -406,7 +406,7 @@ export default function DietScreen({ navigation, route }: any) {
   if (step === 'result' && plan) {
     return (
       <View style={styles.container}>
-        <ScrollView style={{ backgroundColor: colors.background }} contentContainerStyle={styles.content}>
+        <ScrollView style={{ backgroundColor: colors.background }} contentContainerStyle={[styles.content, { paddingBottom: 220 }]}>
           <Text style={[styles.resultTitle, { color: colors.text, marginBottom: 16 }]}>{t('dietPlanReady')}</Text>
 
           <DietPlanDisplay
@@ -850,11 +850,11 @@ const styles = StyleSheet.create({
   },
   calculatorBar: {
     position: 'absolute',
-    bottom: 0,
+    bottom: 85,
     left: 0,
     right: 0,
     padding: 16,
-    paddingBottom: 30,
+    paddingBottom: 20,
     borderTopWidth: 1,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: -4 },
