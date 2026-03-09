@@ -308,6 +308,19 @@ export async function generateDietPlan(userData: UserHealthData, onProgress?: Pr
   const dinnerCalories = Math.round(targetCalories * 0.30);
   const snackCalories = targetCalories - breakfastCalories - lunchCalories - dinnerCalories;
 
+  const breakfastProtein = Math.round(macros.protein.grams * 0.25);
+  const lunchProtein = Math.round(macros.protein.grams * 0.35);
+  const dinnerProtein = Math.round(macros.protein.grams * 0.30);
+  const snackProtein = macros.protein.grams - breakfastProtein - lunchProtein - dinnerProtein;
+  const breakfastCarbs = Math.round(macros.carbs.grams * 0.25);
+  const lunchCarbs = Math.round(macros.carbs.grams * 0.35);
+  const dinnerCarbs = Math.round(macros.carbs.grams * 0.30);
+  const snackCarbs = macros.carbs.grams - breakfastCarbs - lunchCarbs - dinnerCarbs;
+  const breakfastFats = Math.round(macros.fats.grams * 0.25);
+  const lunchFats = Math.round(macros.fats.grams * 0.35);
+  const dinnerFats = Math.round(macros.fats.grams * 0.30);
+  const snackFats = macros.fats.grams - breakfastFats - lunchFats - dinnerFats;
+
   const currentProteinPerKg = mealPreference === "high_protein"
     ? (goal === "muscle_gain" ? 2.4 : 2.2)
     : mealPreference === "low_carb" ? 1.8
@@ -570,10 +583,11 @@ ${customCalorieInstruction}
 
 - ⚠️⚠️ قاعدة إلزامية: يجب تقديم بالضبط 5 خيارات مختلفة ومتنوعة لكل وجبة (فطور = 5 خيارات، غداء = 5 خيارات، عشاء = 5 خيارات، وجبات خفيفة = 5 خيارات). المجموع = 20 خيار وجبة. هذا شرط أساسي لا يمكن تجاوزه. لكي يختار المستخدم ما يناسبه ويغير يومياً
 - ⚠️⚠️⚠️ قاعدة السعرات الحرارية الأهم: يجب أن يكون مجموع سعرات (1 فطور + 1 غداء + 1 عشاء + 1 سناك) أقل قليلاً أو يساوي ${targetCalories} سعرة. لتحقيق ذلك:
-  * السعرات المستهدفة للفطور = ${breakfastCalories} سعرة (25% من المستهدف) → صمم كل خيار ليكون أقل قليلاً أو مساوياً
-  * السعرات المستهدفة للغداء = ${lunchCalories} سعرة (35% من المستهدف) → صمم كل خيار ليكون أقل قليلاً أو مساوياً
-  * السعرات المستهدفة للعشاء = ${dinnerCalories} سعرة (30% من المستهدف) → صمم كل خيار ليكون أقل قليلاً أو مساوياً
-  * السعرات المستهدفة للسناك = ${snackCalories} سعرة (10% من المستهدف) → صمم كل خيار ليكون أقل قليلاً أو مساوياً
+  * السعرات المستهدفة للفطور = ${breakfastCalories} سعرة (25%) → ماكرو: بروتين ${breakfastProtein}g، كارب ${breakfastCarbs}g، دهون ${breakfastFats}g
+  * السعرات المستهدفة للغداء = ${lunchCalories} سعرة (35%) → ماكرو: بروتين ${lunchProtein}g، كارب ${lunchCarbs}g، دهون ${lunchFats}g
+  * السعرات المستهدفة للعشاء = ${dinnerCalories} سعرة (30%) → ماكرو: بروتين ${dinnerProtein}g، كارب ${dinnerCarbs}g، دهون ${dinnerFats}g
+  * السعرات المستهدفة للسناك = ${snackCalories} سعرة (10%) → ماكرو: بروتين ${snackProtein}g، كارب ${snackCarbs}g، دهون ${snackFats}g
+  * ⚠️⚠️⚠️ قاعدة الماكرو الإلزامية: يجب أن يكون مجموع الماكرو (بروتين + كارب + دهون) لخيار واحد من كل وجبة مساوياً أو قريباً جداً من الهدف الكلي (بروتين ${macros.protein.grams}g، كارب ${macros.carbs.grams}g، دهون ${macros.fats.grams}g). صمم كل خيار ضمن الماكرو المحدد أعلاه (هامش ±5g فقط)
   * ⚠️⚠️⚠️ السعرات الحقيقية يتم حسابها بالمعادلة: calories = (protein × 4) + (carbs × 4) + (fats × 9)
   * يجب أن تكون قيم البروتين والكارب والدهون بالجرامات دقيقة 100% لأن السيرفر سيعيد حساب السعرات منها تلقائياً
   * لا تكتب سعرات عشوائية في حقل calories - اكتب القيمة الناتجة من المعادلة أعلاه
@@ -622,7 +636,7 @@ ${hasAllergies && allergyList ? `- ⚠️ حساسية المستخدم (وفق 
 9. في حال عدم وجود تحاليل مخبرية أو عدم وجود نواقص ومكملات مقترحة، أرجع مصفوفة فارغة [] في حقلي "deficiencies" و "supplements"
 
 أرجع JSON بالشكل التالي (المثال يعرض 2 من 5 خيارات - اكتب 5 كاملة):
-⚠️ تذكير: كل خيار فطور = ${breakfastCalories} سعرة | غداء = ${lunchCalories} سعرة | عشاء = ${dinnerCalories} سعرة | سناك = ${snackCalories} سعرة | المجموع = ${targetCalories} سعرة
+⚠️ تذكير: كل خيار فطور = ${breakfastCalories} سعرة (P:${breakfastProtein}g C:${breakfastCarbs}g F:${breakfastFats}g) | غداء = ${lunchCalories} سعرة (P:${lunchProtein}g C:${lunchCarbs}g F:${lunchFats}g) | عشاء = ${dinnerCalories} سعرة (P:${dinnerProtein}g C:${dinnerCarbs}g F:${dinnerFats}g) | سناك = ${snackCalories} سعرة (P:${snackProtein}g C:${snackCarbs}g F:${snackFats}g) | المجموع = ${targetCalories} سعرة (P:${macros.protein.grams}g C:${macros.carbs.grams}g F:${macros.fats.grams}g)
 {
   "healthSummary": "تقييم سريري شامل بناءً على التحاليل المخبرية (إن وجدت) أو الملف الجسدي العام",
   "summary": "ملخص عام إيجابي عن البروتوكول الغذائي",
@@ -728,10 +742,11 @@ Protocol Instructions:
 
 - MANDATORY: Provide EXACTLY 5 different varied options for each meal (breakfast = 5 options, lunch = 5 options, dinner = 5 options, snacks = 5 options). Total = 20 meal options. This is a NON-NEGOTIABLE requirement. The user needs to choose and rotate daily
 - ⚠️⚠️⚠️ MOST CRITICAL CALORIE RULE: The sum of calories from (1 breakfast + 1 lunch + 1 dinner + 1 snack) must be slightly below or equal to ${targetCalories} kcal. To achieve this:
-  * Target calories for breakfast = ${breakfastCalories} kcal (25% of target) → design each option to be slightly below or equal
-  * Target calories for lunch = ${lunchCalories} kcal (35% of target) → design each option to be slightly below or equal
-  * Target calories for dinner = ${dinnerCalories} kcal (30% of target) → design each option to be slightly below or equal
-  * Target calories for snack = ${snackCalories} kcal (10% of target) → design each option to be slightly below or equal
+  * Target for breakfast = ${breakfastCalories} kcal (25%) → Macros: P ${breakfastProtein}g, C ${breakfastCarbs}g, F ${breakfastFats}g
+  * Target for lunch = ${lunchCalories} kcal (35%) → Macros: P ${lunchProtein}g, C ${lunchCarbs}g, F ${lunchFats}g
+  * Target for dinner = ${dinnerCalories} kcal (30%) → Macros: P ${dinnerProtein}g, C ${dinnerCarbs}g, F ${dinnerFats}g
+  * Target for snack = ${snackCalories} kcal (10%) → Macros: P ${snackProtein}g, C ${snackCarbs}g, F ${snackFats}g
+  * MANDATORY MACRO RULE: The sum of macros (protein + carbs + fats) from picking 1 option per meal MUST equal or be very close to the total targets (P ${macros.protein.grams}g, C ${macros.carbs.grams}g, F ${macros.fats.grams}g). Design each option within the per-meal macro targets above (tolerance ±5g only)
   * ⚠️⚠️⚠️ REAL calories are calculated by the formula: calories = (protein × 4) + (carbs × 4) + (fats × 9)
   * The protein, carbs, and fats values in grams MUST be 100% accurate because the server will RECALCULATE calories from them automatically
   * Do NOT write random calorie numbers in the calories field - write the value resulting from the formula above
