@@ -14,8 +14,12 @@ export default function DietPlanDisplay({ plan, colors, isDark, t, isArabicSyste
     const [selectedMeals, setSelectedMeals] = useState<Record<string, boolean>>({});
     const [calculatorTotals, setCalculatorTotals] = useState({ calories: 0, protein: 0, carbs: 0, fats: 0 });
 
-    // We rely on standard RN RTL rendering enabled by I18nManager
-    const styles = React.useMemo(() => getStyles(), []);
+    // Detect if the plan was generated in Arabic (based on content)
+    const isPlanContentArabic = /[\u0600-\u06FF]/.test(plan.summary || plan.goalDescription || plan.healthSummary || '');
+    const directionStyle = { direction: isPlanContentArabic ? 'rtl' : 'ltr' } as const;
+    const tAlign = isPlanContentArabic ? 'right' : 'left';
+    const flexDir = isPlanContentArabic ? 'row-reverse' : 'row';
+    const styles = React.useMemo(() => getStyles(tAlign, flexDir), [tAlign, flexDir]);
 
     useEffect(() => {
         const initialSelection: Record<string, boolean> = {};
@@ -29,9 +33,11 @@ export default function DietPlanDisplay({ plan, colors, isDark, t, isArabicSyste
         setSelectedMeals(initialSelection);
     }, [plan]);
 
+    const realCalFromMacros = (p: number, c: number, f: number) => Math.round((p * 4) + (c * 4) + (f * 9));
+
     useEffect(() => {
         if (!plan?.mealPlan) return;
-        let totalCal = 0, totalP = 0, totalC = 0, totalF = 0;
+        let totalP = 0, totalC = 0, totalF = 0;
         ['breakfast', 'lunch', 'dinner', 'snacks'].forEach((type) => {
             const meals = plan.mealPlan[type];
             if (meals && meals.length > 0) {
@@ -44,13 +50,13 @@ export default function DietPlanDisplay({ plan, colors, isDark, t, isArabicSyste
                 }
                 const m = meals[selectedIdx];
                 if (m) {
-                    totalCal += (m.calories || 0);
                     totalP += (m.protein || 0);
                     totalC += (m.carbs || 0);
                     totalF += (m.fats || 0);
                 }
             }
         });
+        const totalCal = realCalFromMacros(totalP, totalC, totalF);
         setCalculatorTotals({ calories: totalCal, protein: totalP, carbs: totalC, fats: totalF });
     }, [selectedMeals, plan]);
 
@@ -68,7 +74,7 @@ export default function DietPlanDisplay({ plan, colors, isDark, t, isArabicSyste
     if (!plan) return null;
 
     return (
-        <View style={styles.container}>
+        <View style={[styles.container, directionStyle]}>
             {plan.healthSummary && (
                 <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
                     <View style={styles.cardHeader}>
@@ -102,13 +108,13 @@ export default function DietPlanDisplay({ plan, colors, isDark, t, isArabicSyste
                     {plan.macros && (
                         <View style={styles.macroRow}>
                             <View style={[styles.macroBadge, { backgroundColor: '#dbeafe' }]}>
-                                <Text style={[styles.macroText, { color: '#2563eb' }]}>{t('protein')} {plan.macros.protein?.grams}g</Text>
+                                <Text style={[styles.macroText, { color: '#1e3a5f' }]}>{t('protein')} {plan.macros.protein?.grams}g</Text>
                             </View>
                             <View style={[styles.macroBadge, { backgroundColor: '#fef3c7' }]}>
-                                <Text style={[styles.macroText, { color: '#d97706' }]}>{t('carbs')} {plan.macros.carbs?.grams}g</Text>
+                                <Text style={[styles.macroText, { color: '#78350f' }]}>{t('carbs')} {plan.macros.carbs?.grams}g</Text>
                             </View>
                             <View style={[styles.macroBadge, { backgroundColor: '#fce7f3' }]}>
-                                <Text style={[styles.macroText, { color: '#db2777' }]}>{t('fats')} {plan.macros.fats?.grams}g</Text>
+                                <Text style={[styles.macroText, { color: '#831843' }]}>{t('fats')} {plan.macros.fats?.grams}g</Text>
                             </View>
                         </View>
                     )}
@@ -119,7 +125,7 @@ export default function DietPlanDisplay({ plan, colors, isDark, t, isArabicSyste
                 <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
                     <View style={styles.cardHeader}>
                         <Ionicons name="analytics" size={20} color="#6366f1" />
-                        <Text style={[styles.cardTitle, { color: colors.text }]}>{t('intakeAlignment') || (isArabicSystem ? 'مدى توافق الأكل مع الهدف' : 'Intake Alignment with Your Goal')}</Text>
+                        <Text style={[styles.cardTitle, { color: colors.text }]}>{t('intakeAlignment') || (isPlanContentArabic ? 'مدى توافق الأكل مع الهدف' : 'Intake Alignment with Your Goal')}</Text>
                     </View>
                     <Text style={[styles.cardText, { color: colors.mutedText }]}>{plan.intakeAlignment}</Text>
                 </View>
@@ -130,61 +136,61 @@ export default function DietPlanDisplay({ plan, colors, isDark, t, isArabicSyste
                     <View style={styles.cardHeader}>
                         <Ionicons name="information-circle" size={20} color="#6366f1" />
                         <Text style={[styles.cardTitle, { color: colors.text }]}>
-                            {isArabicSystem ? 'دليل قراءة الخطة الغذائية' : 'How to Read Your Meal Plan'}
+                            {isPlanContentArabic ? 'دليل قراءة الخطة الغذائية' : 'How to Read Your Meal Plan'}
                         </Text>
                     </View>
                     <Text style={[styles.cardText, { color: colors.mutedText, marginBottom: 10 }]}>
-                        {isArabicSystem
+                        {isPlanContentArabic
                             ? 'كل وجبة تعرض لك معلومتين مهمتين: السعرات الحقيقية والسعرات المستهدفة. اختر خياراً واحداً من كل وجبة (فطور + غداء + عشاء + سناك) وسيحسب لك التطبيق المجموع تلقائياً.'
                             : 'Each meal shows two important values: actual calories and target calories. Pick one option from each meal (breakfast + lunch + dinner + snack) and the app calculates your daily total automatically.'}
                     </Text>
                     <View style={{ gap: 8 }}>
-                        <View style={styles.legendRow}>
+                        <View style={[styles.legendRow, { flexDirection: flexDir as any }]}>
                             <View style={[styles.legendBadge, { backgroundColor: '#6366f1' }]}>
                                 <Text style={styles.legendBadgeText}>550 kcal</Text>
                             </View>
-                            <Text style={[styles.legendLabel, { color: colors.text }]}>
-                                {isArabicSystem
+                            <Text style={[styles.legendLabel, { color: colors.text, textAlign: tAlign as any }]}>
+                                {isPlanContentArabic
                                     ? 'السعرات الحقيقية — محسوبة من (بروتين×4 + كارب×4 + دهون×9)'
                                     : 'Actual calories — calculated from (protein×4 + carbs×4 + fats×9)'}
                             </Text>
                         </View>
-                        <View style={styles.legendRow}>
+                        <View style={[styles.legendRow, { flexDirection: flexDir as any }]}>
                             <View style={[styles.legendBadge, { backgroundColor: '#ef4444' }]}>
-                                <Text style={styles.legendBadgeText}>{isArabicSystem ? 'المستهدف' : 'Target'}: 600 kcal</Text>
+                                <Text style={styles.legendBadgeText}>{isPlanContentArabic ? 'المستهدف' : 'Target'}: 600 kcal</Text>
                             </View>
-                            <Text style={[styles.legendLabel, { color: colors.text }]}>
-                                {isArabicSystem
+                            <Text style={[styles.legendLabel, { color: colors.text, textAlign: tAlign as any }]}>
+                                {isPlanContentArabic
                                     ? 'السعرات المستهدفة — الحد الأقصى المخصص لهذه الوجبة من خطتك'
                                     : 'Target calories — the maximum allocated for this meal from your plan'}
                             </Text>
                         </View>
-                        <View style={styles.legendRow}>
+                        <View style={[styles.legendRow, { flexDirection: flexDir as any }]}>
                             <View style={[styles.legendBadge, { backgroundColor: '#22c55e' }]}>
-                                <Text style={styles.legendBadgeText}>{isArabicSystem ? 'ضمن الهدف ✓' : 'Within target ✓'}</Text>
+                                <Text style={styles.legendBadgeText}>{isPlanContentArabic ? 'ضمن الهدف ✓' : 'Within target ✓'}</Text>
                             </View>
-                            <Text style={[styles.legendLabel, { color: colors.text }]}>
-                                {isArabicSystem
+                            <Text style={[styles.legendLabel, { color: colors.text, textAlign: tAlign as any }]}>
+                                {isPlanContentArabic
                                     ? 'السعرات الحقيقية أقل من أو تساوي المستهدف — ممتاز!'
                                     : 'Actual calories are at or below target — great!'}
                             </Text>
                         </View>
-                        <View style={styles.legendRow}>
+                        <View style={[styles.legendRow, { flexDirection: flexDir as any }]}>
                             <View style={[styles.legendBadge, { backgroundColor: '#f59e0b' }]}>
-                                <Text style={styles.legendBadgeText}>{isArabicSystem ? 'أعلى من الهدف ⚠' : 'Above target ⚠'}</Text>
+                                <Text style={styles.legendBadgeText}>{isPlanContentArabic ? 'أعلى من الهدف ⚠' : 'Above target ⚠'}</Text>
                             </View>
-                            <Text style={[styles.legendLabel, { color: colors.text }]}>
-                                {isArabicSystem
+                            <Text style={[styles.legendLabel, { color: colors.text, textAlign: tAlign as any }]}>
+                                {isPlanContentArabic
                                     ? 'السعرات الحقيقية أعلى قليلاً من المستهدف — يمكنك تقليل الكمية'
                                     : 'Actual calories slightly exceed target — you may reduce portion size'}
                             </Text>
                         </View>
                     </View>
                     <View style={[styles.legendDivider, { borderColor: colors.border }]} />
-                    <View style={styles.legendRow}>
+                    <View style={[styles.legendRow, { flexDirection: flexDir as any }]}>
                         <Ionicons name="calculator" size={16} color="#3b82f6" />
-                        <Text style={[styles.legendLabel, { color: colors.mutedText, fontStyle: 'italic' }]}>
-                            {isArabicSystem
+                        <Text style={[styles.legendLabel, { color: colors.mutedText, textAlign: tAlign as any, fontStyle: 'italic' }]}>
+                            {isPlanContentArabic
                                 ? 'P = بروتين (جرام) | C = كارب (جرام) | F = دهون (جرام)'
                                 : 'P = Protein (g) | C = Carbs (g) | F = Fats (g)'}
                         </Text>
@@ -227,20 +233,20 @@ export default function DietPlanDisplay({ plan, colors, isDark, t, isArabicSyste
                                     <Text style={[styles.mealName, { color: colors.text }]}>{meal.name}</Text>
                                     <Text style={[styles.mealDesc, { color: colors.text }]}>{meal.description}</Text>
                                     <View style={styles.mealMacros}>
-                                        <Text style={[styles.mealMacroText, { backgroundColor: '#6366f1' }]}>{meal.calories} kcal</Text>
-                                        <Text style={styles.mealMacroText}>P:{meal.protein}g</Text>
-                                        <Text style={styles.mealMacroText}>C:{meal.carbs}g</Text>
-                                        <Text style={styles.mealMacroText}>F:{meal.fats}g</Text>
+                                        <Text style={[styles.mealMacroText, { backgroundColor: '#6366f1' }]}>{realCalFromMacros(meal.protein || 0, meal.carbs || 0, meal.fats || 0)} kcal</Text>
+                                        <Text style={[styles.mealMacroText, { backgroundColor: '#dbeafe', color: '#1e3a5f' }]}>P:{meal.protein}g</Text>
+                                        <Text style={[styles.mealMacroText, { backgroundColor: '#fef3c7', color: '#78350f' }]}>C:{meal.carbs}g</Text>
+                                        <Text style={[styles.mealMacroText, { backgroundColor: '#fce7f3', color: '#831843' }]}>F:{meal.fats}g</Text>
                                     </View>
                                     {meal.targetCalories > 0 && (
                                         <View style={[styles.mealMacros, { marginTop: 4 }]}>
                                             <Text style={[styles.mealMacroText, { backgroundColor: '#ef4444' }]}>
-                                                {isArabicSystem ? 'المستهدف' : 'Target'}: {meal.targetCalories} kcal
+                                                {isPlanContentArabic ? 'المستهدف' : 'Target'}: {meal.targetCalories} kcal
                                             </Text>
                                             <Text style={[styles.mealMacroText, { backgroundColor: meal.calories <= meal.targetCalories ? '#22c55e' : '#f59e0b' }]}>
                                                 {meal.calories <= meal.targetCalories
-                                                    ? (isArabicSystem ? 'ضمن الهدف' : 'Within target')
-                                                    : (isArabicSystem ? 'أعلى من الهدف' : 'Above target')
+                                                    ? (isPlanContentArabic ? 'ضمن الهدف' : 'Within target')
+                                                    : (isPlanContentArabic ? 'أعلى من الهدف' : 'Above target')
                                                 }
                                             </Text>
                                         </View>
@@ -267,7 +273,7 @@ export default function DietPlanDisplay({ plan, colors, isDark, t, isArabicSyste
                             {sup.targetLabValue && (
                                 <View style={styles.targetLabRow}>
                                     <Ionicons name="flask" size={12} color="#6366f1" />
-                                    <Text style={[styles.targetLabText, { color: colors.text }]}>{isArabicSystem ? 'القيمة المستهدفة' : 'Target'}: {sup.targetLabValue}</Text>
+                                    <Text style={[styles.targetLabText, { color: colors.text }]}>{isPlanContentArabic ? 'القيمة المستهدفة' : 'Target'}: {sup.targetLabValue}</Text>
                                 </View>
                             )}
                             {sup.scientificBasis && (
@@ -331,21 +337,75 @@ export default function DietPlanDisplay({ plan, colors, isDark, t, isArabicSyste
             )}
 
             <View style={[styles.calculatorBox, { backgroundColor: isDark ? '#1e293b' : '#eff6ff', borderColor: colors.border }]}>
-                <View style={styles.calculatorHeader}>
-                    <Text style={[styles.calculatorTitle, { color: colors.text }]}>{isArabicSystem ? 'مجموع الوجبات المحددة' : 'Selected Meals Total'}</Text>
-                    <View style={styles.calculatorCalText}>
-                        <Ionicons name="flame" size={16} color="#f59e0b" /> <Text style={{ color: '#f59e0b' }}>{calculatorTotals.calories} {isArabicSystem ? 'سعرة' : 'kcal'}</Text>
+                <Text style={[styles.calculatorTitle, { color: colors.text, textAlign: 'center', marginBottom: 12 }]}>
+                    {isPlanContentArabic ? 'مجموع الوجبات المحددة' : 'Selected Meals Total'}
+                </Text>
+
+                <View style={styles.calculatorCalRow}>
+                    <View style={styles.calculatorCalItem}>
+                        <Ionicons name="flag" size={16} color="#ef4444" />
+                        <Text style={[styles.calculatorCalValue, { color: '#ef4444' }]}>{plan.calories?.target || 0}</Text>
+                        <Text style={[styles.calculatorCalLabel, { color: colors.mutedText }]}>
+                            {isPlanContentArabic ? 'المستهدف' : 'Target'}
+                        </Text>
+                    </View>
+                    <View style={styles.calculatorCalItem}>
+                        <Ionicons name="flame" size={16} color="#6366f1" />
+                        <Text style={[styles.calculatorCalValue, { color: '#6366f1' }]}>{calculatorTotals.calories}</Text>
+                        <Text style={[styles.calculatorCalLabel, { color: colors.mutedText }]}>
+                            {isPlanContentArabic ? 'الوجبات المحددة' : 'Selected Meals'}
+                        </Text>
+                    </View>
+                    <View style={styles.calculatorCalItem}>
+                        <Ionicons
+                            name={calculatorTotals.calories <= (plan.calories?.target || 0) ? "checkmark-circle" : "warning"}
+                            size={16}
+                            color={calculatorTotals.calories <= (plan.calories?.target || 0) ? "#22c55e" : "#f59e0b"}
+                        />
+                        <Text style={[styles.calculatorCalValue, { color: calculatorTotals.calories <= (plan.calories?.target || 0) ? '#22c55e' : '#f59e0b' }]}>
+                            {calculatorTotals.calories - (plan.calories?.target || 0)}
+                        </Text>
+                        <Text style={[styles.calculatorCalLabel, { color: colors.mutedText }]}>
+                            {isPlanContentArabic ? 'الفرق' : 'Difference'}
+                        </Text>
                     </View>
                 </View>
-                <View style={styles.calculatorMacros}>
-                    <View style={[styles.macroBadge, { backgroundColor: '#dbeafe' }]}>
-                        <Text style={[styles.macroText, { color: '#2563eb' }]}>P {calculatorTotals.protein}g</Text>
+
+                <View style={[styles.calculatorDivider, { borderColor: colors.border }]} />
+
+                <View style={styles.calculatorMacroComparison}>
+                    <View style={styles.calculatorMacroItem}>
+                        <Text style={[styles.calculatorMacroLabel, { color: colors.mutedText }]}>
+                            {isPlanContentArabic ? 'بروتين' : 'Protein'}
+                        </Text>
+                        <Text style={[styles.calculatorMacroValue, { color: '#1e3a5f' }]}>
+                            {calculatorTotals.protein}g / {plan.macros?.protein?.grams || 0}g
+                        </Text>
+                        <View style={styles.calculatorMacroBar}>
+                            <View style={[styles.calculatorMacroBarFill, { backgroundColor: '#3b82f6', width: `${Math.min(100, Math.round((calculatorTotals.protein / (plan.macros?.protein?.grams || 1)) * 100))}%` as any }]} />
+                        </View>
                     </View>
-                    <View style={[styles.macroBadge, { backgroundColor: '#fce7f3' }]}>
-                        <Text style={[styles.macroText, { color: '#db2777' }]}>C {calculatorTotals.carbs}g</Text>
+                    <View style={styles.calculatorMacroItem}>
+                        <Text style={[styles.calculatorMacroLabel, { color: colors.mutedText }]}>
+                            {isPlanContentArabic ? 'كربوهيدرات' : 'Carbs'}
+                        </Text>
+                        <Text style={[styles.calculatorMacroValue, { color: '#78350f' }]}>
+                            {calculatorTotals.carbs}g / {plan.macros?.carbs?.grams || 0}g
+                        </Text>
+                        <View style={styles.calculatorMacroBar}>
+                            <View style={[styles.calculatorMacroBarFill, { backgroundColor: '#f59e0b', width: `${Math.min(100, Math.round((calculatorTotals.carbs / (plan.macros?.carbs?.grams || 1)) * 100))}%` as any }]} />
+                        </View>
                     </View>
-                    <View style={[styles.macroBadge, { backgroundColor: '#fef3c7' }]}>
-                        <Text style={[styles.macroText, { color: '#d97706' }]}>F {calculatorTotals.fats}g</Text>
+                    <View style={styles.calculatorMacroItem}>
+                        <Text style={[styles.calculatorMacroLabel, { color: colors.mutedText }]}>
+                            {isPlanContentArabic ? 'دهون' : 'Fats'}
+                        </Text>
+                        <Text style={[styles.calculatorMacroValue, { color: '#831843' }]}>
+                            {calculatorTotals.fats}g / {plan.macros?.fats?.grams || 0}g
+                        </Text>
+                        <View style={styles.calculatorMacroBar}>
+                            <View style={[styles.calculatorMacroBarFill, { backgroundColor: '#ec4899', width: `${Math.min(100, Math.round((calculatorTotals.fats / (plan.macros?.fats?.grams || 1)) * 100))}%` as any }]} />
+                        </View>
                     </View>
                 </View>
             </View>
@@ -353,41 +413,35 @@ export default function DietPlanDisplay({ plan, colors, isDark, t, isArabicSyste
     );
 }
 
-const getStyles = () => StyleSheet.create({
+const getStyles = (tAlign: 'left' | 'right', flexDir: 'row' | 'row-reverse') => StyleSheet.create({
     container: {
         width: '100%',
         gap: 16,
-        paddingBottom: 20,
     },
     card: {
         borderWidth: 1,
         borderRadius: 16,
         padding: 16,
-        marginBottom: 16,
-        elevation: 2,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.05,
-        shadowRadius: 6,
+        marginBottom: 4,
     },
     cardHeader: {
-        flexDirection: 'row',
+        flexDirection: flexDir,
         alignItems: 'center',
-        gap: 8,
         marginBottom: 12,
+        gap: 8,
     },
     cardTitle: {
-        fontSize: 17,
+        fontSize: 18,
         fontWeight: '700',
-        textAlign: 'left',
+        textAlign: tAlign,
     },
     cardText: {
         fontSize: 14,
         lineHeight: 22,
-        textAlign: 'left',
+        textAlign: tAlign,
     },
     calorieRow: {
-        flexDirection: 'row',
+        flexDirection: flexDir,
         justifyContent: 'space-between',
         paddingTop: 8,
         borderTopWidth: 1,
@@ -408,7 +462,7 @@ const getStyles = () => StyleSheet.create({
         marginTop: 4,
     },
     macroRow: {
-        flexDirection: 'row',
+        flexDirection: flexDir,
         justifyContent: 'center',
         gap: 12,
         marginTop: 16,
@@ -430,7 +484,7 @@ const getStyles = () => StyleSheet.create({
         marginBottom: 10,
     },
     mealHeaderRow: {
-        flexDirection: 'row',
+        flexDirection: flexDir,
         justifyContent: 'space-between',
         alignItems: 'center',
         marginBottom: 6,
@@ -439,22 +493,22 @@ const getStyles = () => StyleSheet.create({
         fontSize: 14,
         fontWeight: '600',
         color: '#6b7280',
-        textAlign: 'left',
+        textAlign: tAlign,
     },
     mealName: {
         fontSize: 16,
         fontWeight: '700',
         marginBottom: 4,
-        textAlign: 'left',
+        textAlign: tAlign,
     },
     mealDesc: {
         fontSize: 13,
         lineHeight: 20,
         marginBottom: 8,
-        textAlign: 'left',
+        textAlign: tAlign,
     },
     mealMacros: {
-        flexDirection: 'row',
+        flexDirection: flexDir,
         flexWrap: 'wrap',
         gap: 8,
         marginBottom: 8,
@@ -473,7 +527,7 @@ const getStyles = () => StyleSheet.create({
         fontSize: 12,
         fontStyle: 'italic',
         lineHeight: 18,
-        textAlign: 'left',
+        textAlign: tAlign,
     },
     supplementItem: {
         marginBottom: 16,
@@ -482,15 +536,15 @@ const getStyles = () => StyleSheet.create({
         fontSize: 15,
         fontWeight: '600',
         marginBottom: 4,
-        textAlign: 'left',
+        textAlign: tAlign,
     },
     supplementDetail: {
         fontSize: 13,
         marginBottom: 2,
-        textAlign: 'left',
+        textAlign: tAlign,
     },
     targetLabRow: {
-        flexDirection: 'row',
+        flexDirection: flexDir,
         alignItems: 'center',
         gap: 6,
         marginTop: 4,
@@ -498,10 +552,10 @@ const getStyles = () => StyleSheet.create({
     targetLabText: {
         fontSize: 12,
         fontWeight: '600',
-        textAlign: 'left',
+        textAlign: tAlign,
     },
     scientificRow: {
-        flexDirection: 'row',
+        flexDirection: flexDir,
         alignItems: 'flex-start',
         gap: 6,
         marginTop: 4,
@@ -509,13 +563,13 @@ const getStyles = () => StyleSheet.create({
     scientificText: {
         fontSize: 12,
         flex: 1,
-        textAlign: 'left',
+        textAlign: tAlign,
     },
     supplementFoods: {
         fontSize: 12,
         marginTop: 6,
         fontStyle: 'italic',
-        textAlign: 'left',
+        textAlign: tAlign,
     },
     tipItem: {
         marginBottom: 12,
@@ -524,25 +578,25 @@ const getStyles = () => StyleSheet.create({
         fontSize: 15,
         fontWeight: '600',
         marginBottom: 6,
-        textAlign: 'left',
+        textAlign: tAlign,
     },
     tipAdvice: {
         fontSize: 14,
         lineHeight: 22,
         marginBottom: 4,
-        textAlign: 'left',
+        textAlign: tAlign,
     },
     tipAvoid: {
         fontSize: 13,
         fontStyle: 'italic',
         marginTop: 4,
-        textAlign: 'left',
+        textAlign: tAlign,
     },
     tipText: {
         fontSize: 14,
         lineHeight: 22,
         marginBottom: 8,
-        textAlign: 'left',
+        textAlign: tAlign,
     },
     referencesList: {
         gap: 6,
@@ -550,7 +604,7 @@ const getStyles = () => StyleSheet.create({
     referenceText: {
         fontSize: 12,
         lineHeight: 18,
-        textAlign: 'left',
+        textAlign: tAlign,
     },
     calculatorBox: {
         borderWidth: 1,
@@ -558,30 +612,58 @@ const getStyles = () => StyleSheet.create({
         padding: 16,
         marginTop: 8,
     },
-    calculatorHeader: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        marginBottom: 12,
-    },
     calculatorTitle: {
         fontSize: 16,
         fontWeight: '700',
-        textAlign: 'left',
+        textAlign: tAlign,
     },
-    calculatorCalText: {
-        flexDirection: 'row',
+    calculatorCalRow: {
+        flexDirection: flexDir,
+        justifyContent: 'space-around',
         alignItems: 'center',
-        fontSize: 16,
+        marginBottom: 12,
+    },
+    calculatorCalItem: {
+        alignItems: 'center',
+        gap: 4,
+    },
+    calculatorCalValue: {
+        fontSize: 20,
+        fontWeight: '800',
+    },
+    calculatorCalLabel: {
+        fontSize: 11,
+        fontWeight: '500',
+    },
+    calculatorDivider: {
+        borderTopWidth: 1,
+        marginVertical: 10,
+    },
+    calculatorMacroComparison: {
+        gap: 10,
+    },
+    calculatorMacroItem: {
+        gap: 4,
+    },
+    calculatorMacroLabel: {
+        fontSize: 12,
+        fontWeight: '600',
+    },
+    calculatorMacroValue: {
+        fontSize: 14,
         fontWeight: '700',
     },
-    calculatorMacros: {
-        flexDirection: 'row',
-        justifyContent: 'flex-start',
-        gap: 12,
+    calculatorMacroBar: {
+        height: 6,
+        borderRadius: 3,
+        backgroundColor: '#e5e7eb',
+        overflow: 'hidden' as const,
+    },
+    calculatorMacroBarFill: {
+        height: '100%' as any,
+        borderRadius: 3,
     },
     legendRow: {
-        flexDirection: 'row',
         alignItems: 'center',
         gap: 8,
     },
@@ -599,7 +681,6 @@ const getStyles = () => StyleSheet.create({
         fontSize: 12,
         lineHeight: 18,
         flex: 1,
-        textAlign: 'left',
     },
     legendDivider: {
         borderTopWidth: 1,
