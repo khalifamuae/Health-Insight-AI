@@ -892,6 +892,43 @@ export default function DietPlan() {
           <p className="text-xs font-medium text-primary">{t("chooseOneMealNote")}</p>
         </div>
 
+        <Card className="border-indigo-500/50 bg-indigo-500/5">
+          <CardHeader className="pb-2 p-4">
+            <CardTitle className="text-sm flex items-center gap-2">
+              <Info className="h-4 w-4 text-indigo-500" />
+              {isArabic ? 'دليل قراءة الخطة الغذائية' : 'How to Read Your Meal Plan'}
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-4 pt-0 space-y-3">
+            <p className="text-xs text-muted-foreground">
+              {isArabic
+                ? 'كل وجبة تعرض لك السعرات الحقيقية والمستهدفة. اختر خياراً واحداً من كل وجبة وسيحسب التطبيق المجموع تلقائياً.'
+                : 'Each meal shows actual and target calories. Pick one option from each meal and the app calculates your total automatically.'}
+            </p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <div className="flex items-center gap-2">
+                <Badge className="text-[10px] bg-indigo-500 hover:bg-indigo-500 text-white shrink-0">550 kcal</Badge>
+                <span className="text-[11px] text-muted-foreground">{isArabic ? 'السعرات الحقيقية (بروتين×4 + كارب×4 + دهون×9)' : 'Actual calories (P×4 + C×4 + F×9)'}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Badge className="text-[10px] bg-red-500 hover:bg-red-500 text-white shrink-0">{isArabic ? 'المستهدف' : 'Target'}: 600</Badge>
+                <span className="text-[11px] text-muted-foreground">{isArabic ? 'الحد الأقصى المخصص لهذه الوجبة' : 'Maximum allocated for this meal'}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Badge className="text-[10px] bg-green-500 hover:bg-green-500 text-white shrink-0">{isArabic ? 'ضمن الهدف ✓' : 'Within target ✓'}</Badge>
+                <span className="text-[11px] text-muted-foreground">{isArabic ? 'السعرات أقل أو تساوي المستهدف' : 'Calories at or below target'}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Badge className="text-[10px] bg-amber-500 hover:bg-amber-500 text-white shrink-0">{isArabic ? 'أعلى من الهدف ⚠' : 'Above target ⚠'}</Badge>
+                <span className="text-[11px] text-muted-foreground">{isArabic ? 'السعرات أعلى قليلاً — قلل الكمية' : 'Slightly above — reduce portion'}</span>
+              </div>
+            </div>
+            <p className="text-[10px] text-muted-foreground italic">
+              {isArabic ? 'P = بروتين | C = كارب | F = دهون (بالجرام)' : 'P = Protein | C = Carbs | F = Fats (in grams)'}
+            </p>
+          </CardContent>
+        </Card>
+
         {mealSections.map((section) => (
           <Card key={section.key}>
             <CardHeader className="pb-2 p-4">
@@ -914,10 +951,22 @@ export default function DietPlan() {
                       <p className="font-semibold text-sm">{item.name}</p>
                     </div>
                     {item.calories > 0 && (
-                      <Badge variant="outline" className="text-xs">
-                        <Flame className="h-3 w-3 me-1 text-orange-500" />
-                        {item.calories} {t("kcal")}
-                      </Badge>
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <Badge variant="outline" className="text-xs bg-red-500/10 border-red-500/30">
+                          <Flame className="h-3 w-3 me-1 text-red-500" />
+                          {item.calories} {t("kcal")}
+                        </Badge>
+                        {item.targetCalories > 0 && (
+                          <>
+                            <Badge variant="outline" className="text-xs bg-indigo-500/10 border-indigo-500/30">
+                              {t("target")}: {item.targetCalories} {t("kcal")}
+                            </Badge>
+                            <Badge variant="outline" className={`text-xs ${item.calories <= item.targetCalories ? 'bg-green-500/10 border-green-500/30 text-green-600' : 'bg-amber-500/10 border-amber-500/30 text-amber-600'}`}>
+                              {item.calories <= item.targetCalories ? (isArabic ? 'ضمن الهدف' : 'Within target') : (isArabic ? 'أعلى من الهدف' : 'Above target')}
+                            </Badge>
+                          </>
+                        )}
+                      </div>
                     )}
                   </div>
                   <p className="text-xs text-muted-foreground mt-0.5">{item.description}</p>
