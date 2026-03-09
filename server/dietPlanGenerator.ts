@@ -647,6 +647,13 @@ ${goal === "weight_loss" ? "- استخدم عجزاً معتدلاً فقط (AMD
 - في "fiber" لكل وجبة: اذكر كمية الألياف بالجرام
 - اكتب "mealTimingAdvice" يتضمن: توصيات التوقيت الغذائي (Chrononutrition) - أفضل أوقات تناول الوجبات بناءً على الإيقاع اليومي والهدف
 
+🧮 المرحلة 6: الحساب الدقيق للماكروز والسعرات (Strict Macro & Calorie Math)
+- ⚠️ قاعدة صارمة جداً: يُمنع منعاً باتاً تخمين أو تقدير الماكروز أو السعرات لكل وجبة.
+- يجب حساب الماكروز لكل مكون بناءً على وزنه بالجرام والقيمة الغذائية القياسية له لكل 100 جرام (من قواعد بيانات مثل USDA).
+- معادلة حساب كل مكون: (القيمة لكل 100 جرام × الوزن بالجرام) / 100.
+- معادلة حساب الوجبة: مجموع بروتين كل المكونات = بروتين الوجبة | مجموع كارب كل المكونات = كارب الوجبة | مجموع دهون كل المكونات = دهون الوجبة.
+- السعرات الحرارية للوجبة يجب أن تُحسب هكذا فقط: (البروتين × 4) + (الكارب × 4) + (الدهون × 9). أي رقم آخر للسعرات مرفوض تماماً.
+
 ⸻ تعليمات البروتوكول الغذائي: ⸻
 
 مستوى النشاط: ${activityLabels[activityLevel]?.ar || activityLevel}
@@ -804,6 +811,13 @@ PHASE 5: Dietary Protocol Design
 - In "preparationTip" for each meal: provide a preparation tip that improves nutritional value or bioavailability
 - In "fiber" for each meal: specify fiber content in grams
 - Write "mealTimingAdvice": Chrononutrition recommendations - optimal meal timing based on circadian rhythm and goal
+
+🧮 PHASE 6: Strict Macro & Calorie Math
+- ⚠️ STRICT RULE: You MUST NOT guess or hallucinate macros or calories for any meal.
+- You MUST calculate the exact macros for each ingredient based on its weight in grams and its standard nutritional value per 100g (using databases like USDA).
+- Formula for each ingredient: (Value per 100g * Weight in grams) / 100.
+- Meal Formula: Total Protein = sum of all ingredients' protein | Total Carbs = sum of all ingredients' carbs | Total Fats = sum of all ingredients' fats.
+- Meal Calories MUST be calculated ONLY as: (Total Protein * 4) + (Total Carbs * 4) + (Total Fats * 9). Any other calorie number is completely unacceptable.
 
 ⸻ DIETARY PROTOCOL INSTRUCTIONS: ⸻
 
@@ -1236,7 +1250,7 @@ ${hasCustomTargetCalories && normalizedCustomTargetCalories ? `11. Mandatory: Ke
         timingAdvice: s.timingAdvice || "",
         interactions: s.interactions || "",
       })),
-      mealPlan: sanitizedMealPlan,
+      mealPlan: sanitizedMealPlan as any,
       mealTimingAdvice: parsed.mealTimingAdvice || "",
       tips: parsed.tips || [],
       warnings: parsed.warnings || [],
