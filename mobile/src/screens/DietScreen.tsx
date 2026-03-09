@@ -406,7 +406,7 @@ export default function DietScreen({ navigation, route }: any) {
   if (step === 'result' && plan) {
     return (
       <View style={styles.container}>
-        <ScrollView style={{ backgroundColor: colors.background }} contentContainerStyle={[styles.content, { paddingBottom: 220 }]}>
+        <ScrollView style={{ backgroundColor: colors.background }} contentContainerStyle={[styles.content, { paddingBottom: 350 }]}>
           <Text style={[styles.resultTitle, { color: colors.text, marginBottom: 16 }]}>{t('dietPlanReady')}</Text>
 
           <DietPlanDisplay
