@@ -27,6 +27,9 @@ export const activityLevelEnum = pgEnum("activity_level", ["sedentary", "lightly
 export const mealPreferenceEnum = pgEnum("meal_preference", ["high_protein", "balanced", "low_carb", "vegetarian", "custom_macros"]);
 export const proteinPreferenceEnum = pgEnum("protein_preference", ["fish", "chicken", "meat", "mixed"]); // kept for DB compatibility
 export const pdfStatusEnum = pgEnum("pdf_status", ["pending", "processing", "success", "failed"]);
+export const nutritionConfidenceEnum = pgEnum("nutrition_confidence", ["high", "medium", "low"]);
+export const nutritionBasisEnum = pgEnum("nutrition_basis", ["per_100g", "per_serving"]);
+export const ingredientStateEnum = pgEnum("ingredient_state", ["raw", "cooked", "any"]);
 
 // User profiles - extends auth users with health data
 export const userProfiles = pgTable("user_profiles", {
@@ -162,6 +165,28 @@ export const sharedWorkouts = pgTable("shared_workouts", {
   exercises: jsonb("exercises").notNull(),
   downloads: integer("downloads").default(0),
   createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Nutrition Ingredients - Curated Reference Table
+export const nutritionIngredients = pgTable("nutrition_ingredients", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  nameEn: text("name_en").notNull(),
+  nameAr: text("name_ar").notNull(),
+  state: ingredientStateEnum("state").notNull().default("any"),
+  basis: nutritionBasisEnum("basis").notNull().default("per_100g"),
+  gramsPerServing: real("grams_per_serving"),
+  protein: real("protein").notNull(),
+  carbs: real("carbs").notNull(),
+  fat: real("fat").notNull(),
+  calories: real("calories").notNull(),
+  fiber: real("fiber"),
+  sourceName: text("source_name").notNull(), // e.g., "USDA FoodData Central", "Internal Curated"
+  sourceReference: text("source_reference"),
+  sourceUrl: text("source_url"),
+  confidence: nutritionConfidenceEnum("confidence").default("medium"),
+  lastVerifiedAt: timestamp("last_verified_at").defaultNow(),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
 });
 
 // Knowledge domains
@@ -401,3 +426,10 @@ export type WithdrawalStatus = "pending" | "approved" | "rejected" | "paid";
 
 export type SharedWorkout = typeof sharedWorkouts.$inferSelect;
 export type InsertSharedWorkout = z.infer<typeof insertSharedWorkoutSchema>;
+
+export const insertNutritionIngredientSchema = createInsertSchema(nutritionIngredients);
+export type NutritionIngredient = typeof nutritionIngredients.$inferSelect;
+export type InsertNutritionIngredient = z.infer<typeof insertNutritionIngredientSchema>;
+export type NutritionConfidence = "high" | "medium" | "low";
+export type NutritionBasis = "per_100g" | "per_serving";
+export type IngredientState = "raw" | "cooked" | "any";

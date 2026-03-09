@@ -1,5 +1,6 @@
 import OpenAI from "openai";
 import { searchRelevantKnowledge, learnFromDietPlanGeneration } from "./knowledgeEngine";
+import { recalculateMealMacros, validateHealthyMealRanges, saveValidatedIngredients } from "./nutritionValidator";
 
 const openai = new OpenAI({
   apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
@@ -734,13 +735,12 @@ ${hasAllergies && allergyList ? `- ⚠️ حساسية المستخدم (وفق 
 
 ⚠️⚠️⚠️ قاعدة حرجة جداً:
 1. يُمنع منعاً باتاً استخدام "..." أو أي اختصار في أي حقل
-2. كل خيار من الـ 20 وجبة يجب أن يحتوي على بيانات كاملة في جميع الحقول (name, description, calories, protein, carbs, fats, fiber, benefits, preparationTip)
+2. كل خيار من الـ 20 وجبة يجب أن يحتوي على بيانات كاملة في جميع الحقول (name, benefits, preparationTip, ingredients)
 3. حقل "name" = اسم وصفي للوجبة (مثل: "شوفان بالموز والعسل"). يُمنع استخدام "خيار 1" أو "خيار 2"
-4. حقل "description" = جميع المكونات بالجرامات (مثل: "60 جرام شوفان، 200 مل حليب")
+4. حقل "ingredients" = مصفوفة لجميع المكونات الفردية للوجبة. لا تضع السعرات والماكرو للوجبة ككل، بل لكل مكون على حدة بالجرامات الدقيقة والمعلومات الغذائية المعتمدة
 5. حقل "benefits" = الفائدة الصحية المرتبطة بالتحاليل (مثل: "يساعد في تحسين الكولسترول")
-6. حقل "fiber" = كمية الألياف بالجرام (رقم)
-7. حقل "preparationTip" = نصيحة تحضير تحسّن القيمة الغذائية أو التوافر الحيوي
-8. المثال أدناه يعرض خيارين فقط للاختصار، لكن يجب كتابة 5 خيارات كاملة لكل وجبة
+6. حقل "preparationTip" = نصيحة تحضير تحسّن القيمة الغذائية أو التوافر الحيوي
+7. المثال أدناه يعرض خيارين فقط للاختصار، لكن يجب كتابة 5 خيارات كاملة لكل وجبة
 9. في حال عدم وجود تحاليل مخبرية أو عدم وجود نواقص ومكملات مقترحة، أرجع مصفوفة فارغة [] في حقلي "deficiencies" و "supplements"
 
 أرجع JSON بالشكل التالي (المثال يعرض 2 من 5 خيارات - اكتب 5 كاملة):
@@ -755,12 +755,19 @@ ${hasAllergies && allergyList ? `- ⚠️ حساسية المستخدم (وفق 
   "supplements": [{"name": "اسم المكمل", "dosage": "الجرعة المقترحة", "reason": "سبب الحاجة مرتبط بالتحليل", "duration": "مدة الاستخدام", "foodSources": ["100 جرام سلمون = 600 وحدة دولية", "كوب حليب مدعم = 400 وحدة دولية", "بيضة واحدة = 40 وحدة دولية"], "targetLabValue": "فيتامين د: 30-50 نانوجرام/مل", "scientificBasis": "Endocrine Society Clinical Practice Guideline", "timingAdvice": "يُفضل تناوله مع الوجبة الرئيسية الدسمة لتحسين الامتصاص", "interactions": "يتعارض مع مضادات الحموضة - يُفضل الفصل بساعتين"}],
   "mealPlan": {
     "breakfast": [
-      {"name": "شوفان بالموز والعسل", "description": "60 جرام شوفان، 200 مل حليب قليل الدسم، موزة واحدة، 15 جرام عسل", "calories": 416, "protein": 15, "carbs": 62, "fats": 12, "fiber": 6, "benefits": "غني بالألياف القابلة للذوبان (بيتا-جلوكان) يساعد في تحسين مستوى الكولسترول", "preparationTip": "انقع الشوفان ليلاً لتقليل حمض الفيتيك وزيادة امتصاص المعادن"},
-      {"name": "بيض مسلوق مع خبز أسمر", "description": "3 بيضات مسلوقة، شريحتين خبز أسمر، 50 جرام خيار، 50 جرام طماطم", "calories": 398, "protein": 24, "carbs": 35, "fats": 18, "fiber": 4, "benefits": "مصدر ممتاز للبروتين الكامل والكولين لدعم العضلات ووظائف الكبد", "preparationTip": "أضف الطماطم كمصدر فيتامين C لتحسين امتصاص الحديد من البيض"}
+      {
+        "name": "شوفان بالموز والعسل",
+        "benefits": "غني بالألياف القابلة للذوبان تساعد في تحسين مستوى الكولسترول",
+        "preparationTip": "انقع الشوفان ليلاً لتقليل حمض الفيتيك وزيادة امتصاص المعادن",
+        "ingredients": [
+          {"name": "شوفان", "quantity": 60, "unit": "g", "state": "raw", "nutritionBasis": "per_100g", "protein": 13.5, "carbs": 68, "fat": 6.9, "calories": 389, "fiber": 10.6, "sourceReference": "USDA FoodData Central", "sourceConfidence": "high"},
+          {"name": "حليب قليل الدسم", "quantity": 200, "unit": "ml", "state": "any", "nutritionBasis": "per_100g", "protein": 3.4, "carbs": 5, "fat": 1, "calories": 43, "fiber": 0, "sourceReference": "USDA FoodData Central", "sourceConfidence": "high"}
+        ]
+      }
     ],
-    "lunch": [{"name": "اسم وصفي", "description": "مكونات بالجرامات", "calories": 845, "protein": 50, "carbs": 70, "fats": 25, "fiber": 8, "benefits": "فائدة صحية مرتبطة بالتحاليل أو الهدف الجسدي", "preparationTip": "نصيحة تحضير"}],
-    "dinner": [{"name": "اسم وصفي", "description": "مكونات بالجرامات", "calories": 526, "protein": 40, "carbs": 30, "fats": 14, "fiber": 5, "benefits": "فائدة صحية مرتبطة بالتحاليل أو الهدف الجسدي", "preparationTip": "نصيحة تحضير"}],
-    "snacks": [{"name": "اسم وصفي", "description": "مكونات بالجرامات", "calories": 210, "protein": 10, "carbs": 20, "fats": 10, "fiber": 3, "benefits": "فائدة صحية مرتبطة بالتحاليل أو الهدف الجسدي", "preparationTip": "نصيحة تحضير"}]
+    "lunch": [{"name": "اسم وصفي", "benefits": "فائدة صحية", "preparationTip": "نصيحة", "ingredients": [{"name": "صدر دجاج", "quantity": 150, "unit": "g", "state": "cooked", "nutritionBasis": "per_100g", "protein": 31, "carbs": 0, "fat": 3.6, "calories": 165, "fiber": 0, "sourceReference": "USDA", "sourceConfidence": "high"}]}],
+    "dinner": [{"name": "اسم وصفي", "benefits": "فائدة صحية", "preparationTip": "نصيحة", "ingredients": []}],
+    "snacks": [{"name": "اسم وصفي", "benefits": "فائدة صحية", "preparationTip": "نصيحة", "ingredients": []}]
   },
   "mealTimingAdvice": "توصيات التوقيت الغذائي (Chrononutrition): أفضل أوقات تناول الوجبات بناءً على الإيقاع اليومي والهدف",
   "tips": ["نصيحة مع السبب الصحي والمرجع العلمي"],
@@ -900,13 +907,12 @@ ${hasAllergies && allergyList ? `- ALLERGY WARNING (per FARE Guidelines): User i
 
 CRITICAL RULES:
 1. You MUST NOT use "..." or any abbreviation in any field
-2. Every single one of the 20 meal options MUST have COMPLETE data in ALL fields (name, description, calories, protein, carbs, fats, fiber, benefits, preparationTip)
-3. "name" = descriptive meal name (e.g., "Oatmeal with Banana and Honey"). NEVER use "Option 1" or "Option 2"
-4. "description" = ALL ingredients with gram weights (e.g., "60g oats, 200ml low-fat milk")
+2. Every single one of the 20 meal options MUST have COMPLETE data in ALL fields (name, benefits, preparationTip, ingredients)
+3. "name" = descriptive meal name (e.g., "Oatmeal with Banana"). NEVER use "Option 1" or "Option 2"
+4. "ingredients" = Array of all ingredients with exact gram weights and nutritional data per 100g/serving. NEVER provide macro totals at the meal wrapper level.
 5. "benefits" = health benefit linked to lab results (e.g., "Helps improve cholesterol levels")
-6. "fiber" = fiber content in grams (number)
-7. "preparationTip" = preparation tip that improves nutritional value or bioavailability
-8. The example below shows only 2 options for brevity, but you MUST write 5 COMPLETE options for each meal
+6. "preparationTip" = preparation tip that improves nutritional value or bioavailability
+7. The example below shows only 1 option for brevity, but you MUST write 5 COMPLETE options for each meal
 9. If there are no lab results provided, or if no deficiencies/supplements are needed, return an empty array [] for both "deficiencies" and "supplements" fields.
 
 Return JSON in this format (example shows 2 of 5 options - write all 5 complete):
@@ -920,12 +926,19 @@ Return JSON in this format (example shows 2 of 5 options - write all 5 complete)
   "supplements": [{"name": "Supplement name", "dosage": "Suggested dosage", "reason": "Reason linked to lab result", "duration": "Duration", "foodSources": ["100g salmon = 600 IU vitamin D", "1 cup fortified milk = 400 IU", "1 egg = 40 IU"], "targetLabValue": "Vitamin D: 30-50 ng/mL", "scientificBasis": "Endocrine Society Clinical Practice Guideline", "timingAdvice": "Take with the fattiest meal of the day for optimal absorption", "interactions": "Conflicts with antacids - separate by 2 hours"}],
   "mealPlan": {
     "breakfast": [
-      {"name": "Oatmeal with Banana and Honey", "description": "60g oats, 200ml low-fat milk, 1 banana, 15g honey", "calories": 416, "protein": 15, "carbs": 62, "fats": 12, "fiber": 6, "benefits": "Rich in soluble fiber (beta-glucan), helps improve cholesterol levels", "preparationTip": "Soak oats overnight to reduce phytic acid and improve mineral absorption"},
-      {"name": "Boiled Eggs with Brown Toast", "description": "3 boiled eggs, 2 slices brown bread, 50g cucumber, 50g tomato", "calories": 398, "protein": 24, "carbs": 35, "fats": 18, "fiber": 4, "benefits": "Excellent source of complete protein and choline for muscle and liver support", "preparationTip": "Add tomato as a vitamin C source to improve iron absorption from eggs"}
+      {
+        "name": "Oatmeal with Banana and Milk",
+        "benefits": "Rich in soluble fiber",
+        "preparationTip": "Soak oats overnight to reduce phytic acid",
+        "ingredients": [
+          {"name": "Oats", "quantity": 60, "unit": "g", "state": "raw", "nutritionBasis": "per_100g", "protein": 13.5, "carbs": 68, "fat": 6.9, "calories": 389, "fiber": 10.6, "sourceReference": "USDA FoodData Central", "sourceConfidence": "high"},
+          {"name": "Low-fat milk", "quantity": 200, "unit": "ml", "state": "any", "nutritionBasis": "per_100g", "protein": 3.4, "carbs": 5, "fat": 1, "calories": 43, "fiber": 0, "sourceReference": "USDA", "sourceConfidence": "high"}
+        ]
+      }
     ],
-    "lunch": [{"name": "Descriptive meal name", "description": "ingredients with grams", "calories": 845, "protein": 50, "carbs": 70, "fats": 25, "fiber": 8, "benefits": "health benefit linked to lab results or physical goal", "preparationTip": "preparation tip"}],
-    "dinner": [{"name": "Descriptive meal name", "description": "ingredients with grams", "calories": 526, "protein": 40, "carbs": 30, "fats": 14, "fiber": 5, "benefits": "health benefit linked to lab results or physical goal", "preparationTip": "preparation tip"}],
-    "snacks": [{"name": "Descriptive meal name", "description": "ingredients with grams", "calories": 210, "protein": 10, "carbs": 20, "fats": 10, "fiber": 3, "benefits": "health benefit linked to lab results or physical goal", "preparationTip": "preparation tip"}]
+    "lunch": [{"name": "Descriptive name", "benefits": "benefit", "preparationTip": "tip", "ingredients": [{"name": "Chicken Breast", "quantity": 150, "unit": "g", "state": "cooked", "nutritionBasis": "per_100g", "protein": 31, "carbs": 0, "fat": 3.6, "calories": 165, "fiber": 0, "sourceReference": "USDA", "sourceConfidence": "high"}]}],
+    "dinner": [{"name": "Descriptive name", "benefits": "benefit", "preparationTip": "tip", "ingredients": []}],
+    "snacks": [{"name": "Descriptive name", "benefits": "benefit", "preparationTip": "tip", "ingredients": []}]
   },
   "mealTimingAdvice": "Chrononutrition recommendations: optimal meal timing based on circadian rhythm and goal",
   "tips": ["tip with health reason and scientific reference"],
@@ -1115,22 +1128,19 @@ ${hasCustomTargetCalories && normalizedCustomTargetCalories ? `11. Mandatory: Ke
     const isPlaceholder = (val: string) => !val || val === "..." || val === "…" || val.trim().length < 3;
 
     const cleanMeal = (m: any, mealTargetCal: number) => {
-      const protein = m.protein || 0;
-      const carbs = m.carbs || 0;
-      const fats = m.fats || 0;
-      const realCalories = Math.round((protein * 4) + (carbs * 4) + (fats * 9));
-      return {
-        name: m.name || "",
-        description: m.description || "",
-        calories: realCalories,
-        targetCalories: mealTargetCal,
-        protein,
-        carbs,
-        fats,
-        fiber: m.fiber || 0,
-        benefits: m.benefits || "",
-        preparationTip: m.preparationTip || "",
-      };
+      let validMeal = recalculateMealMacros(
+        m.name || "",
+        m.benefits || "",
+        m.preparationTip || "",
+        Array.isArray(m.ingredients) ? m.ingredients : []
+      );
+
+      validMeal = validateHealthyMealRanges(validMeal);
+
+      // Keep track of what we aimed for front-end rendering
+      (validMeal as any).targetCalories = mealTargetCal;
+
+      return validMeal;
     };
 
     const sanitizedMealPlan: Record<string, any[]> = {};
@@ -1145,9 +1155,9 @@ ${hasCustomTargetCalories && normalizedCustomTargetCalories ? `11. Mandatory: Ke
     let incompleteMeals = 0;
     for (const [section, meals] of Object.entries(sanitizedMealPlan)) {
       for (const meal of meals as any[]) {
-        if (isPlaceholder(meal.name) || isPlaceholder(meal.description) || isPlaceholder(meal.benefits)) {
+        if (isPlaceholder(meal.name) || meal.ingredients.length === 0 || isPlaceholder(meal.benefits)) {
           incompleteMeals++;
-          console.warn(`Incomplete meal in ${section}: name="${meal.name}", desc="${(meal.description || "").slice(0, 30)}", benefits="${(meal.benefits || "").slice(0, 30)}"`);
+          console.warn(`Incomplete meal in ${section}: name="${meal.name}", ingredients count=${meal.ingredients.length}, benefits="${(meal.benefits || "").slice(0, 30)}"`);
         }
       }
     }
@@ -1209,6 +1219,18 @@ ${hasCustomTargetCalories && normalizedCustomTargetCalories ? `11. Mandatory: Ke
     } else {
       console.log(`[Clinical QC] Calorie target met: target=${targetCalories}, plan avg=${Math.round(totalAvgCalories)} (${(calorieDeviation * 100).toFixed(0)}% deviation)`);
     }
+
+    const allIngredients = [];
+    for (const [section, meals] of Object.entries(sanitizedMealPlan)) {
+      for (const meal of meals as any[]) {
+        if (Array.isArray(meal.ingredients)) {
+          allIngredients.push(...meal.ingredients);
+        }
+      }
+    }
+
+    // Fire and forget cache save
+    saveValidatedIngredients(allIngredients).catch(err => console.error("Cache save error:", err));
 
     const result: DietPlanResult = {
       healthSummary: parsed.healthSummary || "",
