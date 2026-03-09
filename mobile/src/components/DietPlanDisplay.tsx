@@ -238,17 +238,17 @@ export default function DietPlanDisplay({ plan, colors, isDark, t, isArabicSyste
                                     <Text style={[styles.mealName, { color: colors.text }]}>{meal.name}</Text>
                                     <Text style={[styles.mealDesc, { color: colors.text }]}>{meal.description}</Text>
                                     <View style={styles.mealMacros}>
-                                        <Text style={[styles.mealMacroText, { backgroundColor: '#6366f1' }]}>{realCalFromMacros(meal.protein || 0, meal.carbs || 0, meal.fats || 0)} kcal</Text>
-                                        <Text style={[styles.mealMacroText, { backgroundColor: '#dbeafe', color: '#1e3a5f' }]}>P:{meal.protein}g</Text>
-                                        <Text style={[styles.mealMacroText, { backgroundColor: '#fef3c7', color: '#78350f' }]}>C:{meal.carbs}g</Text>
-                                        <Text style={[styles.mealMacroText, { backgroundColor: '#fce7f3', color: '#831843' }]}>F:{meal.fats}g</Text>
+                                        <Text style={[styles.mealMacroText, { backgroundColor: '#6366f1', color: '#000' }]}>{realCalFromMacros(meal.protein || 0, meal.carbs || 0, meal.fats || 0)} kcal</Text>
+                                        <Text style={[styles.mealMacroText, { backgroundColor: '#dbeafe', color: '#000' }]}>P:{meal.protein}g</Text>
+                                        <Text style={[styles.mealMacroText, { backgroundColor: '#fef3c7', color: '#000' }]}>C:{meal.carbs}g</Text>
+                                        <Text style={[styles.mealMacroText, { backgroundColor: '#fce7f3', color: '#000' }]}>F:{meal.fats}g</Text>
                                     </View>
                                     {meal.targetCalories > 0 && (
                                         <View style={[styles.mealMacros, { marginTop: 4 }]}>
-                                            <Text style={[styles.mealMacroText, { backgroundColor: '#ef4444' }]}>
+                                            <Text style={[styles.mealMacroText, { backgroundColor: '#ef4444', color: '#000' }]}>
                                                 {isArabicSystem ? 'المستهدف' : 'Target'}: {meal.targetCalories} kcal
                                             </Text>
-                                            <Text style={[styles.mealMacroText, { backgroundColor: meal.calories <= meal.targetCalories ? '#22c55e' : '#f59e0b' }]}>
+                                            <Text style={[styles.mealMacroText, { backgroundColor: meal.calories <= meal.targetCalories ? '#22c55e' : '#f59e0b', color: '#000' }]}>
                                                 {meal.calories <= meal.targetCalories
                                                     ? (isArabicSystem ? 'ضمن الهدف' : 'Within target')
                                                     : (isArabicSystem ? 'أعلى من الهدف' : 'Above target')
