@@ -58,7 +58,9 @@ interface MealItem {
   protein: number;
   carbs: number;
   fats: number;
-  benefits: string;
+  targetCalories?: number;
+  benefits?: string;
+  isCustom?: boolean;
 }
 
 interface Deficiency {
@@ -956,13 +958,13 @@ export default function DietPlan() {
                           <Flame className="h-3 w-3 me-1 text-red-500" />
                           {item.calories} {t("kcal")}
                         </Badge>
-                        {item.targetCalories > 0 && (
+                        {(item.targetCalories || 0) > 0 && (
                           <>
                             <Badge variant="outline" className="text-xs bg-indigo-500/10 border-indigo-500/30">
                               {t("target")}: {item.targetCalories} {t("kcal")}
                             </Badge>
-                            <Badge variant="outline" className={`text-xs ${item.calories <= item.targetCalories ? 'bg-green-500/10 border-green-500/30 text-green-600' : 'bg-amber-500/10 border-amber-500/30 text-amber-600'}`}>
-                              {item.calories <= item.targetCalories ? (isArabic ? 'ضمن الهدف' : 'Within target') : (isArabic ? 'أعلى من الهدف' : 'Above target')}
+                            <Badge variant="outline" className={`text-xs ${item.calories <= (item.targetCalories || 0) ? 'bg-green-500/10 border-green-500/30 text-green-600' : 'bg-amber-500/10 border-amber-500/30 text-amber-600'}`}>
+                              {item.calories <= (item.targetCalories || 0) ? (isArabic ? 'ضمن الهدف' : 'Within target') : (isArabic ? 'أعلى من الهدف' : 'Above target')}
                             </Badge>
                           </>
                         )}
