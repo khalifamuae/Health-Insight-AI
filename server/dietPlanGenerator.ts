@@ -116,51 +116,63 @@ function calculateWaterIntake(weight: number, activityLevel: string): number {
 
 function getTargetCalories(tdee: number, bmr: number, goal: string, hasSevereDeficiency: boolean): { target: number; delta: number } {
   if (goal === "weight_loss") {
-    const deficitPercent = hasSevereDeficiency ? 0.08 : 0.15;
+    // Safe deficit: 15-20% of TDEE (Helms et al., 2014)
+    // Reduce deficit if severe nutrient deficiency detected
+    const deficitPercent = hasSevereDeficiency ? 0.10 : 0.18;
     const deficit = Math.round(tdee * deficitPercent);
+    // Never go below BMR to preserve metabolic health
     const target = Math.max(Math.round(tdee - deficit), bmr);
     return { target, delta: target - tdee };
   }
   if (goal === "muscle_gain") {
-    const surplus = Math.round(tdee * 0.10);
+    // Lean bulk: 10-15% surplus (Iraki et al., 2019)
+    // Higher surplus = more fat gain, moderate is optimal
+    const surplus = Math.round(tdee * 0.12);
     return { target: Math.round(tdee + surplus), delta: surplus };
   }
+  // Maintain: TDEE exactly
   return { target: tdee, delta: 0 };
 }
 
 function getMacroTargets(targetCalories: number, goal: string, preference: string, weight: number) {
   let proteinPerKg: number, fatPercentage: number, minCarbGrams: number;
 
+  // Special diet preferences override goal-based defaults
   if (preference === "high_protein") {
     proteinPerKg = goal === "muscle_gain" ? 2.4 : 2.2;
-    fatPercentage = 0.20;
+    fatPercentage = 0.22;
     minCarbGrams = 0;
   } else if (preference === "low_carb") {
-    proteinPerKg = 1.8;
-    fatPercentage = 0.50;
+    proteinPerKg = 2.0;
+    fatPercentage = 0.45;
     minCarbGrams = Math.round(weight * 1.5);
   } else if (preference === "keto") {
     proteinPerKg = 1.6;
     fatPercentage = 0.70;
     minCarbGrams = Math.round(weight * 0.3);
   } else if (preference === "vegetarian") {
-    proteinPerKg = 1.4;
-    fatPercentage = 0.30;
+    proteinPerKg = 1.6;
+    fatPercentage = 0.28;
     minCarbGrams = 0;
   } else {
+    // Evidence-based macros per goal (ISSN/ACSM guidelines)
     minCarbGrams = 0;
     switch (goal) {
       case "weight_loss":
+        // High protein preserves muscle during deficit
+        // ISSN: 1.6-2.2g/kg during caloric deficit
         proteinPerKg = 2.0;
-        fatPercentage = 0.25;
+        fatPercentage = 0.25; // 25% fat for satiety + hormone health
         break;
       case "muscle_gain":
+        // ISSN: 1.6-2.2g/kg for hypertrophy, surplus requires more carbs
         proteinPerKg = 2.2;
-        fatPercentage = 0.25;
+        fatPercentage = 0.22; // Lower fat = more room for carbs (fuel for training)
         break;
-      default:
-        proteinPerKg = 1.6;
-        fatPercentage = 0.30;
+      default: // maintain
+        // Balanced approach for weight maintenance
+        proteinPerKg = 1.8;
+        fatPercentage = 0.28;
     }
   }
 
@@ -321,8 +333,8 @@ export async function generateDietPlan(userData: UserHealthData, onProgress?: Pr
       return [
         { key: "breakfast", labelAr: "فطور", labelEn: "Breakfast", percent: 25, icon: "sunny" },
         { key: "lunch", labelAr: "غداء", labelEn: "Lunch", percent: 35, icon: "restaurant" },
-        { key: "dinner", labelAr: "عشاء", labelEn: "Dinner", percent: 30, icon: "moon" },
-        { key: "snacks", labelAr: "سناك", labelEn: "Snack", percent: 10, icon: "cafe" },
+        { key: "dinner", labelAr: "عشاء", labelEn: "Dinner", percent: 25, icon: "moon" },
+        { key: "snacks", labelAr: "سناك", labelEn: "Snack", percent: 15, icon: "cafe" },
       ];
     }
     if (distribution === "4_meals_snack") {
@@ -342,25 +354,44 @@ export async function generateDietPlan(userData: UserHealthData, onProgress?: Pr
         { key: "snacks", labelAr: "سناك", labelEn: "Snack", percent: 25, icon: "cafe" },
       ];
     }
-    if (calories <= 1800) {
+
+    // AUTO mode: scientific distribution based on calories + goal
+    // Low calories (deficit/weight loss): 3 meals, no snack needed
+    // Prevents unnecessary calorie splitting for deficit diets
+    if (calories <= 1600) {
       return [
         { key: "breakfast", labelAr: "فطور", labelEn: "Breakfast", percent: 30, icon: "sunny" },
         { key: "lunch", labelAr: "غداء", labelEn: "Lunch", percent: 40, icon: "restaurant" },
         { key: "dinner", labelAr: "عشاء", labelEn: "Dinner", percent: 30, icon: "moon" },
       ];
     }
-    if (calories <= 2500) {
+    // Medium calories: 3 meals + 1 snack
+    // Snack helps maintain blood sugar and prevent overeating at meals
+    if (calories <= 2200) {
       return [
         { key: "breakfast", labelAr: "فطور", labelEn: "Breakfast", percent: 25, icon: "sunny" },
         { key: "lunch", labelAr: "غداء", labelEn: "Lunch", percent: 35, icon: "restaurant" },
-        { key: "dinner", labelAr: "عشاء", labelEn: "Dinner", percent: 30, icon: "moon" },
-        { key: "snacks", labelAr: "سناك", labelEn: "Snack", percent: 10, icon: "cafe" },
+        { key: "dinner", labelAr: "عشاء", labelEn: "Dinner", percent: 25, icon: "moon" },
+        { key: "snacks", labelAr: "سناك", labelEn: "Snack", percent: 15, icon: "cafe" },
       ];
     }
+    // High calories (2200-2800): 3 meals + 1 larger snack
+    // More food per meal, snack becomes more substantial
+    if (calories <= 2800) {
+      return [
+        { key: "breakfast", labelAr: "فطور", labelEn: "Breakfast", percent: 25, icon: "sunny" },
+        { key: "lunch", labelAr: "غداء", labelEn: "Lunch", percent: 30, icon: "restaurant" },
+        { key: "dinner", labelAr: "عشاء", labelEn: "Dinner", percent: 25, icon: "moon" },
+        { key: "snacks", labelAr: "سناك", labelEn: "Snack", percent: 20, icon: "cafe" },
+      ];
+    }
+    // Very high calories (2800+): 4 meals + snack
+    // Muscle gain / bulking: spreading protein intake across more meals
+    // optimizes MPS (Muscle Protein Synthesis) per Schoenfeld et al.
     return [
       { key: "breakfast", labelAr: "فطور", labelEn: "Breakfast", percent: 20, icon: "sunny" },
-      { key: "lunch", labelAr: "غداء", labelEn: "Lunch", percent: 30, icon: "restaurant" },
-      { key: "snack1", labelAr: "سناك بعد الغداء", labelEn: "Afternoon Snack", percent: 10, icon: "cafe" },
+      { key: "lunch", labelAr: "غداء", labelEn: "Lunch", percent: 28, icon: "restaurant" },
+      { key: "snack1", labelAr: "سناك بعد الغداء", labelEn: "Afternoon Snack", percent: 12, icon: "cafe" },
       { key: "dinner", labelAr: "عشاء", labelEn: "Dinner", percent: 25, icon: "moon" },
       { key: "snacks", labelAr: "سناك مسائي", labelEn: "Evening Snack", percent: 15, icon: "cafe" },
     ];
