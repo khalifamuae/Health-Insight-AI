@@ -21,7 +21,7 @@ import { useAppTheme } from '../context/ThemeContext';
 import { formatAppDate, getDateCalendarPreference, type CalendarType } from '../lib/dateFormat';
 import DietPlanDisplay from '../components/DietPlanDisplay';
 
-type Step = 'intro' | 'disclaimer' | 'activity' | 'allergy' | 'allergySelect' | 'proteinPref' | 'carbPref' | 'preference' | 'generating' | 'streaming' | 'result';
+type Step = 'intro' | 'disclaimer' | 'activity' | 'allergy' | 'allergySelect' | 'proteinPref' | 'carbPref' | 'preference' | 'mealDistribution' | 'generating' | 'streaming' | 'result';
 
 interface SavedPlan {
   id: string;
@@ -96,6 +96,7 @@ export default function DietScreen({ navigation, route }: any) {
   const [selectedProteins, setSelectedProteins] = useState<string[]>([]);
   const [selectedCarbs, setSelectedCarbs] = useState<string[]>([]);
   const [mealPreference, setMealPreference] = useState('');
+  const [mealDistributionChoice, setMealDistributionChoice] = useState('auto');
   const [customTargetCalories, setCustomTargetCalories] = useState('');
   const [plan, setPlan] = useState<any>(null);
   const [jobId, setJobId] = useState<string | null>(null);
@@ -200,6 +201,7 @@ export default function DietScreen({ navigation, route }: any) {
       await api.patch('/api/user', {
         activityLevel,
         mealPreference,
+        mealDistribution: mealDistributionChoice,
         hasAllergies: hasAllergies || false,
         allergies: hasAllergies ? selectedAllergies : [],
         proteinPreferences: mealPreference === 'vegetarian' ? [] : selectedProteins,
@@ -294,7 +296,7 @@ export default function DietScreen({ navigation, route }: any) {
   };
 
   const getStepNumber = (): number => {
-    const steps: Step[] = ['activity', 'allergy', 'allergySelect', 'proteinPref', 'carbPref', 'preference'];
+    const steps: Step[] = ['activity', 'allergy', 'allergySelect', 'proteinPref', 'carbPref', 'preference', 'mealDistribution'];
     const idx = steps.indexOf(step);
     return idx >= 0 ? idx + 1 : 0;
   };
@@ -403,16 +405,10 @@ export default function DietScreen({ navigation, route }: any) {
 
   if (step === 'result' && plan) {
     return (
-      <View style={[styles.container, { paddingBottom: 0 }]}>
-        <View style={[styles.resultHeader, { backgroundColor: isDark ? '#1e293b' : '#ffffff', borderBottomColor: colors.border }]}>
-          <TouchableOpacity onPress={() => { setPlan(null); setStep('intro'); }} style={styles.backButtonTop} testID="button-back-result">
-            <Ionicons name={isArabic ? 'arrow-forward' : 'arrow-back'} size={24} color={colors.text} />
-          </TouchableOpacity>
-          <Text style={[styles.resultTitleInline, { color: colors.text }]}>{t('dietPlanReady')}</Text>
-          <View style={{ width: 24 }} />
-        </View>
+      <View style={styles.container}>
+        <ScrollView style={{ backgroundColor: colors.background }} contentContainerStyle={styles.content}>
+          <Text style={[styles.resultTitle, { color: colors.text, marginBottom: 16 }]}>{t('dietPlanReady')}</Text>
 
-        <ScrollView style={{ backgroundColor: colors.background, flex: 1 }} contentContainerStyle={styles.contentResult}>
           <DietPlanDisplay
             plan={plan}
             colors={colors}
@@ -425,6 +421,9 @@ export default function DietScreen({ navigation, route }: any) {
 
         <View style={[styles.calculatorBar, { backgroundColor: isDark ? '#1e293b' : '#ffffff', borderTopColor: colors.border }]}>
           <View style={styles.actionButtons}>
+            <TouchableOpacity style={styles.saveButton} onPress={() => saveMutation.mutate()} testID="button-save-plan">
+              <Ionicons name="save" size={20} color="#fff" />
+            </TouchableOpacity>
             <TouchableOpacity
               style={[styles.exportButton, exportMutation.isPending && { opacity: 0.7 }]}
               onPress={() => exportMutation.mutate()}
@@ -433,12 +432,11 @@ export default function DietScreen({ navigation, route }: any) {
             >
               <Ionicons name="share-social" size={20} color="#fff" />
               <Text style={styles.exportButtonText}>
-                {isArabic ? 'تصدير الخطة' : 'Export Plan'}
+                {isArabic ? 'تصدير' : 'Export'}
               </Text>
             </TouchableOpacity>
-
-            <TouchableOpacity style={styles.saveButton} onPress={() => saveMutation.mutate()} testID="button-save-plan">
-              <Ionicons name="save" size={20} color="#fff" />
+            <TouchableOpacity style={styles.newPlanButton} onPress={() => { setPlan(null); setStep('intro'); }} testID="button-new-plan">
+              <Ionicons name="refresh" size={20} color="#3b82f6" />
             </TouchableOpacity>
           </View>
         </View>
@@ -658,11 +656,55 @@ export default function DietScreen({ navigation, route }: any) {
           </View>
         )}
         {mealPreference ? (
-          <TouchableOpacity style={[styles.nextButton, { backgroundColor: '#22c55e' }]} onPress={handleFinish} testID="button-generate">
-            <Ionicons name="sparkles" size={20} color="#fff" />
-            <Text style={styles.nextButtonText}>{isArabic ? 'إنشاء خطتي الغذائية' : 'Generate My Diet Plan'}</Text>
+          <TouchableOpacity style={styles.nextButton} onPress={() => setStep('mealDistribution')} testID="button-next-distribution">
+            <Ionicons name="arrow-forward" size={20} color="#fff" />
+            <Text style={styles.nextButtonText}>{t('next')}</Text>
           </TouchableOpacity>
         ) : null}
+      </ScrollView>
+    );
+  }
+
+  const DISTRIBUTION_OPTIONS = [
+    { key: 'auto', icon: 'sparkles' as const, labelAr: 'تلقائي (حسب السعرات)', labelEn: 'Auto (based on calories)', descAr: 'النظام يحدد عدد الوجبات تلقائياً:\n• أقل من 1800 سعرة → 3 وجبات\n• 1800-2500 سعرة → 3 وجبات + سناك\n• أكثر من 2500 → 4 وجبات + سناكين', descEn: 'System auto-selects meal count:\n• Under 1800 kcal → 3 meals\n• 1800-2500 kcal → 3 meals + snack\n• Over 2500 → 4 meals + 2 snacks' },
+    { key: '3_meals', icon: 'restaurant' as const, labelAr: '3 وجبات فقط (بدون سناك)', labelEn: '3 Meals Only (no snack)', descAr: 'فطور 30% | غداء 40% | عشاء 30%', descEn: 'Breakfast 30% | Lunch 40% | Dinner 30%' },
+    { key: '3_meals_snack', icon: 'cafe' as const, labelAr: '3 وجبات + سناك', labelEn: '3 Meals + Snack', descAr: 'فطور 25% | غداء 35% | عشاء 30% | سناك 10%', descEn: 'Breakfast 25% | Lunch 35% | Dinner 30% | Snack 10%' },
+    { key: '4_meals_snack', icon: 'fast-food' as const, labelAr: '4 وجبات + سناكين', labelEn: '4 Meals + 2 Snacks', descAr: 'فطور 20% | غداء 30% | سناك 10% | عشاء 25% | سناك مسائي 15%', descEn: 'Breakfast 20% | Lunch 30% | Snack 10% | Dinner 25% | Evening 15%' },
+    { key: 'equal', icon: 'grid' as const, labelAr: 'توزيع متساوي (4 وجبات)', labelEn: 'Equal Split (4 meals)', descAr: 'كل وجبة = 25% من السعرات', descEn: 'Each meal = 25% of calories' },
+  ];
+
+  if (step === 'mealDistribution') {
+    return (
+      <ScrollView style={[styles.container, { backgroundColor: colors.background }]} contentContainerStyle={styles.content}>
+        {renderStepHeader('preference', 7)}
+        <Text style={[styles.questTitle, { color: colors.text }]}>
+          {isArabic ? 'كيف تريد توزيع الوجبات؟' : 'How do you want to distribute meals?'}
+        </Text>
+        <Text style={[styles.questSubtitle, { color: colors.mutedText }]}>
+          {isArabic ? 'اختر طريقة توزيع السعرات والماكرو على وجباتك اليومية' : 'Choose how to distribute calories and macros across your daily meals'}
+        </Text>
+        {DISTRIBUTION_OPTIONS.map(opt => (
+          <TouchableOpacity
+            key={opt.key}
+            style={[styles.optionCard, { backgroundColor: colors.card, borderColor: colors.border }, mealDistributionChoice === opt.key && styles.optionCardSelected]}
+            onPress={() => setMealDistributionChoice(opt.key)}
+            testID={`button-dist-${opt.key}`}
+          >
+            <Ionicons name={opt.icon} size={24} color={mealDistributionChoice === opt.key ? '#fff' : '#3b82f6'} />
+            <View style={styles.optionTextContainer}>
+              <Text style={[styles.optionTitle, { color: colors.text }, mealDistributionChoice === opt.key && styles.optionTitleSelected]}>
+                {isArabic ? opt.labelAr : opt.labelEn}
+              </Text>
+              <Text style={[styles.optionDesc, { color: colors.mutedText }, mealDistributionChoice === opt.key && styles.optionDescSelected]}>
+                {isArabic ? opt.descAr : opt.descEn}
+              </Text>
+            </View>
+          </TouchableOpacity>
+        ))}
+        <TouchableOpacity style={[styles.nextButton, { backgroundColor: '#22c55e' }]} onPress={handleFinish} testID="button-generate">
+          <Ionicons name="sparkles" size={20} color="#fff" />
+          <Text style={styles.nextButtonText}>{isArabic ? 'إنشاء خطتي الغذائية' : 'Generate My Diet Plan'}</Text>
+        </TouchableOpacity>
       </ScrollView>
     );
   }
@@ -736,10 +778,6 @@ export default function DietScreen({ navigation, route }: any) {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#f8fafc' },
   content: { padding: 16, paddingBottom: 110 },
-  contentResult: { padding: 16, paddingBottom: 30 },
-  resultHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 14, borderBottomWidth: 1 },
-  backButtonTop: { padding: 4 },
-  resultTitleInline: { fontSize: 18, fontWeight: '700', textAlign: 'center', flex: 1 },
   heroCard: { backgroundColor: '#fffbeb', borderRadius: 16, padding: 24, alignItems: 'center', marginBottom: 20, borderWidth: 1, borderColor: '#fde68a' },
   heroIconContainer: { width: 80, height: 80, borderRadius: 40, backgroundColor: '#fef3c7', justifyContent: 'center', alignItems: 'center', marginBottom: 12 },
   heroTitle: { fontSize: 22, fontWeight: '700', color: '#92400e', textAlign: 'center', marginBottom: 8 },
@@ -811,8 +849,12 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   calculatorBar: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
     padding: 16,
-    paddingBottom: 100, // Safe area padding for bottom tabs
+    paddingBottom: 30,
     borderTopWidth: 1,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: -4 },
@@ -880,10 +922,13 @@ const styles = StyleSheet.create({
   tipAvoid: { fontSize: 12, color: '#ef4444', marginTop: 4, textAlign: 'left' },
   tipText: { fontSize: 13, color: '#475569', marginBottom: 4, textAlign: 'left' },
   refText: { fontSize: 12, color: '#94a3b8', marginBottom: 4, textAlign: 'left' },
-  actionButtons: { flexDirection: 'row', gap: 10, marginTop: 8 },
-  saveButton: { width: 52, height: 52, backgroundColor: '#22c55e', borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
-  exportButton: { flex: 1, height: 52, flexDirection: 'row', backgroundColor: '#2563eb', borderRadius: 12, alignItems: 'center', justifyContent: 'center', gap: 8 },
-  exportButtonText: { fontSize: 16, fontWeight: '700', color: '#fff' },
+  actionButtons: { gap: 10, marginTop: 8 },
+  saveButton: { flexDirection: 'row', backgroundColor: '#22c55e', borderRadius: 12, paddingVertical: 14, alignItems: 'center', justifyContent: 'center', gap: 8 },
+  saveButtonText: { fontSize: 16, fontWeight: '600', color: '#fff' },
+  exportButton: { flexDirection: 'row', backgroundColor: '#2563eb', borderRadius: 12, paddingVertical: 14, alignItems: 'center', justifyContent: 'center', gap: 8 },
+  exportButtonText: { fontSize: 16, fontWeight: '600', color: '#fff' },
+  newPlanButton: { flexDirection: 'row', backgroundColor: '#eff6ff', borderRadius: 12, paddingVertical: 14, alignItems: 'center', justifyContent: 'center', gap: 8 },
+  newPlanButtonText: { fontSize: 16, fontWeight: '600', color: '#3b82f6' },
   monthlyNote: { fontSize: 12, marginTop: 10, textAlign: 'left' },
   savedSection: { marginTop: 16 },
   savedCard: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#fff', borderRadius: 12, padding: 14, gap: 12, marginBottom: 8, elevation: 1, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.04, shadowRadius: 2 },

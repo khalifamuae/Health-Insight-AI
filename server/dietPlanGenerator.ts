@@ -19,6 +19,7 @@ interface UserHealthData {
   proteinPreference: string | null;
   proteinPreferences: string[] | null;
   carbPreferences: string[] | null;
+  mealDistribution?: string | null;
   customTargetCalories?: number | null;
   language: string;
   testResults: {
@@ -48,6 +49,7 @@ export interface DietPlanResult {
     dinner: number;
     snack: number;
   };
+  mealSlots?: { key: string; labelAr: string; labelEn: string; percent: number; calories: number; protein: number; carbs: number; fats: number; icon: string }[];
   macros: {
     protein: { grams: number; percentage: number };
     carbs: { grams: number; percentage: number };
@@ -303,23 +305,93 @@ export async function generateDietPlan(userData: UserHealthData, onProgress?: Pr
   const fiberTarget = calculateFiberTarget(targetCalories, gender);
   const waterTarget = calculateWaterIntake(weight, activityLevel);
 
-  const breakfastCalories = Math.round(targetCalories * 0.25);
-  const lunchCalories = Math.round(targetCalories * 0.35);
-  const dinnerCalories = Math.round(targetCalories * 0.30);
-  const snackCalories = targetCalories - breakfastCalories - lunchCalories - dinnerCalories;
+  const mealDistribution = userData.mealDistribution || "auto";
 
-  const breakfastProtein = Math.round(macros.protein.grams * 0.25);
-  const lunchProtein = Math.round(macros.protein.grams * 0.35);
-  const dinnerProtein = Math.round(macros.protein.grams * 0.30);
-  const snackProtein = macros.protein.grams - breakfastProtein - lunchProtein - dinnerProtein;
-  const breakfastCarbs = Math.round(macros.carbs.grams * 0.25);
-  const lunchCarbs = Math.round(macros.carbs.grams * 0.35);
-  const dinnerCarbs = Math.round(macros.carbs.grams * 0.30);
-  const snackCarbs = macros.carbs.grams - breakfastCarbs - lunchCarbs - dinnerCarbs;
-  const breakfastFats = Math.round(macros.fats.grams * 0.25);
-  const lunchFats = Math.round(macros.fats.grams * 0.35);
-  const dinnerFats = Math.round(macros.fats.grams * 0.30);
-  const snackFats = macros.fats.grams - breakfastFats - lunchFats - dinnerFats;
+  type MealSlot = { key: string; labelAr: string; labelEn: string; percent: number; icon: string };
+
+  function getMealSlots(distribution: string, calories: number): MealSlot[] {
+    if (distribution === "3_meals") {
+      return [
+        { key: "breakfast", labelAr: "فطور", labelEn: "Breakfast", percent: 30, icon: "sunny" },
+        { key: "lunch", labelAr: "غداء", labelEn: "Lunch", percent: 40, icon: "restaurant" },
+        { key: "dinner", labelAr: "عشاء", labelEn: "Dinner", percent: 30, icon: "moon" },
+      ];
+    }
+    if (distribution === "3_meals_snack") {
+      return [
+        { key: "breakfast", labelAr: "فطور", labelEn: "Breakfast", percent: 25, icon: "sunny" },
+        { key: "lunch", labelAr: "غداء", labelEn: "Lunch", percent: 35, icon: "restaurant" },
+        { key: "dinner", labelAr: "عشاء", labelEn: "Dinner", percent: 30, icon: "moon" },
+        { key: "snacks", labelAr: "سناك", labelEn: "Snack", percent: 10, icon: "cafe" },
+      ];
+    }
+    if (distribution === "4_meals_snack") {
+      return [
+        { key: "breakfast", labelAr: "فطور", labelEn: "Breakfast", percent: 20, icon: "sunny" },
+        { key: "lunch", labelAr: "غداء", labelEn: "Lunch", percent: 30, icon: "restaurant" },
+        { key: "snack1", labelAr: "سناك بعد الغداء", labelEn: "Afternoon Snack", percent: 10, icon: "cafe" },
+        { key: "dinner", labelAr: "عشاء", labelEn: "Dinner", percent: 25, icon: "moon" },
+        { key: "snacks", labelAr: "سناك مسائي", labelEn: "Evening Snack", percent: 15, icon: "cafe" },
+      ];
+    }
+    if (distribution === "equal") {
+      return [
+        { key: "breakfast", labelAr: "فطور", labelEn: "Breakfast", percent: 25, icon: "sunny" },
+        { key: "lunch", labelAr: "غداء", labelEn: "Lunch", percent: 25, icon: "restaurant" },
+        { key: "dinner", labelAr: "عشاء", labelEn: "Dinner", percent: 25, icon: "moon" },
+        { key: "snacks", labelAr: "سناك", labelEn: "Snack", percent: 25, icon: "cafe" },
+      ];
+    }
+    if (calories <= 1800) {
+      return [
+        { key: "breakfast", labelAr: "فطور", labelEn: "Breakfast", percent: 30, icon: "sunny" },
+        { key: "lunch", labelAr: "غداء", labelEn: "Lunch", percent: 40, icon: "restaurant" },
+        { key: "dinner", labelAr: "عشاء", labelEn: "Dinner", percent: 30, icon: "moon" },
+      ];
+    }
+    if (calories <= 2500) {
+      return [
+        { key: "breakfast", labelAr: "فطور", labelEn: "Breakfast", percent: 25, icon: "sunny" },
+        { key: "lunch", labelAr: "غداء", labelEn: "Lunch", percent: 35, icon: "restaurant" },
+        { key: "dinner", labelAr: "عشاء", labelEn: "Dinner", percent: 30, icon: "moon" },
+        { key: "snacks", labelAr: "سناك", labelEn: "Snack", percent: 10, icon: "cafe" },
+      ];
+    }
+    return [
+      { key: "breakfast", labelAr: "فطور", labelEn: "Breakfast", percent: 20, icon: "sunny" },
+      { key: "lunch", labelAr: "غداء", labelEn: "Lunch", percent: 30, icon: "restaurant" },
+      { key: "snack1", labelAr: "سناك بعد الغداء", labelEn: "Afternoon Snack", percent: 10, icon: "cafe" },
+      { key: "dinner", labelAr: "عشاء", labelEn: "Dinner", percent: 25, icon: "moon" },
+      { key: "snacks", labelAr: "سناك مسائي", labelEn: "Evening Snack", percent: 15, icon: "cafe" },
+    ];
+  }
+
+  const mealSlots = getMealSlots(mealDistribution, targetCalories);
+  const mealSplits = mealSlots.map(slot => ({
+    ...slot,
+    calories: Math.round(targetCalories * slot.percent / 100),
+    protein: Math.round(macros.protein.grams * slot.percent / 100),
+    carbs: Math.round(macros.carbs.grams * slot.percent / 100),
+    fats: Math.round(macros.fats.grams * slot.percent / 100),
+  }));
+
+  const breakfastCalories = mealSplits.find(s => s.key === "breakfast")?.calories || Math.round(targetCalories * 0.25);
+  const lunchCalories = mealSplits.find(s => s.key === "lunch")?.calories || Math.round(targetCalories * 0.35);
+  const dinnerCalories = mealSplits.find(s => s.key === "dinner")?.calories || Math.round(targetCalories * 0.30);
+  const snackCalories = mealSplits.find(s => s.key === "snacks")?.calories || (targetCalories - breakfastCalories - lunchCalories - dinnerCalories);
+
+  const breakfastProtein = mealSplits.find(s => s.key === "breakfast")?.protein || Math.round(macros.protein.grams * 0.25);
+  const lunchProtein = mealSplits.find(s => s.key === "lunch")?.protein || Math.round(macros.protein.grams * 0.35);
+  const dinnerProtein = mealSplits.find(s => s.key === "dinner")?.protein || Math.round(macros.protein.grams * 0.30);
+  const snackProtein = mealSplits.find(s => s.key === "snacks")?.protein || (macros.protein.grams - breakfastProtein - lunchProtein - dinnerProtein);
+  const breakfastCarbs = mealSplits.find(s => s.key === "breakfast")?.carbs || Math.round(macros.carbs.grams * 0.25);
+  const lunchCarbs = mealSplits.find(s => s.key === "lunch")?.carbs || Math.round(macros.carbs.grams * 0.35);
+  const dinnerCarbs = mealSplits.find(s => s.key === "dinner")?.carbs || Math.round(macros.carbs.grams * 0.30);
+  const snackCarbs = mealSplits.find(s => s.key === "snacks")?.carbs || (macros.carbs.grams - breakfastCarbs - lunchCarbs - dinnerCarbs);
+  const breakfastFats = mealSplits.find(s => s.key === "breakfast")?.fats || Math.round(macros.fats.grams * 0.25);
+  const lunchFats = mealSplits.find(s => s.key === "lunch")?.fats || Math.round(macros.fats.grams * 0.35);
+  const dinnerFats = mealSplits.find(s => s.key === "dinner")?.fats || Math.round(macros.fats.grams * 0.30);
+  const snackFats = mealSplits.find(s => s.key === "snacks")?.fats || (macros.fats.grams - breakfastFats - lunchFats - dinnerFats);
 
   const currentProteinPerKg = mealPreference === "high_protein"
     ? (goal === "muscle_gain" ? 2.4 : 2.2)
@@ -581,12 +653,10 @@ ${customCalorieInstruction}
 - كل خيار يجب أن يكون وجبة كاملة قائمة بذاتها (بروتين + كارب + خضار/فاكهة + دهون صحية)
 - اجعل كل وجبة عملية ويمكن تحضيرها في 15-30 دقيقة بمكونات متوفرة
 
-- ⚠️⚠️ قاعدة إلزامية: يجب تقديم بالضبط 5 خيارات مختلفة ومتنوعة لكل وجبة (فطور = 5 خيارات، غداء = 5 خيارات، عشاء = 5 خيارات، وجبات خفيفة = 5 خيارات). المجموع = 20 خيار وجبة. هذا شرط أساسي لا يمكن تجاوزه. لكي يختار المستخدم ما يناسبه ويغير يومياً
-- ⚠️⚠️⚠️ قاعدة السعرات الحرارية الأهم: يجب أن يكون مجموع سعرات (1 فطور + 1 غداء + 1 عشاء + 1 سناك) أقل قليلاً أو يساوي ${targetCalories} سعرة. لتحقيق ذلك:
-  * السعرات المستهدفة للفطور = ${breakfastCalories} سعرة (25%) → ماكرو: بروتين ${breakfastProtein}g، كارب ${breakfastCarbs}g، دهون ${breakfastFats}g
-  * السعرات المستهدفة للغداء = ${lunchCalories} سعرة (35%) → ماكرو: بروتين ${lunchProtein}g، كارب ${lunchCarbs}g، دهون ${lunchFats}g
-  * السعرات المستهدفة للعشاء = ${dinnerCalories} سعرة (30%) → ماكرو: بروتين ${dinnerProtein}g، كارب ${dinnerCarbs}g، دهون ${dinnerFats}g
-  * السعرات المستهدفة للسناك = ${snackCalories} سعرة (10%) → ماكرو: بروتين ${snackProtein}g، كارب ${snackCarbs}g، دهون ${snackFats}g
+- ⚠️⚠️ قاعدة إلزامية: يجب تقديم بالضبط 5 خيارات مختلفة ومتنوعة لكل وجبة. المجموع = ${mealSlots.length * 5} خيار وجبة. هذا شرط أساسي لا يمكن تجاوزه
+- ⚠️ عدد الوجبات: ${mealSlots.length} وجبات: ${mealSplits.map(s => s.labelAr).join(" + ")}
+- ⚠️⚠️⚠️ قاعدة السعرات الحرارية الأهم: يجب أن يكون مجموع سعرات (خيار واحد من كل وجبة) أقل قليلاً أو يساوي ${targetCalories} سعرة. لتحقيق ذلك:
+${mealSplits.map(s => `  * ${s.labelAr} = ${s.calories} سعرة (${s.percent}%) → ماكرو: بروتين ${s.protein}g، كارب ${s.carbs}g، دهون ${s.fats}g`).join("\n")}
   * ⚠️⚠️⚠️ قاعدة الماكرو الإلزامية: يجب أن يكون مجموع الماكرو (بروتين + كارب + دهون) لخيار واحد من كل وجبة مساوياً أو قريباً جداً من الهدف الكلي (بروتين ${macros.protein.grams}g، كارب ${macros.carbs.grams}g، دهون ${macros.fats.grams}g). صمم كل خيار ضمن الماكرو المحدد أعلاه (هامش ±5g فقط)
   * ⚠️⚠️⚠️ السعرات الحقيقية يتم حسابها بالمعادلة: calories = (protein × 4) + (carbs × 4) + (fats × 9)
   * يجب أن تكون قيم البروتين والكارب والدهون بالجرامات دقيقة 100% لأن السيرفر سيعيد حساب السعرات منها تلقائياً
@@ -636,7 +706,8 @@ ${hasAllergies && allergyList ? `- ⚠️ حساسية المستخدم (وفق 
 9. في حال عدم وجود تحاليل مخبرية أو عدم وجود نواقص ومكملات مقترحة، أرجع مصفوفة فارغة [] في حقلي "deficiencies" و "supplements"
 
 أرجع JSON بالشكل التالي (المثال يعرض 2 من 5 خيارات - اكتب 5 كاملة):
-⚠️ تذكير: كل خيار فطور = ${breakfastCalories} سعرة (P:${breakfastProtein}g C:${breakfastCarbs}g F:${breakfastFats}g) | غداء = ${lunchCalories} سعرة (P:${lunchProtein}g C:${lunchCarbs}g F:${lunchFats}g) | عشاء = ${dinnerCalories} سعرة (P:${dinnerProtein}g C:${dinnerCarbs}g F:${dinnerFats}g) | سناك = ${snackCalories} سعرة (P:${snackProtein}g C:${snackCarbs}g F:${snackFats}g) | المجموع = ${targetCalories} سعرة (P:${macros.protein.grams}g C:${macros.carbs.grams}g F:${macros.fats.grams}g)
+⚠️ تذكير: ${mealSplits.map(s => `${s.labelAr} = ${s.calories} سعرة (P:${s.protein}g C:${s.carbs}g F:${s.fats}g)`).join(" | ")} | المجموع = ${targetCalories} سعرة (P:${macros.protein.grams}g C:${macros.carbs.grams}g F:${macros.fats.grams}g)
+⚠️ يجب أن يحتوي JSON على الحقول التالية في mealPlan: ${mealSlots.map(s => `"${s.key}"`).join(", ")} — كل حقل يحتوي على مصفوفة من 5 خيارات
 {
   "healthSummary": "تقييم سريري شامل بناءً على التحاليل المخبرية (إن وجدت) أو الملف الجسدي العام",
   "summary": "ملخص عام إيجابي عن البروتوكول الغذائي",
@@ -740,13 +811,12 @@ Protocol Instructions:
 - Each option must be a complete standalone meal (protein + carb + vegetables/fruit + healthy fats)
 - Every meal should be practical and preparable in 15-30 minutes with commonly available ingredients
 
-- MANDATORY: Provide EXACTLY 5 different varied options for each meal (breakfast = 5 options, lunch = 5 options, dinner = 5 options, snacks = 5 options). Total = 20 meal options. This is a NON-NEGOTIABLE requirement. The user needs to choose and rotate daily
-- ⚠️⚠️⚠️ MOST CRITICAL CALORIE RULE: The sum of calories from (1 breakfast + 1 lunch + 1 dinner + 1 snack) must be slightly below or equal to ${targetCalories} kcal. To achieve this:
-  * Target for breakfast = ${breakfastCalories} kcal (25%) → Macros: P ${breakfastProtein}g, C ${breakfastCarbs}g, F ${breakfastFats}g
-  * Target for lunch = ${lunchCalories} kcal (35%) → Macros: P ${lunchProtein}g, C ${lunchCarbs}g, F ${lunchFats}g
-  * Target for dinner = ${dinnerCalories} kcal (30%) → Macros: P ${dinnerProtein}g, C ${dinnerCarbs}g, F ${dinnerFats}g
-  * Target for snack = ${snackCalories} kcal (10%) → Macros: P ${snackProtein}g, C ${snackCarbs}g, F ${snackFats}g
+- MANDATORY: Provide EXACTLY 5 different varied options for each meal. Total = ${mealSlots.length * 5} meal options. NON-NEGOTIABLE requirement
+- Number of meals: ${mealSlots.length}: ${mealSplits.map(s => s.labelEn).join(" + ")}
+- ⚠️⚠️⚠️ MOST CRITICAL CALORIE RULE: The sum of calories from picking 1 option from each meal must be slightly below or equal to ${targetCalories} kcal. To achieve this:
+${mealSplits.map(s => `  * ${s.labelEn} = ${s.calories} kcal (${s.percent}%) → Macros: P ${s.protein}g, C ${s.carbs}g, F ${s.fats}g`).join("\n")}
   * MANDATORY MACRO RULE: The sum of macros (protein + carbs + fats) from picking 1 option per meal MUST equal or be very close to the total targets (P ${macros.protein.grams}g, C ${macros.carbs.grams}g, F ${macros.fats.grams}g). Design each option within the per-meal macro targets above (tolerance ±5g only)
+  * JSON mealPlan MUST contain these keys: ${mealSlots.map(s => `"${s.key}"`).join(", ")} — each with an array of 5 options
   * ⚠️⚠️⚠️ REAL calories are calculated by the formula: calories = (protein × 4) + (carbs × 4) + (fats × 9)
   * The protein, carbs, and fats values in grams MUST be 100% accurate because the server will RECALCULATE calories from them automatically
   * Do NOT write random calorie numbers in the calories field - write the value resulting from the formula above
@@ -1018,12 +1088,14 @@ ${hasCustomTargetCalories && normalizedCustomTargetCalories ? `11. Mandatory: Ke
       };
     };
 
-    const sanitizedMealPlan = {
-      breakfast: (parsed.mealPlan?.breakfast || []).map((m: any) => cleanMeal(m, breakfastCalories)),
-      lunch: (parsed.mealPlan?.lunch || []).map((m: any) => cleanMeal(m, lunchCalories)),
-      dinner: (parsed.mealPlan?.dinner || []).map((m: any) => cleanMeal(m, dinnerCalories)),
-      snacks: (parsed.mealPlan?.snacks || []).map((m: any) => cleanMeal(m, snackCalories)),
-    };
+    const sanitizedMealPlan: Record<string, any[]> = {};
+    for (const slot of mealSplits) {
+      sanitizedMealPlan[slot.key] = (parsed.mealPlan?.[slot.key] || []).map((m: any) => cleanMeal(m, slot.calories));
+    }
+    if (!sanitizedMealPlan.breakfast) sanitizedMealPlan.breakfast = (parsed.mealPlan?.breakfast || []).map((m: any) => cleanMeal(m, breakfastCalories));
+    if (!sanitizedMealPlan.lunch) sanitizedMealPlan.lunch = (parsed.mealPlan?.lunch || []).map((m: any) => cleanMeal(m, lunchCalories));
+    if (!sanitizedMealPlan.dinner) sanitizedMealPlan.dinner = (parsed.mealPlan?.dinner || []).map((m: any) => cleanMeal(m, dinnerCalories));
+    if (!sanitizedMealPlan.snacks) sanitizedMealPlan.snacks = (parsed.mealPlan?.snacks || []).map((m: any) => cleanMeal(m, snackCalories));
 
     let incompleteMeals = 0;
     for (const [section, meals] of Object.entries(sanitizedMealPlan)) {
@@ -1040,12 +1112,13 @@ ${hasCustomTargetCalories && normalizedCustomTargetCalories ? `11. Mandatory: Ke
       if ((meals as any[]).length < 1) {
         console.warn(`WARNING: ${section} has 0 options - will use fallback`);
         emptySections++;
-        const fallbackTarget = section === 'breakfast' ? breakfastCalories : section === 'lunch' ? lunchCalories : section === 'dinner' ? dinnerCalories : snackCalories;
-        (sanitizedMealPlan as any)[section] = [{
-          name: section === 'breakfast' ? (isArabic ? 'وجبة فطور متوازنة' : 'Balanced Breakfast') :
-            section === 'lunch' ? (isArabic ? 'وجبة غداء متوازنة' : 'Balanced Lunch') :
-              section === 'dinner' ? (isArabic ? 'وجبة عشاء متوازنة' : 'Balanced Dinner') :
-                (isArabic ? 'وجبة خفيفة' : 'Healthy Snack'),
+        const slotInfo = mealSplits.find(s => s.key === section);
+        const fallbackTarget = slotInfo?.calories || (section === 'breakfast' ? breakfastCalories : section === 'lunch' ? lunchCalories : section === 'dinner' ? dinnerCalories : snackCalories);
+        const fallbackName = slotInfo
+          ? (isArabic ? `وجبة ${slotInfo.labelAr} متوازنة` : `Balanced ${slotInfo.labelEn}`)
+          : (isArabic ? 'وجبة متوازنة' : 'Balanced Meal');
+        sanitizedMealPlan[section] = [{
+          name: fallbackName,
           description: isArabic ? 'وجبة صحية متوازنة تحتوي على بروتين وكربوهيدرات ودهون صحية' : 'A balanced healthy meal with protein, carbs and healthy fats',
           calories: Math.round((25 * 4) + (35 * 4) + (12 * 9)),
           targetCalories: fallbackTarget,
@@ -1080,11 +1153,11 @@ ${hasCustomTargetCalories && normalizedCustomTargetCalories ? `11. Mandatory: Ke
       }
     }
 
-    const avgBreakfast = sanitizedMealPlan.breakfast.reduce((s: number, m: any) => s + (m.calories || 0), 0) / Math.max(sanitizedMealPlan.breakfast.length, 1);
-    const avgLunch = sanitizedMealPlan.lunch.reduce((s: number, m: any) => s + (m.calories || 0), 0) / Math.max(sanitizedMealPlan.lunch.length, 1);
-    const avgDinner = sanitizedMealPlan.dinner.reduce((s: number, m: any) => s + (m.calories || 0), 0) / Math.max(sanitizedMealPlan.dinner.length, 1);
-    const avgSnacks = sanitizedMealPlan.snacks.reduce((s: number, m: any) => s + (m.calories || 0), 0) / Math.max(sanitizedMealPlan.snacks.length, 1);
-    const totalAvgCalories = avgBreakfast + avgLunch + avgDinner + avgSnacks;
+    let totalAvgCalories = 0;
+    for (const [section, meals] of Object.entries(sanitizedMealPlan)) {
+      const avg = (meals as any[]).reduce((s: number, m: any) => s + (m.calories || 0), 0) / Math.max((meals as any[]).length, 1);
+      totalAvgCalories += avg;
+    }
     const calorieDeviation = Math.abs(totalAvgCalories - targetCalories) / targetCalories;
     if (calorieDeviation > 0.15) {
       console.warn(`[Clinical QC] Total calorie deviation: target=${targetCalories}, plan avg=${Math.round(totalAvgCalories)}, deviation=${(calorieDeviation * 100).toFixed(0)}%`);
@@ -1107,6 +1180,7 @@ ${hasCustomTargetCalories && normalizedCustomTargetCalories ? `11. Mandatory: Ke
         dinner: dinnerCalories,
         snack: snackCalories,
       },
+      mealSlots: mealSplits.map(s => ({ key: s.key, labelAr: s.labelAr, labelEn: s.labelEn, percent: s.percent, calories: s.calories, protein: s.protein, carbs: s.carbs, fats: s.fats, icon: s.icon })),
       macros: {
         ...macros,
         fiber: { grams: fiberTarget },

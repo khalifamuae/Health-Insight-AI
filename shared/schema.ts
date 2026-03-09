@@ -49,6 +49,7 @@ export const userProfiles = pgTable("user_profiles", {
   proteinPreference: proteinPreferenceEnum("protein_preference").default("mixed"),
   proteinPreferences: text("protein_preferences").array(),
   carbPreferences: text("carb_preferences").array(),
+  mealDistribution: varchar("meal_distribution", { length: 20 }).default("auto"),
   bloodType: varchar("blood_type", { length: 10 }),
   referralCode: varchar("referral_code", { length: 10 }),
   referredBy: varchar("referred_by"),

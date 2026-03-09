@@ -14,12 +14,21 @@ export default function DietPlanDisplay({ plan, colors, isDark, t, isArabicSyste
     const [selectedMeals, setSelectedMeals] = useState<Record<string, boolean>>({});
     const [calculatorTotals, setCalculatorTotals] = useState({ calories: 0, protein: 0, carbs: 0, fats: 0 });
 
-    const styles = React.useMemo(() => getStyles(), []);
+    // Detect if the plan was generated in Arabic (based on content)
+    const isPlanContentArabic = /[\u0600-\u06FF]/.test(plan.summary || plan.goalDescription || plan.healthSummary || '');
+    const directionStyle = { direction: isPlanContentArabic ? 'rtl' : 'ltr' } as const;
+    const tAlign = isPlanContentArabic ? 'right' : 'left';
+    const flexDir = isPlanContentArabic ? 'row-reverse' : 'row';
+    const styles = React.useMemo(() => getStyles(tAlign, flexDir), [tAlign, flexDir]);
+
+    const mealKeys = plan?.mealSlots?.map((s: any) => s.key) || Object.keys(plan?.mealPlan || {}).filter(k => (plan.mealPlan[k] as any[])?.length > 0);
+    const defaultMealKeys = ['breakfast', 'lunch', 'dinner', 'snacks'];
+    const activeMealKeys = mealKeys.length > 0 ? mealKeys : defaultMealKeys;
 
     useEffect(() => {
         const initialSelection: Record<string, boolean> = {};
         if (plan && plan.mealPlan) {
-            ['breakfast', 'lunch', 'dinner', 'snacks'].forEach((type) => {
+            activeMealKeys.forEach((type: string) => {
                 if (plan.mealPlan[type]?.length > 0) {
                     initialSelection[`${type}-0`] = true;
                 }
@@ -33,7 +42,7 @@ export default function DietPlanDisplay({ plan, colors, isDark, t, isArabicSyste
     useEffect(() => {
         if (!plan?.mealPlan) return;
         let totalP = 0, totalC = 0, totalF = 0;
-        ['breakfast', 'lunch', 'dinner', 'snacks'].forEach((type) => {
+        activeMealKeys.forEach((type: string) => {
             const meals = plan.mealPlan[type];
             if (meals && meals.length > 0) {
                 let selectedIdx = 0;
@@ -69,7 +78,7 @@ export default function DietPlanDisplay({ plan, colors, isDark, t, isArabicSyste
     if (!plan) return null;
 
     return (
-        <View style={styles.container}>
+        <View style={[styles.container, directionStyle]}>
             {plan.healthSummary && (
                 <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
                     <View style={styles.cardHeader}>
@@ -120,7 +129,7 @@ export default function DietPlanDisplay({ plan, colors, isDark, t, isArabicSyste
                 <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
                     <View style={styles.cardHeader}>
                         <Ionicons name="analytics" size={20} color="#6366f1" />
-                        <Text style={[styles.cardTitle, { color: colors.text }]}>{t('intakeAlignment') || (isArabicSystem ? 'مدى توافق الأكل مع الهدف' : 'Intake Alignment with Your Goal')}</Text>
+                        <Text style={[styles.cardTitle, { color: colors.text }]}>{t('intakeAlignment') || (isPlanContentArabic ? 'مدى توافق الأكل مع الهدف' : 'Intake Alignment with Your Goal')}</Text>
                     </View>
                     <Text style={[styles.cardText, { color: colors.mutedText }]}>{plan.intakeAlignment}</Text>
                 </View>
@@ -131,61 +140,61 @@ export default function DietPlanDisplay({ plan, colors, isDark, t, isArabicSyste
                     <View style={styles.cardHeader}>
                         <Ionicons name="information-circle" size={20} color="#6366f1" />
                         <Text style={[styles.cardTitle, { color: colors.text }]}>
-                            {isArabicSystem ? 'دليل قراءة الخطة الغذائية' : 'How to Read Your Meal Plan'}
+                            {isPlanContentArabic ? 'دليل قراءة الخطة الغذائية' : 'How to Read Your Meal Plan'}
                         </Text>
                     </View>
                     <Text style={[styles.cardText, { color: colors.mutedText, marginBottom: 10 }]}>
-                        {isArabicSystem
+                        {isPlanContentArabic
                             ? 'كل وجبة تعرض لك معلومتين مهمتين: السعرات الحقيقية والسعرات المستهدفة. اختر خياراً واحداً من كل وجبة (فطور + غداء + عشاء + سناك) وسيحسب لك التطبيق المجموع تلقائياً.'
                             : 'Each meal shows two important values: actual calories and target calories. Pick one option from each meal (breakfast + lunch + dinner + snack) and the app calculates your daily total automatically.'}
                     </Text>
                     <View style={{ gap: 8 }}>
-                        <View style={styles.legendRow}>
+                        <View style={[styles.legendRow, { flexDirection: flexDir as any }]}>
                             <View style={[styles.legendBadge, { backgroundColor: '#6366f1' }]}>
                                 <Text style={styles.legendBadgeText}>550 kcal</Text>
                             </View>
-                            <Text style={[styles.legendLabel, { color: colors.text }]}>
-                                {isArabicSystem
+                            <Text style={[styles.legendLabel, { color: colors.text, textAlign: tAlign as any }]}>
+                                {isPlanContentArabic
                                     ? 'السعرات الحقيقية — محسوبة من (بروتين×4 + كارب×4 + دهون×9)'
                                     : 'Actual calories — calculated from (protein×4 + carbs×4 + fats×9)'}
                             </Text>
                         </View>
-                        <View style={styles.legendRow}>
+                        <View style={[styles.legendRow, { flexDirection: flexDir as any }]}>
                             <View style={[styles.legendBadge, { backgroundColor: '#ef4444' }]}>
-                                <Text style={styles.legendBadgeText}>{isArabicSystem ? 'المستهدف' : 'Target'}: 600 kcal</Text>
+                                <Text style={styles.legendBadgeText}>{isPlanContentArabic ? 'المستهدف' : 'Target'}: 600 kcal</Text>
                             </View>
-                            <Text style={[styles.legendLabel, { color: colors.text }]}>
-                                {isArabicSystem
+                            <Text style={[styles.legendLabel, { color: colors.text, textAlign: tAlign as any }]}>
+                                {isPlanContentArabic
                                     ? 'السعرات المستهدفة — الحد الأقصى المخصص لهذه الوجبة من خطتك'
                                     : 'Target calories — the maximum allocated for this meal from your plan'}
                             </Text>
                         </View>
-                        <View style={styles.legendRow}>
+                        <View style={[styles.legendRow, { flexDirection: flexDir as any }]}>
                             <View style={[styles.legendBadge, { backgroundColor: '#22c55e' }]}>
-                                <Text style={styles.legendBadgeText}>{isArabicSystem ? 'ضمن الهدف ✓' : 'Within target ✓'}</Text>
+                                <Text style={styles.legendBadgeText}>{isPlanContentArabic ? 'ضمن الهدف ✓' : 'Within target ✓'}</Text>
                             </View>
-                            <Text style={[styles.legendLabel, { color: colors.text }]}>
-                                {isArabicSystem
+                            <Text style={[styles.legendLabel, { color: colors.text, textAlign: tAlign as any }]}>
+                                {isPlanContentArabic
                                     ? 'السعرات الحقيقية أقل من أو تساوي المستهدف — ممتاز!'
                                     : 'Actual calories are at or below target — great!'}
                             </Text>
                         </View>
-                        <View style={styles.legendRow}>
+                        <View style={[styles.legendRow, { flexDirection: flexDir as any }]}>
                             <View style={[styles.legendBadge, { backgroundColor: '#f59e0b' }]}>
-                                <Text style={styles.legendBadgeText}>{isArabicSystem ? 'أعلى من الهدف ⚠' : 'Above target ⚠'}</Text>
+                                <Text style={styles.legendBadgeText}>{isPlanContentArabic ? 'أعلى من الهدف ⚠' : 'Above target ⚠'}</Text>
                             </View>
-                            <Text style={[styles.legendLabel, { color: colors.text }]}>
-                                {isArabicSystem
+                            <Text style={[styles.legendLabel, { color: colors.text, textAlign: tAlign as any }]}>
+                                {isPlanContentArabic
                                     ? 'السعرات الحقيقية أعلى قليلاً من المستهدف — يمكنك تقليل الكمية'
                                     : 'Actual calories slightly exceed target — you may reduce portion size'}
                             </Text>
                         </View>
                     </View>
                     <View style={[styles.legendDivider, { borderColor: colors.border }]} />
-                    <View style={styles.legendRow}>
+                    <View style={[styles.legendRow, { flexDirection: flexDir as any }]}>
                         <Ionicons name="calculator" size={16} color="#3b82f6" />
-                        <Text style={[styles.legendLabel, { color: colors.mutedText, fontStyle: 'italic' }]}>
-                            {isArabicSystem
+                        <Text style={[styles.legendLabel, { color: colors.mutedText, textAlign: tAlign as any, fontStyle: 'italic' }]}>
+                            {isPlanContentArabic
                                 ? 'P = بروتين (جرام) | C = كارب (جرام) | F = دهون (جرام)'
                                 : 'P = Protein (g) | C = Carbs (g) | F = Fats (g)'}
                         </Text>
@@ -193,15 +202,20 @@ export default function DietPlanDisplay({ plan, colors, isDark, t, isArabicSyste
                 </View>
             )}
 
-            {plan.mealPlan && ['breakfast', 'lunch', 'dinner', 'snacks'].map((mealType) => {
+            {plan.mealPlan && activeMealKeys.map((mealType: string) => {
                 const meals = plan.mealPlan[mealType];
                 if (!meals || meals.length === 0) return null;
-                const mealIcons: Record<string, string> = { breakfast: 'sunny', lunch: 'restaurant', dinner: 'moon', snacks: 'cafe' };
+                const defaultIcons: Record<string, string> = { breakfast: 'sunny', lunch: 'restaurant', dinner: 'moon', snacks: 'cafe' };
+                const slotInfo = plan.mealSlots?.find((s: any) => s.key === mealType);
+                const mealIcon = slotInfo?.icon || defaultIcons[mealType] || 'restaurant';
+                const mealLabel = slotInfo
+                    ? (isPlanContentArabic ? slotInfo.labelAr : slotInfo.labelEn)
+                    : t(mealType);
                 return (
                     <View key={mealType} style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
                         <View style={styles.cardHeader}>
-                            <Ionicons name={mealIcons[mealType] as any} size={20} color="#f59e0b" />
-                            <Text style={[styles.cardTitle, { color: colors.text }]}>{t(mealType)}</Text>
+                            <Ionicons name={mealIcon as any} size={20} color="#f59e0b" />
+                            <Text style={[styles.cardTitle, { color: colors.text }]}>{mealLabel}</Text>
                         </View>
                         {meals.map((meal: any, idx: number) => {
                             const isSelected = selectedMeals[`${mealType}-${idx}`];
@@ -236,12 +250,12 @@ export default function DietPlanDisplay({ plan, colors, isDark, t, isArabicSyste
                                     {meal.targetCalories > 0 && (
                                         <View style={[styles.mealMacros, { marginTop: 4 }]}>
                                             <Text style={[styles.mealMacroText, { backgroundColor: '#ef4444' }]}>
-                                                {isArabicSystem ? 'المستهدف' : 'Target'}: {meal.targetCalories} kcal
+                                                {isPlanContentArabic ? 'المستهدف' : 'Target'}: {meal.targetCalories} kcal
                                             </Text>
                                             <Text style={[styles.mealMacroText, { backgroundColor: meal.calories <= meal.targetCalories ? '#22c55e' : '#f59e0b' }]}>
                                                 {meal.calories <= meal.targetCalories
-                                                    ? (isArabicSystem ? 'ضمن الهدف' : 'Within target')
-                                                    : (isArabicSystem ? 'أعلى من الهدف' : 'Above target')
+                                                    ? (isPlanContentArabic ? 'ضمن الهدف' : 'Within target')
+                                                    : (isPlanContentArabic ? 'أعلى من الهدف' : 'Above target')
                                                 }
                                             </Text>
                                         </View>
@@ -268,7 +282,7 @@ export default function DietPlanDisplay({ plan, colors, isDark, t, isArabicSyste
                             {sup.targetLabValue && (
                                 <View style={styles.targetLabRow}>
                                     <Ionicons name="flask" size={12} color="#6366f1" />
-                                    <Text style={[styles.targetLabText, { color: colors.text }]}>{isArabicSystem ? 'القيمة المستهدفة' : 'Target'}: {sup.targetLabValue}</Text>
+                                    <Text style={[styles.targetLabText, { color: colors.text }]}>{isPlanContentArabic ? 'القيمة المستهدفة' : 'Target'}: {sup.targetLabValue}</Text>
                                 </View>
                             )}
                             {sup.scientificBasis && (
@@ -333,7 +347,7 @@ export default function DietPlanDisplay({ plan, colors, isDark, t, isArabicSyste
 
             <View style={[styles.calculatorBox, { backgroundColor: isDark ? '#1e293b' : '#eff6ff', borderColor: colors.border }]}>
                 <Text style={[styles.calculatorTitle, { color: colors.text, textAlign: 'center', marginBottom: 12 }]}>
-                    {isArabicSystem ? 'مجموع الوجبات المحددة' : 'Selected Meals Total'}
+                    {isPlanContentArabic ? 'مجموع الوجبات المحددة' : 'Selected Meals Total'}
                 </Text>
 
                 <View style={styles.calculatorCalRow}>
@@ -341,14 +355,14 @@ export default function DietPlanDisplay({ plan, colors, isDark, t, isArabicSyste
                         <Ionicons name="flag" size={16} color="#ef4444" />
                         <Text style={[styles.calculatorCalValue, { color: '#ef4444' }]}>{plan.calories?.target || 0}</Text>
                         <Text style={[styles.calculatorCalLabel, { color: colors.mutedText }]}>
-                            {isArabicSystem ? 'المستهدف' : 'Target'}
+                            {isPlanContentArabic ? 'المستهدف' : 'Target'}
                         </Text>
                     </View>
                     <View style={styles.calculatorCalItem}>
                         <Ionicons name="flame" size={16} color="#6366f1" />
                         <Text style={[styles.calculatorCalValue, { color: '#6366f1' }]}>{calculatorTotals.calories}</Text>
                         <Text style={[styles.calculatorCalLabel, { color: colors.mutedText }]}>
-                            {isArabicSystem ? 'الوجبات المحددة' : 'Selected Meals'}
+                            {isPlanContentArabic ? 'الوجبات المحددة' : 'Selected Meals'}
                         </Text>
                     </View>
                     <View style={styles.calculatorCalItem}>
@@ -361,7 +375,7 @@ export default function DietPlanDisplay({ plan, colors, isDark, t, isArabicSyste
                             {calculatorTotals.calories - (plan.calories?.target || 0)}
                         </Text>
                         <Text style={[styles.calculatorCalLabel, { color: colors.mutedText }]}>
-                            {isArabicSystem ? 'الفرق' : 'Difference'}
+                            {isPlanContentArabic ? 'الفرق' : 'Difference'}
                         </Text>
                     </View>
                 </View>
@@ -371,7 +385,7 @@ export default function DietPlanDisplay({ plan, colors, isDark, t, isArabicSyste
                 <View style={styles.calculatorMacroComparison}>
                     <View style={styles.calculatorMacroItem}>
                         <Text style={[styles.calculatorMacroLabel, { color: colors.mutedText }]}>
-                            {isArabicSystem ? 'بروتين' : 'Protein'}
+                            {isPlanContentArabic ? 'بروتين' : 'Protein'}
                         </Text>
                         <Text style={[styles.calculatorMacroValue, { color: '#1e3a5f' }]}>
                             {calculatorTotals.protein}g / {plan.macros?.protein?.grams || 0}g
@@ -382,7 +396,7 @@ export default function DietPlanDisplay({ plan, colors, isDark, t, isArabicSyste
                     </View>
                     <View style={styles.calculatorMacroItem}>
                         <Text style={[styles.calculatorMacroLabel, { color: colors.mutedText }]}>
-                            {isArabicSystem ? 'كربوهيدرات' : 'Carbs'}
+                            {isPlanContentArabic ? 'كربوهيدرات' : 'Carbs'}
                         </Text>
                         <Text style={[styles.calculatorMacroValue, { color: '#78350f' }]}>
                             {calculatorTotals.carbs}g / {plan.macros?.carbs?.grams || 0}g
@@ -393,7 +407,7 @@ export default function DietPlanDisplay({ plan, colors, isDark, t, isArabicSyste
                     </View>
                     <View style={styles.calculatorMacroItem}>
                         <Text style={[styles.calculatorMacroLabel, { color: colors.mutedText }]}>
-                            {isArabicSystem ? 'دهون' : 'Fats'}
+                            {isPlanContentArabic ? 'دهون' : 'Fats'}
                         </Text>
                         <Text style={[styles.calculatorMacroValue, { color: '#831843' }]}>
                             {calculatorTotals.fats}g / {plan.macros?.fats?.grams || 0}g
@@ -408,7 +422,7 @@ export default function DietPlanDisplay({ plan, colors, isDark, t, isArabicSyste
     );
 }
 
-const getStyles = () => StyleSheet.create({
+const getStyles = (tAlign: 'left' | 'right', flexDir: 'row' | 'row-reverse') => StyleSheet.create({
     container: {
         width: '100%',
         gap: 16,
@@ -420,7 +434,7 @@ const getStyles = () => StyleSheet.create({
         marginBottom: 4,
     },
     cardHeader: {
-        flexDirection: 'row',
+        flexDirection: flexDir,
         alignItems: 'center',
         marginBottom: 12,
         gap: 8,
@@ -428,15 +442,15 @@ const getStyles = () => StyleSheet.create({
     cardTitle: {
         fontSize: 18,
         fontWeight: '700',
-        textAlign: 'left',
+        textAlign: tAlign,
     },
     cardText: {
         fontSize: 14,
         lineHeight: 22,
-        textAlign: 'left',
+        textAlign: tAlign,
     },
     calorieRow: {
-        flexDirection: 'row',
+        flexDirection: flexDir,
         justifyContent: 'space-between',
         paddingTop: 8,
         borderTopWidth: 1,
@@ -457,7 +471,7 @@ const getStyles = () => StyleSheet.create({
         marginTop: 4,
     },
     macroRow: {
-        flexDirection: 'row',
+        flexDirection: flexDir,
         justifyContent: 'center',
         gap: 12,
         marginTop: 16,
@@ -479,7 +493,7 @@ const getStyles = () => StyleSheet.create({
         marginBottom: 10,
     },
     mealHeaderRow: {
-        flexDirection: 'row',
+        flexDirection: flexDir,
         justifyContent: 'space-between',
         alignItems: 'center',
         marginBottom: 6,
@@ -488,22 +502,22 @@ const getStyles = () => StyleSheet.create({
         fontSize: 14,
         fontWeight: '600',
         color: '#6b7280',
-        textAlign: 'left',
+        textAlign: tAlign,
     },
     mealName: {
         fontSize: 16,
         fontWeight: '700',
         marginBottom: 4,
-        textAlign: 'left',
+        textAlign: tAlign,
     },
     mealDesc: {
         fontSize: 13,
         lineHeight: 20,
         marginBottom: 8,
-        textAlign: 'left',
+        textAlign: tAlign,
     },
     mealMacros: {
-        flexDirection: 'row',
+        flexDirection: flexDir,
         flexWrap: 'wrap',
         gap: 8,
         marginBottom: 8,
@@ -522,7 +536,7 @@ const getStyles = () => StyleSheet.create({
         fontSize: 12,
         fontStyle: 'italic',
         lineHeight: 18,
-        textAlign: 'left',
+        textAlign: tAlign,
     },
     supplementItem: {
         marginBottom: 16,
@@ -531,15 +545,15 @@ const getStyles = () => StyleSheet.create({
         fontSize: 15,
         fontWeight: '600',
         marginBottom: 4,
-        textAlign: 'left',
+        textAlign: tAlign,
     },
     supplementDetail: {
         fontSize: 13,
         marginBottom: 2,
-        textAlign: 'left',
+        textAlign: tAlign,
     },
     targetLabRow: {
-        flexDirection: 'row',
+        flexDirection: flexDir,
         alignItems: 'center',
         gap: 6,
         marginTop: 4,
@@ -547,10 +561,10 @@ const getStyles = () => StyleSheet.create({
     targetLabText: {
         fontSize: 12,
         fontWeight: '600',
-        textAlign: 'left',
+        textAlign: tAlign,
     },
     scientificRow: {
-        flexDirection: 'row',
+        flexDirection: flexDir,
         alignItems: 'flex-start',
         gap: 6,
         marginTop: 4,
@@ -558,13 +572,13 @@ const getStyles = () => StyleSheet.create({
     scientificText: {
         fontSize: 12,
         flex: 1,
-        textAlign: 'left',
+        textAlign: tAlign,
     },
     supplementFoods: {
         fontSize: 12,
         marginTop: 6,
         fontStyle: 'italic',
-        textAlign: 'left',
+        textAlign: tAlign,
     },
     tipItem: {
         marginBottom: 12,
@@ -573,25 +587,25 @@ const getStyles = () => StyleSheet.create({
         fontSize: 15,
         fontWeight: '600',
         marginBottom: 6,
-        textAlign: 'left',
+        textAlign: tAlign,
     },
     tipAdvice: {
         fontSize: 14,
         lineHeight: 22,
         marginBottom: 4,
-        textAlign: 'left',
+        textAlign: tAlign,
     },
     tipAvoid: {
         fontSize: 13,
         fontStyle: 'italic',
         marginTop: 4,
-        textAlign: 'left',
+        textAlign: tAlign,
     },
     tipText: {
         fontSize: 14,
         lineHeight: 22,
         marginBottom: 8,
-        textAlign: 'left',
+        textAlign: tAlign,
     },
     referencesList: {
         gap: 6,
@@ -599,7 +613,7 @@ const getStyles = () => StyleSheet.create({
     referenceText: {
         fontSize: 12,
         lineHeight: 18,
-        textAlign: 'left',
+        textAlign: tAlign,
     },
     calculatorBox: {
         borderWidth: 1,
@@ -610,10 +624,10 @@ const getStyles = () => StyleSheet.create({
     calculatorTitle: {
         fontSize: 16,
         fontWeight: '700',
-        textAlign: 'left',
+        textAlign: tAlign,
     },
     calculatorCalRow: {
-        flexDirection: 'row',
+        flexDirection: flexDir,
         justifyContent: 'space-around',
         alignItems: 'center',
         marginBottom: 12,

@@ -1489,6 +1489,7 @@ export async function registerRoutes(
           proteinPreference: profile?.proteinPreference ?? "mixed",
           proteinPreferences: profile?.proteinPreferences ?? [],
           carbPreferences: profile?.carbPreferences ?? [],
+          mealDistribution: profile?.mealDistribution ?? "auto",
           customTargetCalories,
           language,
           testResults: testResultsData,
