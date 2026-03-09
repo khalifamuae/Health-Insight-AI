@@ -59,10 +59,10 @@ export interface DietPlanResult {
   deficiencies: { name: string; current: string; target: string; foods: string[]; absorptionTip: string }[];
   supplements: { name: string; dosage: string; reason: string; duration: string; foodSources: string[]; targetLabValue: string; scientificBasis: string; timingAdvice: string; interactions: string }[];
   mealPlan: {
-    breakfast: { name: string; description: string; calories: number; protein: number; carbs: number; fats: number; fiber: number; benefits: string; preparationTip: string }[];
-    lunch: { name: string; description: string; calories: number; protein: number; carbs: number; fats: number; fiber: number; benefits: string; preparationTip: string }[];
-    dinner: { name: string; description: string; calories: number; protein: number; carbs: number; fats: number; fiber: number; benefits: string; preparationTip: string }[];
-    snacks: { name: string; description: string; calories: number; protein: number; carbs: number; fats: number; fiber: number; benefits: string; preparationTip: string }[];
+    breakfast: { name: string; description: string; calories: number; targetCalories: number; protein: number; carbs: number; fats: number; fiber: number; benefits: string; preparationTip: string }[];
+    lunch: { name: string; description: string; calories: number; targetCalories: number; protein: number; carbs: number; fats: number; fiber: number; benefits: string; preparationTip: string }[];
+    dinner: { name: string; description: string; calories: number; targetCalories: number; protein: number; carbs: number; fats: number; fiber: number; benefits: string; preparationTip: string }[];
+    snacks: { name: string; description: string; calories: number; targetCalories: number; protein: number; carbs: number; fats: number; fiber: number; benefits: string; preparationTip: string }[];
   };
   mealTimingAdvice: string;
   tips: string[];
@@ -94,7 +94,10 @@ function calculateTDEE(bmr: number, activityLevel: string): number {
 }
 
 function calculateTEF(targetCalories: number, proteinGrams: number, carbGrams: number, fatGrams: number): number {
-  return Math.round(proteinGrams * 4 * 0.25 + carbGrams * 4 * 0.08 + fatGrams * 9 * 0.03);
+  const proteinTEF = 0.25;
+  const carbTEF = 0.075;
+  const fatTEF = 0.015;
+  return Math.round(proteinGrams * 4 * proteinTEF + carbGrams * 4 * carbTEF + fatGrams * 9 * fatTEF);
 }
 
 function calculateFiberTarget(targetCalories: number, gender: string): number {
@@ -111,15 +114,14 @@ function calculateWaterIntake(weight: number, activityLevel: string): number {
 
 function getTargetCalories(tdee: number, bmr: number, goal: string, hasSevereDeficiency: boolean): { target: number; delta: number } {
   if (goal === "weight_loss") {
-    let deficit = 500;
-    if (hasSevereDeficiency) {
-      deficit = 200;
-    }
+    const deficitPercent = hasSevereDeficiency ? 0.08 : 0.15;
+    const deficit = Math.round(tdee * deficitPercent);
     const target = Math.max(Math.round(tdee - deficit), bmr);
     return { target, delta: target - tdee };
   }
   if (goal === "muscle_gain") {
-    return { target: Math.round(tdee + 300), delta: 300 };
+    const surplus = Math.round(tdee * 0.10);
+    return { target: Math.round(tdee + surplus), delta: surplus };
   }
   return { target: tdee, delta: 0 };
 }
@@ -464,9 +466,9 @@ export async function generateDietPlan(userData: UserHealthData, onProgress?: Pr
 
   const deficiencyCalorieNote = hasSevereDeficiency
     ? isArabic
-      ? `\n⚠️ تنبيه مهم: تم اكتشاف نقص في عناصر غذائية حيوية (${severeDeficiencyList.join("، ")}). لذلك ${goal === "weight_loss" ? "تم تخفيف العجز الحراري إلى 200 سعرة فقط بدلاً من 500 لضمان حصول الجسم على ما يكفي من العناصر الغذائية أثناء نزول الوزن. الأولوية هي تصحيح النواقص أولاً." : "الأولوية هي تصحيح هذه النواقص من خلال الغذاء الطبيعي قبل التركيز على السعرات."}
+      ? `\n⚠️ تنبيه مهم: تم اكتشاف نقص في عناصر غذائية حيوية (${severeDeficiencyList.join("، ")}). لذلك ${goal === "weight_loss" ? "تم تخفيف العجز الحراري إلى 8% فقط من TDEE بدلاً من 15% لضمان حصول الجسم على ما يكفي من العناصر الغذائية أثناء نزول الوزن. الأولوية هي تصحيح النواقص أولاً." : "الأولوية هي تصحيح هذه النواقص من خلال الغذاء الطبيعي قبل التركيز على السعرات."}
 - لا تقترح أي خطة غذائية تقل سعراتها عن BMR (${bmr} سعرة). هذا الحد الأدنى الآمن لوظائف الجسم الحيوية.`
-      : `\nIMPORTANT: Severe nutritional deficiencies detected (${severeDeficiencyList.join(", ")}). Therefore ${goal === "weight_loss" ? "the calorie deficit has been reduced to only 200 kcal instead of 500 to ensure the body gets enough nutrients while losing weight. Priority is correcting deficiencies first." : "priority is correcting these deficiencies through natural food before focusing on calories."}
+      : `\nIMPORTANT: Severe nutritional deficiencies detected (${severeDeficiencyList.join(", ")}). Therefore ${goal === "weight_loss" ? "the calorie deficit has been reduced to only 8% of TDEE instead of 15% to ensure the body gets enough nutrients while losing weight. Priority is correcting deficiencies first." : "priority is correcting these deficiencies through natural food before focusing on calories."}
 - NEVER suggest a diet plan below BMR (${bmr} kcal). This is the minimum safe threshold for vital body functions.`
     : isArabic
       ? `\n- لا تقترح أي خطة غذائية تقل سعراتها عن BMR (${bmr} سعرة). هذا الحد الأدنى الآمن لوظائف الجسم الحيوية.`
@@ -501,7 +503,7 @@ export async function generateDietPlan(userData: UserHealthData, onProgress?: Pr
 📊 المرحلة 2: حسابات الطاقة المتقدمة (Advanced Energy Calculations)
 - BMR = ${bmr} سعرة (معادلة Mifflin-St Jeor 1990 - المرجع الذهبي لحساب الأيض الأساسي)
 - TDEE = ${tdee} سعرة (بناءً على مستوى النشاط: ${activityLabels[activityLevel]?.ar || activityLevel} - معامل النشاط وفق ACSM)
-- TEF (التأثير الحراري للغذاء) = ${tef} سعرة (Thermic Effect of Food: بروتين 25%، كربوهيدرات 8%، دهون 3%)
+- TEF (التأثير الحراري للغذاء) = ${tef} سعرة (Thermic Effect of Food: بروتين ~25% من مدى 20-30%، كربوهيدرات ~7.5% من مدى 5-10%، دهون ~1.5% من مدى 0-3%)
 - السعرات المستهدفة = ${targetCalories} سعرة
 - الألياف المستهدفة = ${fiberTarget} جرام/يوم (وفق توصيات ADA 2005: 14 جرام/1000 سعرة)
 - الماء المستهدف = ${waterTarget} لتر/يوم (بناءً على الوزن ومستوى النشاط - EFSA Guidelines)
@@ -567,14 +569,16 @@ ${customCalorieInstruction}
 - اجعل كل وجبة عملية ويمكن تحضيرها في 15-30 دقيقة بمكونات متوفرة
 
 - ⚠️⚠️ قاعدة إلزامية: يجب تقديم بالضبط 5 خيارات مختلفة ومتنوعة لكل وجبة (فطور = 5 خيارات، غداء = 5 خيارات، عشاء = 5 خيارات، وجبات خفيفة = 5 خيارات). المجموع = 20 خيار وجبة. هذا شرط أساسي لا يمكن تجاوزه. لكي يختار المستخدم ما يناسبه ويغير يومياً
-- ⚠️⚠️⚠️ قاعدة السعرات الحرارية الأهم: يجب أن يكون مجموع سعرات (1 فطور + 1 غداء + 1 عشاء + 1 سناك) = ${targetCalories} سعرة بالضبط. لتحقيق ذلك:
-  * كل خيار فطور = ${breakfastCalories} سعرة بالضبط (25% من المستهدف)
-  * كل خيار غداء = ${lunchCalories} سعرة بالضبط (35% من المستهدف)
-  * كل خيار عشاء = ${dinnerCalories} سعرة بالضبط (30% من المستهدف)
-  * كل خيار سناك = ${snackCalories} سعرة بالضبط (10% من المستهدف)
-  * المجموع: ${breakfastCalories} + ${lunchCalories} + ${dinnerCalories} + ${snackCalories} = ${targetCalories} سعرة
-  * هذا يضمن أن المستخدم عندما يختار أي خيار من كل وجبة، المجموع الكلي = السعرات المستهدفة بالضبط
-  * لا يُسمح بأي انحراف في سعرات الوجبة عن القيمة المحددة أعلاه (هامش ±5 سعرات فقط)${proteinInstruction}${carbInstruction}
+- ⚠️⚠️⚠️ قاعدة السعرات الحرارية الأهم: يجب أن يكون مجموع سعرات (1 فطور + 1 غداء + 1 عشاء + 1 سناك) أقل قليلاً أو يساوي ${targetCalories} سعرة. لتحقيق ذلك:
+  * السعرات المستهدفة للفطور = ${breakfastCalories} سعرة (25% من المستهدف) → صمم كل خيار ليكون أقل قليلاً أو مساوياً
+  * السعرات المستهدفة للغداء = ${lunchCalories} سعرة (35% من المستهدف) → صمم كل خيار ليكون أقل قليلاً أو مساوياً
+  * السعرات المستهدفة للعشاء = ${dinnerCalories} سعرة (30% من المستهدف) → صمم كل خيار ليكون أقل قليلاً أو مساوياً
+  * السعرات المستهدفة للسناك = ${snackCalories} سعرة (10% من المستهدف) → صمم كل خيار ليكون أقل قليلاً أو مساوياً
+  * ⚠️⚠️⚠️ السعرات الحقيقية يتم حسابها بالمعادلة: calories = (protein × 4) + (carbs × 4) + (fats × 9)
+  * يجب أن تكون قيم البروتين والكارب والدهون بالجرامات دقيقة 100% لأن السيرفر سيعيد حساب السعرات منها تلقائياً
+  * لا تكتب سعرات عشوائية في حقل calories - اكتب القيمة الناتجة من المعادلة أعلاه
+  * مثال: إذا كانت الوجبة تحتوي على P:30g, C:40g, F:12g → calories = (30×4)+(40×4)+(12×9) = 120+160+108 = 388 سعرة
+  * السعرات الحقيقية يجب أن تكون في نطاق 90%-100% من السعرات المستهدفة للوجبة (أقل قليلاً مقبول، أكثر غير مقبول)${proteinInstruction}${carbInstruction}
 - ⚠️ قاعدة ذهبية: لا تضع أي مكون لم يختره المستخدم. النظام مبني فقط على اختيارات المستخدم من البروتين والكربوهيدرات. إذا لم يختر مصدراً معيناً، لا تدرجه في أي وجبة
 - ${goal === "weight_loss" ? "ركز على وجبات مشبعة ومنخفضة السعرات وغنية بالبروتين والألياف" : ""}
 - ${goal === "muscle_gain" ? "ركز على مصادر غذاء نظيفة وصحية فقط (لا وجبات سريعة، لا دهون مشبعة مفرطة)" : ""}
@@ -657,7 +661,7 @@ PHASE 1: Clinical & Physical Assessment
 PHASE 2: Advanced Energy Calculations
 - BMR = ${bmr} kcal (Mifflin-St Jeor equation 1990 - gold standard for basal metabolic rate)
 - TDEE = ${tdee} kcal (based on activity level: ${activityLabels[activityLevel]?.en || activityLevel} - ACSM activity factor)
-- TEF (Thermic Effect of Food) = ${tef} kcal (Protein 25%, Carbs 8%, Fats 3%)
+- TEF (Thermic Effect of Food) = ${tef} kcal (Protein ~25% of 20-30% range, Carbs ~7.5% of 5-10% range, Fats ~1.5% of 0-3% range)
 - Target Calories = ${targetCalories} kcal
 - Fiber Target = ${fiberTarget} g/day (per ADA 2005 recommendations: 14g/1000 kcal)
 - Water Target = ${waterTarget} L/day (based on weight and activity level - EFSA Guidelines)
@@ -723,14 +727,16 @@ Protocol Instructions:
 - Every meal should be practical and preparable in 15-30 minutes with commonly available ingredients
 
 - MANDATORY: Provide EXACTLY 5 different varied options for each meal (breakfast = 5 options, lunch = 5 options, dinner = 5 options, snacks = 5 options). Total = 20 meal options. This is a NON-NEGOTIABLE requirement. The user needs to choose and rotate daily
-- ⚠️⚠️⚠️ MOST CRITICAL CALORIE RULE: The sum of calories from (1 breakfast + 1 lunch + 1 dinner + 1 snack) MUST equal EXACTLY ${targetCalories} kcal. To achieve this:
-  * Every breakfast option = EXACTLY ${breakfastCalories} kcal (25% of target)
-  * Every lunch option = EXACTLY ${lunchCalories} kcal (35% of target)
-  * Every dinner option = EXACTLY ${dinnerCalories} kcal (30% of target)
-  * Every snack option = EXACTLY ${snackCalories} kcal (10% of target)
-  * Total: ${breakfastCalories} + ${lunchCalories} + ${dinnerCalories} + ${snackCalories} = ${targetCalories} kcal
-  * This ensures that when the user picks ANY option from each meal, the total daily calories = target calories EXACTLY
-  * NO deviation allowed from the specified calories per meal (tolerance: ±5 kcal only)${proteinInstruction}${carbInstruction}
+- ⚠️⚠️⚠️ MOST CRITICAL CALORIE RULE: The sum of calories from (1 breakfast + 1 lunch + 1 dinner + 1 snack) must be slightly below or equal to ${targetCalories} kcal. To achieve this:
+  * Target calories for breakfast = ${breakfastCalories} kcal (25% of target) → design each option to be slightly below or equal
+  * Target calories for lunch = ${lunchCalories} kcal (35% of target) → design each option to be slightly below or equal
+  * Target calories for dinner = ${dinnerCalories} kcal (30% of target) → design each option to be slightly below or equal
+  * Target calories for snack = ${snackCalories} kcal (10% of target) → design each option to be slightly below or equal
+  * ⚠️⚠️⚠️ REAL calories are calculated by the formula: calories = (protein × 4) + (carbs × 4) + (fats × 9)
+  * The protein, carbs, and fats values in grams MUST be 100% accurate because the server will RECALCULATE calories from them automatically
+  * Do NOT write random calorie numbers in the calories field - write the value resulting from the formula above
+  * Example: If a meal has P:30g, C:40g, F:12g → calories = (30×4)+(40×4)+(12×9) = 120+160+108 = 388 kcal
+  * Real calories must be in the range 90%-100% of the target calories per meal (slightly below is OK, above is NOT)${proteinInstruction}${carbInstruction}
 - GOLDEN RULE: Do NOT include any ingredient the user did NOT select. The protocol is built EXCLUSIVELY from the user's protein and carbohydrate choices. If a source was not selected, it MUST NOT appear in any meal
 - ${goal === "weight_loss" ? "Focus on satiating, low-calorie meals rich in protein and fiber" : ""}
 - ${goal === "muscle_gain" ? "Focus on clean, healthy food sources ONLY (no fast food, no excessive saturated fats)" : ""}
@@ -978,23 +984,30 @@ ${hasCustomTargetCalories && normalizedCustomTargetCalories ? `11. Mandatory: Ke
 
     const isPlaceholder = (val: string) => !val || val === "..." || val === "…" || val.trim().length < 3;
 
-    const cleanMeal = (m: any) => ({
-      name: m.name || "",
-      description: m.description || "",
-      calories: m.calories || 0,
-      protein: m.protein || 0,
-      carbs: m.carbs || 0,
-      fats: m.fats || 0,
-      fiber: m.fiber || 0,
-      benefits: m.benefits || "",
-      preparationTip: m.preparationTip || "",
-    });
+    const cleanMeal = (m: any, mealTargetCal: number) => {
+      const protein = m.protein || 0;
+      const carbs = m.carbs || 0;
+      const fats = m.fats || 0;
+      const realCalories = Math.round((protein * 4) + (carbs * 4) + (fats * 9));
+      return {
+        name: m.name || "",
+        description: m.description || "",
+        calories: realCalories,
+        targetCalories: mealTargetCal,
+        protein,
+        carbs,
+        fats,
+        fiber: m.fiber || 0,
+        benefits: m.benefits || "",
+        preparationTip: m.preparationTip || "",
+      };
+    };
 
     const sanitizedMealPlan = {
-      breakfast: (parsed.mealPlan?.breakfast || []).map(cleanMeal),
-      lunch: (parsed.mealPlan?.lunch || []).map(cleanMeal),
-      dinner: (parsed.mealPlan?.dinner || []).map(cleanMeal),
-      snacks: (parsed.mealPlan?.snacks || []).map(cleanMeal),
+      breakfast: (parsed.mealPlan?.breakfast || []).map((m: any) => cleanMeal(m, breakfastCalories)),
+      lunch: (parsed.mealPlan?.lunch || []).map((m: any) => cleanMeal(m, lunchCalories)),
+      dinner: (parsed.mealPlan?.dinner || []).map((m: any) => cleanMeal(m, dinnerCalories)),
+      snacks: (parsed.mealPlan?.snacks || []).map((m: any) => cleanMeal(m, snackCalories)),
     };
 
     let incompleteMeals = 0;
@@ -1012,13 +1025,15 @@ ${hasCustomTargetCalories && normalizedCustomTargetCalories ? `11. Mandatory: Ke
       if ((meals as any[]).length < 1) {
         console.warn(`WARNING: ${section} has 0 options - will use fallback`);
         emptySections++;
+        const fallbackTarget = section === 'breakfast' ? breakfastCalories : section === 'lunch' ? lunchCalories : section === 'dinner' ? dinnerCalories : snackCalories;
         (sanitizedMealPlan as any)[section] = [{
           name: section === 'breakfast' ? (isArabic ? 'وجبة فطور متوازنة' : 'Balanced Breakfast') :
             section === 'lunch' ? (isArabic ? 'وجبة غداء متوازنة' : 'Balanced Lunch') :
               section === 'dinner' ? (isArabic ? 'وجبة عشاء متوازنة' : 'Balanced Dinner') :
                 (isArabic ? 'وجبة خفيفة' : 'Healthy Snack'),
           description: isArabic ? 'وجبة صحية متوازنة تحتوي على بروتين وكربوهيدرات ودهون صحية' : 'A balanced healthy meal with protein, carbs and healthy fats',
-          calories: Math.round((targetCalories || 2000) * (section === 'snacks' ? 0.1 : 0.3)),
+          calories: Math.round((25 * 4) + (35 * 4) + (12 * 9)),
+          targetCalories: fallbackTarget,
           protein: 25, carbs: 35, fats: 12,
           benefits: isArabic ? 'تغذية متوازنة للجسم' : 'Balanced nutrition for the body',
         }];
