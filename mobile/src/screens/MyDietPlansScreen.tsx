@@ -164,8 +164,8 @@ export default function MyDietPlansScreen({ navigation }: any) {
 
           return (
             <View key={plan.id} style={[styles.planCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-              <View style={styles.planHeaderContainer}>
-                <TouchableOpacity activeOpacity={0.7} style={styles.planHeader} onPress={() => toggleExpand(plan.id, plan.planData)}>
+              <View style={[styles.planHeaderContainer, isArabic && { flexDirection: 'row-reverse' }]}>
+                <TouchableOpacity activeOpacity={0.7} style={[styles.planHeader, isArabic && { flexDirection: 'row-reverse' }]} onPress={() => toggleExpand(plan.id, plan.planData)}>
                   <View>
                     <Text style={[styles.planTitle, { color: colors.text }]}>
                       {isArabic ? `الخطة رقم ${savedPlansList.length - index}` : `Plan #${savedPlansList.length - index}`}
@@ -224,7 +224,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     paddingHorizontal: 12,
     paddingVertical: 10,
-    flexDirection: 'row',
+    flexDirection: isArabic ? 'row-reverse' : 'row',
     alignItems: 'center',
     gap: 8,
   },
@@ -232,7 +232,8 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 13,
     lineHeight: 18,
-    textAlign: 'left',
+    textAlign: isArabic ? 'right' : 'left',
+    writingDirection: isArabic ? 'rtl' : 'ltr',
   },
   infoText: {
     fontSize: 14,
@@ -251,12 +252,14 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '700',
     textAlign: 'center',
+    writingDirection: isArabic ? 'rtl' : 'ltr',
   },
   emptyDesc: {
     marginTop: 6,
     fontSize: 13,
     textAlign: 'center',
     lineHeight: 18,
+    writingDirection: isArabic ? 'rtl' : 'ltr',
   },
   planCard: {
     borderWidth: 1,
@@ -283,10 +286,12 @@ const styles = StyleSheet.create({
   planTitle: {
     fontSize: 15,
     fontWeight: '700',
+    writingDirection: isArabic ? 'rtl' : 'ltr',
   },
   planDate: {
     fontSize: 12,
     marginTop: 4,
+    writingDirection: isArabic ? 'rtl' : 'ltr',
   },
   planContentContainer: {
     marginTop: 12,
