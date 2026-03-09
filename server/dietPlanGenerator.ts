@@ -1172,14 +1172,19 @@ ${hasCustomTargetCalories && normalizedCustomTargetCalories ? `11. Mandatory: Ke
         const fallbackName = slotInfo
           ? (isArabic ? `وجبة ${slotInfo.labelAr} متوازنة` : `Balanced ${slotInfo.labelEn}`)
           : (isArabic ? 'وجبة متوازنة' : 'Balanced Meal');
-        sanitizedMealPlan[section] = [{
-          name: fallbackName,
-          description: isArabic ? 'وجبة صحية متوازنة تحتوي على بروتين وكربوهيدرات ودهون صحية' : 'A balanced healthy meal with protein, carbs and healthy fats',
-          calories: Math.round((25 * 4) + (35 * 4) + (12 * 9)),
-          targetCalories: fallbackTarget,
-          protein: 25, carbs: 35, fats: 12,
-          benefits: isArabic ? 'تغذية متوازنة للجسم' : 'Balanced nutrition for the body',
-        }];
+        // Bug 2 fix: fallback uses real ingredients, not hardcoded macros
+        const fallbackIngredients = section === 'snacks' || section === 'snack1'
+          ? [
+            { name: isArabic ? 'زبادي يوناني قليل الدسم' : 'Low-fat Greek yogurt', quantity: 150, unit: 'g', state: 'any', nutritionBasis: 'per_100g', protein: 10, carbs: 3.6, fat: 0.7, calories: 59, fiber: 0, sourceReference: 'USDA FoodData Central', sourceConfidence: 'high' },
+            { name: isArabic ? 'لوز' : 'Almonds', quantity: 15, unit: 'g', state: 'raw', nutritionBasis: 'per_100g', protein: 21.2, carbs: 21.6, fat: 49.9, calories: 579, fiber: 12.5, sourceReference: 'USDA FoodData Central', sourceConfidence: 'high' },
+          ]
+          : [
+            { name: isArabic ? 'صدر دجاج مشوي' : 'Grilled chicken breast', quantity: 150, unit: 'g', state: 'cooked', nutritionBasis: 'per_100g', protein: 31, carbs: 0, fat: 3.6, calories: 165, fiber: 0, sourceReference: 'USDA FoodData Central', sourceConfidence: 'high' },
+            { name: isArabic ? 'أرز بني مطبوخ' : 'Cooked brown rice', quantity: 100, unit: 'g', state: 'cooked', nutritionBasis: 'per_100g', protein: 2.6, carbs: 23, fat: 0.9, calories: 112, fiber: 1.8, sourceReference: 'USDA FoodData Central', sourceConfidence: 'high' },
+            { name: isArabic ? 'بروكلي مسلوق' : 'Steamed broccoli', quantity: 100, unit: 'g', state: 'cooked', nutritionBasis: 'per_100g', protein: 2.8, carbs: 7, fat: 0.4, calories: 35, fiber: 3.3, sourceReference: 'USDA FoodData Central', sourceConfidence: 'high' },
+          ];
+        const fallbackMeal = cleanMeal({ name: fallbackName, benefits: isArabic ? 'تغذية متوازنة للجسم' : 'Balanced nutrition for the body', preparationTip: '', ingredients: fallbackIngredients }, fallbackTarget);
+        sanitizedMealPlan[section] = [fallbackMeal];
       }
     }
 
@@ -1220,17 +1225,20 @@ ${hasCustomTargetCalories && normalizedCustomTargetCalories ? `11. Mandatory: Ke
       console.log(`[Clinical QC] Calorie target met: target=${targetCalories}, plan avg=${Math.round(totalAvgCalories)} (${(calorieDeviation * 100).toFixed(0)}% deviation)`);
     }
 
-    const allIngredients = [];
+    // Collect RAW AI ingredients (per-100g base values) for database cache
+    const rawIngredientsForCache: any[] = [];
     for (const [section, meals] of Object.entries(sanitizedMealPlan)) {
-      for (const meal of meals as any[]) {
-        if (Array.isArray(meal.ingredients)) {
-          allIngredients.push(...meal.ingredients);
+      // Access the original parsed data to get raw base values
+      const originalMeals = parsed.mealPlan?.[section] || [];
+      for (const origMeal of originalMeals) {
+        if (Array.isArray(origMeal?.ingredients)) {
+          rawIngredientsForCache.push(...origMeal.ingredients);
         }
       }
     }
 
-    // Fire and forget cache save
-    saveValidatedIngredients(allIngredients).catch(err => console.error("Cache save error:", err));
+    // Fire and forget cache save with RAW per-100g base values
+    saveValidatedIngredients(rawIngredientsForCache).catch(err => console.error("Cache save error:", err));
 
     const result: DietPlanResult = {
       healthSummary: parsed.healthSummary || "",
