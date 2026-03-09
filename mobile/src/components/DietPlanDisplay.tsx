@@ -19,7 +19,8 @@ export default function DietPlanDisplay({ plan, colors, isDark, t, isArabicSyste
     const directionStyle = { direction: isPlanContentArabic ? 'rtl' : 'ltr' } as const;
     const tAlign = isPlanContentArabic ? 'right' : 'left';
     const flexDir = isPlanContentArabic ? 'row-reverse' : 'row';
-    const styles = React.useMemo(() => getStyles(tAlign, flexDir), [tAlign, flexDir]);
+    const writeDir = isPlanContentArabic ? 'rtl' : 'ltr';
+    const styles = React.useMemo(() => getStyles(tAlign, flexDir, writeDir), [tAlign, flexDir, writeDir]);
 
     useEffect(() => {
         const initialSelection: Record<string, boolean> = {};
@@ -77,9 +78,9 @@ export default function DietPlanDisplay({ plan, colors, isDark, t, isArabicSyste
                 <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
                     <View style={styles.cardHeader}>
                         <Ionicons name="heart" size={20} color="#ef4444" />
-                        <Text style={[styles.cardTitle, { color: colors.text }]}>{t('healthSummary')}</Text>
+                        <Text style={[styles.cardTitle, { color: colors.text }, isPlanContentArabic && { writingDirection: 'rtl' }]}>{t('healthSummary')}</Text>
                     </View>
-                    <Text style={[styles.cardText, { color: colors.mutedText }]}>{plan.healthSummary}</Text>
+                    <Text style={[styles.cardText, { color: colors.mutedText }, isPlanContentArabic && { writingDirection: 'rtl' }]}>{plan.healthSummary}</Text>
                 </View>
             )}
 
@@ -357,7 +358,7 @@ export default function DietPlanDisplay({ plan, colors, isDark, t, isArabicSyste
     );
 }
 
-const getStyles = (tAlign: 'left' | 'right', flexDir: 'row' | 'row-reverse') => StyleSheet.create({
+const getStyles = (tAlign: 'left' | 'right', flexDir: 'row' | 'row-reverse', writeDir: 'rtl' | 'ltr') => StyleSheet.create({
     container: {
         width: '100%',
         gap: 16,
@@ -378,11 +379,13 @@ const getStyles = (tAlign: 'left' | 'right', flexDir: 'row' | 'row-reverse') => 
         fontSize: 18,
         fontWeight: '700',
         textAlign: tAlign,
+        writingDirection: writeDir,
     },
     cardText: {
         fontSize: 14,
         lineHeight: 22,
         textAlign: tAlign,
+        writingDirection: writeDir,
     },
     calorieRow: {
         flexDirection: flexDir,
@@ -438,18 +441,21 @@ const getStyles = (tAlign: 'left' | 'right', flexDir: 'row' | 'row-reverse') => 
         fontWeight: '600',
         color: '#6b7280',
         textAlign: tAlign,
+        writingDirection: writeDir,
     },
     mealName: {
         fontSize: 16,
         fontWeight: '700',
         marginBottom: 4,
         textAlign: tAlign,
+        writingDirection: writeDir,
     },
     mealDesc: {
         fontSize: 13,
         lineHeight: 20,
         marginBottom: 8,
         textAlign: tAlign,
+        writingDirection: writeDir,
     },
     mealMacros: {
         flexDirection: flexDir,
@@ -591,11 +597,13 @@ const getStyles = (tAlign: 'left' | 'right', flexDir: 'row' | 'row-reverse') => 
         fontSize: 11,
         fontWeight: '700',
         color: '#ffffff',
+        writingDirection: writeDir,
     },
     legendLabel: {
         fontSize: 12,
         lineHeight: 18,
         flex: 1,
+        writingDirection: writeDir,
     },
     legendDivider: {
         borderTopWidth: 1,

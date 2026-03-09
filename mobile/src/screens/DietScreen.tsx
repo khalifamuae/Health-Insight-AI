@@ -403,10 +403,16 @@ export default function DietScreen({ navigation, route }: any) {
 
   if (step === 'result' && plan) {
     return (
-      <View style={styles.container}>
-        <ScrollView style={{ backgroundColor: colors.background }} contentContainerStyle={styles.content}>
-          <Text style={[styles.resultTitle, { color: colors.text, marginBottom: 16 }]}>{t('dietPlanReady')}</Text>
+      <View style={[styles.container, { paddingBottom: 0 }]}>
+        <View style={[styles.resultHeader, { backgroundColor: isDark ? '#1e293b' : '#ffffff', borderBottomColor: colors.border }]}>
+          <TouchableOpacity onPress={() => { setPlan(null); setStep('intro'); }} style={styles.backButtonTop} testID="button-back-result">
+            <Ionicons name={isArabic ? 'arrow-forward' : 'arrow-back'} size={24} color={colors.text} />
+          </TouchableOpacity>
+          <Text style={[styles.resultTitleInline, { color: colors.text }, isArabic && { writingDirection: 'rtl' }]}>{t('dietPlanReady')}</Text>
+          <View style={{ width: 24 }} />
+        </View>
 
+        <ScrollView style={{ backgroundColor: colors.background, flex: 1 }} contentContainerStyle={styles.contentResult}>
           <DietPlanDisplay
             plan={plan}
             colors={colors}
@@ -418,23 +424,21 @@ export default function DietScreen({ navigation, route }: any) {
         </ScrollView>
 
         <View style={[styles.calculatorBar, { backgroundColor: isDark ? '#1e293b' : '#ffffff', borderTopColor: colors.border }]}>
-          <View style={styles.actionButtons}>
-            <TouchableOpacity style={styles.saveButton} onPress={() => saveMutation.mutate()} testID="button-save-plan">
-              <Ionicons name="save" size={20} color="#fff" />
-            </TouchableOpacity>
+          <View style={[styles.actionButtons, isArabic && { flexDirection: 'row-reverse' }]}>
             <TouchableOpacity
-              style={[styles.exportButton, exportMutation.isPending && { opacity: 0.7 }]}
+              style={[styles.exportButton, exportMutation.isPending && { opacity: 0.7 }, isArabic && { flexDirection: 'row-reverse' }]}
               onPress={() => exportMutation.mutate()}
               disabled={exportMutation.isPending}
               testID="button-export-plan"
             >
               <Ionicons name="share-social" size={20} color="#fff" />
-              <Text style={styles.exportButtonText}>
-                {isArabic ? 'تصدير' : 'Export'}
+              <Text style={[styles.exportButtonText, isArabic && { writingDirection: 'rtl' }]}>
+                {isArabic ? 'تصدير الخطة' : 'Export Plan'}
               </Text>
             </TouchableOpacity>
-            <TouchableOpacity style={styles.newPlanButton} onPress={() => { setPlan(null); setStep('intro'); }} testID="button-new-plan">
-              <Ionicons name="refresh" size={20} color="#3b82f6" />
+
+            <TouchableOpacity style={styles.saveButton} onPress={() => saveMutation.mutate()} testID="button-save-plan">
+              <Ionicons name="save" size={20} color="#fff" />
             </TouchableOpacity>
           </View>
         </View>
@@ -732,6 +736,10 @@ export default function DietScreen({ navigation, route }: any) {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#f8fafc' },
   content: { padding: 16, paddingBottom: 110 },
+  contentResult: { padding: 16, paddingBottom: 30 },
+  resultHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 14, borderBottomWidth: 1 },
+  backButtonTop: { padding: 4 },
+  resultTitleInline: { fontSize: 18, fontWeight: '700', textAlign: 'center', flex: 1 },
   heroCard: { backgroundColor: '#fffbeb', borderRadius: 16, padding: 24, alignItems: 'center', marginBottom: 20, borderWidth: 1, borderColor: '#fde68a' },
   heroIconContainer: { width: 80, height: 80, borderRadius: 40, backgroundColor: '#fef3c7', justifyContent: 'center', alignItems: 'center', marginBottom: 12 },
   heroTitle: { fontSize: 22, fontWeight: '700', color: '#92400e', textAlign: 'center', marginBottom: 8 },
@@ -803,12 +811,8 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   calculatorBar: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
     padding: 16,
-    paddingBottom: 30,
+    paddingBottom: 100, // Safe area padding for bottom tabs
     borderTopWidth: 1,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: -4 },
@@ -876,13 +880,10 @@ const styles = StyleSheet.create({
   tipAvoid: { fontSize: 12, color: '#ef4444', marginTop: 4, textAlign: 'left' },
   tipText: { fontSize: 13, color: '#475569', marginBottom: 4, textAlign: 'left' },
   refText: { fontSize: 12, color: '#94a3b8', marginBottom: 4, textAlign: 'left' },
-  actionButtons: { gap: 10, marginTop: 8 },
-  saveButton: { flexDirection: 'row', backgroundColor: '#22c55e', borderRadius: 12, paddingVertical: 14, alignItems: 'center', justifyContent: 'center', gap: 8 },
-  saveButtonText: { fontSize: 16, fontWeight: '600', color: '#fff' },
-  exportButton: { flexDirection: 'row', backgroundColor: '#2563eb', borderRadius: 12, paddingVertical: 14, alignItems: 'center', justifyContent: 'center', gap: 8 },
-  exportButtonText: { fontSize: 16, fontWeight: '600', color: '#fff' },
-  newPlanButton: { flexDirection: 'row', backgroundColor: '#eff6ff', borderRadius: 12, paddingVertical: 14, alignItems: 'center', justifyContent: 'center', gap: 8 },
-  newPlanButtonText: { fontSize: 16, fontWeight: '600', color: '#3b82f6' },
+  actionButtons: { flexDirection: 'row', gap: 10, marginTop: 8 },
+  saveButton: { width: 52, height: 52, backgroundColor: '#22c55e', borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
+  exportButton: { flex: 1, height: 52, flexDirection: 'row', backgroundColor: '#2563eb', borderRadius: 12, alignItems: 'center', justifyContent: 'center', gap: 8 },
+  exportButtonText: { fontSize: 16, fontWeight: '700', color: '#fff' },
   monthlyNote: { fontSize: 12, marginTop: 10, textAlign: 'left' },
   savedSection: { marginTop: 16 },
   savedCard: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#fff', borderRadius: 12, padding: 14, gap: 12, marginBottom: 8, elevation: 1, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.04, shadowRadius: 2 },
