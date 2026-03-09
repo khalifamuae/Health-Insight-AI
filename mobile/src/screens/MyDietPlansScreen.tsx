@@ -232,7 +232,6 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 13,
     lineHeight: 18,
-    textAlign: 'left',
   },
   infoText: {
     fontSize: 14,
