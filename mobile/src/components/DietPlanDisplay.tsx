@@ -129,6 +129,73 @@ export default function DietPlanDisplay({ plan, colors, isDark, t, isArabicSyste
                 </View>
             )}
 
+            {plan.mealPlan && (
+                <View style={[styles.card, { backgroundColor: isDark ? '#1a1a2e' : '#f0f4ff', borderColor: '#6366f1', borderWidth: 1 }]}>
+                    <View style={styles.cardHeader}>
+                        <Ionicons name="information-circle" size={20} color="#6366f1" />
+                        <Text style={[styles.cardTitle, { color: colors.text }]}>
+                            {isPlanContentArabic ? 'دليل قراءة الخطة الغذائية' : 'How to Read Your Meal Plan'}
+                        </Text>
+                    </View>
+                    <Text style={[styles.cardText, { color: colors.mutedText, marginBottom: 10 }]}>
+                        {isPlanContentArabic
+                            ? 'كل وجبة تعرض لك معلومتين مهمتين: السعرات الحقيقية والسعرات المستهدفة. اختر خياراً واحداً من كل وجبة (فطور + غداء + عشاء + سناك) وسيحسب لك التطبيق المجموع تلقائياً.'
+                            : 'Each meal shows two important values: actual calories and target calories. Pick one option from each meal (breakfast + lunch + dinner + snack) and the app calculates your daily total automatically.'}
+                    </Text>
+                    <View style={{ gap: 8 }}>
+                        <View style={[styles.legendRow, { flexDirection: flexDir as any }]}>
+                            <View style={[styles.legendBadge, { backgroundColor: '#6366f1' }]}>
+                                <Text style={styles.legendBadgeText}>550 kcal</Text>
+                            </View>
+                            <Text style={[styles.legendLabel, { color: colors.text, textAlign: tAlign as any }]}>
+                                {isPlanContentArabic
+                                    ? 'السعرات الحقيقية — محسوبة من (بروتين×4 + كارب×4 + دهون×9)'
+                                    : 'Actual calories — calculated from (protein×4 + carbs×4 + fats×9)'}
+                            </Text>
+                        </View>
+                        <View style={[styles.legendRow, { flexDirection: flexDir as any }]}>
+                            <View style={[styles.legendBadge, { backgroundColor: '#ef4444' }]}>
+                                <Text style={styles.legendBadgeText}>{isPlanContentArabic ? 'المستهدف' : 'Target'}: 600 kcal</Text>
+                            </View>
+                            <Text style={[styles.legendLabel, { color: colors.text, textAlign: tAlign as any }]}>
+                                {isPlanContentArabic
+                                    ? 'السعرات المستهدفة — الحد الأقصى المخصص لهذه الوجبة من خطتك'
+                                    : 'Target calories — the maximum allocated for this meal from your plan'}
+                            </Text>
+                        </View>
+                        <View style={[styles.legendRow, { flexDirection: flexDir as any }]}>
+                            <View style={[styles.legendBadge, { backgroundColor: '#22c55e' }]}>
+                                <Text style={styles.legendBadgeText}>{isPlanContentArabic ? 'ضمن الهدف ✓' : 'Within target ✓'}</Text>
+                            </View>
+                            <Text style={[styles.legendLabel, { color: colors.text, textAlign: tAlign as any }]}>
+                                {isPlanContentArabic
+                                    ? 'السعرات الحقيقية أقل من أو تساوي المستهدف — ممتاز!'
+                                    : 'Actual calories are at or below target — great!'}
+                            </Text>
+                        </View>
+                        <View style={[styles.legendRow, { flexDirection: flexDir as any }]}>
+                            <View style={[styles.legendBadge, { backgroundColor: '#f59e0b' }]}>
+                                <Text style={styles.legendBadgeText}>{isPlanContentArabic ? 'أعلى من الهدف ⚠' : 'Above target ⚠'}</Text>
+                            </View>
+                            <Text style={[styles.legendLabel, { color: colors.text, textAlign: tAlign as any }]}>
+                                {isPlanContentArabic
+                                    ? 'السعرات الحقيقية أعلى قليلاً من المستهدف — يمكنك تقليل الكمية'
+                                    : 'Actual calories slightly exceed target — you may reduce portion size'}
+                            </Text>
+                        </View>
+                    </View>
+                    <View style={[styles.legendDivider, { borderColor: colors.border }]} />
+                    <View style={[styles.legendRow, { flexDirection: flexDir as any }]}>
+                        <Ionicons name="calculator" size={16} color="#3b82f6" />
+                        <Text style={[styles.legendLabel, { color: colors.mutedText, textAlign: tAlign as any, fontStyle: 'italic' }]}>
+                            {isPlanContentArabic
+                                ? 'P = بروتين (جرام) | C = كارب (جرام) | F = دهون (جرام)'
+                                : 'P = Protein (g) | C = Carbs (g) | F = Fats (g)'}
+                        </Text>
+                    </View>
+                </View>
+            )}
+
             {plan.mealPlan && ['breakfast', 'lunch', 'dinner', 'snacks'].map((mealType) => {
                 const meals = plan.mealPlan[mealType];
                 if (!meals || meals.length === 0) return null;
@@ -164,11 +231,24 @@ export default function DietPlanDisplay({ plan, colors, isDark, t, isArabicSyste
                                     <Text style={[styles.mealName, { color: colors.text }]}>{meal.name}</Text>
                                     <Text style={[styles.mealDesc, { color: colors.text }]}>{meal.description}</Text>
                                     <View style={styles.mealMacros}>
-                                        <Text style={styles.mealMacroText}>{meal.calories} kcal</Text>
+                                        <Text style={[styles.mealMacroText, { backgroundColor: '#6366f1' }]}>{meal.calories} kcal</Text>
                                         <Text style={styles.mealMacroText}>P:{meal.protein}g</Text>
                                         <Text style={styles.mealMacroText}>C:{meal.carbs}g</Text>
                                         <Text style={styles.mealMacroText}>F:{meal.fats}g</Text>
                                     </View>
+                                    {meal.targetCalories > 0 && (
+                                        <View style={[styles.mealMacros, { marginTop: 4 }]}>
+                                            <Text style={[styles.mealMacroText, { backgroundColor: '#ef4444' }]}>
+                                                {isPlanContentArabic ? 'المستهدف' : 'Target'}: {meal.targetCalories} kcal
+                                            </Text>
+                                            <Text style={[styles.mealMacroText, { backgroundColor: meal.calories <= meal.targetCalories ? '#22c55e' : '#f59e0b' }]}>
+                                                {meal.calories <= meal.targetCalories
+                                                    ? (isPlanContentArabic ? 'ضمن الهدف' : 'Within target')
+                                                    : (isPlanContentArabic ? 'أعلى من الهدف' : 'Above target')
+                                                }
+                                            </Text>
+                                        </View>
+                                    )}
                                     {meal.benefits && <Text style={[styles.mealBenefits, { color: colors.mutedText }]}>{meal.benefits}</Text>}
                                 </TouchableOpacity>
                             );
@@ -497,5 +577,28 @@ const getStyles = (tAlign: 'left' | 'right', flexDir: 'row' | 'row-reverse') => 
         flexDirection: flexDir,
         justifyContent: 'flex-start',
         gap: 12,
+    },
+    legendRow: {
+        alignItems: 'center',
+        gap: 8,
+    },
+    legendBadge: {
+        paddingHorizontal: 10,
+        paddingVertical: 4,
+        borderRadius: 6,
+    },
+    legendBadgeText: {
+        fontSize: 11,
+        fontWeight: '700',
+        color: '#ffffff',
+    },
+    legendLabel: {
+        fontSize: 12,
+        lineHeight: 18,
+        flex: 1,
+    },
+    legendDivider: {
+        borderTopWidth: 1,
+        marginVertical: 10,
     },
 });
