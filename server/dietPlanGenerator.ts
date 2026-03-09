@@ -695,7 +695,7 @@ ${customCalorieInstruction}
 - ⚠️ عدد الوجبات: ${mealSlots.length} وجبات: ${mealSplits.map(s => s.labelAr).join(" + ")}
 - ⚠️⚠️⚠️ قاعدة السعرات الحرارية الأهم: يجب أن يكون مجموع سعرات (خيار واحد من كل وجبة) أقل قليلاً أو يساوي ${targetCalories} سعرة. لتحقيق ذلك:
 ${mealSplits.map(s => `  * ${s.labelAr} = ${s.calories} سعرة (${s.percent}%) → ماكرو: بروتين ${s.protein}g، كارب ${s.carbs}g، دهون ${s.fats}g`).join("\n")}
-  * ⚠️⚠️⚠️ قاعدة الماكرو الإلزامية: يجب أن يكون مجموع الماكرو (بروتين + كارب + دهون) لخيار واحد من كل وجبة مساوياً أو قريباً جداً من الهدف الكلي (بروتين ${macros.protein.grams}g، كارب ${macros.carbs.grams}g، دهون ${macros.fats.grams}g). صمم كل خيار ضمن الماكرو المحدد أعلاه (هامش ±5g فقط)
+  * ⚠️ قاعدة الماكرو: يجب أن تتماشى الخيارات مع ماكرو الوجبة المستهدف. ولكن ⚠️ يُمنع تماماً نسخ نفس أرقام الماكروز في جميع الخيارات الـ 5! كل خيار يجب أن يمتلك أرقام ماكروز مختلفة تعكس بشكل حسابي دقيق مكوناته الحقيقية. من الطبيعي والمتوقع أن تختلف الماكروز السعرات بين الخيارات طالما أنها قريبة من الهدف.
   * ⚠️⚠️⚠️ السعرات الحقيقية يتم حسابها بالمعادلة: calories = (protein × 4) + (carbs × 4) + (fats × 9)
   * يجب أن تكون قيم البروتين والكارب والدهون بالجرامات دقيقة 100% لأن السيرفر سيعيد حساب السعرات منها تلقائياً
   * لا تكتب سعرات عشوائية في حقل calories - اكتب القيمة الناتجة من المعادلة أعلاه
@@ -755,12 +755,12 @@ ${hasAllergies && allergyList ? `- ⚠️ حساسية المستخدم (وفق 
   "supplements": [{"name": "اسم المكمل", "dosage": "الجرعة المقترحة", "reason": "سبب الحاجة مرتبط بالتحليل", "duration": "مدة الاستخدام", "foodSources": ["100 جرام سلمون = 600 وحدة دولية", "كوب حليب مدعم = 400 وحدة دولية", "بيضة واحدة = 40 وحدة دولية"], "targetLabValue": "فيتامين د: 30-50 نانوجرام/مل", "scientificBasis": "Endocrine Society Clinical Practice Guideline", "timingAdvice": "يُفضل تناوله مع الوجبة الرئيسية الدسمة لتحسين الامتصاص", "interactions": "يتعارض مع مضادات الحموضة - يُفضل الفصل بساعتين"}],
   "mealPlan": {
     "breakfast": [
-      {"name": "شوفان بالموز والعسل", "description": "60 جرام شوفان، 200 مل حليب قليل الدسم، موزة واحدة، 15 جرام عسل", "calories": ${breakfastCalories}, "protein": 15, "carbs": 62, "fats": 12, "fiber": 6, "benefits": "غني بالألياف القابلة للذوبان (بيتا-جلوكان) يساعد في تحسين مستوى الكولسترول", "preparationTip": "انقع الشوفان ليلاً لتقليل حمض الفيتيك وزيادة امتصاص المعادن"},
-      {"name": "بيض مسلوق مع خبز أسمر", "description": "3 بيضات مسلوقة، شريحتين خبز أسمر، 50 جرام خيار، 50 جرام طماطم", "calories": ${breakfastCalories}, "protein": 24, "carbs": 35, "fats": 18, "fiber": 4, "benefits": "مصدر ممتاز للبروتين الكامل والكولين لدعم العضلات ووظائف الكبد", "preparationTip": "أضف الطماطم كمصدر فيتامين C لتحسين امتصاص الحديد من البيض"}
+      {"name": "شوفان بالموز والعسل", "description": "60 جرام شوفان، 200 مل حليب قليل الدسم، موزة واحدة، 15 جرام عسل", "calories": 416, "protein": 15, "carbs": 62, "fats": 12, "fiber": 6, "benefits": "غني بالألياف القابلة للذوبان (بيتا-جلوكان) يساعد في تحسين مستوى الكولسترول", "preparationTip": "انقع الشوفان ليلاً لتقليل حمض الفيتيك وزيادة امتصاص المعادن"},
+      {"name": "بيض مسلوق مع خبز أسمر", "description": "3 بيضات مسلوقة، شريحتين خبز أسمر، 50 جرام خيار، 50 جرام طماطم", "calories": 398, "protein": 24, "carbs": 35, "fats": 18, "fiber": 4, "benefits": "مصدر ممتاز للبروتين الكامل والكولين لدعم العضلات ووظائف الكبد", "preparationTip": "أضف الطماطم كمصدر فيتامين C لتحسين امتصاص الحديد من البيض"}
     ],
-    "lunch": [{"name": "اسم وصفي", "description": "مكونات بالجرامات", "calories": ${lunchCalories}, "protein": 0, "carbs": 0, "fats": 0, "fiber": 0, "benefits": "فائدة صحية مرتبطة بالتحاليل أو الهدف الجسدي", "preparationTip": "نصيحة تحضير"}],
-    "dinner": [{"name": "اسم وصفي", "description": "مكونات بالجرامات", "calories": ${dinnerCalories}, "protein": 0, "carbs": 0, "fats": 0, "fiber": 0, "benefits": "فائدة صحية مرتبطة بالتحاليل أو الهدف الجسدي", "preparationTip": "نصيحة تحضير"}],
-    "snacks": [{"name": "اسم وصفي", "description": "مكونات بالجرامات", "calories": ${snackCalories}, "protein": 0, "carbs": 0, "fats": 0, "fiber": 0, "benefits": "فائدة صحية مرتبطة بالتحاليل أو الهدف الجسدي", "preparationTip": "نصيحة تحضير"}]
+    "lunch": [{"name": "اسم وصفي", "description": "مكونات بالجرامات", "calories": 845, "protein": 50, "carbs": 70, "fats": 25, "fiber": 8, "benefits": "فائدة صحية مرتبطة بالتحاليل أو الهدف الجسدي", "preparationTip": "نصيحة تحضير"}],
+    "dinner": [{"name": "اسم وصفي", "description": "مكونات بالجرامات", "calories": 526, "protein": 40, "carbs": 30, "fats": 14, "fiber": 5, "benefits": "فائدة صحية مرتبطة بالتحاليل أو الهدف الجسدي", "preparationTip": "نصيحة تحضير"}],
+    "snacks": [{"name": "اسم وصفي", "description": "مكونات بالجرامات", "calories": 210, "protein": 10, "carbs": 20, "fats": 10, "fiber": 3, "benefits": "فائدة صحية مرتبطة بالتحاليل أو الهدف الجسدي", "preparationTip": "نصيحة تحضير"}]
   },
   "mealTimingAdvice": "توصيات التوقيت الغذائي (Chrononutrition): أفضل أوقات تناول الوجبات بناءً على الإيقاع اليومي والهدف",
   "tips": ["نصيحة مع السبب الصحي والمرجع العلمي"],
@@ -860,7 +860,7 @@ Protocol Instructions:
 - Number of meals: ${mealSlots.length}: ${mealSplits.map(s => s.labelEn).join(" + ")}
 - ⚠️⚠️⚠️ MOST CRITICAL CALORIE RULE: The sum of calories from picking 1 option from each meal must be slightly below or equal to ${targetCalories} kcal. To achieve this:
 ${mealSplits.map(s => `  * ${s.labelEn} = ${s.calories} kcal (${s.percent}%) → Macros: P ${s.protein}g, C ${s.carbs}g, F ${s.fats}g`).join("\n")}
-  * MANDATORY MACRO RULE: The sum of macros (protein + carbs + fats) from picking 1 option per meal MUST equal or be very close to the total targets (P ${macros.protein.grams}g, C ${macros.carbs.grams}g, F ${macros.fats.grams}g). Design each option within the per-meal macro targets above (tolerance ±5g only)
+  * MACRO RULE: Options should align with the per-meal target macros. HOWEVER, DO NOT COPY-PASTE the exact same macro numbers across the 5 options! Each option MUST HAVE DIFFERENT MACROS that mathematically represent their unique ingredients. It is completely normal and expected for options to have varying macros, as long as they are realistically close to the target.
   * JSON mealPlan MUST contain these keys: ${mealSlots.map(s => `"${s.key}"`).join(", ")} — each with an array of 5 options
   * ⚠️⚠️⚠️ REAL calories are calculated by the formula: calories = (protein × 4) + (carbs × 4) + (fats × 9)
   * The protein, carbs, and fats values in grams MUST be 100% accurate because the server will RECALCULATE calories from them automatically
@@ -920,12 +920,12 @@ Return JSON in this format (example shows 2 of 5 options - write all 5 complete)
   "supplements": [{"name": "Supplement name", "dosage": "Suggested dosage", "reason": "Reason linked to lab result", "duration": "Duration", "foodSources": ["100g salmon = 600 IU vitamin D", "1 cup fortified milk = 400 IU", "1 egg = 40 IU"], "targetLabValue": "Vitamin D: 30-50 ng/mL", "scientificBasis": "Endocrine Society Clinical Practice Guideline", "timingAdvice": "Take with the fattiest meal of the day for optimal absorption", "interactions": "Conflicts with antacids - separate by 2 hours"}],
   "mealPlan": {
     "breakfast": [
-      {"name": "Oatmeal with Banana and Honey", "description": "60g oats, 200ml low-fat milk, 1 banana, 15g honey", "calories": ${breakfastCalories}, "protein": 15, "carbs": 62, "fats": 12, "fiber": 6, "benefits": "Rich in soluble fiber (beta-glucan), helps improve cholesterol levels", "preparationTip": "Soak oats overnight to reduce phytic acid and improve mineral absorption"},
-      {"name": "Boiled Eggs with Brown Toast", "description": "3 boiled eggs, 2 slices brown bread, 50g cucumber, 50g tomato", "calories": ${breakfastCalories}, "protein": 24, "carbs": 35, "fats": 18, "fiber": 4, "benefits": "Excellent source of complete protein and choline for muscle and liver support", "preparationTip": "Add tomato as a vitamin C source to improve iron absorption from eggs"}
+      {"name": "Oatmeal with Banana and Honey", "description": "60g oats, 200ml low-fat milk, 1 banana, 15g honey", "calories": 416, "protein": 15, "carbs": 62, "fats": 12, "fiber": 6, "benefits": "Rich in soluble fiber (beta-glucan), helps improve cholesterol levels", "preparationTip": "Soak oats overnight to reduce phytic acid and improve mineral absorption"},
+      {"name": "Boiled Eggs with Brown Toast", "description": "3 boiled eggs, 2 slices brown bread, 50g cucumber, 50g tomato", "calories": 398, "protein": 24, "carbs": 35, "fats": 18, "fiber": 4, "benefits": "Excellent source of complete protein and choline for muscle and liver support", "preparationTip": "Add tomato as a vitamin C source to improve iron absorption from eggs"}
     ],
-    "lunch": [{"name": "Descriptive meal name", "description": "ingredients with grams", "calories": ${lunchCalories}, "protein": 0, "carbs": 0, "fats": 0, "fiber": 0, "benefits": "health benefit linked to lab results or physical goal", "preparationTip": "preparation tip"}],
-    "dinner": [{"name": "Descriptive meal name", "description": "ingredients with grams", "calories": ${dinnerCalories}, "protein": 0, "carbs": 0, "fats": 0, "fiber": 0, "benefits": "health benefit linked to lab results or physical goal", "preparationTip": "preparation tip"}],
-    "snacks": [{"name": "Descriptive meal name", "description": "ingredients with grams", "calories": ${snackCalories}, "protein": 0, "carbs": 0, "fats": 0, "fiber": 0, "benefits": "health benefit linked to lab results or physical goal", "preparationTip": "preparation tip"}]
+    "lunch": [{"name": "Descriptive meal name", "description": "ingredients with grams", "calories": 845, "protein": 50, "carbs": 70, "fats": 25, "fiber": 8, "benefits": "health benefit linked to lab results or physical goal", "preparationTip": "preparation tip"}],
+    "dinner": [{"name": "Descriptive meal name", "description": "ingredients with grams", "calories": 526, "protein": 40, "carbs": 30, "fats": 14, "fiber": 5, "benefits": "health benefit linked to lab results or physical goal", "preparationTip": "preparation tip"}],
+    "snacks": [{"name": "Descriptive meal name", "description": "ingredients with grams", "calories": 210, "protein": 10, "carbs": 20, "fats": 10, "fiber": 3, "benefits": "health benefit linked to lab results or physical goal", "preparationTip": "preparation tip"}]
   },
   "mealTimingAdvice": "Chrononutrition recommendations: optimal meal timing based on circadian rhythm and goal",
   "tips": ["tip with health reason and scientific reference"],
