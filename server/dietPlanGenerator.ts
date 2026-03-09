@@ -683,11 +683,11 @@ ${customCalorieInstruction}
 - يُمنع كتابة "تقريباً" أو "حوالي" - كل رقم يجب أن يكون دقيقاً ومحسوباً
 - الماكرو (بروتين + كارب + دهون) يجب أن يتطابق حسابياً مع السعرات: (بروتين×4) + (كارب×4) + (دهون×9) ≈ سعرات الوجبة (هامش ±10 سعرات فقط)
 
-⸻ قواعد التنوع الحقيقي: ⸻
+⸻ قواعد التنوع الحقيقي والإلهام: ⸻
 - الخيارات الـ 5 لكل وجبة يجب أن تكون مختلفة تماماً في المكونات الرئيسية وأسلوب الطهي
 - يُمنع تكرار نفس المكون الرئيسي في أكثر من خيارين ضمن نفس الوجبة (مثلاً: لا تضع 3 خيارات كلها بالشوفان أو 3 خيارات كلها بالدجاج)
-- نوّع بين أساليب الطهي: مشوي، مسلوق، مخبوز، ستيم، طازج، مقلي بالهواء
-- نوّع بين المطابخ: عربية، متوسطية، آسيوية، صحية عالمية
+- 🌟 إلهام الوجبات (هام جداً): استلهم أفكار وجباتك من قوائم الشركات الرائدة في توصيل الوجبات الصحية الجاهزة (مثل Calo, RightBite, Diet Center, Prep&Co) لتقديم خيارات عصرية، لذيذة، ومبتكرة. فكر كأنك شيف في مطعم صحي فاخر، وتجنب الوجبات النمطية المملة.
+- نوّع أساليب الطهي (مشوي، مسلوق، مخبوز، مقلي بالهواء) والمطابخ (عربية، متوسطية، آسيوية، عالمية).
 - كل خيار يجب أن يكون وجبة كاملة قائمة بذاتها (بروتين + كارب + خضار/فاكهة + دهون صحية)
 - اجعل كل وجبة عملية ويمكن تحضيرها في 15-30 دقيقة بمكونات متوفرة
 
@@ -848,11 +848,11 @@ Protocol Instructions:
 - NEVER write "approximately" or "about" - every number must be precise and calculated
 - Macros (protein + carbs + fats) MUST match calories arithmetically: (protein×4) + (carbs×4) + (fats×9) ≈ meal calories (tolerance: ±10 kcal only)
 
-⸻ TRUE VARIETY RULES: ⸻
+⸻ TRUE VARIETY & INSPIRATION RULES: ⸻
 - The 5 options for each meal MUST be completely different in main ingredients and cooking method
 - Do NOT repeat the same main ingredient in more than 2 options within the same meal (e.g., no 3 oatmeal breakfasts or 3 chicken lunches)
-- Vary cooking methods: grilled, boiled, baked, steamed, fresh/raw, air-fried
-- Vary cuisines: Arabic, Mediterranean, Asian, international healthy
+- 🌟 MEAL INSPIRATION (VERY IMPORTANT): Draw inspiration from the menus of premium healthy meal-prep delivery companies (like Calo, RightBite, Diet Center, Prep&Co) to provide modern, delicious, and innovative options. Think like a head chef at a luxury healthy restaurant, and avoid boring, traditional diet meals.
+- Vary cooking methods (grilled, boiled, baked, air-fried) and cuisines (Arabic, Mediterranean, Asian, international).
 - Each option must be a complete standalone meal (protein + carb + vegetables/fruit + healthy fats)
 - Every meal should be practical and preparable in 15-30 minutes with commonly available ingredients
 
