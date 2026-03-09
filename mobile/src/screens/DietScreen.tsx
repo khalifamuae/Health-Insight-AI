@@ -408,7 +408,7 @@ export default function DietScreen({ navigation, route }: any) {
           <TouchableOpacity onPress={() => { setPlan(null); setStep('intro'); }} style={styles.backButtonTop} testID="button-back-result">
             <Ionicons name={isArabic ? 'arrow-forward' : 'arrow-back'} size={24} color={colors.text} />
           </TouchableOpacity>
-          <Text style={[styles.resultTitleInline, { color: colors.text }, isArabic && { writingDirection: 'rtl' }]}>{t('dietPlanReady')}</Text>
+          <Text style={[styles.resultTitleInline, { color: colors.text }]}>{t('dietPlanReady')}</Text>
           <View style={{ width: 24 }} />
         </View>
 
@@ -424,15 +424,15 @@ export default function DietScreen({ navigation, route }: any) {
         </ScrollView>
 
         <View style={[styles.calculatorBar, { backgroundColor: isDark ? '#1e293b' : '#ffffff', borderTopColor: colors.border }]}>
-          <View style={[styles.actionButtons, isArabic && { flexDirection: 'row-reverse' }]}>
+          <View style={styles.actionButtons}>
             <TouchableOpacity
-              style={[styles.exportButton, exportMutation.isPending && { opacity: 0.7 }, isArabic && { flexDirection: 'row-reverse' }]}
+              style={[styles.exportButton, exportMutation.isPending && { opacity: 0.7 }]}
               onPress={() => exportMutation.mutate()}
               disabled={exportMutation.isPending}
               testID="button-export-plan"
             >
               <Ionicons name="share-social" size={20} color="#fff" />
-              <Text style={[styles.exportButtonText, isArabic && { writingDirection: 'rtl' }]}>
+              <Text style={styles.exportButtonText}>
                 {isArabic ? 'تصدير الخطة' : 'Export Plan'}
               </Text>
             </TouchableOpacity>
