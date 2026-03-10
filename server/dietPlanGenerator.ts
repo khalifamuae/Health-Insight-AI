@@ -739,9 +739,10 @@ ${hasAllergies && allergyList ? `- ⚠️ حساسية المستخدم (وفق 
 2. كل خيار من الـ 20 وجبة يجب أن يحتوي على بيانات كاملة في جميع الحقول (name, benefits, preparationTip, ingredients)
 3. حقل "name" = اسم وصفي للوجبة (مثل: "شوفان بالموز والعسل"). يُمنع استخدام "خيار 1" أو "خيار 2"
 4. حقل "ingredients" = مصفوفة لجميع المكونات الفردية للوجبة. لا تضع السعرات والماكرو للوجبة ككل، بل لكل مكون على حدة بالجرامات الدقيقة والمعلومات الغذائية المعتمدة
-5. حقل "benefits" = الفائدة الصحية المرتبطة بالتحاليل (مثل: "يساعد في تحسين الكولسترول")
-6. حقل "preparationTip" = نصيحة تحضير تحسّن القيمة الغذائية أو التوافر الحيوي
-7. المثال أدناه يعرض خيارين فقط للاختصار، لكن يجب كتابة 5 خيارات كاملة لكل وجبة
+5. ⚠️⚠️⚠️ حقل "state" إلزامي لكل مكون ويجب أن يكون واحداً من: "raw" أو "cooked" أو "liquid" أو "dried". يُمنع استخدام "any". هذا حقل حرج لأن القيم الغذائية تختلف جذرياً بين الحالات (مثال: أرز ني=365 سعرة/100g بينما أرز مطبوخ=130 سعرة/100g). يجب أن تطابق القيم الغذائية المكتوبة حالة المكون. إذا كان المكون يُقدم مطبوخاً في الوصفة، اكتب state: "cooked" والقيم الغذائية للحالة المطبوخة
+6. حقل "benefits" = الفائدة الصحية المرتبطة بالتحاليل (مثل: "يساعد في تحسين الكولسترول")
+7. حقل "preparationTip" = نصيحة تحضير تحسّن القيمة الغذائية أو التوافر الحيوي
+8. المثال أدناه يعرض خيارين فقط للاختصار، لكن يجب كتابة 5 خيارات كاملة لكل وجبة
 9. في حال عدم وجود تحاليل مخبرية أو عدم وجود نواقص ومكملات مقترحة، أرجع مصفوفة فارغة [] في حقلي "deficiencies" و "supplements"
 
 أرجع JSON بالشكل التالي (المثال يعرض 2 من 5 خيارات - اكتب 5 كاملة):
@@ -762,7 +763,7 @@ ${hasAllergies && allergyList ? `- ⚠️ حساسية المستخدم (وفق 
         "preparationTip": "انقع الشوفان ليلاً لتقليل حمض الفيتيك وزيادة امتصاص المعادن",
         "ingredients": [
           {"name": "شوفان", "quantity": 60, "unit": "g", "state": "raw", "nutritionBasis": "per_100g", "protein": 13.5, "carbs": 68, "fat": 6.9, "calories": 389, "fiber": 10.6, "sourceReference": "USDA FoodData Central", "sourceConfidence": "high"},
-          {"name": "حليب قليل الدسم", "quantity": 200, "unit": "ml", "state": "any", "nutritionBasis": "per_100g", "protein": 3.4, "carbs": 5, "fat": 1, "calories": 43, "fiber": 0, "sourceReference": "USDA FoodData Central", "sourceConfidence": "high"}
+          {"name": "حليب قليل الدسم", "quantity": 200, "unit": "ml", "state": "liquid", "nutritionBasis": "per_100g", "protein": 3.4, "carbs": 5, "fat": 1, "calories": 43, "fiber": 0, "sourceReference": "USDA FoodData Central", "sourceConfidence": "high"}
         ]
       }
     ],
@@ -911,9 +912,10 @@ CRITICAL RULES:
 2. Every single one of the 20 meal options MUST have COMPLETE data in ALL fields (name, benefits, preparationTip, ingredients)
 3. "name" = descriptive meal name (e.g., "Oatmeal with Banana"). NEVER use "Option 1" or "Option 2"
 4. "ingredients" = Array of all ingredients with exact gram weights and nutritional data per 100g/serving. NEVER provide macro totals at the meal wrapper level.
-5. "benefits" = health benefit linked to lab results (e.g., "Helps improve cholesterol levels")
-6. "preparationTip" = preparation tip that improves nutritional value or bioavailability
-7. The example below shows only 1 option for brevity, but you MUST write 5 COMPLETE options for each meal
+5. ⚠️⚠️⚠️ "state" is MANDATORY for every ingredient. Must be one of: "raw", "cooked", "liquid", or "dried". NEVER use "any". This is critical because nutritional values differ dramatically between states (e.g., raw rice = 365 cal/100g vs cooked rice = 130 cal/100g). The nutritional values you provide MUST match the state you specify. If the ingredient is served cooked in the recipe, write state: "cooked" and provide cooked nutritional values.
+6. "benefits" = health benefit linked to lab results (e.g., "Helps improve cholesterol levels")
+7. "preparationTip" = preparation tip that improves nutritional value or bioavailability
+8. The example below shows only 1 option for brevity, but you MUST write 5 COMPLETE options for each meal
 9. If there are no lab results provided, or if no deficiencies/supplements are needed, return an empty array [] for both "deficiencies" and "supplements" fields.
 
 Return JSON in this format (example shows 2 of 5 options - write all 5 complete):
@@ -933,7 +935,7 @@ Return JSON in this format (example shows 2 of 5 options - write all 5 complete)
         "preparationTip": "Soak oats overnight to reduce phytic acid",
         "ingredients": [
           {"name": "Oats", "quantity": 60, "unit": "g", "state": "raw", "nutritionBasis": "per_100g", "protein": 13.5, "carbs": 68, "fat": 6.9, "calories": 389, "fiber": 10.6, "sourceReference": "USDA FoodData Central", "sourceConfidence": "high"},
-          {"name": "Low-fat milk", "quantity": 200, "unit": "ml", "state": "any", "nutritionBasis": "per_100g", "protein": 3.4, "carbs": 5, "fat": 1, "calories": 43, "fiber": 0, "sourceReference": "USDA", "sourceConfidence": "high"}
+          {"name": "Low-fat milk", "quantity": 200, "unit": "ml", "state": "liquid", "nutritionBasis": "per_100g", "protein": 3.4, "carbs": 5, "fat": 1, "calories": 43, "fiber": 0, "sourceReference": "USDA", "sourceConfidence": "high"}
         ]
       }
     ],
