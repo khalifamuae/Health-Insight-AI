@@ -1052,7 +1052,7 @@ ${hasCustomTargetCalories && normalizedCustomTargetCalories ? `11. Mandatory: Ke
       ],
       response_format: { type: "json_object" },
       temperature: 0.2,
-      max_completion_tokens: 16000,
+      max_completion_tokens: 32000,
       stream: true,
     });
 
@@ -1088,7 +1088,7 @@ ${hasCustomTargetCalories && normalizedCustomTargetCalories ? `11. Mandatory: Ke
       ],
       response_format: { type: "json_object" },
       temperature: 0.2,
-      max_completion_tokens: 16000,
+      max_completion_tokens: 32000,
     });
 
     content = response.choices[0]?.message?.content || '';
@@ -1128,12 +1128,41 @@ ${hasCustomTargetCalories && normalizedCustomTargetCalories ? `11. Mandatory: Ke
     const isPlaceholder = (val: string) => !val || val === "..." || val === "…" || val.trim().length < 3;
 
     const cleanMeal = (m: any, mealTargetCal: number) => {
-      let validMeal = recalculateMealMacros(
-        m.name || "",
-        m.benefits || "",
-        m.preparationTip || "",
-        Array.isArray(m.ingredients) ? m.ingredients : []
-      );
+      const hasIngredients = Array.isArray(m.ingredients) && m.ingredients.length > 0;
+
+      let validMeal;
+      if (hasIngredients) {
+        // PRIMARY PATH: Calculate macros from ingredient-level data
+        validMeal = recalculateMealMacros(
+          m.name || "",
+          m.benefits || "",
+          m.preparationTip || "",
+          m.ingredients
+        );
+      } else {
+        // FALLBACK PATH: AI returned old format (meal-level macros, no ingredients)
+        // Use the AI's macros but recalculate calories from P*4 + C*4 + F*9
+        const protein = Number(m.protein) || 0;
+        const carbs = Number(m.carbs) || 0;
+        const fats = Number(m.fats || m.fat) || 0;
+        const fiber = Number(m.fiber) || 0;
+        const calories = Math.round((protein * 4) + (carbs * 4) + (fats * 9));
+        console.warn(`[Nutrition Fallback] Meal "${(m.name || '').slice(0, 30)}" has no ingredients array — using AI meal-level macros (P:${protein} C:${carbs} F:${fats} = ${calories}cal)`);
+        validMeal = {
+          name: m.name || "Meal",
+          description: m.description || "",
+          ingredients: [],
+          protein,
+          carbs,
+          fats,
+          calories,
+          fiber,
+          benefits: m.benefits || "",
+          preparationTip: m.preparationTip || "",
+          validationStatus: "suspicious" as const,
+          validationNotes: ["No ingredients array — used AI meal-level macros as fallback"],
+        };
+      }
 
       validMeal = validateHealthyMealRanges(validMeal);
 
@@ -1155,7 +1184,7 @@ ${hasCustomTargetCalories && normalizedCustomTargetCalories ? `11. Mandatory: Ke
     let incompleteMeals = 0;
     for (const [section, meals] of Object.entries(sanitizedMealPlan)) {
       for (const meal of meals as any[]) {
-        if (isPlaceholder(meal.name) || meal.ingredients.length === 0 || isPlaceholder(meal.benefits)) {
+        if (isPlaceholder(meal.name) || (meal.ingredients.length === 0 && meal.calories === 0) || isPlaceholder(meal.benefits)) {
           incompleteMeals++;
           console.warn(`Incomplete meal in ${section}: name="${meal.name}", ingredients count=${meal.ingredients.length}, benefits="${(meal.benefits || "").slice(0, 30)}"`);
         }
