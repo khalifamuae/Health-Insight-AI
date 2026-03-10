@@ -1,6 +1,7 @@
 import OpenAI from "openai";
 import { searchRelevantKnowledge, learnFromDietPlanGeneration } from "./knowledgeEngine";
 import { recalculateMealMacros, validateHealthyMealRanges, saveValidatedIngredients } from "./nutritionValidator";
+import { verifyAndCorrectIngredients } from "./usdaClient";
 
 const openai = new OpenAI({
   apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
@@ -1126,6 +1127,27 @@ ${hasCustomTargetCalories && normalizedCustomTargetCalories ? `11. Mandatory: Ke
       ];
 
     const isPlaceholder = (val: string) => !val || val === "..." || val === "…" || val.trim().length < 3;
+
+    // ── USDA Verification: Replace AI-fabricated nutrition with verified USDA data ──
+    // This runs BEFORE cleanMeal so the macro calculations use verified per-100g values.
+    // Fire-and-forget on purpose — it mutates ingredient objects in-place.
+    try {
+      const allRawIngredients: any[] = [];
+      for (const slot of mealSplits) {
+        const meals = parsed.mealPlan?.[slot.key] || [];
+        for (const meal of meals) {
+          if (Array.isArray(meal?.ingredients)) {
+            allRawIngredients.push(...meal.ingredients);
+          }
+        }
+      }
+      if (allRawIngredients.length > 0) {
+        console.log(`[USDA] Verifying ${allRawIngredients.length} ingredients against USDA FoodData Central...`);
+        await verifyAndCorrectIngredients(allRawIngredients);
+      }
+    } catch (err) {
+      console.warn("[USDA] Verification failed (non-blocking):", err);
+    }
 
     const cleanMeal = (m: any, mealTargetCal: number) => {
       const hasIngredients = Array.isArray(m.ingredients) && m.ingredients.length > 0;
