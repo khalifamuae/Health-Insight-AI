@@ -117,6 +117,7 @@ const ExerciseCard = ({ savedExercise, globalExercise, groupId, onRemove, onWeig
           useNativeControls
           resizeMode={ResizeMode.COVER}
           isLooping
+          shouldPlay
         />
         {isOffline && (
           <View style={styles.offlineBadge}>
