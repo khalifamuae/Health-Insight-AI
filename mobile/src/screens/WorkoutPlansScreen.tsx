@@ -19,6 +19,7 @@ const ExerciseCard = ({ savedExercise, globalExercise, groupId, onRemove, onWeig
   const [downloadProgress, setDownloadProgress] = useState(0);
   const [isOffline, setIsOffline] = useState(false);
   const [playbackUri, setPlaybackUri] = useState(globalExercise.videoUrl);
+  const [showVideo, setShowVideo] = useState(false);
 
   // Weight tracking state
   const [startWeight, setStartWeight] = useState(savedExercise.startWeight?.toString() || '');
@@ -111,14 +112,37 @@ const ExerciseCard = ({ savedExercise, globalExercise, groupId, onRemove, onWeig
       </View>
 
       <View style={styles.videoContainer}>
-        <Video
-          source={{ uri: playbackUri }}
-          style={styles.videoPlayer}
-          useNativeControls
-          resizeMode={ResizeMode.COVER}
-          isLooping
-          shouldPlay
-        />
+        {showVideo ? (
+          <>
+            <Video
+              source={{ uri: playbackUri }}
+              style={styles.videoPlayer}
+              useNativeControls
+              resizeMode={ResizeMode.COVER}
+              isLooping
+              shouldPlay
+            />
+            <TouchableOpacity
+              onPress={() => setShowVideo(false)}
+              style={styles.videoCloseBtn}
+            >
+              <Ionicons name="close-circle" size={28} color="rgba(255,255,255,0.9)" />
+            </TouchableOpacity>
+          </>
+        ) : (
+          <TouchableOpacity
+            style={styles.videoPlayOverlay}
+            onPress={() => setShowVideo(true)}
+            activeOpacity={0.8}
+          >
+            <View style={styles.playIconCircle}>
+              <Ionicons name="play" size={32} color="#fff" style={{ marginLeft: 3 }} />
+            </View>
+            <Text style={styles.playText}>
+              {isArabic ? 'شغّل الفيديو' : 'Play Video'}
+            </Text>
+          </TouchableOpacity>
+        )}
         {isOffline && (
           <View style={styles.offlineBadge}>
             <Ionicons name="checkmark-circle" size={12} color="#fff" />
@@ -578,6 +602,33 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     justifyContent: 'center',
     alignItems: 'center'
+  },
+  videoPlayOverlay: {
+    width: '100%',
+    height: '100%',
+    backgroundColor: '#111827',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 8,
+  },
+  playIconCircle: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: 'rgba(59, 130, 246, 0.9)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  playText: {
+    color: 'rgba(255,255,255,0.7)',
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  videoCloseBtn: {
+    position: 'absolute' as const,
+    top: 8,
+    right: 8,
+    zIndex: 10,
   },
   videoPlayer: {
     width: '100%',
