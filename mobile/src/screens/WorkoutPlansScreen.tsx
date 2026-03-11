@@ -126,15 +126,20 @@ const ExerciseCard = ({ savedExercise, globalExercise, groupId, onRemove, onWeig
         )}
       </View>
 
-      <View style={[styles.statsRow, { backgroundColor: colors.card, borderColor: colors.border }]}>
-        <View style={styles.statBox}>
-          <Text style={[styles.statValue, { color: colors.text, textAlign: isArabic ? 'right' : 'center', width: '100%' }]}>{savedExercise.sets}</Text>
-          <Text style={[styles.statLabel, { color: colors.mutedText, textAlign: isArabic ? 'right' : 'center', width: '100%' }]}>{isArabic ? "جولات (Sets)" : "Sets"}</Text>
+      <View style={styles.statsRow}>
+        <View style={[styles.statCard, { backgroundColor: isDark ? '#0f2918' : '#ecfdf5', borderColor: isDark ? '#166534' : '#a7f3d0' }]}>
+          <View style={styles.statIconRow}>
+            <Ionicons name="layers-outline" size={16} color={isDark ? '#4ade80' : '#16a34a'} />
+            <Text style={[styles.statLabel, { color: isDark ? '#86efac' : '#15803d' }]}>{isArabic ? 'جولات' : 'Sets'}</Text>
+          </View>
+          <Text style={[styles.statValue, { color: isDark ? '#4ade80' : '#166534' }]}>{savedExercise.sets}</Text>
         </View>
-        <View style={[styles.statDivider, { backgroundColor: colors.border }]} />
-        <View style={styles.statBox}>
-          <Text style={[styles.statValue, { color: colors.text, textAlign: isArabic ? 'right' : 'center', width: '100%' }]}>{savedExercise.reps}</Text>
-          <Text style={[styles.statLabel, { color: colors.mutedText, textAlign: isArabic ? 'right' : 'center', width: '100%' }]}>{isArabic ? "تكرار (Reps)" : "Reps"}</Text>
+        <View style={[styles.statCard, { backgroundColor: isDark ? '#0c1a2e' : '#eff6ff', borderColor: isDark ? '#1e40af' : '#93c5fd' }]}>
+          <View style={styles.statIconRow}>
+            <Ionicons name="repeat-outline" size={16} color={isDark ? '#60a5fa' : '#2563eb'} />
+            <Text style={[styles.statLabel, { color: isDark ? '#93c5fd' : '#1e40af' }]}>{isArabic ? 'تكرار' : 'Reps'}</Text>
+          </View>
+          <Text style={[styles.statValue, { color: isDark ? '#60a5fa' : '#1e40af' }]}>{savedExercise.reps}</Text>
         </View>
       </View>
 
@@ -596,26 +601,30 @@ const styles = StyleSheet.create({
   },
   statsRow: {
     flexDirection: 'row',
-    borderRadius: 8,
-    borderWidth: 1,
-    overflow: 'hidden',
+    gap: 10,
+    marginBottom: 2,
   },
-  statBox: {
+  statCard: {
     flex: 1,
-    alignItems: 'center',
+    borderRadius: 12,
+    borderWidth: 1,
     paddingVertical: 10,
+    paddingHorizontal: 12,
+    alignItems: 'center',
   },
-  statDivider: {
-    width: 1,
-    height: '100%',
+  statIconRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginBottom: 4,
   },
   statValue: {
-    fontSize: 18,
-    fontWeight: 'bold',
+    fontSize: 24,
+    fontWeight: '800',
   },
   statLabel: {
     fontSize: 12,
-    marginTop: 2,
+    fontWeight: '600',
   },
   weightContainer: {
     marginTop: 10,
