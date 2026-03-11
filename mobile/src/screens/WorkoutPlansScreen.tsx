@@ -12,7 +12,7 @@ import { EXERCISE_REGISTRY, GlobalExercise } from '../lib/WorkoutRegistry';
 import { VideoCacheManager } from '../lib/VideoCacheManager';
 
 // --- Subcomponent: Exercise item with Video Player, Sets, Reps, Weights, and Download ---
-const ExerciseCard = ({ savedExercise, globalExercise, groupId, onRemove }: { savedExercise: SavedExercise, globalExercise: GlobalExercise, groupId: string, onRemove: () => void }) => {
+const ExerciseCard = ({ savedExercise, globalExercise, groupId, onRemove, onWeightsChanged }: { savedExercise: SavedExercise, globalExercise: GlobalExercise, groupId: string, onRemove: () => void, onWeightsChanged: () => void }) => {
   const { colors, isDark } = useAppTheme();
   const isArabic = isArabicLanguage();
   const [isDownloading, setIsDownloading] = useState(false);
@@ -81,6 +81,7 @@ const ExerciseCard = ({ savedExercise, globalExercise, groupId, onRemove }: { sa
     if (sw && isNaN(parsedStart!)) return;
     if (ew && isNaN(parsedEnd!)) return;
     await WorkoutStore.updateExerciseWeights(groupId, savedExercise.id, parsedStart, parsedEnd, unit);
+    onWeightsChanged();
   };
 
   const toggleUnit = async () => {
@@ -406,6 +407,7 @@ export default function WorkoutPlansScreen() {
                         globalExercise={globalEx}
                         groupId={group.id}
                         onRemove={() => handleRemoveExercise(group.id, savedEx.id)}
+                        onWeightsChanged={loadGroups}
                       />
                     )
                   })
