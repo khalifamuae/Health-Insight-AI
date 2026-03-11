@@ -174,9 +174,6 @@ const ExerciseCard = ({ savedExercise, globalExercise, groupId, onRemove, onWeig
               <Text style={[styles.weightSuffix, { color: isDark ? '#64748b' : '#94a3b8' }]}>{weightUnit}</Text>
             </View>
           </View>
-          <View style={styles.weightArrow}>
-            <Ionicons name="arrow-forward" size={18} color={isDark ? '#475569' : '#cbd5e1'} />
-          </View>
           <View style={styles.weightInputBox}>
             <Text style={[styles.weightLabel, { color: isDark ? '#94a3b8' : '#64748b' }]}>
               {isArabic ? 'الجولة الأخيرة' : 'Last Set'}
