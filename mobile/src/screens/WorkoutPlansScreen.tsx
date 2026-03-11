@@ -12,7 +12,7 @@ import { EXERCISE_REGISTRY, GlobalExercise } from '../lib/WorkoutRegistry';
 import { VideoCacheManager } from '../lib/VideoCacheManager';
 
 // --- Subcomponent: Exercise item with Video Player, Sets, Reps, Weights, and Download ---
-const ExerciseCard = ({ savedExercise, globalExercise, groupId, onRemove, onWeightsChanged }: { savedExercise: SavedExercise, globalExercise: GlobalExercise, groupId: string, onRemove: () => void, onWeightsChanged: () => void }) => {
+const ExerciseCard = ({ savedExercise, globalExercise, groupId, onRemove, onWeightsChanged }: { savedExercise: SavedExercise, globalExercise: GlobalExercise, groupId: string, onRemove: () => void, onWeightsChanged: (exerciseId: string, startWeight?: number, endWeight?: number, weightUnit?: 'kg' | 'lbs') => void }) => {
   const { colors, isDark } = useAppTheme();
   const isArabic = isArabicLanguage();
   const [isDownloading, setIsDownloading] = useState(false);
@@ -81,7 +81,7 @@ const ExerciseCard = ({ savedExercise, globalExercise, groupId, onRemove, onWeig
     if (sw && isNaN(parsedStart!)) return;
     if (ew && isNaN(parsedEnd!)) return;
     await WorkoutStore.updateExerciseWeights(groupId, savedExercise.id, parsedStart, parsedEnd, unit);
-    onWeightsChanged();
+    onWeightsChanged(savedExercise.id, parsedStart, parsedEnd, unit);
   };
 
   const toggleUnit = async () => {
@@ -252,6 +252,19 @@ export default function WorkoutPlansScreen() {
     loadGroups();
   };
 
+  const handleWeightsChanged = (groupId: string, exerciseId: string, startWeight?: number, endWeight?: number, weightUnit?: 'kg' | 'lbs') => {
+    setGroups(prev => prev.map(g => {
+      if (g.id !== groupId) return g;
+      return {
+        ...g,
+        exercises: g.exercises.map(ex => {
+          if (ex.id !== exerciseId) return ex;
+          return { ...ex, startWeight, endWeight, weightUnit };
+        }),
+      };
+    }));
+  };
+
   const handleImport = async () => {
     if (!importCode.trim()) return;
     setIsImporting(true);
@@ -407,7 +420,7 @@ export default function WorkoutPlansScreen() {
                         globalExercise={globalEx}
                         groupId={group.id}
                         onRemove={() => handleRemoveExercise(group.id, savedEx.id)}
-                        onWeightsChanged={loadGroups}
+                        onWeightsChanged={(exId, sw, ew, wu) => handleWeightsChanged(group.id, exId, sw, ew, wu)}
                       />
                     )
                   })
