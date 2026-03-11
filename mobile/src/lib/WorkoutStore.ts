@@ -15,6 +15,9 @@ export interface SavedExercise {
     sets: number;
     reps: number;
     dateAdded?: string; // ISO date string of when this was added
+    startWeight?: number; // Weight used in the first set
+    endWeight?: number;   // Weight lifted in the final set
+    weightUnit?: 'kg' | 'lbs'; // Unit for weight tracking
 }
 
 export interface WorkoutGroup {
@@ -104,6 +107,26 @@ export const WorkoutStore = {
                     exercises: g.exercises.map((ex) => {
                         if (ex.id === savedExerciseId) {
                             return { ...ex, sets, reps }
+                        }
+                        return ex;
+                    }),
+                };
+            }
+            return g;
+        });
+        await this.saveGroups(updatedGroups);
+    },
+
+    // Update weight tracking for a specific exercise instance
+    async updateExerciseWeights(groupId: string, savedExerciseId: string, startWeight: number | undefined, endWeight: number | undefined, weightUnit: 'kg' | 'lbs'): Promise<void> {
+        const groups = await this.getGroups();
+        const updatedGroups = groups.map((g) => {
+            if (g.id === groupId) {
+                return {
+                    ...g,
+                    exercises: g.exercises.map((ex) => {
+                        if (ex.id === savedExerciseId) {
+                            return { ...ex, startWeight, endWeight, weightUnit };
                         }
                         return ex;
                     }),

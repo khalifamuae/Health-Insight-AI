@@ -11,7 +11,7 @@ import { WorkoutStore, WorkoutGroup, SavedExercise } from '../lib/WorkoutStore';
 import { EXERCISE_REGISTRY, GlobalExercise } from '../lib/WorkoutRegistry';
 import { VideoCacheManager } from '../lib/VideoCacheManager';
 
-// --- Subcomponent: Exercise item with Video Player, Sets, Reps, and Download ---
+// --- Subcomponent: Exercise item with Video Player, Sets, Reps, Weights, and Download ---
 const ExerciseCard = ({ savedExercise, globalExercise, groupId, onRemove }: { savedExercise: SavedExercise, globalExercise: GlobalExercise, groupId: string, onRemove: () => void }) => {
   const { colors, isDark } = useAppTheme();
   const isArabic = isArabicLanguage();
@@ -19,6 +19,11 @@ const ExerciseCard = ({ savedExercise, globalExercise, groupId, onRemove }: { sa
   const [downloadProgress, setDownloadProgress] = useState(0);
   const [isOffline, setIsOffline] = useState(false);
   const [playbackUri, setPlaybackUri] = useState(globalExercise.videoUrl);
+
+  // Weight tracking state
+  const [startWeight, setStartWeight] = useState(savedExercise.startWeight?.toString() || '');
+  const [endWeight, setEndWeight] = useState(savedExercise.endWeight?.toString() || '');
+  const [weightUnit, setWeightUnit] = useState<'kg' | 'lbs'>(savedExercise.weightUnit || 'kg');
 
   useFocusEffect(
     useCallback(() => {
@@ -70,6 +75,20 @@ const ExerciseCard = ({ savedExercise, globalExercise, groupId, onRemove }: { sa
     }
   };
 
+  const saveWeights = async (sw: string, ew: string, unit: 'kg' | 'lbs') => {
+    const parsedStart = sw ? parseFloat(sw) : undefined;
+    const parsedEnd = ew ? parseFloat(ew) : undefined;
+    if (sw && isNaN(parsedStart!)) return;
+    if (ew && isNaN(parsedEnd!)) return;
+    await WorkoutStore.updateExerciseWeights(groupId, savedExercise.id, parsedStart, parsedEnd, unit);
+  };
+
+  const toggleUnit = async () => {
+    const newUnit = weightUnit === 'kg' ? 'lbs' : 'kg';
+    setWeightUnit(newUnit);
+    await saveWeights(startWeight, endWeight, newUnit);
+  };
+
   return (
     <View style={[styles.exerciseCard, { backgroundColor: colors.background, borderColor: colors.border }]}>
       <View style={styles.exerciseHeader}>
@@ -118,6 +137,49 @@ const ExerciseCard = ({ savedExercise, globalExercise, groupId, onRemove }: { sa
         </View>
       </View>
 
+      {/* Weight Tracking Row */}
+      <View style={[styles.weightRow, { backgroundColor: colors.card, borderColor: colors.border }]}>
+        <View style={styles.weightInputBox}>
+          <Text style={[styles.weightLabel, { color: colors.mutedText }]}>
+            {isArabic ? 'وزن البداية' : 'Start Weight'}
+          </Text>
+          <TextInput
+            style={[styles.weightInput, { color: colors.text, borderColor: colors.border, backgroundColor: isDark ? '#1e293b' : '#f8fafc' }]}
+            value={startWeight}
+            onChangeText={setStartWeight}
+            onBlur={() => saveWeights(startWeight, endWeight, weightUnit)}
+            keyboardType="decimal-pad"
+            placeholder="0"
+            placeholderTextColor={colors.mutedText}
+            textAlign="center"
+          />
+        </View>
+        <View style={styles.weightInputBox}>
+          <Text style={[styles.weightLabel, { color: colors.mutedText }]}>
+            {isArabic ? 'وزن النهاية' : 'End Weight'}
+          </Text>
+          <TextInput
+            style={[styles.weightInput, { color: colors.text, borderColor: colors.border, backgroundColor: isDark ? '#1e293b' : '#f8fafc' }]}
+            value={endWeight}
+            onChangeText={setEndWeight}
+            onBlur={() => saveWeights(startWeight, endWeight, weightUnit)}
+            keyboardType="decimal-pad"
+            placeholder="0"
+            placeholderTextColor={colors.mutedText}
+            textAlign="center"
+          />
+        </View>
+        <TouchableOpacity
+          onPress={toggleUnit}
+          style={[styles.unitToggle, { backgroundColor: isDark ? '#1e3a8a' : '#eff6ff', borderColor: isDark ? '#3b82f6' : '#bfdbfe' }]}
+        >
+          <Text style={[styles.unitText, { color: isDark ? '#93c5fd' : '#1e40af' }]}>
+            {weightUnit.toUpperCase()}
+          </Text>
+          <Ionicons name="swap-vertical" size={14} color={isDark ? '#93c5fd' : '#3b82f6'} />
+        </TouchableOpacity>
+      </View>
+
       {savedExercise.dateAdded && (
         <Text style={{ fontSize: 11, color: colors.mutedText, textAlign: isArabic ? 'right' : 'left', marginTop: 8 }}>
           {isArabic ? 'تاريخ الإضافة: ' : 'Added on: '}
@@ -131,6 +193,7 @@ const ExerciseCard = ({ savedExercise, globalExercise, groupId, onRemove }: { sa
     </View>
   );
 }
+
 
 
 // --- Main Screen ---
@@ -522,5 +585,48 @@ const styles = StyleSheet.create({
   statLabel: {
     fontSize: 12,
     marginTop: 2,
-  }
+  },
+  weightRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderRadius: 8,
+    borderWidth: 1,
+    overflow: 'hidden',
+    marginTop: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 10,
+    gap: 8,
+  },
+  weightInputBox: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  weightLabel: {
+    fontSize: 11,
+    marginBottom: 4,
+    fontWeight: '600',
+  },
+  weightInput: {
+    width: '100%',
+    height: 36,
+    borderWidth: 1,
+    borderRadius: 8,
+    fontSize: 16,
+    fontWeight: 'bold',
+    paddingHorizontal: 8,
+  },
+  unitToggle: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 10,
+    borderWidth: 1,
+    gap: 2,
+    marginTop: 14,
+  },
+  unitText: {
+    fontSize: 12,
+    fontWeight: '700',
+  },
 });
