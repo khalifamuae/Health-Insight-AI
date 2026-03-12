@@ -1,6 +1,6 @@
 /**
  * BioTrack AI - Monitoring & Alert System
- * يرسل تنبيهات فورية عبر الإيميل عند حدوث أخطاء
+ * يرسل تنبيهات فورية عبر الإيميل والواتساب عند حدوث أخطاء
  */
 
 import { getResendClient } from "./resendClient";
@@ -8,6 +8,17 @@ import { getResendClient } from "./resendClient";
 // ───── Config ─────
 const ALERT_EMAIL = process.env.ALERT_EMAIL || "khalifa@biotrack-ai.com";
 const APP_NAME = "BioTrack AI";
+
+// Twilio WhatsApp Config
+// للإعداد: أضف هذه المتغيرات في Replit Secrets:
+//   TWILIO_ACCOUNT_SID  → من console.twilio.com
+//   TWILIO_AUTH_TOKEN   → من console.twilio.com
+//   TWILIO_WHATSAPP_FROM → whatsapp:+14155238886 (Twilio Sandbox)
+//   ALERT_WHATSAPP_TO   → whatsapp:+971XXXXXXXXX (رقمك مع كود الإمارات)
+const TWILIO_SID = process.env.TWILIO_ACCOUNT_SID;
+const TWILIO_TOKEN = process.env.TWILIO_AUTH_TOKEN;
+const TWILIO_FROM = process.env.TWILIO_WHATSAPP_FROM || "whatsapp:+14155238886";
+const ALERT_WHATSAPP = process.env.ALERT_WHATSAPP_TO;
 
 // منع إرسال نفس الخطأ كثيراً (cooldown 5 دقائق)
 const errorCooldowns = new Map<string, number>();
@@ -74,9 +85,14 @@ export async function logError(
   if (now - lastSent > COOLDOWN_MS) {
     errorCooldowns.set(cooldownKey, now);
     log.notified = true;
-    await sendAlertEmail(log).catch((e) =>
-      console.error("[MONITOR] Failed to send alert email:", e.message)
-    );
+    await Promise.allSettled([
+      sendAlertEmail(log).catch((e) =>
+        console.error("[MONITOR] Failed to send alert email:", e.message)
+      ),
+      sendWhatsApp(log).catch((e) =>
+        console.error("[MONITOR] Failed to send WhatsApp alert:", e.message)
+      ),
+    ]);
   }
 }
 
@@ -164,6 +180,66 @@ async function sendAlertEmail(log: ErrorLog): Promise<void> {
     console.log(`[MONITOR] Alert email sent for: ${log.title}`);
   } catch (err: any) {
     console.error("[MONITOR] Email send failed:", err.message);
+  }
+}
+
+// ───── WhatsApp Alert (Twilio) ─────
+
+async function sendWhatsApp(log: ErrorLog): Promise<void> {
+  if (!TWILIO_SID || !TWILIO_TOKEN || !ALERT_WHATSAPP) {
+    console.log("[MONITOR] WhatsApp skipped — Twilio env vars not set (TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, ALERT_WHATSAPP_TO)");
+    return;
+  }
+
+  try {
+    const typeEmoji = log.type === "critical" ? "🔴" : log.type === "error" ? "🟠" : "🟡";
+    const typeLabel = log.type === "critical" ? "CRITICAL" : log.type === "error" ? "ERROR" : "WARNING";
+
+    const contextText = log.context
+      ? "\n" + Object.entries(log.context)
+          .filter(([, v]) => v !== undefined)
+          .map(([k, v]) => `  • ${k}: ${JSON.stringify(v)}`)
+          .join("\n")
+      : "";
+
+    const body = [
+      `${typeEmoji} *${APP_NAME} ${typeLabel}*`,
+      ``,
+      `*${log.title}*`,
+      `${log.message}`,
+      ``,
+      `🕐 ${log.timestamp.toLocaleString("ar-AE", { timeZone: "Asia/Dubai" })}`,
+      `🆔 ${log.id}`,
+      `📊 إجمالي الأخطاء: ${monitorStats.totalErrors}`,
+      contextText ? `\n📋 التفاصيل:${contextText}` : "",
+      ``,
+      `biotrack-ai.com`,
+    ].filter(line => line !== "").join("\n");
+
+    const url = `https://api.twilio.com/2010-04-01/Accounts/${TWILIO_SID}/Messages.json`;
+    const params = new URLSearchParams({
+      From: TWILIO_FROM,
+      To: ALERT_WHATSAPP,
+      Body: body,
+    });
+
+    const response = await fetch(url, {
+      method: "POST",
+      headers: {
+        "Authorization": "Basic " + Buffer.from(`${TWILIO_SID}:${TWILIO_TOKEN}`).toString("base64"),
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body: params.toString(),
+    });
+
+    if (!response.ok) {
+      const err = await response.text();
+      throw new Error(`Twilio API error: ${response.status} ${err}`);
+    }
+
+    console.log(`[MONITOR] WhatsApp alert sent for: ${log.title}`);
+  } catch (err: any) {
+    console.error("[MONITOR] WhatsApp send failed:", err.message);
   }
 }
 
