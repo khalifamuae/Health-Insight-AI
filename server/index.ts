@@ -3,6 +3,7 @@ import { registerRoutes } from "./routes";
 import { serveStatic } from "./static";
 import { createServer } from "http";
 import { startDailyLearningSchedule } from "./knowledgeEngine";
+import { monitorMiddleware, monitorStats, monitor } from "./monitor";
 import http from "http";
 
 const app = express();
@@ -62,7 +63,23 @@ app.use((req, res, next) => {
 (async () => {
   await registerRoutes(httpServer, app);
 
+  // Monitor stats endpoint (للداشبورد)
+  app.get("/api/monitor/stats", (req, res) => {
+    const uptime = Math.floor((Date.now() - monitorStats.startTime) / 1000);
+    res.json({
+      uptime,
+      totalErrors: monitorStats.totalErrors,
+      criticalErrors: monitorStats.criticalErrors,
+      warnings: monitorStats.warnings,
+      lastError: monitorStats.lastError,
+      recentErrors: monitorStats.errors.slice(0, 20),
+    });
+  });
+
   app.use((err: any, _req: Request, res: Response, next: NextFunction) => {
+    // 🔴 Monitor: اصطياد الأخطاء وإرسال تنبيه
+    monitorMiddleware(err, _req, res, next);
+
     const status = err.status || err.statusCode || 500;
     const message = status < 500 ? (err.message || "Bad Request") : "Internal Server Error";
 
@@ -125,6 +142,7 @@ function startHealthMonitor(port: number) {
     });
     req.on("error", (err) => {
       log(`Health check FAILED: ${err.message}`, "health-monitor");
+      monitor.critical("Health Check Failed", err, { port });
     });
     req.setTimeout(10000, () => {
       req.destroy();

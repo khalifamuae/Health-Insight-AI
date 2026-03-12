@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BioTrack AI — Monitor</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=Cairo:wght@300;400;600;700;900&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #040d14;
+  --surface: #071520;
+  --surface2: #0c2030;
+  --border: #123347;
+  --accent: #00c8f0;
+  --green: #00e676;
+  --warn: #ffb300;
+  --error: #ff1744;
+  --critical: #d500f9;
+  --text: #b0cfe0;
+  --text-dim: #3a6680;
+  --mono: 'IBM Plex Mono', monospace;
+  --arabic: 'Cairo', sans-serif;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--arabic);
+  min-height: 100vh;
+}
+body::before {
+  content: '';
+  position: fixed; inset: 0;
+  background-image:
+    linear-gradient(rgba(0,200,240,0.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0,200,240,0.025) 1px, transparent 1px);
+  background-size: 48px 48px;
+  pointer-events: none; z-index: 0;
+}
+.wrap { position: relative; z-index: 1; padding: 0 20px 40px; max-width: 1300px; margin: 0 auto; }
+
+/* ── Header ── */
+header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 16px 0; border-bottom: 1px solid var(--border); margin-bottom: 24px;
+}
+.logo { display: flex; align-items: center; gap: 12px; }
+.logo-pulse {
+  width: 10px; height: 10px; border-radius: 50%; background: var(--green);
+  box-shadow: 0 0 8px var(--green);
+  animation: pulse 1.5s ease-in-out infinite;
+}
+@keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.5;transform:scale(1.3)} }
+.logo h1 { font-size: 18px; font-weight: 700; color: #fff; letter-spacing: -0.5px; }
+.logo span { font-size: 12px; color: var(--text-dim); font-family: var(--mono); }
+.header-right { display: flex; align-items: center; gap: 16px; }
+#clock { font-family: var(--mono); font-size: 14px; color: var(--accent); }
+.config-btn {
+  background: var(--surface2); border: 1px solid var(--border);
+  color: var(--text); padding: 6px 14px; border-radius: 6px; font-size: 13px;
+  cursor: pointer; font-family: var(--arabic); transition: all .2s;
+}
+.config-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+/* ── Status Banner ── */
+#status-banner {
+  border-radius: 10px; padding: 14px 20px; margin-bottom: 20px;
+  display: flex; align-items: center; gap: 12px;
+  border: 1px solid; transition: all .5s;
+}
+.status-ok    { background: rgba(0,230,118,.07); border-color: rgba(0,230,118,.3); }
+.status-error { background: rgba(255,23,68,.07);  border-color: rgba(255,23,68,.3); }
+.status-warn  { background: rgba(255,179,0,.07);  border-color: rgba(255,179,0,.3); }
+.status-dot { width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; }
+.dot-green  { background: var(--green); box-shadow: 0 0 10px var(--green); animation: pulse 1.5s infinite; }
+.dot-red    { background: var(--error); box-shadow: 0 0 10px var(--error); animation: pulse .8s infinite; }
+.dot-yellow { background: var(--warn);  box-shadow: 0 0 10px var(--warn); }
+#status-text { font-size: 15px; font-weight: 600; }
+#status-sub  { font-size: 12px; color: var(--text-dim); margin-right: auto; }
+
+/* ── Stats Grid ── */
+.stats-grid {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px; margin-bottom: 24px;
+}
+.stat-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 10px; padding: 16px 18px; position: relative; overflow: hidden;
+  transition: border-color .3s;
+}
+.stat-card:hover { border-color: var(--accent); }
+.stat-card::after {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+}
+.stat-card.c-uptime::after  { background: linear-gradient(90deg, var(--green), transparent); }
+.stat-card.c-errors::after  { background: linear-gradient(90deg, var(--error), transparent); }
+.stat-card.c-critical::after{ background: linear-gradient(90deg, var(--critical), transparent); }
+.stat-card.c-warn::after    { background: linear-gradient(90deg, var(--warn), transparent); }
+.stat-label { font-size: 11px; color: var(--text-dim); margin-bottom: 6px; text-transform: uppercase; letter-spacing: .5px; }
+.stat-value { font-family: var(--mono); font-size: 28px; font-weight: 600; color: #fff; line-height: 1; }
+.stat-value.green    { color: var(--green); }
+.stat-value.red      { color: var(--error); }
+.stat-value.purple   { color: var(--critical); }
+.stat-value.yellow   { color: var(--warn); }
+.stat-sub { font-size: 11px; color: var(--text-dim); margin-top: 6px; font-family: var(--mono); }
+
+/* ── Server URL Config ── */
+.url-bar {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 10px; padding: 14px 18px; margin-bottom: 20px;
+  display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+}
+.url-bar label { font-size: 12px; color: var(--text-dim); white-space: nowrap; }
+.url-bar input {
+  flex: 1; min-width: 200px; background: var(--bg); border: 1px solid var(--border);
+  color: var(--text); padding: 7px 12px; border-radius: 6px; font-family: var(--mono);
+  font-size: 13px; outline: none; transition: border-color .2s;
+}
+.url-bar input:focus { border-color: var(--accent); }
+.url-bar button {
+  background: var(--accent); color: #000; border: none; padding: 7px 16px;
+  border-radius: 6px; font-size: 13px; cursor: pointer; font-weight: 600;
+  font-family: var(--arabic); transition: opacity .2s; white-space: nowrap;
+}
+.url-bar button:hover { opacity: .85; }
+
+/* ── Logs ── */
+.section-title {
+  font-size: 13px; font-weight: 700; color: var(--text-dim);
+  text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px;
+  display: flex; align-items: center; gap: 8px;
+}
+.section-title span { color: var(--accent); }
+.logs-container {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 10px; overflow: hidden;
+}
+.log-item {
+  display: grid; grid-template-columns: 90px 80px 1fr;
+  gap: 0; border-bottom: 1px solid var(--border);
+  transition: background .2s; animation: fadeIn .3s ease;
+}
+.log-item:last-child { border-bottom: none; }
+.log-item:hover { background: rgba(255,255,255,.02); }
+@keyframes fadeIn { from{opacity:0;transform:translateY(-4px)} to{opacity:1;transform:none} }
+.log-time {
+  padding: 12px 14px; font-family: var(--mono); font-size: 11px;
+  color: var(--text-dim); border-left: 1px solid var(--border); white-space: nowrap;
+}
+.log-badge { padding: 12px 14px; display: flex; align-items: center; }
+.badge {
+  font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 4px;
+  font-family: var(--mono); letter-spacing: .5px;
+}
+.badge-critical { background: rgba(213,0,249,.15); color: var(--critical); border: 1px solid rgba(213,0,249,.3); }
+.badge-error    { background: rgba(255,23,68,.15);  color: var(--error);    border: 1px solid rgba(255,23,68,.3); }
+.badge-warning  { background: rgba(255,179,0,.15);  color: var(--warn);     border: 1px solid rgba(255,179,0,.3); }
+.log-content { padding: 12px 16px; }
+.log-title { font-size: 13px; color: #e0eef5; font-weight: 600; }
+.log-msg   { font-size: 11px; color: var(--text-dim); margin-top: 2px; font-family: var(--mono); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.empty-state {
+  text-align: center; padding: 48px 20px; color: var(--text-dim);
+}
+.empty-state .icon { font-size: 40px; margin-bottom: 12px; }
+.empty-state p { font-size: 14px; }
+
+/* ── Refresh bar ── */
+.refresh-bar {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 12px; flex-wrap: wrap; gap: 8px;
+}
+.refresh-info { font-size: 12px; color: var(--text-dim); font-family: var(--mono); }
+.refresh-btn {
+  background: var(--surface2); border: 1px solid var(--border);
+  color: var(--text); padding: 5px 12px; border-radius: 6px; font-size: 12px;
+  cursor: pointer; font-family: var(--arabic); transition: all .2s;
+}
+.refresh-btn:hover { border-color: var(--accent); color: var(--accent); }
+#refresh-countdown { color: var(--accent); }
+
+/* ── Loading ── */
+.loading { display: flex; align-items: center; gap: 8px; padding: 24px 20px; }
+.spinner {
+  width: 16px; height: 16px; border: 2px solid var(--border);
+  border-top-color: var(--accent); border-radius: 50%;
+  animation: spin .7s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── Connection error ── */
+.conn-error {
+  background: rgba(255,23,68,.07); border: 1px solid rgba(255,23,68,.2);
+  border-radius: 8px; padding: 16px 20px; margin-bottom: 16px;
+  font-size: 13px; color: var(--error); display: none;
+}
+
+/* ── Footer ── */
+footer {
+  margin-top: 32px; border-top: 1px solid var(--border); padding-top: 16px;
+  font-size: 11px; color: var(--text-dim); font-family: var(--mono);
+  display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px;
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- Header -->
+  <header>
+    <div class="logo">
+      <div class="logo-pulse"></div>
+      <div>
+        <h1>BioTrack AI Monitor</h1>
+        <span>نظام المراقبة الفوري</span>
+      </div>
+    </div>
+    <div class="header-right">
+      <span id="clock"></span>
+      <button class="config-btn" onclick="toggleUrlBar()">⚙ الإعدادات</button>
+    </div>
+  </header>
+
+  <!-- URL Config Bar -->
+  <div class="url-bar" id="url-bar" style="display:none">
+    <label>رابط السيرفر:</label>
+    <input type="text" id="server-url" placeholder="https://your-repl.replit.app" />
+    <button onclick="saveUrl()">حفظ</button>
+    <span style="font-size:12px;color:var(--text-dim)">مثال: https://biotrack-ai.your-username.repl.co</span>
+  </div>
+
+  <!-- Connection Error -->
+  <div class="conn-error" id="conn-error">
+    ⚠ لا يمكن الاتصال بالسيرفر — تأكد من صحة الرابط أو أن السيرفر يعمل
+  </div>
+
+  <!-- Status Banner -->
+  <div id="status-banner" class="status-ok">
+    <div class="status-dot dot-green" id="status-dot"></div>
+    <div>
+      <div id="status-text">جاري الاتصال...</div>
+      <div id="status-sub">يتم التحديث كل 30 ثانية</div>
+    </div>
+    <div style="margin-right:auto;font-family:var(--mono);font-size:12px;color:var(--text-dim)" id="last-update"></div>
+  </div>
+
+  <!-- Stats -->
+  <div class="stats-grid">
+    <div class="stat-card c-uptime">
+      <div class="stat-label">⏱ وقت التشغيل</div>
+      <div class="stat-value green" id="s-uptime">—</div>
+      <div class="stat-sub" id="s-uptime-raw">—</div>
+    </div>
+    <div class="stat-card c-errors">
+      <div class="stat-label">❌ إجمالي الأخطاء</div>
+      <div class="stat-value red" id="s-errors">—</div>
+      <div class="stat-sub">منذ بدء التشغيل</div>
+    </div>
+    <div class="stat-card c-critical">
+      <div class="stat-label">🔴 أخطاء حرجة</div>
+      <div class="stat-value purple" id="s-critical">—</div>
+      <div class="stat-sub">Critical Errors</div>
+    </div>
+    <div class="stat-card c-warn">
+      <div class="stat-label">⚠ تحذيرات</div>
+      <div class="stat-value yellow" id="s-warn">—</div>
+      <div class="stat-sub">Warnings</div>
+    </div>
+  </div>
+
+  <!-- Logs -->
+  <div class="refresh-bar">
+    <div class="section-title">📋 سجل الأخطاء الأخيرة <span id="error-count"></span></div>
+    <div class="refresh-info">
+      تحديث تلقائي بعد <span id="refresh-countdown">30</span>ث
+      <button class="refresh-btn" onclick="fetchStats()" style="margin-right:8px">↻ الآن</button>
+    </div>
+  </div>
+
+  <div class="logs-container" id="logs-container">
+    <div class="loading"><div class="spinner"></div><span>جاري التحميل...</span></div>
+  </div>
+
+  <footer>
+    <span>BioTrack AI Monitor v1.0 • biotrack-ai.com</span>
+    <span id="footer-time"></span>
+  </footer>
+</div>
+
+<script>
+// ── State ──
+let serverUrl = localStorage.getItem('monitor_url') || '';
+let countdown = 30;
+let countdownTimer = null;
+
+// ── Clock ──
+function updateClock() {
+  const now = new Date();
+  document.getElementById('clock').textContent =
+    now.toLocaleTimeString('ar-AE', { timeZone: 'Asia/Dubai', hour12: false });
+  document.getElementById('footer-time').textContent =
+    now.toLocaleString('ar-AE', { timeZone: 'Asia/Dubai' });
+}
+setInterval(updateClock, 1000);
+updateClock();
+
+// ── URL Bar ──
+function toggleUrlBar() {
+  const bar = document.getElementById('url-bar');
+  bar.style.display = bar.style.display === 'none' ? 'flex' : 'none';
+  if (bar.style.display === 'flex') {
+    document.getElementById('server-url').value = serverUrl;
+  }
+}
+function saveUrl() {
+  const val = document.getElementById('server-url').value.trim().replace(/\/$/, '');
+  serverUrl = val;
+  localStorage.setItem('monitor_url', val);
+  document.getElementById('url-bar').style.display = 'none';
+  fetchStats();
+}
+
+// ── Format uptime ──
+function formatUptime(secs) {
+  if (secs < 60) return `${secs}ث`;
+  if (secs < 3600) return `${Math.floor(secs/60)}د ${secs%60}ث`;
+  const h = Math.floor(secs/3600);
+  const m = Math.floor((secs%3600)/60);
+  if (h < 24) return `${h}س ${m}د`;
+  return `${Math.floor(h/24)}ي ${h%24}س`;
+}
+
+// ── Fetch Stats ──
+async function fetchStats() {
+  if (!serverUrl) {
+    document.getElementById('url-bar').style.display = 'flex';
+    document.getElementById('conn-error').style.display = 'block';
+    document.getElementById('conn-error').textContent = '⚙ أدخل رابط السيرفر أولاً';
+    renderEmpty('أدخل رابط السيرفر في الإعدادات');
+    return;
+  }
+
+  try {
+    const res = await fetch(`${serverUrl}/api/monitor/stats`, { signal: AbortSignal.timeout(8000) });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+
+    document.getElementById('conn-error').style.display = 'none';
+    renderStats(data);
+    renderLogs(data.recentErrors || []);
+
+    const now = new Date().toLocaleTimeString('ar-AE', { hour12: false, timeZone: 'Asia/Dubai' });
+    document.getElementById('last-update').textContent = `آخر تحديث: ${now}`;
+  } catch (err) {
+    document.getElementById('conn-error').style.display = 'block';
+    document.getElementById('conn-error').textContent = `⚠ فشل الاتصال: ${err.message}`;
+    renderOffline();
+  }
+}
+
+// ── Render Stats ──
+function renderStats(data) {
+  document.getElementById('s-uptime').textContent = formatUptime(data.uptime || 0);
+  document.getElementById('s-uptime-raw').textContent = `${data.uptime}s raw`;
+  document.getElementById('s-errors').textContent = data.totalErrors ?? '0';
+  document.getElementById('s-critical').textContent = data.criticalErrors ?? '0';
+  document.getElementById('s-warn').textContent = data.warnings ?? '0';
+
+  const hasErrors = (data.totalErrors || 0) > 0;
+  const hasCritical = (data.criticalErrors || 0) > 0;
+
+  const banner = document.getElementById('status-banner');
+  const dot = document.getElementById('status-dot');
+  const statusText = document.getElementById('status-text');
+
+  if (hasCritical) {
+    banner.className = 'status-error';
+    dot.className = 'status-dot dot-red';
+    statusText.textContent = `🔴 تنبيه: ${data.criticalErrors} خطأ حرج`;
+  } else if (hasErrors) {
+    banner.className = 'status-warn';
+    dot.className = 'status-dot dot-yellow';
+    statusText.textContent = `⚠ يعمل مع ${data.totalErrors} خطأ مسجل`;
+  } else {
+    banner.className = 'status-ok';
+    dot.className = 'status-dot dot-green';
+    statusText.textContent = '✅ السيرفر يعمل بشكل طبيعي';
+  }
+}
+
+// ── Render Logs ──
+function renderLogs(errors) {
+  const container = document.getElementById('logs-container');
+  document.getElementById('error-count').textContent = errors.length > 0 ? `(${errors.length})` : '';
+
+  if (!errors.length) {
+    renderEmpty('لا توجد أخطاء مسجلة 🎉');
+    return;
+  }
+
+  container.innerHTML = errors.map(e => {
+    const time = new Date(e.timestamp).toLocaleTimeString('ar-AE', {
+      hour12: false, timeZone: 'Asia/Dubai',
+      hour: '2-digit', minute: '2-digit', second: '2-digit'
+    });
+    const date = new Date(e.timestamp).toLocaleDateString('ar-AE', { timeZone: 'Asia/Dubai' });
+    const badgeClass = `badge-${e.type}`;
+    const typeLabel = e.type === 'critical' ? 'CRITICAL' : e.type === 'error' ? 'ERROR' : 'WARN';
+    const msg = (e.message || '').slice(0, 120);
+    return `
+      <div class="log-item">
+        <div class="log-time">${time}<br><span style="font-size:10px;opacity:.5">${date}</span></div>
+        <div class="log-badge"><span class="badge ${badgeClass}">${typeLabel}</span></div>
+        <div class="log-content">
+          <div class="log-title">${escHtml(e.title || 'Unknown Error')}</div>
+          <div class="log-msg">${escHtml(msg)}</div>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+function renderEmpty(msg) {
+  document.getElementById('logs-container').innerHTML = `
+    <div class="empty-state">
+      <div class="icon">✅</div>
+      <p>${msg}</p>
+    </div>`;
+}
+
+function renderOffline() {
+  document.getElementById('s-uptime').textContent = '—';
+  document.getElementById('s-errors').textContent = '—';
+  document.getElementById('s-critical').textContent = '—';
+  document.getElementById('s-warn').textContent = '—';
+  const banner = document.getElementById('status-banner');
+  banner.className = 'status-error';
+  document.getElementById('status-dot').className = 'status-dot dot-red';
+  document.getElementById('status-text').textContent = '🔴 السيرفر غير متاح أو الرابط خاطئ';
+  document.getElementById('logs-container').innerHTML = `
+    <div class="empty-state">
+      <div class="icon">🔌</div>
+      <p>تعذر الاتصال بالسيرفر</p>
+    </div>`;
+}
+
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ── Auto Refresh ──
+function startCountdown() {
+  clearInterval(countdownTimer);
+  countdown = 30;
+  countdownTimer = setInterval(() => {
+    countdown--;
+    document.getElementById('refresh-countdown').textContent = countdown;
+    if (countdown <= 0) {
+      fetchStats();
+      countdown = 30;
+    }
+  }, 1000);
+}
+
+// ── Init ──
+if (serverUrl) {
+  document.getElementById('server-url').value = serverUrl;
+}
+fetchStats();
+startCountdown();
+</script>
+</body>
+</html>

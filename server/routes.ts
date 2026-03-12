@@ -13,6 +13,7 @@ import { getPrivacyPolicyHTML, getPrivacyPolicyArabicHTML, getTermsOfServiceHTML
 import { desc, eq, and, gte, sql } from "drizzle-orm";
 import { db } from "./db";
 import { userProfiles, testDefinitions, type TestDefinition, sharedWorkouts } from "@shared/schema";
+import { monitor } from "./monitor";
 import crypto from "crypto";
 import { emailVerificationCodes } from "@shared/schema";
 import { getResendClient } from "./resendClient";
@@ -1058,6 +1059,8 @@ export async function registerRoutes(
       const errorMessage = error instanceof Error ? error.message : "Unknown error";
       console.error("[PDF DEBUG] Analysis FAILED:", errorMessage, error);
       await storage.updateUploadedPdfStatus(pdfId, "failed", undefined, errorMessage);
+      // 🔴 Monitor Alert
+      monitor.critical("PDF Analysis Failed", error, { pdfId, errorMessage }).catch(() => {});
       throw error;
     }
   }
@@ -1276,6 +1279,7 @@ export async function registerRoutes(
       }
     } catch (error) {
       console.error("Error uploading InBody PDF:", error);
+      monitor.error("InBody PDF Upload Failed", error).catch(() => {});
       res.status(500).json({ error: "Failed to upload InBody PDF" });
     }
   });
@@ -1535,6 +1539,7 @@ export async function registerRoutes(
       res.json({ jobId: job.id, status: "pending" });
     } catch (error) {
       console.error("Error starting diet plan job:", error);
+      monitor.error("Diet Plan Generation Failed", error).catch(() => {});
       res.status(500).json({ error: "Failed to start diet plan generation" });
     }
   });
