@@ -13,7 +13,7 @@ import { getPrivacyPolicyHTML, getPrivacyPolicyArabicHTML, getTermsOfServiceHTML
 import { desc, eq, and, gte, sql } from "drizzle-orm";
 import { db } from "./db";
 import { userProfiles, testDefinitions, type TestDefinition, sharedWorkouts } from "@shared/schema";
-import { monitor } from "./monitor";
+import { monitor, monitorStats } from "./monitor";
 import crypto from "crypto";
 import { emailVerificationCodes } from "@shared/schema";
 import { getResendClient } from "./resendClient";
@@ -1929,17 +1929,49 @@ export async function registerRoutes(
   });
 
   app.get("/api/health", async (_req: Request, res: Response) => {
+    const mem = process.memoryUsage();
+    const uptimeSec = Math.floor(process.uptime());
+    const uptimeMin = Math.floor(uptimeSec / 60);
+    const uptimeHour = Math.floor(uptimeMin / 60);
+    const uptimeStr = uptimeHour > 0
+      ? `${uptimeHour}h ${uptimeMin % 60}m`
+      : `${uptimeMin}m ${uptimeSec % 60}s`;
+
     try {
       const dbCheck = await db.execute(sql`SELECT 1`);
       res.json({
         status: "ok",
+        app: "BioTrack AI",
         timestamp: new Date().toISOString(),
+        uptime: uptimeStr,
+        uptimeSeconds: uptimeSec,
         database: dbCheck ? "connected" : "error",
+        memory: {
+          heapUsed: Math.round(mem.heapUsed / 1024 / 1024) + "MB",
+          heapTotal: Math.round(mem.heapTotal / 1024 / 1024) + "MB",
+          rss: Math.round(mem.rss / 1024 / 1024) + "MB",
+        },
+        monitor: {
+          totalErrors: monitorStats.totalErrors,
+          criticalErrors: monitorStats.criticalErrors,
+          warnings: monitorStats.warnings,
+          lastError: monitorStats.lastError
+            ? {
+                title: monitorStats.lastError.title,
+                type: monitorStats.lastError.type,
+                time: monitorStats.lastError.timestamp,
+              }
+            : null,
+        },
       });
     } catch (error: any) {
       res.status(500).json({
         status: "error",
+        app: "BioTrack AI",
         timestamp: new Date().toISOString(),
+        uptime: uptimeStr,
+        database: "disconnected",
+        error: error.message,
       });
     }
   });
