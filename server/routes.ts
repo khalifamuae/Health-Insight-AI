@@ -13,7 +13,6 @@ import { getPrivacyPolicyHTML, getPrivacyPolicyArabicHTML, getTermsOfServiceHTML
 import { desc, eq, and, gte, sql } from "drizzle-orm";
 import { db } from "./db";
 import { userProfiles, testDefinitions, type TestDefinition, sharedWorkouts } from "@shared/schema";
-import { monitor, monitorStats } from "./monitor";
 import crypto from "crypto";
 import { emailVerificationCodes } from "@shared/schema";
 import { getResendClient } from "./resendClient";
@@ -277,18 +276,7 @@ export async function registerRoutes(
           from: fromEmail || "BioTrack AI <noreply@resend.dev>",
           to: email,
           subject: "BioTrack AI - Verification Code / رمز التحقق",
-          html: `
-  < div style = "font-family: Arial, sans-serif; max-width: 480px; margin: 0 auto; padding: 32px; text-align: center;" >
-    <h2 style="color: #10b981;" > BioTrack AI </h2>
-      < p style = "font-size: 16px; color: #374151;" > Your verification code is: </p>
-        < p style = "font-size: 16px; color: #374151; direction: rtl;" > رمز التحقق الخاص بك: </p>
-          < div style = "background: #f3f4f6; border-radius: 12px; padding: 24px; margin: 24px 0;" >
-            <span style="font-size: 36px; font-weight: bold; letter-spacing: 8px; color: #10b981;" > ${code} </span>
-              </div>
-              < p style = "font-size: 14px; color: #6b7280;" > This code expires in 10 minutes.</p>
-                < p style = "font-size: 14px; color: #6b7280; direction: rtl;" > ينتهي هذا الرمز خلال 10 دقائق.</p>
-                  </div>
-                    `,
+          html: `<!DOCTYPE html><html><head><meta charset="utf-8"></head><body><div style="font-family: Arial, sans-serif; max-width: 480px; margin: 0 auto; padding: 32px; text-align: center;"><h2 style="color: #10b981;">BioTrack AI</h2><p style="font-size: 16px; color: #374151;">Your verification code is:</p><p style="font-size: 16px; color: #374151; direction: rtl;">رمز التحقق الخاص بك:</p><div style="background: #f3f4f6; border-radius: 12px; padding: 24px; margin: 24px 0;"><span style="font-size: 36px; font-weight: bold; letter-spacing: 8px; color: #10b981;">${code}</span></div><p style="font-size: 14px; color: #6b7280;">This code expires in 10 minutes.</p><p style="font-size: 14px; color: #6b7280; direction: rtl;">ينتهي هذا الرمز خلال 10 دقائق.</p></div></body></html>`,
         });
       } catch (emailErr) {
         console.error("Email send error:", emailErr);
@@ -329,18 +317,7 @@ export async function registerRoutes(
           from: fromEmail || "BioTrack AI <noreply@resend.dev>",
           to: email,
           subject: "BioTrack AI - Password Reset Code / رمز استعادة كلمة المرور",
-          html: `
-            <div style="font-family: Arial, sans-serif; max-width: 480px; margin: 0 auto; padding: 32px; text-align: center;">
-              <h2 style="color: #3b82f6;">BioTrack AI</h2>
-              <p style="font-size: 16px; color: #374151;">Your password reset code is:</p>
-              <p style="font-size: 16px; color: #374151; direction: rtl;">رمز استعادة كلمة المرور الخاص بك:</p>
-              <div style="background: #f3f4f6; border-radius: 12px; padding: 24px; margin: 24px 0;">
-                <span style="font-size: 36px; font-weight: bold; letter-spacing: 8px; color: #3b82f6;">${code}</span>
-              </div>
-              <p style="font-size: 14px; color: #6b7280;">This code expires in 10 minutes. If you didn't request this, ignore this email.</p>
-              <p style="font-size: 14px; color: #6b7280; direction: rtl;">ينتهي هذا الرمز خلال 10 دقائق. إذا لم تطلب ذلك، تجاهل هذا البريد.</p>
-            </div>
-          `,
+          html: `<!DOCTYPE html><html><head><meta charset="utf-8"></head><body><div style="font-family: Arial, sans-serif; max-width: 480px; margin: 0 auto; padding: 32px; text-align: center;"><h2 style="color: #3b82f6;">BioTrack AI</h2><p style="font-size: 16px; color: #374151;">Your password reset code is:</p><p style="font-size: 16px; color: #374151; direction: rtl;">رمز استعادة كلمة المرور الخاص بك:</p><div style="background: #f3f4f6; border-radius: 12px; padding: 24px; margin: 24px 0;"><span style="font-size: 36px; font-weight: bold; letter-spacing: 8px; color: #3b82f6;">${code}</span></div><p style="font-size: 14px; color: #6b7280;">This code expires in 10 minutes. If you didn't request this, ignore this email.</p><p style="font-size: 14px; color: #6b7280; direction: rtl;">ينتهي هذا الرمز خلال 10 دقائق. إذا لم تطلب ذلك، تجاهل هذا البريد.</p></div></body></html>`,
         });
       } catch (emailErr) {
         console.error("Email send error:", emailErr);
@@ -1059,8 +1036,6 @@ export async function registerRoutes(
       const errorMessage = error instanceof Error ? error.message : "Unknown error";
       console.error("[PDF DEBUG] Analysis FAILED:", errorMessage, error);
       await storage.updateUploadedPdfStatus(pdfId, "failed", undefined, errorMessage);
-      // 🔴 Monitor Alert
-      monitor.critical("PDF Analysis Failed", error, { pdfId, errorMessage }).catch(() => {});
       throw error;
     }
   }
@@ -1279,7 +1254,6 @@ export async function registerRoutes(
       }
     } catch (error) {
       console.error("Error uploading InBody PDF:", error);
-      monitor.error("InBody PDF Upload Failed", error).catch(() => {});
       res.status(500).json({ error: "Failed to upload InBody PDF" });
     }
   });
@@ -1539,7 +1513,6 @@ export async function registerRoutes(
       res.json({ jobId: job.id, status: "pending" });
     } catch (error) {
       console.error("Error starting diet plan job:", error);
-      monitor.error("Diet Plan Generation Failed", error).catch(() => {});
       res.status(500).json({ error: "Failed to start diet plan generation" });
     }
   });
@@ -1929,49 +1902,17 @@ export async function registerRoutes(
   });
 
   app.get("/api/health", async (_req: Request, res: Response) => {
-    const mem = process.memoryUsage();
-    const uptimeSec = Math.floor(process.uptime());
-    const uptimeMin = Math.floor(uptimeSec / 60);
-    const uptimeHour = Math.floor(uptimeMin / 60);
-    const uptimeStr = uptimeHour > 0
-      ? `${uptimeHour}h ${uptimeMin % 60}m`
-      : `${uptimeMin}m ${uptimeSec % 60}s`;
-
     try {
       const dbCheck = await db.execute(sql`SELECT 1`);
       res.json({
         status: "ok",
-        app: "BioTrack AI",
         timestamp: new Date().toISOString(),
-        uptime: uptimeStr,
-        uptimeSeconds: uptimeSec,
         database: dbCheck ? "connected" : "error",
-        memory: {
-          heapUsed: Math.round(mem.heapUsed / 1024 / 1024) + "MB",
-          heapTotal: Math.round(mem.heapTotal / 1024 / 1024) + "MB",
-          rss: Math.round(mem.rss / 1024 / 1024) + "MB",
-        },
-        monitor: {
-          totalErrors: monitorStats.totalErrors,
-          criticalErrors: monitorStats.criticalErrors,
-          warnings: monitorStats.warnings,
-          lastError: monitorStats.lastError
-            ? {
-                title: monitorStats.lastError.title,
-                type: monitorStats.lastError.type,
-                time: monitorStats.lastError.timestamp,
-              }
-            : null,
-        },
       });
     } catch (error: any) {
       res.status(500).json({
         status: "error",
-        app: "BioTrack AI",
         timestamp: new Date().toISOString(),
-        uptime: uptimeStr,
-        database: "disconnected",
-        error: error.message,
       });
     }
   });

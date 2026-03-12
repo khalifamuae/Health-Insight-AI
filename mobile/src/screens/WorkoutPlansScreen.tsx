@@ -1,5 +1,5 @@
 import React, { useCallback, useState } from 'react';
-import { Alert, StyleSheet, Text, TouchableOpacity, View, ScrollView, TextInput, Share, ActivityIndicator, KeyboardAvoidingView, Platform } from 'react-native';
+import { Alert, StyleSheet, Text, TouchableOpacity, View, ScrollView, TextInput, Share, ActivityIndicator } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
@@ -11,20 +11,14 @@ import { WorkoutStore, WorkoutGroup, SavedExercise } from '../lib/WorkoutStore';
 import { EXERCISE_REGISTRY, GlobalExercise } from '../lib/WorkoutRegistry';
 import { VideoCacheManager } from '../lib/VideoCacheManager';
 
-// --- Subcomponent: Exercise item with Video Player, Sets, Reps, Weights, and Download ---
-const ExerciseCard = ({ savedExercise, globalExercise, groupId, onRemove, onWeightsChanged }: { savedExercise: SavedExercise, globalExercise: GlobalExercise, groupId: string, onRemove: () => void, onWeightsChanged: (exerciseId: string, startWeight?: number, endWeight?: number, weightUnit?: 'kg' | 'lbs') => void }) => {
+// --- Subcomponent: Exercise item with Video Player, Sets, Reps, and Download ---
+const ExerciseCard = ({ savedExercise, globalExercise, groupId, onRemove }: { savedExercise: SavedExercise, globalExercise: GlobalExercise, groupId: string, onRemove: () => void }) => {
   const { colors, isDark } = useAppTheme();
   const isArabic = isArabicLanguage();
   const [isDownloading, setIsDownloading] = useState(false);
   const [downloadProgress, setDownloadProgress] = useState(0);
   const [isOffline, setIsOffline] = useState(false);
   const [playbackUri, setPlaybackUri] = useState(globalExercise.videoUrl);
-  const [showVideo, setShowVideo] = useState(false);
-
-  // Weight tracking state
-  const [startWeight, setStartWeight] = useState(savedExercise.startWeight?.toString() || '');
-  const [endWeight, setEndWeight] = useState(savedExercise.endWeight?.toString() || '');
-  const [weightUnit, setWeightUnit] = useState<'kg' | 'lbs'>(savedExercise.weightUnit || 'kg');
 
   useFocusEffect(
     useCallback(() => {
@@ -76,21 +70,6 @@ const ExerciseCard = ({ savedExercise, globalExercise, groupId, onRemove, onWeig
     }
   };
 
-  const saveWeights = async (sw: string, ew: string, unit: 'kg' | 'lbs') => {
-    const parsedStart = sw ? parseFloat(sw) : undefined;
-    const parsedEnd = ew ? parseFloat(ew) : undefined;
-    if (sw && isNaN(parsedStart!)) return;
-    if (ew && isNaN(parsedEnd!)) return;
-    await WorkoutStore.updateExerciseWeights(groupId, savedExercise.id, parsedStart, parsedEnd, unit);
-    onWeightsChanged(savedExercise.id, parsedStart, parsedEnd, unit);
-  };
-
-  const toggleUnit = async () => {
-    const newUnit = weightUnit === 'kg' ? 'lbs' : 'kg';
-    setWeightUnit(newUnit);
-    await saveWeights(startWeight, endWeight, newUnit);
-  };
-
   return (
     <View style={[styles.exerciseCard, { backgroundColor: colors.background, borderColor: colors.border }]}>
       <View style={styles.exerciseHeader}>
@@ -112,37 +91,13 @@ const ExerciseCard = ({ savedExercise, globalExercise, groupId, onRemove, onWeig
       </View>
 
       <View style={styles.videoContainer}>
-        {showVideo ? (
-          <>
-            <Video
-              source={{ uri: playbackUri }}
-              style={styles.videoPlayer}
-              useNativeControls
-              resizeMode={ResizeMode.COVER}
-              isLooping
-              shouldPlay
-            />
-            <TouchableOpacity
-              onPress={() => setShowVideo(false)}
-              style={styles.videoCloseBtn}
-            >
-              <Ionicons name="close-circle" size={28} color="rgba(255,255,255,0.9)" />
-            </TouchableOpacity>
-          </>
-        ) : (
-          <TouchableOpacity
-            style={styles.videoPlayOverlay}
-            onPress={() => setShowVideo(true)}
-            activeOpacity={0.8}
-          >
-            <View style={styles.playIconCircle}>
-              <Ionicons name="play" size={32} color="#fff" style={{ marginLeft: 3 }} />
-            </View>
-            <Text style={styles.playText}>
-              {isArabic ? 'شغّل الفيديو' : 'Play Video'}
-            </Text>
-          </TouchableOpacity>
-        )}
+        <Video
+          source={{ uri: playbackUri }}
+          style={styles.videoPlayer}
+          useNativeControls
+          resizeMode={ResizeMode.COVER}
+          isLooping
+        />
         {isOffline && (
           <View style={styles.offlineBadge}>
             <Ionicons name="checkmark-circle" size={12} color="#fff" />
@@ -151,77 +106,15 @@ const ExerciseCard = ({ savedExercise, globalExercise, groupId, onRemove, onWeig
         )}
       </View>
 
-      <View style={styles.statsRow}>
-        <View style={[styles.statCard, { backgroundColor: isDark ? '#0f2918' : '#ecfdf5', borderColor: isDark ? '#166534' : '#a7f3d0' }]}>
-          <View style={styles.statIconRow}>
-            <Ionicons name="layers-outline" size={16} color={isDark ? '#4ade80' : '#16a34a'} />
-            <Text style={[styles.statLabel, { color: isDark ? '#86efac' : '#15803d' }]}>{isArabic ? 'جولات' : 'Sets'}</Text>
-          </View>
-          <Text style={[styles.statValue, { color: isDark ? '#4ade80' : '#166534' }]}>{savedExercise.sets}</Text>
+      <View style={[styles.statsRow, { backgroundColor: colors.card, borderColor: colors.border }]}>
+        <View style={styles.statBox}>
+          <Text style={[styles.statValue, { color: colors.text, textAlign: isArabic ? 'right' : 'center', width: '100%' }]}>{savedExercise.sets}</Text>
+          <Text style={[styles.statLabel, { color: colors.mutedText, textAlign: isArabic ? 'right' : 'center', width: '100%' }]}>{isArabic ? "جولات (Sets)" : "Sets"}</Text>
         </View>
-        <View style={[styles.statCard, { backgroundColor: isDark ? '#0c1a2e' : '#eff6ff', borderColor: isDark ? '#1e40af' : '#93c5fd' }]}>
-          <View style={styles.statIconRow}>
-            <Ionicons name="repeat-outline" size={16} color={isDark ? '#60a5fa' : '#2563eb'} />
-            <Text style={[styles.statLabel, { color: isDark ? '#93c5fd' : '#1e40af' }]}>{isArabic ? 'تكرار' : 'Reps'}</Text>
-          </View>
-          <Text style={[styles.statValue, { color: isDark ? '#60a5fa' : '#1e40af' }]}>{savedExercise.reps}</Text>
-        </View>
-      </View>
-
-      {/* Weight Tracking Row */}
-      <View style={[styles.weightContainer, { backgroundColor: isDark ? '#0f172a' : '#f0f4ff', borderColor: isDark ? '#1e3a8a' : '#c7d2fe' }]}>
-        <View style={styles.weightHeader}>
-          <Ionicons name="barbell-outline" size={16} color={isDark ? '#818cf8' : '#6366f1'} />
-          <Text style={[styles.weightHeaderText, { color: isDark ? '#a5b4fc' : '#4338ca' }]}>
-            {isArabic ? 'تتبع الأوزان' : 'Weight Tracking'}
-          </Text>
-          <TouchableOpacity
-            onPress={toggleUnit}
-            style={[styles.unitToggle, { backgroundColor: isDark ? '#312e81' : '#e0e7ff' }]}
-          >
-            <Text style={[styles.unitText, { color: isDark ? '#a5b4fc' : '#4338ca' }]}>
-              {weightUnit.toUpperCase()}
-            </Text>
-            <Ionicons name="swap-horizontal" size={12} color={isDark ? '#a5b4fc' : '#4338ca'} />
-          </TouchableOpacity>
-        </View>
-        <View style={styles.weightInputsRow}>
-          <View style={styles.weightInputBox}>
-            <Text style={[styles.weightLabel, { color: isDark ? '#94a3b8' : '#64748b' }]}>
-              {isArabic ? 'الجولة الأولى' : '1st Set'}
-            </Text>
-            <View style={[styles.weightInputWrapper, { backgroundColor: isDark ? '#1e293b' : '#fff', borderColor: isDark ? '#334155' : '#cbd5e1' }]}>
-              <TextInput
-                style={[styles.weightInput, { color: colors.text }]}
-                value={startWeight}
-                onChangeText={(val) => { setStartWeight(val); }}
-                onEndEditing={() => saveWeights(startWeight, endWeight, weightUnit)}
-                keyboardType="decimal-pad"
-                placeholder="—"
-                placeholderTextColor={isDark ? '#475569' : '#cbd5e1'}
-                textAlign="center"
-              />
-              <Text style={[styles.weightSuffix, { color: isDark ? '#64748b' : '#94a3b8' }]}>{weightUnit}</Text>
-            </View>
-          </View>
-          <View style={styles.weightInputBox}>
-            <Text style={[styles.weightLabel, { color: isDark ? '#94a3b8' : '#64748b' }]}>
-              {isArabic ? 'الجولة الأخيرة' : 'Last Set'}
-            </Text>
-            <View style={[styles.weightInputWrapper, { backgroundColor: isDark ? '#1e293b' : '#fff', borderColor: isDark ? '#334155' : '#cbd5e1' }]}>
-              <TextInput
-                style={[styles.weightInput, { color: colors.text }]}
-                value={endWeight}
-                onChangeText={(val) => { setEndWeight(val); }}
-                onEndEditing={() => saveWeights(startWeight, endWeight, weightUnit)}
-                keyboardType="decimal-pad"
-                placeholder="—"
-                placeholderTextColor={isDark ? '#475569' : '#cbd5e1'}
-                textAlign="center"
-              />
-              <Text style={[styles.weightSuffix, { color: isDark ? '#64748b' : '#94a3b8' }]}>{weightUnit}</Text>
-            </View>
-          </View>
+        <View style={[styles.statDivider, { backgroundColor: colors.border }]} />
+        <View style={styles.statBox}>
+          <Text style={[styles.statValue, { color: colors.text, textAlign: isArabic ? 'right' : 'center', width: '100%' }]}>{savedExercise.reps}</Text>
+          <Text style={[styles.statLabel, { color: colors.mutedText, textAlign: isArabic ? 'right' : 'center', width: '100%' }]}>{isArabic ? "تكرار (Reps)" : "Reps"}</Text>
         </View>
       </View>
 
@@ -238,7 +131,6 @@ const ExerciseCard = ({ savedExercise, globalExercise, groupId, onRemove, onWeig
     </View>
   );
 }
-
 
 
 // --- Main Screen ---
@@ -296,19 +188,6 @@ export default function WorkoutPlansScreen() {
     loadGroups();
   };
 
-  const handleWeightsChanged = (groupId: string, exerciseId: string, startWeight?: number, endWeight?: number, weightUnit?: 'kg' | 'lbs') => {
-    setGroups(prev => prev.map(g => {
-      if (g.id !== groupId) return g;
-      return {
-        ...g,
-        exercises: g.exercises.map(ex => {
-          if (ex.id !== exerciseId) return ex;
-          return { ...ex, startWeight, endWeight, weightUnit };
-        }),
-      };
-    }));
-  };
-
   const handleImport = async () => {
     if (!importCode.trim()) return;
     setIsImporting(true);
@@ -334,9 +213,10 @@ export default function WorkoutPlansScreen() {
     setIsSharing(groupId);
     try {
       const code = await WorkoutStore.shareGroup(groupId);
+      const appLink = 'https://apps.apple.com/ae/app/biotrack-ai/id6759469048?l=ar';
       const message = isArabic
-        ? `🔥 قمت بمشاركة جدول تماريني (${groupName}) على تطبيق BioTrack AI!\n\nلتحميل الجدول فوراً، افتح التطبيق وأدخل هذا الكود: ${code}`
-        : `🔥 I've shared my custom workout plan (${groupName}) on BioTrack AI!\n\nTo download it, open the app and enter this code: ${code}`;
+        ? `🔥 قمت بمشاركة جدول تماريني (${groupName}) على تطبيق BioTrack AI!\n\nلتحميل الجدول فوراً، افتح التطبيق وأدخل هذا الكود: ${code}\n\n📲 حمّل التطبيق: ${appLink}`
+        : `🔥 I've shared my custom workout plan (${groupName}) on BioTrack AI!\n\nTo download it, open the app and enter this code: ${code}\n\n📲 Download the app: ${appLink}`;
 
       await Share.share({ message });
     } catch (error: any) {
@@ -350,9 +230,10 @@ export default function WorkoutPlansScreen() {
     setIsSharingAll(true);
     try {
       const code = await WorkoutStore.shareAllGroups();
+      const appLink = 'https://apps.apple.com/ae/app/biotrack-ai/id6759469048?l=ar';
       const message = isArabic
-        ? `🚀 شاركت جميع جداول التمارين الخاصة بي على تطبيق BioTrack AI خطوة بخطوة!\n\nلتحميل جميع الجداول دفعة واحدة، افتح التطبيق وأدخل هذا الكود: ${code}`
-        : `🚀 I've shared ALL my custom workout routines on BioTrack AI!\n\nTo download my complete workout program, open the app and enter this code: ${code}`;
+        ? `🚀 شاركت جميع جداول التمارين الخاصة بي على تطبيق BioTrack AI خطوة بخطوة!\n\nلتحميل جميع الجداول دفعة واحدة، افتح التطبيق وأدخل هذا الكود: ${code}\n\n📲 حمّل التطبيق: ${appLink}`
+        : `🚀 I've shared ALL my custom workout routines on BioTrack AI!\n\nTo download my complete workout program, open the app and enter this code: ${code}\n\n📲 Download the app: ${appLink}`;
 
       await Share.share({ message });
     } catch (error: any) {
@@ -363,121 +244,118 @@ export default function WorkoutPlansScreen() {
   };
 
   return (
-    <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined} keyboardVerticalOffset={90}>
-      <ScrollView style={[styles.container, { backgroundColor: colors.background }]} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-        {groups.length > 0 && (
+    <ScrollView style={[styles.container, { backgroundColor: colors.background }]} contentContainerStyle={styles.content}>
+      {groups.length > 0 && (
+        <TouchableOpacity
+          style={[styles.shareAllBtn, { backgroundColor: colors.primary }]}
+          onPress={handleShareAllGroups}
+          disabled={isSharingAll}
+        >
+          {isSharingAll ? (
+            <ActivityIndicator color="#fff" style={{ marginRight: 8 }} />
+          ) : (
+            <Ionicons name="share-social" size={20} color="#fff" style={{ marginRight: 8, marginLeft: isArabic ? 8 : 0 }} />
+          )}
+          <Text style={[styles.shareAllText, { textAlign: isArabic ? 'right' : 'left' }]}>
+            {isArabic ? "📤 مشاركة جميع جداولي" : "📤 Share All My Workouts"}
+          </Text>
+        </TouchableOpacity>
+      )}
+
+      <View style={[styles.importContainer, { backgroundColor: colors.card, borderColor: colors.border }]}>
+        <Text style={[styles.importTitle, { color: colors.text, textAlign: isArabic ? 'right' : 'left', writingDirection: isArabic ? 'rtl' : 'ltr', width: '100%' }]}>
+          {isArabic ? "📥 استيراد جدول تمارين" : "📥 Import Workout Plan"}
+        </Text>
+        <View style={[styles.importRow, { flexDirection: isArabic ? 'row-reverse' : 'row' }]}>
+          <TextInput
+            style={[styles.importInput, { color: colors.text, borderColor: colors.border, backgroundColor: colors.background, textAlign: isArabic ? 'right' : 'left', writingDirection: isArabic ? 'rtl' : 'ltr', marginLeft: isArabic ? 10 : 0, marginRight: isArabic ? 0 : 10 }]}
+            placeholder={isArabic ? "أدخل الكود هنا (مثال: X9K2)" : "Enter code here (e.g. X9K2)"}
+            placeholderTextColor={colors.mutedText}
+            value={importCode}
+            onChangeText={setImportCode}
+            autoCapitalize="characters"
+            maxLength={6}
+          />
           <TouchableOpacity
-            style={[styles.shareAllBtn, { backgroundColor: colors.primary }]}
-            onPress={handleShareAllGroups}
-            disabled={isSharingAll}
+            style={[styles.importBtn, { backgroundColor: colors.primary, opacity: isImporting ? 0.7 : 1 }]}
+            onPress={handleImport}
+            disabled={isImporting || !importCode.trim()}
           >
-            {isSharingAll ? (
-              <ActivityIndicator color="#fff" style={{ marginRight: 8 }} />
-            ) : (
-              <Ionicons name="share-social" size={20} color="#fff" style={{ marginRight: 8, marginLeft: isArabic ? 8 : 0 }} />
-            )}
-            <Text style={[styles.shareAllText, { textAlign: isArabic ? 'right' : 'left' }]}>
-              {isArabic ? "📤 مشاركة جميع جداولي" : "📤 Share All My Workouts"}
+            <Text style={[styles.importBtnText, { textAlign: isArabic ? 'right' : 'left' }]}>
+              {isImporting ? (isArabic ? 'جاري...' : 'Wait...') : (isArabic ? 'حمل' : 'Import')}
             </Text>
           </TouchableOpacity>
-        )}
-
-        <View style={[styles.importContainer, { backgroundColor: colors.card, borderColor: colors.border }]}>
-          <Text style={[styles.importTitle, { color: colors.text, textAlign: isArabic ? 'right' : 'left', writingDirection: isArabic ? 'rtl' : 'ltr', width: '100%' }]}>
-            {isArabic ? "📥 استيراد جدول تمارين" : "📥 Import Workout Plan"}
-          </Text>
-          <View style={[styles.importRow, { flexDirection: isArabic ? 'row-reverse' : 'row' }]}>
-            <TextInput
-              style={[styles.importInput, { color: colors.text, borderColor: colors.border, backgroundColor: colors.background, textAlign: isArabic ? 'right' : 'left', writingDirection: isArabic ? 'rtl' : 'ltr', marginLeft: isArabic ? 10 : 0, marginRight: isArabic ? 0 : 10 }]}
-              placeholder={isArabic ? "أدخل الكود هنا (مثال: X9K2)" : "Enter code here (e.g. X9K2)"}
-              placeholderTextColor={colors.mutedText}
-              value={importCode}
-              onChangeText={setImportCode}
-              autoCapitalize="characters"
-              maxLength={6}
-            />
-            <TouchableOpacity
-              style={[styles.importBtn, { backgroundColor: colors.primary, opacity: isImporting ? 0.7 : 1 }]}
-              onPress={handleImport}
-              disabled={isImporting || !importCode.trim()}
-            >
-              <Text style={[styles.importBtnText, { textAlign: isArabic ? 'right' : 'left' }]}>
-                {isImporting ? (isArabic ? 'جاري...' : 'Wait...') : (isArabic ? 'حمل' : 'Import')}
-              </Text>
-            </TouchableOpacity>
-          </View>
         </View>
+      </View>
 
-        {groups.length === 0 ? (
-          <View style={[styles.emptyCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-            <Ionicons name="barbell-outline" size={42} color={colors.mutedText} />
-            <Text style={[styles.emptyTitle, { color: colors.text, textAlign: isArabic ? 'right' : 'left', width: '100%' }]}>
-              {isArabic ? 'جدولك فارغ حالياً' : 'Your plan is empty'}
-            </Text>
-            <Text style={[styles.emptyDesc, { color: colors.mutedText, textAlign: isArabic ? 'right' : 'left', width: '100%' }]}>
-              {isArabic
-                ? 'اذهب إلى "تصميم الجدول" لاختيار التمارين وتحديد التكرارات وبناء مجموعاتك المخصصة.'
-                : 'Go to the "Workout Builder" to select exercises, set reps, and build your custom groups.'}
-            </Text>
-          </View>
-        ) : (
-          groups.map(group => {
-            const isExpanded = expandedGroupIds.includes(group.id);
-            return (
-              <View key={group.id} style={[styles.groupContainer, { backgroundColor: colors.card, borderColor: colors.border }]}>
-                <TouchableOpacity activeOpacity={0.7} onPress={() => toggleGroup(group.id)} style={styles.groupHeader}>
-                  <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                    <Ionicons
-                      name={isExpanded ? "chevron-down" : "chevron-forward"}
-                      size={20}
-                      color={colors.text}
-                      style={{ marginRight: 8, marginLeft: isArabic ? 8 : 0 }}
-                    />
-                    <Text style={[styles.groupTitle, { color: colors.text, textAlign: isArabic ? 'right' : 'left', writingDirection: isArabic ? 'rtl' : 'ltr' }]}>{group.name}</Text>
-                  </View>
-                  <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                    <TouchableOpacity onPress={() => handleShareGroup(group.id, group.name)} style={{ padding: 4, marginRight: 12 }}>
-                      {isSharing === group.id ? (
-                        <ActivityIndicator size="small" color={colors.primary} />
-                      ) : (
-                        <Ionicons name="share-social-outline" size={20} color={colors.primary} />
-                      )}
-                    </TouchableOpacity>
-                    <TouchableOpacity onPress={() => handleDeleteGroup(group.id)} style={{ padding: 4 }}>
-                      <Ionicons name="trash" size={20} color="#ef4444" />
-                    </TouchableOpacity>
-                  </View>
-                </TouchableOpacity>
+      {groups.length === 0 ? (
+        <View style={[styles.emptyCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+          <Ionicons name="barbell-outline" size={42} color={colors.mutedText} />
+          <Text style={[styles.emptyTitle, { color: colors.text, textAlign: isArabic ? 'right' : 'left', width: '100%' }]}>
+            {isArabic ? 'جدولك فارغ حالياً' : 'Your plan is empty'}
+          </Text>
+          <Text style={[styles.emptyDesc, { color: colors.mutedText, textAlign: isArabic ? 'right' : 'left', width: '100%' }]}>
+            {isArabic
+              ? 'اذهب إلى "تصميم الجدول" لاختيار التمارين وتحديد التكرارات وبناء مجموعاتك المخصصة.'
+              : 'Go to the "Workout Builder" to select exercises, set reps, and build your custom groups.'}
+          </Text>
+        </View>
+      ) : (
+        groups.map(group => {
+          const isExpanded = expandedGroupIds.includes(group.id);
+          return (
+            <View key={group.id} style={[styles.groupContainer, { backgroundColor: colors.card, borderColor: colors.border }]}>
+              <TouchableOpacity activeOpacity={0.7} onPress={() => toggleGroup(group.id)} style={styles.groupHeader}>
+                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                  <Ionicons
+                    name={isExpanded ? "chevron-down" : "chevron-forward"}
+                    size={20}
+                    color={colors.text}
+                    style={{ marginRight: 8, marginLeft: isArabic ? 8 : 0 }}
+                  />
+                  <Text style={[styles.groupTitle, { color: colors.text, textAlign: isArabic ? 'right' : 'left', writingDirection: isArabic ? 'rtl' : 'ltr' }]}>{group.name}</Text>
+                </View>
+                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                  <TouchableOpacity onPress={() => handleShareGroup(group.id, group.name)} style={{ padding: 4, marginRight: 12 }}>
+                    {isSharing === group.id ? (
+                      <ActivityIndicator size="small" color={colors.primary} />
+                    ) : (
+                      <Ionicons name="share-social-outline" size={20} color={colors.primary} />
+                    )}
+                  </TouchableOpacity>
+                  <TouchableOpacity onPress={() => handleDeleteGroup(group.id)} style={{ padding: 4 }}>
+                    <Ionicons name="trash" size={20} color="#ef4444" />
+                  </TouchableOpacity>
+                </View>
+              </TouchableOpacity>
 
-                {isExpanded && (
-                  group.exercises.length === 0 ? (
-                    <Text style={{ color: colors.mutedText, textAlign: isArabic ? 'right' : 'center', width: '100%', marginVertical: 10 }}>
-                      {isArabic ? "لا توجد تمارين هنا." : "No exercises here."}
-                    </Text>
-                  ) : (
-                    group.exercises.map(savedEx => {
-                      const globalEx = EXERCISE_REGISTRY.find(e => e.id === savedEx.exerciseId);
-                      if (!globalEx) return null;
-                      return (
-                        <ExerciseCard
-                          key={savedEx.id}
-                          savedExercise={savedEx}
-                          globalExercise={globalEx}
-                          groupId={group.id}
-                          onRemove={() => handleRemoveExercise(group.id, savedEx.id)}
-                          onWeightsChanged={(exId, sw, ew, wu) => handleWeightsChanged(group.id, exId, sw, ew, wu)}
-                        />
-                      )
-                    })
-                  )
-                )}
-              </View>
-            )
-          })
-        )}
-        <View style={{ height: 100 }} />
-      </ScrollView>
-    </KeyboardAvoidingView>
+              {isExpanded && (
+                group.exercises.length === 0 ? (
+                  <Text style={{ color: colors.mutedText, textAlign: isArabic ? 'right' : 'center', width: '100%', marginVertical: 10 }}>
+                    {isArabic ? "لا توجد تمارين هنا." : "No exercises here."}
+                  </Text>
+                ) : (
+                  group.exercises.map(savedEx => {
+                    const globalEx = EXERCISE_REGISTRY.find(e => e.id === savedEx.exerciseId);
+                    if (!globalEx) return null;
+                    return (
+                      <ExerciseCard
+                        key={savedEx.id}
+                        savedExercise={savedEx}
+                        globalExercise={globalEx}
+                        groupId={group.id}
+                        onRemove={() => handleRemoveExercise(group.id, savedEx.id)}
+                      />
+                    )
+                  })
+                )
+              )}
+            </View>
+          )
+        })
+      )}
+      <View style={{ height: 100 }} />
+    </ScrollView>
   );
 }
 
@@ -603,33 +481,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center'
   },
-  videoPlayOverlay: {
-    width: '100%',
-    height: '100%',
-    backgroundColor: '#111827',
-    justifyContent: 'center',
-    alignItems: 'center',
-    gap: 8,
-  },
-  playIconCircle: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    backgroundColor: 'rgba(59, 130, 246, 0.9)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  playText: {
-    color: 'rgba(255,255,255,0.7)',
-    fontSize: 13,
-    fontWeight: '600',
-  },
-  videoCloseBtn: {
-    position: 'absolute' as const,
-    top: 8,
-    right: 8,
-    zIndex: 10,
-  },
   videoPlayer: {
     width: '100%',
     height: '100%',
@@ -653,95 +504,25 @@ const styles = StyleSheet.create({
   },
   statsRow: {
     flexDirection: 'row',
-    gap: 10,
-    marginBottom: 2,
-  },
-  statCard: {
-    flex: 1,
-    borderRadius: 12,
+    borderRadius: 8,
     borderWidth: 1,
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-    alignItems: 'center',
+    overflow: 'hidden',
   },
-  statIconRow: {
-    flexDirection: 'row',
+  statBox: {
+    flex: 1,
     alignItems: 'center',
-    gap: 4,
-    marginBottom: 4,
+    paddingVertical: 10,
+  },
+  statDivider: {
+    width: 1,
+    height: '100%',
   },
   statValue: {
-    fontSize: 24,
-    fontWeight: '800',
+    fontSize: 18,
+    fontWeight: 'bold',
   },
   statLabel: {
     fontSize: 12,
-    fontWeight: '600',
-  },
-  weightContainer: {
-    marginTop: 10,
-    borderRadius: 12,
-    borderWidth: 1,
-    padding: 12,
-  },
-  weightHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 10,
-    gap: 6,
-  },
-  weightHeaderText: {
-    fontSize: 13,
-    fontWeight: '700',
-    flex: 1,
-  },
-  weightInputsRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  weightInputBox: {
-    flex: 1,
-    alignItems: 'center',
-  },
-  weightLabel: {
-    fontSize: 11,
-    fontWeight: '600',
-    marginBottom: 6,
-  },
-  weightInputWrapper: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderWidth: 1.5,
-    borderRadius: 10,
-    height: 44,
-    paddingHorizontal: 8,
-    width: '100%',
-  },
-  weightInput: {
-    flex: 1,
-    fontSize: 20,
-    fontWeight: '700',
-    paddingVertical: 0,
-  },
-  weightSuffix: {
-    fontSize: 12,
-    fontWeight: '600',
-    marginLeft: 2,
-  },
-  weightArrow: {
-    paddingTop: 18,
-  },
-  unitToggle: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 8,
-    gap: 4,
-  },
-  unitText: {
-    fontSize: 12,
-    fontWeight: '700',
-  },
+    marginTop: 2,
+  }
 });
