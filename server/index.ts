@@ -116,6 +116,7 @@ app.use((req, res, next) => {
       log(`serving on port ${port}`);
       startDailyLearningSchedule();
       startHealthMonitor(port);
+      startDailyReport();
     },
   );
 })();
