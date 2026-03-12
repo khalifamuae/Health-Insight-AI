@@ -9,16 +9,12 @@ import { getResendClient } from "./resendClient";
 const ALERT_EMAIL = process.env.ALERT_EMAIL || "khalifa@biotrack-ai.com";
 const APP_NAME = "BioTrack AI";
 
-// Twilio WhatsApp Config
-// للإعداد: أضف هذه المتغيرات في Replit Secrets:
-//   TWILIO_ACCOUNT_SID  → من console.twilio.com
-//   TWILIO_AUTH_TOKEN   → من console.twilio.com
-//   TWILIO_WHATSAPP_FROM → whatsapp:+14155238886 (Twilio Sandbox)
-//   ALERT_WHATSAPP_TO   → whatsapp:+971XXXXXXXXX (رقمك مع كود الإمارات)
-const TWILIO_SID = process.env.TWILIO_ACCOUNT_SID;
-const TWILIO_TOKEN = process.env.TWILIO_AUTH_TOKEN;
-const TWILIO_FROM = process.env.TWILIO_WHATSAPP_FROM || "whatsapp:+14155238886";
-const ALERT_WHATSAPP = process.env.ALERT_WHATSAPP_TO;
+// CallMeBot WhatsApp Config (مجاني - بدون Twilio)
+// أضف في Replit Secrets:
+//   CALLMEBOT_PHONE  → 971503222434
+//   CALLMEBOT_APIKEY → 9222833
+const CALLMEBOT_PHONE = process.env.CALLMEBOT_PHONE;
+const CALLMEBOT_APIKEY = process.env.CALLMEBOT_APIKEY;
 
 // منع إرسال نفس الخطأ كثيراً (cooldown 5 دقائق)
 const errorCooldowns = new Map<string, number>();
@@ -126,19 +122,13 @@ async function sendAlertEmail(log: ErrorLog): Promise<void> {
 <head><meta charset="UTF-8"></head>
 <body style="margin:0;padding:0;background:#f0f0f0;font-family:Arial,sans-serif">
   <div style="max-width:600px;margin:20px auto;background:#fff;border-radius:10px;overflow:hidden;box-shadow:0 2px 10px rgba(0,0,0,0.1)">
-    
-    <!-- Header -->
     <div style="background:${log.type === "critical" ? "#dc2626" : log.type === "error" ? "#ea580c" : "#d97706"};padding:20px 24px">
       <h1 style="margin:0;color:#fff;font-size:20px">${typeEmoji} ${APP_NAME} Monitor</h1>
       <p style="margin:4px 0 0;color:rgba(255,255,255,0.85);font-size:14px">${typeLabel} — تنبيه فوري</p>
     </div>
-
-    <!-- Body -->
     <div style="padding:24px">
-      
       <h2 style="margin:0 0 8px;color:#1a1a1a;font-size:18px">${log.title}</h2>
       <p style="margin:0 0 20px;color:#555;font-size:15px;background:#fff3cd;padding:12px;border-radius:6px;border-right:4px solid #ffc107">${log.message}</p>
-
       <div style="display:flex;gap:16px;margin-bottom:20px;flex-wrap:wrap">
         <div style="flex:1;min-width:200px;background:#f8f8f8;padding:12px;border-radius:6px">
           <p style="margin:0;font-size:12px;color:#999">الوقت</p>
@@ -153,18 +143,11 @@ async function sendAlertEmail(log: ErrorLog): Promise<void> {
           <p style="margin:4px 0 0;font-size:14px;font-weight:bold">${monitorStats.totalErrors} خطأ</p>
         </div>
       </div>
-
       ${log.context ? `<h3 style="margin:0 0 8px;font-size:14px;color:#444">📋 تفاصيل إضافية</h3>${contextHtml}` : ""}
-      
       ${log.stack ? `<h3 style="margin:20px 0 8px;font-size:14px;color:#444">🔍 Stack Trace</h3>${stackHtml}` : ""}
-
     </div>
-
-    <!-- Footer -->
     <div style="background:#f8f8f8;padding:16px 24px;border-top:1px solid #eee">
-      <p style="margin:0;font-size:12px;color:#999;text-align:center">
-        ${APP_NAME} Monitoring System • biotrack-ai.com
-      </p>
+      <p style="margin:0;font-size:12px;color:#999;text-align:center">${APP_NAME} Monitoring System • biotrack-ai.com</p>
     </div>
   </div>
 </body>
@@ -183,11 +166,11 @@ async function sendAlertEmail(log: ErrorLog): Promise<void> {
   }
 }
 
-// ───── WhatsApp Alert (Twilio) ─────
+// ───── WhatsApp Alert (CallMeBot - مجاني) ─────
 
 async function sendWhatsApp(log: ErrorLog): Promise<void> {
-  if (!TWILIO_SID || !TWILIO_TOKEN || !ALERT_WHATSAPP) {
-    console.log("[MONITOR] WhatsApp skipped — Twilio env vars not set (TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, ALERT_WHATSAPP_TO)");
+  if (!CALLMEBOT_PHONE || !CALLMEBOT_APIKEY) {
+    console.log("[MONITOR] WhatsApp skipped — أضف CALLMEBOT_PHONE و CALLMEBOT_APIKEY في Replit Secrets");
     return;
   }
 
@@ -198,11 +181,11 @@ async function sendWhatsApp(log: ErrorLog): Promise<void> {
     const contextText = log.context
       ? "\n" + Object.entries(log.context)
           .filter(([, v]) => v !== undefined)
-          .map(([k, v]) => `  • ${k}: ${JSON.stringify(v)}`)
+          .map(([k, v]) => `• ${k}: ${JSON.stringify(v)}`)
           .join("\n")
       : "";
 
-    const body = [
+    const message = [
       `${typeEmoji} *${APP_NAME} ${typeLabel}*`,
       ``,
       `*${log.title}*`,
@@ -211,30 +194,18 @@ async function sendWhatsApp(log: ErrorLog): Promise<void> {
       `🕐 ${log.timestamp.toLocaleString("ar-AE", { timeZone: "Asia/Dubai" })}`,
       `🆔 ${log.id}`,
       `📊 إجمالي الأخطاء: ${monitorStats.totalErrors}`,
-      contextText ? `\n📋 التفاصيل:${contextText}` : "",
+      contextText ? `\n📋 التفاصيل:\n${contextText}` : "",
       ``,
       `biotrack-ai.com`,
     ].filter(line => line !== "").join("\n");
 
-    const url = `https://api.twilio.com/2010-04-01/Accounts/${TWILIO_SID}/Messages.json`;
-    const params = new URLSearchParams({
-      From: TWILIO_FROM,
-      To: ALERT_WHATSAPP,
-      Body: body,
-    });
+    const encodedMsg = encodeURIComponent(message);
+    const url = `https://api.callmebot.com/whatsapp.php?phone=${CALLMEBOT_PHONE}&text=${encodedMsg}&apikey=${CALLMEBOT_APIKEY}`;
 
-    const response = await fetch(url, {
-      method: "POST",
-      headers: {
-        "Authorization": "Basic " + Buffer.from(`${TWILIO_SID}:${TWILIO_TOKEN}`).toString("base64"),
-        "Content-Type": "application/x-www-form-urlencoded",
-      },
-      body: params.toString(),
-    });
+    const response = await fetch(url);
 
     if (!response.ok) {
-      const err = await response.text();
-      throw new Error(`Twilio API error: ${response.status} ${err}`);
+      throw new Error(`CallMeBot error: ${response.status}`);
     }
 
     console.log(`[MONITOR] WhatsApp alert sent for: ${log.title}`);
@@ -245,9 +216,6 @@ async function sendWhatsApp(log: ErrorLog): Promise<void> {
 
 // ───── Express Middleware ─────
 
-/**
- * يضاف في server/index.ts لاصطياد كل الأخطاء تلقائياً
- */
 export function monitorMiddleware(
   err: any,
   req: any,
