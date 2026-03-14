@@ -4,7 +4,6 @@ import {
   Text,
   StyleSheet,
   ScrollView,
-  TextInput,
   TouchableOpacity,
   Alert,
   I18nManager,
@@ -21,6 +20,7 @@ import { pickImageFromAlbum } from '../lib/photoPicker';
 import { useAuth } from '../context/AuthContext';
 import { useAppTheme } from '../context/ThemeContext';
 import { getDateCalendarPreference, setDateCalendarPreference, type CalendarType } from '../lib/dateFormat';
+import AppTextInput from '../components/AppTextInput';
 
 interface UserProfile {
   id: string;
@@ -217,7 +217,7 @@ export default function ProfileScreen({ navigation }: { navigation: any }) {
             <Ionicons name="person" size={40} color="#fff" />
           )}
         </TouchableOpacity>
-        <TextInput
+        <AppTextInput
           style={[styles.displayNameInput, { color: primaryText, borderColor: isDark ? '#334155' : '#e2e8f0', backgroundColor: isDark ? '#0f172a' : '#fff' }]}
           value={displayName}
           onChangeText={setDisplayName}
@@ -260,7 +260,7 @@ export default function ProfileScreen({ navigation }: { navigation: any }) {
 
         <View style={styles.inputGroup}>
           <Text style={[styles.label, { color: secondaryText }]}>{t('profile.age')}</Text>
-          <TextInput
+          <AppTextInput
             style={[styles.input, { backgroundColor: isDark ? '#0f172a' : '#f8fafc', borderColor: colors.border, color: primaryText }]}
             value={age}
             onChangeText={setAge}
@@ -316,7 +316,7 @@ export default function ProfileScreen({ navigation }: { navigation: any }) {
         <View style={styles.row}>
           <View style={[styles.inputGroup, styles.halfWidth]}>
             <Text style={[styles.label, { color: secondaryText }]}>{t('profile.height')}</Text>
-            <TextInput
+            <AppTextInput
               style={[styles.input, { backgroundColor: isDark ? '#0f172a' : '#f8fafc', borderColor: colors.border, color: primaryText }]}
               value={height}
               onChangeText={setHeight}
@@ -330,7 +330,7 @@ export default function ProfileScreen({ navigation }: { navigation: any }) {
           </View>
           <View style={[styles.inputGroup, styles.halfWidth]}>
             <Text style={[styles.label, { color: secondaryText }]}>{t('profile.weight')}</Text>
-            <TextInput
+            <AppTextInput
               style={[styles.input, { backgroundColor: isDark ? '#0f172a' : '#f8fafc', borderColor: colors.border, color: primaryText }]}
               value={weight}
               onChangeText={setWeight}

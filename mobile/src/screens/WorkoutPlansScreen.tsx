@@ -1,5 +1,5 @@
 import React, { useCallback, useState } from 'react';
-import { Alert, StyleSheet, Text, TouchableOpacity, View, ScrollView, TextInput, Share, ActivityIndicator } from 'react-native';
+import { Alert, StyleSheet, Text, TouchableOpacity, View, ScrollView, Share, ActivityIndicator } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
@@ -10,6 +10,7 @@ import { useAppTheme } from '../context/ThemeContext';
 import { WorkoutStore, WorkoutGroup, SavedExercise } from '../lib/WorkoutStore';
 import { EXERCISE_REGISTRY, GlobalExercise } from '../lib/WorkoutRegistry';
 import { VideoCacheManager } from '../lib/VideoCacheManager';
+import AppTextInput from '../components/AppTextInput';
 
 // --- Subcomponent: Exercise item with Video Player, Sets, Reps, and Download ---
 const ExerciseCard = ({ savedExercise, globalExercise, groupId, onRemove }: { savedExercise: SavedExercise, globalExercise: GlobalExercise, groupId: string, onRemove: () => void }) => {
@@ -267,7 +268,7 @@ export default function WorkoutPlansScreen() {
           {isArabic ? "📥 استيراد جدول تمارين" : "📥 Import Workout Plan"}
         </Text>
         <View style={[styles.importRow, { flexDirection: isArabic ? 'row-reverse' : 'row' }]}>
-          <TextInput
+          <AppTextInput
             style={[styles.importInput, { color: colors.text, borderColor: colors.border, backgroundColor: colors.background, textAlign: isArabic ? 'right' : 'left', writingDirection: isArabic ? 'rtl' : 'ltr', marginLeft: isArabic ? 10 : 0, marginRight: isArabic ? 0 : 10 }]}
             placeholder={isArabic ? "أدخل الكود هنا (مثال: X9K2)" : "Enter code here (e.g. X9K2)"}
             placeholderTextColor={colors.mutedText}

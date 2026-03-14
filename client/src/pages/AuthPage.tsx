@@ -25,6 +25,16 @@ import {
 
 type SignupStep = "form" | "verify";
 
+const VERIFICATION_CODE_LENGTH = 6;
+
+function normalizeVerificationCode(value: string): string {
+  return value
+    .replace(/[٠-٩]/g, (digit) => String(digit.charCodeAt(0) - 0x0660))
+    .replace(/[۰-۹]/g, (digit) => String(digit.charCodeAt(0) - 0x06f0))
+    .replace(/[^0-9]/g, "")
+    .slice(0, VERIFICATION_CODE_LENGTH);
+}
+
 export default function AuthPage() {
   const { t, i18n } = useTranslation();
   const { toast } = useToast();
@@ -92,6 +102,7 @@ export default function AuthPage() {
         return;
       }
       toast({ title: t("success"), description: t("authCodeSent") });
+      setVerificationCode("");
       setSignupStep("verify");
     } catch {
       toast({ title: t("error"), description: t("authNetworkError"), variant: "destructive" });
@@ -101,7 +112,9 @@ export default function AuthPage() {
   };
 
   const handleVerifyCode = async () => {
-    if (!verificationCode.trim() || verificationCode.length !== 6) {
+    const normalizedCode = normalizeVerificationCode(verificationCode);
+
+    if (!normalizedCode || normalizedCode.length !== VERIFICATION_CODE_LENGTH) {
       toast({ title: t("error"), description: t("authInvalidCode"), variant: "destructive" });
       return;
     }
@@ -110,7 +123,7 @@ export default function AuthPage() {
       const response = await fetch("/api/auth/verify-code", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: email.trim().toLowerCase(), code: verificationCode.trim() }),
+        body: JSON.stringify({ email: email.trim().toLowerCase(), code: normalizedCode }),
       });
       const data = await response.json();
       if (!response.ok) {
@@ -370,14 +383,14 @@ export default function AuthPage() {
                         data-testid="input-verification-code"
                         value={verificationCode}
                         onChange={(e) => {
-                          const val = e.target.value.replace(/\D/g, '').slice(0, 6);
-                          setVerificationCode(val);
+                          setVerificationCode(normalizeVerificationCode(e.target.value));
                         }}
                         className="h-12 text-center text-2xl tracking-[0.5em] font-mono"
                         dir="ltr"
                         placeholder="000000"
-                        maxLength={6}
+                        maxLength={VERIFICATION_CODE_LENGTH}
                         inputMode="numeric"
+                        autoComplete="one-time-code"
                         autoFocus
                         required
                       />
@@ -390,7 +403,7 @@ export default function AuthPage() {
                     <Button
                       type="submit"
                       className="w-full h-10 mt-2"
-                      disabled={isLoading || verificationCode.length !== 6}
+                      disabled={isLoading || verificationCode.length !== VERIFICATION_CODE_LENGTH}
                       data-testid="button-verify-code"
                     >
                       {isLoading ? (

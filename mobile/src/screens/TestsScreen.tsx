@@ -8,7 +8,6 @@ import {
   I18nManager,
   Pressable,
   Modal,
-  TextInput,
   Alert,
   Share
 } from 'react-native';
@@ -21,6 +20,7 @@ import { api, queries } from '../lib/api';
 import { useAppTheme } from '../context/ThemeContext';
 import { formatAppDate, getDateCalendarPreference, type CalendarType } from '../lib/dateFormat';
 import { scheduleLabReminderNotification } from '../services/ReminderNotificationService';
+import AppTextInput from '../components/AppTextInput';
 
 interface AllTestData {
   id: string;
@@ -1008,7 +1008,7 @@ export default function TestsScreen() {
             <Text style={[styles.modalHint, { color: colors.mutedText }]}>
               {isArabic ? 'أدخل التاريخ بصيغة: YYYY-MM-DD' : 'Enter date as: YYYY-MM-DD'}
             </Text>
-            <TextInput
+            <AppTextInput
               value={reminderDateInput}
               onChangeText={setReminderDateInput}
               style={[styles.modalInput, { backgroundColor: colors.cardAlt, borderColor: colors.border, color: colors.text }]}

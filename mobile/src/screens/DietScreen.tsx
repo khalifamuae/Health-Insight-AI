@@ -8,7 +8,6 @@ import {
   ActivityIndicator,
   I18nManager,
   Alert,
-  TextInput,
 } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { isArabicLanguage } from '../lib/isArabic';
@@ -20,6 +19,7 @@ import { useAIConsent } from '../context/AIConsentContext';
 import { useAppTheme } from '../context/ThemeContext';
 import { formatAppDate, getDateCalendarPreference, type CalendarType } from '../lib/dateFormat';
 import DietPlanDisplay from '../components/DietPlanDisplay';
+import AppTextInput from '../components/AppTextInput';
 
 type Step = 'intro' | 'disclaimer' | 'activity' | 'allergy' | 'allergySelect' | 'proteinPref' | 'carbPref' | 'preference' | 'mealDistribution' | 'generating' | 'streaming' | 'result';
 
@@ -639,7 +639,7 @@ export default function DietScreen({ navigation, route }: any) {
             <Text style={[styles.customCaloriesLabel, { color: colors.text }]}>
               {isArabic ? 'حدد السعرات اليومية المطلوبة' : 'Set your daily target calories'}
             </Text>
-            <TextInput
+            <AppTextInput
               value={customTargetCalories}
               onChangeText={(text) => setCustomTargetCalories(text.replace(/[^0-9]/g, ''))}
               placeholder={isArabic ? 'مثال: 1000' : 'Example: 1000'}

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Modal, Alert } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Modal, Alert } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { Ionicons } from '@expo/vector-icons';
 import { BlurView } from 'expo-blur';
@@ -8,6 +8,7 @@ import { useAppTheme } from '../context/ThemeContext';
 import { isArabicLanguage } from '../lib/isArabic';
 import { GlobalExercise, EXERCISE_REGISTRY } from '../lib/WorkoutRegistry';
 import { WorkoutStore, WorkoutGroup } from '../lib/WorkoutStore';
+import AppTextInput from '../components/AppTextInput';
 
 export default function WorkoutBuilderScreen({ navigation }: any) {
     const { t } = useTranslation();
@@ -166,7 +167,7 @@ export default function WorkoutBuilderScreen({ navigation }: any) {
                         <View style={styles.inputRow}>
                             <View style={styles.inputGroup}>
                                 <Text style={[styles.inputLabel, { color: colors.mutedText }]}>{isArabic ? 'عدد الجولات (Sets)' : 'Sets'}</Text>
-                                <TextInput
+                                <AppTextInput
                                     style={[styles.input, { color: colors.text, borderColor: colors.border, backgroundColor: colors.background }]}
                                     keyboardType="numeric"
                                     value={setsInput}
@@ -175,7 +176,7 @@ export default function WorkoutBuilderScreen({ navigation }: any) {
                             </View>
                             <View style={styles.inputGroup}>
                                 <Text style={[styles.inputLabel, { color: colors.mutedText }]}>{isArabic ? 'التكرارات (Reps)' : 'Reps'}</Text>
-                                <TextInput
+                                <AppTextInput
                                     style={[styles.input, { color: colors.text, borderColor: colors.border, backgroundColor: colors.background }]}
                                     keyboardType="numeric"
                                     value={repsInput}
@@ -208,7 +209,7 @@ export default function WorkoutBuilderScreen({ navigation }: any) {
                         {selectedUserGroupId === 'NEW' && (
                             <View style={{ marginBottom: 20 }}>
                                 <Text style={[styles.inputLabel, { color: colors.mutedText, textAlign: isArabic ? 'right' : 'left' }]}>{isArabic ? 'اسم المجموعة (مثال: تمارين الصدر)' : 'Group Name (e.g. Chest Day)'}</Text>
-                                <TextInput
+                                <AppTextInput
                                     style={[styles.input, { color: colors.text, borderColor: colors.border, backgroundColor: colors.background, marginTop: 4, textAlign: isArabic ? 'right' : 'left' }]}
                                     value={newGroupName}
                                     onChangeText={setNewGroupName}

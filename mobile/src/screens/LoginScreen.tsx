@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -19,6 +19,7 @@ import { Ionicons } from '@expo/vector-icons';
 
 import { setSessionCookie } from '../lib/api';
 import { useAppTheme } from '../context/ThemeContext';
+import AppTextInput from '../components/AppTextInput';
 
 const API_BASE_URL = 'https://health-insight-ai.replit.app';
 
@@ -29,6 +30,16 @@ interface LoginScreenProps {
 type AuthMode = 'login' | 'signup' | 'forgot-password';
 type SignupStep = 'form' | 'verify';
 type ForgotPasswordStep = 'email' | 'verify' | 'reset';
+
+const VERIFICATION_CODE_LENGTH = 6;
+
+function normalizeVerificationCode(value: string): string {
+  return value
+    .replace(/[٠-٩]/g, (digit) => String(digit.charCodeAt(0) - 0x0660))
+    .replace(/[۰-۹]/g, (digit) => String(digit.charCodeAt(0) - 0x06f0))
+    .replace(/[^0-9]/g, '')
+    .slice(0, VERIFICATION_CODE_LENGTH);
+}
 
 
 export default function LoginScreen({ onLogin }: LoginScreenProps) {
@@ -48,6 +59,7 @@ export default function LoginScreen({ onLogin }: LoginScreenProps) {
   const [phone, setPhone] = useState('');
   const [verificationCode, setVerificationCode] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const verificationCodeInputRef = useRef<TextInput>(null);
 
   const resetForm = () => {
     setEmail('');
@@ -118,6 +130,7 @@ export default function LoginScreen({ onLogin }: LoginScreenProps) {
         isArabic ? 'تم' : 'Success',
         isArabic ? 'تم إرسال رمز التحقق إلى بريدك الإلكتروني' : 'Verification code sent to your email'
       );
+      setVerificationCode('');
       setSignupStep('verify');
     } catch {
       Alert.alert(
@@ -130,7 +143,9 @@ export default function LoginScreen({ onLogin }: LoginScreenProps) {
   };
 
   const handleVerifyAndRegister = async () => {
-    if (verificationCode.length !== 6) {
+    const normalizedCode = normalizeVerificationCode(verificationCode);
+
+    if (normalizedCode.length !== VERIFICATION_CODE_LENGTH) {
       Alert.alert(
         isArabic ? 'خطأ' : 'Error',
         isArabic ? 'رمز التحقق غير صحيح' : 'Invalid verification code'
@@ -143,7 +158,7 @@ export default function LoginScreen({ onLogin }: LoginScreenProps) {
       const verifyResponse = await fetch(`${API_BASE_URL}/api/auth/verify-code`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: email.trim().toLowerCase(), code: verificationCode.trim() }),
+        body: JSON.stringify({ email: email.trim().toLowerCase(), code: normalizedCode }),
       });
       const verifyData = await verifyResponse.json();
       if (!verifyResponse.ok) {
@@ -269,6 +284,7 @@ export default function LoginScreen({ onLogin }: LoginScreenProps) {
         isArabic ? 'تم' : 'Success',
         isArabic ? 'تم إرسال رمز استعادة كلمة المرور إلى بريدك الإلكتروني' : 'Password reset code sent to your email'
       );
+      setVerificationCode('');
       setForgotPasswordStep('verify');
     } catch {
       Alert.alert(
@@ -281,7 +297,9 @@ export default function LoginScreen({ onLogin }: LoginScreenProps) {
   };
 
   const handleForgotPasswordVerifyAndReset = async () => {
-    if (verificationCode.length !== 6) {
+    const normalizedCode = normalizeVerificationCode(verificationCode);
+
+    if (normalizedCode.length !== VERIFICATION_CODE_LENGTH) {
       Alert.alert(
         isArabic ? 'خطأ' : 'Error',
         isArabic ? 'رمز التحقق غير صحيح' : 'Invalid verification code'
@@ -312,7 +330,7 @@ export default function LoginScreen({ onLogin }: LoginScreenProps) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           email: email.trim().toLowerCase(),
-          code: verificationCode.trim(),
+          code: normalizedCode,
           newPassword: password
         }),
       });
@@ -343,12 +361,59 @@ export default function LoginScreen({ onLogin }: LoginScreenProps) {
     }
   };
 
+  const renderVerificationCodeField = (testID: string) => {
+    const digits = Array.from({ length: VERIFICATION_CODE_LENGTH }, (_, index) => verificationCode[index] ?? '');
+    const activeIndex =
+      verificationCode.length < VERIFICATION_CODE_LENGTH ? verificationCode.length : VERIFICATION_CODE_LENGTH - 1;
+
+    return (
+      <View style={[styles.inputContainer, styles.codeInputContainer]}>
+        <View style={styles.codeBoxes}>
+          {digits.map((digit, index) => {
+            const isActive = verificationCode.length < VERIFICATION_CODE_LENGTH && index === activeIndex;
+
+            return (
+              <View
+                key={index}
+                style={[
+                  styles.codeBox,
+                  isActive && styles.codeBoxActive,
+                  digit ? styles.codeBoxFilled : undefined,
+                ]}
+              >
+                <Text style={styles.codeBoxText}>{digit || ' '}</Text>
+              </View>
+            );
+          })}
+        </View>
+
+        <AppTextInput
+          ref={verificationCodeInputRef}
+          style={styles.codeInputOverlay}
+          value={verificationCode}
+          onChangeText={(text) => setVerificationCode(normalizeVerificationCode(text))}
+          inputMode="numeric"
+          keyboardType="number-pad"
+          maxLength={VERIFICATION_CODE_LENGTH}
+          autoFocus
+          autoComplete="one-time-code"
+          textContentType="oneTimeCode"
+          autoCorrect={false}
+          caretHidden
+          contextMenuHidden
+          selectionColor="transparent"
+          testID={testID}
+        />
+      </View>
+    );
+  };
+
   const renderSignupForm = () => (
     <>
       <View style={styles.nameRow}>
         <View style={[styles.inputContainer, { flex: 1 }]}>
           <Ionicons name="person-outline" size={20} color="#94a3b8" style={styles.inputIcon} />
-          <TextInput
+          <AppTextInput
             style={[styles.input, isArabic && styles.inputRTL]}
             placeholder={isArabic ? 'الاسم الأول' : 'First Name'}
             placeholderTextColor="#94a3b8"
@@ -359,7 +424,7 @@ export default function LoginScreen({ onLogin }: LoginScreenProps) {
           />
         </View>
         <View style={[styles.inputContainer, { flex: 1 }]}>
-          <TextInput
+          <AppTextInput
             style={[styles.input, isArabic && styles.inputRTL]}
             placeholder={isArabic ? 'الاسم الأخير' : 'Last Name'}
             placeholderTextColor="#94a3b8"
@@ -373,7 +438,7 @@ export default function LoginScreen({ onLogin }: LoginScreenProps) {
 
       <View style={styles.inputContainer}>
         <Ionicons name="mail-outline" size={20} color="#94a3b8" style={styles.inputIcon} />
-        <TextInput
+        <AppTextInput
           style={[styles.input, isArabic && styles.inputRTL]}
           placeholder={isArabic ? 'البريد الإلكتروني' : 'Email'}
           placeholderTextColor="#94a3b8"
@@ -388,7 +453,7 @@ export default function LoginScreen({ onLogin }: LoginScreenProps) {
 
       <View style={styles.inputContainer}>
         <Ionicons name="call-outline" size={20} color="#94a3b8" style={styles.inputIcon} />
-        <TextInput
+        <AppTextInput
           style={[styles.input, isArabic && styles.inputRTL]}
           placeholder={isArabic ? 'رقم الهاتف' : 'Phone Number'}
           placeholderTextColor="#94a3b8"
@@ -401,7 +466,7 @@ export default function LoginScreen({ onLogin }: LoginScreenProps) {
 
       <View style={styles.inputContainer}>
         <Ionicons name="lock-closed-outline" size={20} color="#94a3b8" style={styles.inputIcon} />
-        <TextInput
+        <AppTextInput
           style={[styles.input, { flex: 1 }, isArabic && styles.inputRTL]}
           placeholder={isArabic ? 'كلمة المرور' : 'Password'}
           placeholderTextColor="#94a3b8"
@@ -417,7 +482,7 @@ export default function LoginScreen({ onLogin }: LoginScreenProps) {
 
       <View style={styles.inputContainer}>
         <Ionicons name="lock-closed-outline" size={20} color="#94a3b8" style={styles.inputIcon} />
-        <TextInput
+        <AppTextInput
           style={[styles.input, isArabic && styles.inputRTL]}
           placeholder={isArabic ? 'تأكيد كلمة المرور' : 'Confirm Password'}
           placeholderTextColor="#94a3b8"
@@ -459,31 +524,16 @@ export default function LoginScreen({ onLogin }: LoginScreenProps) {
         {isArabic ? 'أدخل الرمز المكون من 6 أرقام المرسل إلى بريدك' : 'Enter the 6-digit code sent to your email'}
       </Text>
 
-      <View style={[styles.inputContainer, styles.codeInputContainer]}>
-        <TextInput
-          style={styles.codeInput}
-          placeholder="000000"
-          placeholderTextColor="#94a3b8"
-          value={verificationCode}
-          onChangeText={(text) => setVerificationCode(text.replace(/\D/g, '').slice(0, 6))}
-          keyboardType="number-pad"
-          maxLength={6}
-          autoFocus
-          autoComplete="off"
-          textContentType="oneTimeCode"
-          autoCorrect={false}
-          testID="input-verification-code"
-        />
-      </View>
+      {renderVerificationCodeField('input-verification-code')}
 
       <Text style={styles.checkEmailText}>
         {isArabic ? 'تحقق من صندوق البريد الوارد للحصول على رمز التحقق' : 'Check your email inbox for the verification code'}
       </Text>
 
       <TouchableOpacity
-        style={[styles.loginButton, verificationCode.length !== 6 && styles.buttonDisabled]}
+        style={[styles.loginButton, verificationCode.length !== VERIFICATION_CODE_LENGTH && styles.buttonDisabled]}
         onPress={handleVerifyAndRegister}
-        disabled={isLoading || verificationCode.length !== 6}
+        disabled={isLoading || verificationCode.length !== VERIFICATION_CODE_LENGTH}
         testID="button-verify-code"
       >
         {isLoading ? (
@@ -517,7 +567,7 @@ export default function LoginScreen({ onLogin }: LoginScreenProps) {
     <>
       <View style={styles.inputContainer}>
         <Ionicons name="mail-outline" size={20} color="#94a3b8" style={styles.inputIcon} />
-        <TextInput
+        <AppTextInput
           style={[styles.input, isArabic && styles.inputRTL]}
           placeholder={isArabic ? 'البريد الإلكتروني' : 'Email'}
           placeholderTextColor="#94a3b8"
@@ -532,7 +582,7 @@ export default function LoginScreen({ onLogin }: LoginScreenProps) {
 
       <View style={styles.inputContainer}>
         <Ionicons name="lock-closed-outline" size={20} color="#94a3b8" style={styles.inputIcon} />
-        <TextInput
+        <AppTextInput
           style={[styles.input, { flex: 1 }, isArabic && styles.inputRTL]}
           placeholder={isArabic ? 'كلمة المرور' : 'Password'}
           placeholderTextColor="#94a3b8"
@@ -584,7 +634,7 @@ export default function LoginScreen({ onLogin }: LoginScreenProps) {
           </Text>
           <View style={styles.inputContainer}>
             <Ionicons name="mail-outline" size={20} color="#94a3b8" style={styles.inputIcon} />
-            <TextInput
+            <AppTextInput
               style={[styles.input, isArabic && styles.inputRTL]}
               placeholder={isArabic ? 'البريد الإلكتروني' : 'Email'}
               placeholderTextColor="#94a3b8"
@@ -630,22 +680,7 @@ export default function LoginScreen({ onLogin }: LoginScreenProps) {
             {isArabic ? 'أدخل الرمز المكون من 6 أرقام المرسل إلى بريدك لتغيير كلمة المرور.' : 'Enter the 6-digit code sent to your email to reset your password.'}
           </Text>
 
-          <View style={[styles.inputContainer, styles.codeInputContainer]}>
-            <TextInput
-              style={styles.codeInput}
-              placeholder="000000"
-              placeholderTextColor="#94a3b8"
-              value={verificationCode}
-              onChangeText={(text) => setVerificationCode(text.replace(/\D/g, '').slice(0, 6))}
-              keyboardType="number-pad"
-              maxLength={6}
-              autoFocus
-              autoComplete="off"
-              textContentType="oneTimeCode"
-              autoCorrect={false}
-              testID="input-forgot-verification-code"
-            />
-          </View>
+          {renderVerificationCodeField('input-forgot-verification-code')}
 
           <View style={styles.verifyActions}>
             <TouchableOpacity onPress={() => setForgotPasswordStep('email')} testID="button-forgot-back-to-email">
@@ -663,7 +698,7 @@ export default function LoginScreen({ onLogin }: LoginScreenProps) {
           <TouchableOpacity
             style={[styles.loginButton, { marginTop: 16 }]}
             onPress={() => {
-              if (verificationCode.length === 6) {
+              if (verificationCode.length === VERIFICATION_CODE_LENGTH) {
                 setForgotPasswordStep('reset');
               } else {
                 Alert.alert(
@@ -672,7 +707,7 @@ export default function LoginScreen({ onLogin }: LoginScreenProps) {
                 );
               }
             }}
-            disabled={isLoading || verificationCode.length !== 6}
+            disabled={isLoading || verificationCode.length !== VERIFICATION_CODE_LENGTH}
             testID="button-forgot-next-step"
           >
             <View style={styles.buttonContent}>
@@ -691,7 +726,7 @@ export default function LoginScreen({ onLogin }: LoginScreenProps) {
         <>
           <View style={styles.inputContainer}>
             <Ionicons name="lock-closed-outline" size={20} color="#94a3b8" style={styles.inputIcon} />
-            <TextInput
+            <AppTextInput
               style={[styles.input, { flex: 1 }, isArabic && styles.inputRTL]}
               placeholder={isArabic ? 'كلمة المرور الجديدة' : 'New Password'}
               placeholderTextColor="#94a3b8"
@@ -707,7 +742,7 @@ export default function LoginScreen({ onLogin }: LoginScreenProps) {
 
           <View style={styles.inputContainer}>
             <Ionicons name="lock-closed-outline" size={20} color="#94a3b8" style={styles.inputIcon} />
-            <TextInput
+            <AppTextInput
               style={[styles.input, isArabic && styles.inputRTL]}
               placeholder={isArabic ? 'تأكيد كلمة المرور الجديدة' : 'Confirm New Password'}
               placeholderTextColor="#94a3b8"
@@ -1041,17 +1076,53 @@ const getStyles = (isArabic: boolean, isDark: boolean) => StyleSheet.create({
   },
   codeInputContainer: {
     justifyContent: 'center',
-    paddingHorizontal: 0,
+    paddingHorizontal: 12,
+    paddingVertical: 12,
   },
-  codeInput: {
+  codeBoxes: {
+    flexDirection: 'row',
+    width: '100%',
+    justifyContent: 'space-between',
+    gap: 8,
+  },
+  codeBox: {
     flex: 1,
-    textAlign: 'center',
+    minHeight: 58,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: isDark ? '#2a3a4e' : '#cbd5e1',
+    backgroundColor: isDark ? '#111827' : '#ffffff',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  codeBoxActive: {
+    borderColor: '#3b82f6',
+    shadowColor: '#3b82f6',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.14,
+    shadowRadius: 6,
+    elevation: 2,
+  },
+  codeBoxFilled: {
+    borderColor: '#60a5fa',
+  },
+  codeBoxText: {
     fontSize: 28,
     fontWeight: '700',
-    letterSpacing: 12,
-    paddingVertical: 16,
     color: isDark ? '#f0f4f8' : '#1e293b',
     fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
+    textAlign: 'center',
+    writingDirection: 'ltr',
+  },
+  codeInputOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    color: 'transparent',
+    backgroundColor: 'transparent',
+    opacity: 0.02,
   },
   checkEmailText: {
     fontSize: 12,
