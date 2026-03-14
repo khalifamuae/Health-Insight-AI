@@ -1,0 +1,15 @@
+{
+  "expo": {
+    "extra": {
+      "eas": {
+        "projectId": "28d01410-03ad-46f7-ab5c-f2e83243dc4b"
+      }
+    },
+    "ios": {
+      "bundleIdentifier": "com.khalifamuae.restexpress",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
+    }
+  }
+}
