@@ -2,7 +2,7 @@
   "expo": {
     "name": "BioTrack AI",
     "slug": "biotrack-ai",
-    "version": "1.0.4",
+    "version": "1.0.5",
     "orientation": "portrait",
     "icon": "./assets/brand-icon.png",
     "userInterfaceStyle": "automatic",
@@ -73,7 +73,7 @@
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
       "package": "com.biotrack.ai",
-      "versionCode": 2,
+      "versionCode": 3,
       "permissions": [
         "INTERNET",
         "CAMERA",
