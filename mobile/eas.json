@@ -1,35 +1,22 @@
 {
   "cli": {
-    "version": ">= 3.0.0",
+    "version": ">= 18.0.6",
     "appVersionSource": "remote",
     "promptToConfigurePushNotifications": false
   },
   "build": {
+    "development": {
+      "developmentClient": true,
+      "distribution": "internal"
+    },
+    "preview": {
+      "distribution": "internal"
+    },
     "production": {
-      "ios": {
-        "distribution": "store",
-         "autoIncrement": true
-      },
-      "android": {
-        "buildType": "app-bundle"
-      },
-      "env": {
-        "API_URL": "https://health-insight-ai.replit.app"
-      },
       "autoIncrement": true
     }
   },
   "submit": {
-    "production": {
-      "ios": {
-        "appleId": "khalifamuae@gmail.com",
-        "ascAppId": "6759469048",
-        "appleTeamId": "TL3YF5A526"
-      },
-      "android": {
-        "serviceAccountKeyPath": "./google-services.json",
-        "track": "production"
-      }
-    }
+    "production": {}
   }
 }
