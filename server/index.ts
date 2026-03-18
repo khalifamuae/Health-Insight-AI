@@ -1,3 +1,4 @@
+import { sendTestEmail } from "./resendClient";
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { serveStatic } from "./static";
@@ -75,6 +76,23 @@ app.use((req, res, next) => {
       recentErrors: monitorStats.errors.slice(0, 20),
     });
   });
+  app.get("/test-email", async (_req, res) => {
+    try {
+      const result = await sendTestEmail("khalifamuae@gmail.com");
+      res.status(200).json({
+        success: true,
+        message: "Email sent",
+        result,
+      });
+    } catch (error) {
+      console.error("Test email failed:", error);
+      res.status(500).json({
+        success: false,
+        message: "Failed to send email",
+        error: error instanceof Error ? error.message : String(error),
+      });
+    }
+  });
 
   app.use((err: any, _req: Request, res: Response, next: NextFunction) => {
     // 🔴 Monitor: اصطياد الأخطاء وإرسال تنبيه
@@ -106,7 +124,7 @@ app.use((req, res, next) => {
   // Other ports are firewalled. Default to 5000 if not specified.
   // this serves both the API and the client.
   // It is the only port that is not firewalled.
-  const port = parseInt(process.env.PORT || "5000", 10);
+  const port = parseInt(process.env.PORT || "5001", 10);
   httpServer.listen(
     {
       port,
