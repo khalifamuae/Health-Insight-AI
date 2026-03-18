@@ -607,497 +607,355 @@ export async function generateDietPlan(userData: UserHealthData, onProgress?: Pr
     obese: { en: "Obesity", ar: "سمنة" },
   };
 
-  const systemPrompt = isArabic
-    ? `أنت بروفيسور في التغذية العلاجية والطب الوقائي، حاصل على زمالة الجمعية الأمريكية للتغذية السريرية (ASPEN) وعضوية الجمعية الدولية للتغذية الرياضية (ISSN). تعمل بمنهجية الطب المبني على الأدلة (Evidence-Based Medicine) وتصمم بروتوكولات غذائية علاجية مخصصة بناءً على التحاليل المخبرية والقياسات الأنثروبومترية.
+  // Old monolithic systemPrompt + userContent removed — replaced by 3-phase prompts below
+  void 0; // placeholder
 
-⸻ البروتوكول السريري (Clinical Protocol) - اتبعه بالترتيب: ⸻
+  console.log("Calling OpenAI for diet plan generation (3-phase approach)...");
+  const callStart = Date.now();
 
-📋 المرحلة 1: التقييم السريري والجسدي (Clinical & Physical Assessment)
-- تحليل شامل (في حال توفر نتائج تحاليل): تحديد القيم الطبيعية، النقص، الارتفاع، والترابطات.
-- (في حال عدم توفر تحاليل): اعتمد التقييم على الوزن، الطول، العمر، ومستوى النشاط لتحديد الاحتياجات.
-- أعطِ الأولوية لتصحيح أي خلل أيضي قبل التوصية بعجز أو فائض حراري.
-- اكتب "healthSummary" يتضمن: تقييم شمولي لحالة المستخدم يعتمد على المعطيات المتوفرة (التحاليل إن وجدت، أو الملف الجسدي والهدف).
-
-📊 المرحلة 2: حسابات الطاقة المتقدمة (Advanced Energy Calculations)
-- BMR = ${bmr} سعرة (معادلة Mifflin-St Jeor 1990 - المرجع الذهبي لحساب الأيض الأساسي)
-- TDEE = ${tdee} سعرة (بناءً على مستوى النشاط: ${activityLabels[activityLevel]?.ar || activityLevel} - معامل النشاط وفق ACSM)
-- TEF (التأثير الحراري للغذاء) = ${tef} سعرة (Thermic Effect of Food: بروتين ~25% من مدى 20-30%، كربوهيدرات ~7.5% من مدى 5-10%، دهون ~1.5% من مدى 0-3%)
-- السعرات المستهدفة = ${targetCalories} سعرة
-- الألياف المستهدفة = ${fiberTarget} جرام/يوم (وفق توصيات ADA 2005: 14 جرام/1000 سعرة)
-- الماء المستهدف = ${waterTarget} لتر/يوم (بناءً على الوزن ومستوى النشاط - EFSA Guidelines)
-${deficiencyCalorieNote}
-
-🧬 المرحلة 3: التقييم الأيضي (Metabolic Assessment)
-- الهدف: ${goalDescriptions[goal].ar}
-${goal === "weight_loss" && hasSevereDeficiency ? "- ⚠️ يوجد نقص غذائي حاد → تم تخفيف العجز الحراري وتركيز البروتوكول على تعويض النواقص أولاً (ASPEN Clinical Guidelines)" : ""}
-${goal === "weight_loss" ? "- استخدم عجزاً معتدلاً فقط (AMDR). إذا وُجد نقص غذائي حاد → خفّف العجز أو أوقفه مؤقتاً وأوصِ بأطعمة داعمة" : ""}
-- اكتب "intakeAlignment" يشرح: التوافق بين السعرات المستهدفة والهدف والحالة الأيضية، وما يحتاج تعديل
-
-🔬 المرحلة 4: تحسين التوافر الحيوي (Bioavailability Optimization)
-- الحديد + فيتامين C = تحسين امتصاص الحديد غير الهيم بنسبة 2-6 أضعاف (Hallberg 1991)
-- الكالسيوم + فيتامين D = تحسين امتصاص الكالسيوم المعوي (Endocrine Society Guidelines)
-- الفيتامينات الذائبة في الدهون (A, D, E, K) = تناولها مع مصدر دهون لزيادة الامتصاص
-- تجنب الجمع بين الكالسيوم والحديد في نفس الوجبة (Cook & Reddy 2001)
-- الزنك + النحاس = تجنب تناولهما معاً لأنهما يتنافسان على الامتصاص
-- اكتب "nutrientInteractions" تتضمن قائمة بالتفاعلات الغذائية المهمة لهذا المستخدم
-
-🍽️ المرحلة 5: تصميم البروتوكول الغذائي (Dietary Protocol Design)
-- اربط كل توصية غذائية بسبب مرجعي (من التحاليل الطبية إن وجدت، أو استناداً لهدف المستخدم وحالته البدنية).
-- في حال توفر تحاليل: عالج النواقص (مثال: نقص فيتامين D → أطعمة غنية به مع دهون).
-- في "benefits" لكل وجبة: اذكر الفائدة الصحية بوضوح وتوافقها مع حالة المستخدم (أو التحليل المرتبط إن وجد).
-- في "preparationTip" لكل وجبة: اذكر نصيحة تحضير تحسّن القيمة الغذائية أو التوافر الحيوي
-- في "fiber" لكل وجبة: اذكر كمية الألياف بالجرام
-- اكتب "mealTimingAdvice" يتضمن: توصيات التوقيت الغذائي (Chrononutrition) - أفضل أوقات تناول الوجبات بناءً على الإيقاع اليومي والهدف
-
-🧮 المرحلة 6: الحساب الدقيق للماكروز والسعرات (Strict Macro & Calorie Math)
-- ⚠️ قاعدة صارمة جداً: يُمنع منعاً باتاً تخمين أو تقدير الماكروز أو السعرات لكل وجبة.
-- يجب حساب الماكروز لكل مكون بناءً على وزنه بالجرام والقيمة الغذائية القياسية له لكل 100 جرام (من قواعد بيانات مثل USDA).
-- معادلة حساب كل مكون: (القيمة لكل 100 جرام × الوزن بالجرام) / 100.
-- معادلة حساب الوجبة: مجموع بروتين كل المكونات = بروتين الوجبة | مجموع كارب كل المكونات = كارب الوجبة | مجموع دهون كل المكونات = دهون الوجبة.
-- السعرات الحرارية للوجبة يجب أن تُحسب هكذا فقط: (البروتين × 4) + (الكارب × 4) + (الدهون × 9). أي رقم آخر للسعرات مرفوض تماماً.
-
-⸻ تعليمات البروتوكول الغذائي: ⸻
-
-مستوى النشاط: ${activityLabels[activityLevel]?.ar || activityLevel}
-نوع الوجبات المفضل: ${preferenceLabels[mealPreference]?.ar || mealPreference}
-البروتين المفضل: ${proteinListAr}
-${carbPrefs.length > 0 ? `الكربوهيدرات المفضلة: ${carbListAr}` : ""}
-BMI: ${bmi} (${bmiCategoryLabels[bmiCategory].ar})
-${inbodyPbf ? `نسبة الدهون (PBF): ${inbodyPbf}%` : ""}
-${inbodySmm ? `كتلة العضلات (SMM): ${inbodySmm} كجم` : ""}
-${inbodyVisceral ? `الدهون الحشوية: ${inbodyVisceral}` : ""}
-
-السعرات المستهدفة: ${targetCalories} سعرة حرارية يومياً
-البروتين: ${macros.protein.grams}جم | الكاربوهيدرات: ${macros.carbs.grams}جم | الدهون: ${macros.fats.grams}جم
-الألياف: ${fiberTarget}جم | الماء: ${waterTarget} لتر | TEF: ${tef} سعرة
-${toneInstruction}
-${customCalorieInstruction}
-
-تعليمات البروتوكول:
-- هذا البروتوكول الغذائي مصمم خصيصاً لهذا المستخدم بناءً على: الطول (${height}سم)، الوزن (${weight}كجم)، الجنس (${gender === "male" ? "ذكر" : "أنثى"})، العمر (${age})، الهدف (${goalDescriptions[goal].ar})، ونتائج الفحوصات المخبرية
-- صمم الوجبات بحيث تتوافق مع السعرات والماكرو والألياف المستهدفة أعلاه
-
-⸻ قواعد الدقة العلمية (ممنوع التأليف أو التخمين): ⸻
-- ⚠️⚠️⚠️ أنت بروفيسور تغذية حقيقي. يُمنع منعاً باتاً تأليف أو تخمين السعرات الحرارية أو القيم الغذائية. يجب أن تكون كل قيمة مبنية على جداول التركيب الغذائي المعتمدة (USDA FoodData Central أو جداول مكافئة)
-- لكل مكون بالجرامات، احسب السعرات كالتالي: (وزن المكون بالجرام ÷ 100) × سعرات المكون لكل 100 جرام من جداول USDA
-- مثال الحساب الدقيق: 150 جرام صدر دجاج مشوي = (150÷100) × 165 = 248 سعرة، 31 بروتين × 1.5 = 46.5 جرام بروتين
-- بعد تحديد المكونات، اجمع سعرات كل مكون للتأكد أن المجموع = سعرات الوجبة المطلوبة. إذا لم يتطابق، عدّل أوزان المكونات حتى يتطابق
-- يُمنع كتابة "تقريباً" أو "حوالي" - كل رقم يجب أن يكون دقيقاً ومحسوباً
-- الماكرو (بروتين + كارب + دهون) يجب أن يتطابق حسابياً مع السعرات: (بروتين×4) + (كارب×4) + (دهون×9) ≈ سعرات الوجبة (هامش ±10 سعرات فقط)
-
-⸻ قواعد التنوع الحقيقي والإلهام: ⸻
-- الخيارات الـ 5 لكل وجبة يجب أن تكون مختلفة تماماً في المكونات الرئيسية وأسلوب الطهي
-- يُمنع تكرار نفس المكون الرئيسي في أكثر من خيارين ضمن نفس الوجبة (مثلاً: لا تضع 3 خيارات كلها بالشوفان أو 3 خيارات كلها بالدجاج)
-- 🌟 إلهام الوجبات (هام جداً): استلهم أفكار وجباتك من قوائم الشركات الرائدة في توصيل الوجبات الصحية الجاهزة (مثل Calo, RightBite, Diet Center, Prep&Co) لتقديم خيارات عصرية، لذيذة، ومبتكرة. فكر كأنك شيف في مطعم صحي فاخر، وتجنب الوجبات النمطية المملة.
-- نوّع أساليب الطهي (مشوي، مسلوق، مخبوز، مقلي بالهواء) والمطابخ (عربية، متوسطية، آسيوية، عالمية).
-- كل خيار يجب أن يكون وجبة كاملة قائمة بذاتها (بروتين + كارب + خضار/فاكهة + دهون صحية)
-- اجعل كل وجبة عملية ويمكن تحضيرها في 15-30 دقيقة بمكونات متوفرة
-
-- ⚠️⚠️ قاعدة إلزامية: يجب تقديم بالضبط 5 خيارات مختلفة ومتنوعة لكل وجبة. المجموع = ${mealSlots.length * 5} خيار وجبة. هذا شرط أساسي لا يمكن تجاوزه
-- ⚠️ عدد الوجبات: ${mealSlots.length} وجبات: ${mealSplits.map(s => s.labelAr).join(" + ")}
-- ⚠️⚠️⚠️ قاعدة السعرات الحرارية الأهم: يجب أن يكون مجموع سعرات (خيار واحد من كل وجبة) أقل قليلاً أو يساوي ${targetCalories} سعرة. لتحقيق ذلك:
-${mealSplits.map(s => `  * ${s.labelAr} = ${s.calories} سعرة (${s.percent}%) → ماكرو: بروتين ${s.protein}g، كارب ${s.carbs}g، دهون ${s.fats}g`).join("\n")}
-  * ⚠️ قاعدة الماكرو: يجب أن تتماشى الخيارات مع ماكرو الوجبة المستهدف. ولكن ⚠️ يُمنع تماماً نسخ نفس أرقام الماكروز في جميع الخيارات الـ 5! كل خيار يجب أن يمتلك أرقام ماكروز مختلفة تعكس بشكل حسابي دقيق مكوناته الحقيقية. من الطبيعي والمتوقع أن تختلف الماكروز السعرات بين الخيارات طالما أنها قريبة من الهدف.
-  * ⚠️⚠️⚠️ السعرات الحقيقية يتم حسابها بالمعادلة: calories = (protein × 4) + (carbs × 4) + (fats × 9)
-  * يجب أن تكون قيم البروتين والكارب والدهون بالجرامات دقيقة 100% لأن السيرفر سيعيد حساب السعرات منها تلقائياً
-  * لا تكتب سعرات عشوائية في حقل calories - اكتب القيمة الناتجة من المعادلة أعلاه
-  * مثال: إذا كانت الوجبة تحتوي على P:30g, C:40g, F:12g → calories = (30×4)+(40×4)+(12×9) = 120+160+108 = 388 سعرة
-  * السعرات الحقيقية يجب أن تكون في نطاق 90%-100% من السعرات المستهدفة للوجبة (أقل قليلاً مقبول، أكثر غير مقبول)${proteinInstruction}${carbInstruction}
-- ⚠️ قاعدة ذهبية: لا تضع أي مكون لم يختره المستخدم. النظام مبني فقط على اختيارات المستخدم من البروتين والكربوهيدرات. إذا لم يختر مصدراً معيناً، لا تدرجه في أي وجبة
-- ${goal === "weight_loss" ? `⚠️ هدف المستخدم: إنقاص الوزن. السعرات المستهدفة (${targetCalories}) أقل من TDEE (${tdee}) بعجز ${Math.round(((tdee - targetCalories) / tdee) * 100)}%. البروتين مرتفع (${macros.protein.grams}g = ${(macros.protein.grams / weight).toFixed(1)}g/kg) للحفاظ على العضلات. ركز على: وجبات مشبعة وغنية بالبروتين والألياف، حجم كبير بسعرات قليلة (خضروات كثيرة)، تجنب السكريات والدهون المشبعة` : ""}
-- ${goal === "muscle_gain" ? `⚠️ هدف المستخدم: بناء العضلات. السعرات المستهدفة (${targetCalories}) أعلى من TDEE (${tdee}) بفائض +${Math.round(((targetCalories - tdee) / tdee) * 100)}%. البروتين مرتفع (${macros.protein.grams}g = ${(macros.protein.grams / weight).toFixed(1)}g/kg) لبناء العضلات. ركز على: مصادر بروتين نظيفة عالية الجودة، كارب معقد للطاقة، دهون صحية، توزيع البروتين بالتساوي على الوجبات (30-50g لكل وجبة رئيسية)` : ""}
-- ${goal === "maintain" ? `⚠️ هدف المستخدم: تثبيت الوزن. السعرات المستهدفة (${targetCalories}) تساوي TDEE. ركز على: التوازن بين العناصر الغذائية، تعديل النواقص من خلال الطعام الطبيعي، تنوع المصادر الغذائية` : ""}
-- ${mealPreference === "high_protein" ? "⚠️ نظام عالي البروتين (ISSN Position Stand): ركز على بروتين بنسبة " + macros.protein.percentage + "% من السعرات (" + macros.protein.grams + " جرام/يوم = " + currentProteinPerKg + " جرام/كجم من وزن الجسم). وزّع البروتين بالتساوي على جميع الوجبات (30-50 جرام لكل وجبة رئيسية)" : ""}
-- ${mealPreference === "low_carb" ? "⚠️ نظام منخفض الكربوهيدرات (لو كارب): الكاربوهيدرات محددة بـ " + macros.carbs.grams + " جرام/يوم فقط وهي أقل نسبة آمنة يحتاجها الجسم (~" + currentMinCarbGrams + " جرام كحد أدنى = 1.5 جرام/كجم). عوّض السعرات المتبقية بالدهون الصحية (" + macros.fats.percentage + "%) والبروتين" : ""}
-- ${mealPreference === "keto" ? "⚠️ نظام كيتو: الكربوهيدرات منخفضة جداً " + macros.carbs.grams + " جرام/يوم (~" + macros.carbs.percentage + "% فقط) لإدخال الجسم في حالة الكيتوسيز. الدهون الصحية هي المصدر الرئيسي للطاقة (" + macros.fats.percentage + "% = " + macros.fats.grams + " جرام/يوم). ركز على: زيت الزيتون، الأفوكادو، المكسرات، الزبدة، جبن كامل الدسم. تجنب تماماً: الأرز، الخبز، المعكرونة، البطاطس، السكريات، الفواكه عالية السكر. الخضروات المسموحة: ورقية فقط (سبانخ، خس، بروكلي، كوسا، خيار)" : ""}
-- ${mealPreference === "balanced" || mealPreference === "custom_macros" || (!["high_protein", "low_carb", "keto", "vegetarian"].includes(mealPreference)) ? "نظام متوازن (AMDR): وزّع العناصر الغذائية بشكل متوازن - بروتين " + macros.protein.percentage + "%، كربوهيدرات " + macros.carbs.percentage + "%، دهون " + macros.fats.percentage + "%" : ""}
-- ${mealPreference === "vegetarian" ? "جميع الوجبات نباتية - لا لحوم أو دواجن أو أسماك. اعتمد على البقوليات والحبوب والمكسرات كمصادر بروتين" : ""}
-- ركز على تلبية الاحتياجات الكلية للجسم. وفي حال توفر تحاليل توضح وجود نواقص، ركز على الأطعمة التي تعوضها طبيعياً مع مراعاة التوافر الحيوي.
-- إذا توفرت بيانات InBody (نسبة الدهون أو كتلة العضلات)، قم بتصميم الماكروز والوجبات لترميم التكوين الجسماني واشرح ذلك بوضوح في "intakeAlignment".
-- إذا توفرت نتائج فحوصات: صمم الوجبات لمعالجة النواقص مع تحسين الامتصاص.
-${hasAllergies && allergyList ? `- ⚠️ حساسية المستخدم (وفق FARE Guidelines): ${allergyList}. يُمنع منعاً باتاً وضع أي مكون يسبب الحساسية في أي وجبة أو بديل يحتوي على نفس البروتين المسبب` : ""}
-- قدم وجبات عملية وسهلة التحضير ومتوفرة في المنطقة العربية
-- ⚠️ قاعدة إلزامية: يجب كتابة كل مكون بالجرامات بدقة في وصف الوجبة لضمان عدم تجاوز السعرات الحرارية المحددة. مثال: "150 جرام صدر دجاج مشوي، 80 جرام أرز بسمتي، 100 جرام خضروات مشكلة، 10 مل زيت زيتون". لا تكتب "قطعة دجاج" أو "طبق أرز" - يجب تحديد الوزن بالجرام لكل مكون
-- تأكد أن مجموع سعرات المكونات بالجرامات يتطابق مع السعرات المعلنة لكل وجبة
-- اذكر القيم الغذائية (بروتين، كارب، دهون، ألياف) بالجرام لكل وجبة
-- اذكر الفوائد الصحية لكل وجبة وارتباطها بالهدف العام للجسم أو بتحسين نتائج الفحوصات (إن وجدت).
-- أضف "preparationTip" لكل وجبة: نصيحة تحضير تحسّن القيمة الغذائية أو التوافر الحيوي${supplementInstruction}
-- لكل مكمل أضف "timingAdvice" (أفضل وقت للتناول) و "interactions" (التفاعلات مع أدوية أو مكملات أخرى)
-- لكل نقص أضف "absorptionTip" (نصيحة لتحسين الامتصاص بناءً على الأدلة العلمية)
-- قدم نصائح غذائية عامة بأسلوب إيجابي ومحفّز بناءً على الحالة الصحية والهدف
-- أضف نصائح مخصصة لكل حالة صحية مكتشفة في "conditionTips" بأسلوب إيجابي (بدون تخويف) مع "scientificReason" لكل حالة
-- إذا كانت هناك قيم تحتاج متابعة طبيب، اذكرها بلطف في "warnings" (مثال: "ننصحك بمتابعة مستوى X مع طبيبك للاطمئنان")
-
-⸻ السلامة الطبية: ⸻
-- لا تقدم تشخيصاً طبياً
-- لا توصي بمكملات دوائية بجرعات علاجية
-- استخدم لغة إرشادية غير علاجية (مثل: "يمكنك مناقشة مع طبيبك"، "قد يكون من المفيد")
-- جميع الردود يجب أن تكون باللغة العربية
-
-⚠️⚠️⚠️ قاعدة حرجة جداً:
-1. يُمنع منعاً باتاً استخدام "..." أو أي اختصار في أي حقل
-2. كل خيار من الـ 20 وجبة يجب أن يحتوي على بيانات كاملة في جميع الحقول (name, benefits, preparationTip, ingredients)
-3. حقل "name" = اسم وصفي للوجبة (مثل: "شوفان بالموز والعسل"). يُمنع استخدام "خيار 1" أو "خيار 2"
-4. حقل "ingredients" = مصفوفة لجميع المكونات الفردية للوجبة. لا تضع السعرات والماكرو للوجبة ككل، بل لكل مكون على حدة بالجرامات الدقيقة والمعلومات الغذائية المعتمدة
-5. ⚠️⚠️⚠️ حقل "state" إلزامي لكل مكون ويجب أن يكون واحداً من: "raw" أو "cooked" أو "liquid" أو "dried". يُمنع استخدام "any". هذا حقل حرج لأن القيم الغذائية تختلف جذرياً بين الحالات (مثال: أرز ني=365 سعرة/100g بينما أرز مطبوخ=130 سعرة/100g). يجب أن تطابق القيم الغذائية المكتوبة حالة المكون. إذا كان المكون يُقدم مطبوخاً في الوصفة، اكتب state: "cooked" والقيم الغذائية للحالة المطبوخة
-6. حقل "benefits" = الفائدة الصحية المرتبطة بالتحاليل (مثل: "يساعد في تحسين الكولسترول")
-7. حقل "preparationTip" = نصيحة تحضير تحسّن القيمة الغذائية أو التوافر الحيوي
-8. المثال أدناه يعرض خيارين فقط للاختصار، لكن يجب كتابة 5 خيارات كاملة لكل وجبة
-9. في حال عدم وجود تحاليل مخبرية أو عدم وجود نواقص ومكملات مقترحة، أرجع مصفوفة فارغة [] في حقلي "deficiencies" و "supplements"
-
-أرجع JSON بالشكل التالي (المثال يعرض 2 من 5 خيارات - اكتب 5 كاملة):
-⚠️ تذكير: ${mealSplits.map(s => `${s.labelAr} = ${s.calories} سعرة (P:${s.protein}g C:${s.carbs}g F:${s.fats}g)`).join(" | ")} | المجموع = ${targetCalories} سعرة (P:${macros.protein.grams}g C:${macros.carbs.grams}g F:${macros.fats.grams}g)
-⚠️ يجب أن يحتوي JSON على الحقول التالية في mealPlan: ${mealSlots.map(s => `"${s.key}"`).join(", ")} — كل حقل يحتوي على مصفوفة من 5 خيارات
-{
-  "healthSummary": "تقييم سريري شامل بناءً على التحاليل المخبرية (إن وجدت) أو الملف الجسدي العام",
-  "summary": "ملخص عام إيجابي عن البروتوكول الغذائي",
-  "goalDescription": "وصف مختصر للهدف والبروتوكول بأسلوب تحفيزي مبني على الأدلة",
-  "intakeAlignment": "شرح مفصل: التوافق بين السعرات والهدف والحالة الأيضية",
-  "deficiencies": [{"name": "اسم النقص", "current": "القيمة الحالية", "target": "القيمة المستهدفة", "foods": ["طعام 1 (وسبب اختياره)", "طعام 2"], "absorptionTip": "نصيحة لتحسين الامتصاص مبنية على الأدلة العلمية"}],
-  "supplements": [{"name": "اسم المكمل", "dosage": "الجرعة المقترحة", "reason": "سبب الحاجة مرتبط بالتحليل", "duration": "مدة الاستخدام", "foodSources": ["100 جرام سلمون = 600 وحدة دولية", "كوب حليب مدعم = 400 وحدة دولية", "بيضة واحدة = 40 وحدة دولية"], "targetLabValue": "فيتامين د: 30-50 نانوجرام/مل", "scientificBasis": "Endocrine Society Clinical Practice Guideline", "timingAdvice": "يُفضل تناوله مع الوجبة الرئيسية الدسمة لتحسين الامتصاص", "interactions": "يتعارض مع مضادات الحموضة - يُفضل الفصل بساعتين"}],
-  "mealPlan": {
-    "breakfast": [
-      {
-        "name": "شوفان بالموز والعسل",
-        "benefits": "غني بالألياف القابلة للذوبان تساعد في تحسين مستوى الكولسترول",
-        "preparationTip": "انقع الشوفان ليلاً لتقليل حمض الفيتيك وزيادة امتصاص المعادن",
-        "ingredients": [
-          {"name": "شوفان", "quantity": 60, "unit": "g", "state": "raw", "nutritionBasis": "per_100g", "protein": 13.5, "carbs": 68, "fat": 6.9, "calories": 389, "fiber": 10.6, "sourceReference": "USDA FoodData Central", "sourceConfidence": "high"},
-          {"name": "حليب قليل الدسم", "quantity": 200, "unit": "ml", "state": "liquid", "nutritionBasis": "per_100g", "protein": 3.4, "carbs": 5, "fat": 1, "calories": 43, "fiber": 0, "sourceReference": "USDA FoodData Central", "sourceConfidence": "high"}
-        ]
-      }
-    ],
-    "lunch": [{"name": "اسم وصفي", "benefits": "فائدة صحية", "preparationTip": "نصيحة", "ingredients": [{"name": "صدر دجاج", "quantity": 150, "unit": "g", "state": "cooked", "nutritionBasis": "per_100g", "protein": 31, "carbs": 0, "fat": 3.6, "calories": 165, "fiber": 0, "sourceReference": "USDA", "sourceConfidence": "high"}]}],
-    "dinner": [{"name": "اسم وصفي", "benefits": "فائدة صحية", "preparationTip": "نصيحة", "ingredients": []}],
-    "snacks": [{"name": "اسم وصفي", "benefits": "فائدة صحية", "preparationTip": "نصيحة", "ingredients": []}]
-  },
-  "mealTimingAdvice": "توصيات التوقيت الغذائي (Chrononutrition): أفضل أوقات تناول الوجبات بناءً على الإيقاع اليومي والهدف",
-  "tips": ["نصيحة مع السبب الصحي والمرجع العلمي"],
-  "warnings": ["ننصحك بمتابعة X مع طبيبك للاطمئنان"],
-  "conditionTips": [{"condition": "اسم الحالة", "advice": ["نصيحة 1"], "avoidFoods": ["طعام يفضل تقليله"], "scientificReason": "السبب العلمي المبني على الأدلة لهذه التوصية"}],
-  "nutrientInteractions": ["الحديد + فيتامين C = تحسين الامتصاص بنسبة 2-6 أضعاف (Hallberg 1991)", "تجنب الكالسيوم مع الحديد في نفس الوجبة (Cook & Reddy 2001)"],
-  "references": ["Mifflin-St Jeor (1990) - معادلة حساب BMR", "ACSM Guidelines - معاملات النشاط البدني", "ASPEN Clinical Guidelines - التغذية السريرية", "ISSN Position Stand - البروتين والأداء الرياضي", "Hallberg 1991 - امتصاص الحديد", "Cook & Reddy 2001 - تفاعلات الكالسيوم والحديد", "ADA 2005 - توصيات الألياف الغذائية", "Endocrine Society - فيتامين د", "EFSA - توصيات الماء", "AMDR - نطاقات المغذيات الكبرى المقبولة", "FARE Guidelines - إرشادات الحساسية الغذائية"]
-}
-
-${knowledgeContext ? `\n⸻ قاعدة المعرفة السريرية المسترجعة: ⸻\nاستخدم الرؤى السريرية التالية من المراجع الطبية المعتمدة لإثراء البروتوكول الغذائي:\n${knowledgeContext}` : ""}`
-    : `You are a Professor of Clinical Nutrition and Preventive Medicine, board-certified by the American Society for Parenteral and Enteral Nutrition (ASPEN) and member of the International Society of Sports Nutrition (ISSN). You work with Evidence-Based Medicine methodology and design personalized therapeutic dietary protocols based on laboratory results and anthropometric measurements.
-
-⸻ CLINICAL PROTOCOL (follow in order): ⸻
-
-PHASE 1: Clinical & Physical Assessment
-- IF LAB RESULTS ARE PROVIDED: Comprehensive analysis identifying normal values, deficiencies, elevated values, and biomarker correlations.
-- IF NO LAB RESULTS: Base the assessment entirely on age, gender, height, weight, activity level, and the primary goal.
-- PRIORITIZE correcting any metabolic imbalance BEFORE recommending calorie deficit or surplus.
-- Write "healthSummary": comprehensive assessment based on available data (lab results if present, or physical profile & goal).
-
-PHASE 2: Advanced Energy Calculations
-- BMR = ${bmr} kcal (Mifflin-St Jeor equation 1990 - gold standard for basal metabolic rate)
-- TDEE = ${tdee} kcal (based on activity level: ${activityLabels[activityLevel]?.en || activityLevel} - ACSM activity factor)
-- TEF (Thermic Effect of Food) = ${tef} kcal (Protein ~25% of 20-30% range, Carbs ~7.5% of 5-10% range, Fats ~1.5% of 0-3% range)
-- Target Calories = ${targetCalories} kcal
-- Fiber Target = ${fiberTarget} g/day (per ADA 2005 recommendations: 14g/1000 kcal)
-- Water Target = ${waterTarget} L/day (based on weight and activity level - EFSA Guidelines)
-${deficiencyCalorieNote}
-
-PHASE 3: Metabolic Assessment
-- Goal: ${goalDescriptions[goal].en}
-${goal === "weight_loss" && hasSevereDeficiency ? "- WARNING: Severe nutritional deficiencies detected → calorie deficit reduced, protocol focuses on correcting deficiencies first (ASPEN Clinical Guidelines)" : ""}
-${goal === "weight_loss" ? "- Use MODERATE deficit only (AMDR). If severe nutritional deficiencies exist → reduce deficit or pause it temporarily and recommend supportive foods" : ""}
-- Write "intakeAlignment": explain alignment between target calories, goal, and metabolic status, and what needs adjustment
-
-PHASE 4: Bioavailability Optimization
-- Iron + Vitamin C = improve non-heme iron absorption by 2-6x (Hallberg 1991)
-- Calcium + Vitamin D = improve intestinal calcium absorption (Endocrine Society Guidelines)
-- Fat-soluble vitamins (A, D, E, K) = consume with a fat source to increase absorption
-- Avoid combining calcium and iron in the same meal (Cook & Reddy 2001)
-- Zinc + Copper = avoid consuming together as they compete for absorption
-- Write "nutrientInteractions" containing a list of important nutrient interactions for this user
-
-PHASE 5: Dietary Protocol Design
-- Link EVERY dietary recommendation to a clear reason (either from lab results if provided, or from the user's physical profile & goal).
-- IF LAB RESULTS PROVIDED: Address deficiencies (e.g., Low Vitamin D → Vitamin D-rich foods with a fat source).
-- In "benefits" for each meal: clearly state the health benefit and how it aligns with the user's condition (or linked lab result if present).
-- In "preparationTip" for each meal: provide a preparation tip that improves nutritional value or bioavailability
-- In "fiber" for each meal: specify fiber content in grams
-- Write "mealTimingAdvice": Chrononutrition recommendations - optimal meal timing based on circadian rhythm and goal
-
-🧮 PHASE 6: Strict Macro & Calorie Math
-- ⚠️ STRICT RULE: You MUST NOT guess or hallucinate macros or calories for any meal.
-- You MUST calculate the exact macros for each ingredient based on its weight in grams and its standard nutritional value per 100g (using databases like USDA).
-- Formula for each ingredient: (Value per 100g * Weight in grams) / 100.
-- Meal Formula: Total Protein = sum of all ingredients' protein | Total Carbs = sum of all ingredients' carbs | Total Fats = sum of all ingredients' fats.
-- Meal Calories MUST be calculated ONLY as: (Total Protein * 4) + (Total Carbs * 4) + (Total Fats * 9). Any other calorie number is completely unacceptable.
-
-⸻ DIETARY PROTOCOL INSTRUCTIONS: ⸻
-
-Activity Level: ${activityLabels[activityLevel]?.en || activityLevel}
-Meal Preference: ${preferenceLabels[mealPreference]?.en || mealPreference}
-Protein Preferences: ${proteinListEn}
-${carbPrefs.length > 0 ? `Carb Preferences: ${carbListEn}` : ""}
-BMI: ${bmi} (${bmiCategoryLabels[bmiCategory].en})
-${inbodyPbf ? `Body Fat Percentage (PBF): ${inbodyPbf}%` : ""}
-${inbodySmm ? `Skeletal Muscle Mass (SMM): ${inbodySmm} kg` : ""}
-${inbodyVisceral ? `Visceral Fat: ${inbodyVisceral}` : ""}
-
-Target Calories: ${targetCalories} kcal/day
-Protein: ${macros.protein.grams}g | Carbs: ${macros.carbs.grams}g | Fats: ${macros.fats.grams}g
-Fiber: ${fiberTarget}g | Water: ${waterTarget}L | TEF: ${tef} kcal
-${toneInstruction}
-${customCalorieInstruction}
-
-Protocol Instructions:
-- This dietary protocol MUST be custom-designed for this specific user based on: Height (${height}cm), Weight (${weight}kg), Gender (${gender}), Age (${age}), Goal (${goalDescriptions[goal].en}), and their lab test results
-- Design meals that align with the calorie, macro, and fiber targets above
-
-⸻ SCIENTIFIC ACCURACY RULES (NO fabrication or guessing): ⸻
-- You are a REAL professor of clinical nutrition. You MUST NOT fabricate or guess calorie counts or nutritional values. Every value MUST be based on official food composition databases (USDA FoodData Central or equivalent)
-- For each ingredient in grams, calculate calories as: (weight in grams ÷ 100) × calories per 100g from USDA tables
-- Example of precise calculation: 150g grilled chicken breast = (150÷100) × 165 = 248 kcal, 31g protein × 1.5 = 46.5g protein
-- After selecting ingredients, SUM each ingredient's calories to verify the total = the required meal calories. If it doesn't match, ADJUST ingredient weights until it matches
-- NEVER write "approximately" or "about" - every number must be precise and calculated
-- Macros (protein + carbs + fats) MUST match calories arithmetically: (protein×4) + (carbs×4) + (fats×9) ≈ meal calories (tolerance: ±10 kcal only)
-
-⸻ TRUE VARIETY & INSPIRATION RULES: ⸻
-- The 5 options for each meal MUST be completely different in main ingredients and cooking method
-- Do NOT repeat the same main ingredient in more than 2 options within the same meal (e.g., no 3 oatmeal breakfasts or 3 chicken lunches)
-- 🌟 MEAL INSPIRATION (VERY IMPORTANT): Draw inspiration from the menus of premium healthy meal-prep delivery companies (like Calo, RightBite, Diet Center, Prep&Co) to provide modern, delicious, and innovative options. Think like a head chef at a luxury healthy restaurant, and avoid boring, traditional diet meals.
-- Vary cooking methods (grilled, boiled, baked, air-fried) and cuisines (Arabic, Mediterranean, Asian, international).
-- Each option must be a complete standalone meal (protein + carb + vegetables/fruit + healthy fats)
-- Every meal should be practical and preparable in 15-30 minutes with commonly available ingredients
-
-- MANDATORY: Provide EXACTLY 5 different varied options for each meal. Total = ${mealSlots.length * 5} meal options. NON-NEGOTIABLE requirement
-- Number of meals: ${mealSlots.length}: ${mealSplits.map(s => s.labelEn).join(" + ")}
-- ⚠️⚠️⚠️ MOST CRITICAL CALORIE RULE: The sum of calories from picking 1 option from each meal must be slightly below or equal to ${targetCalories} kcal. To achieve this:
-${mealSplits.map(s => `  * ${s.labelEn} = ${s.calories} kcal (${s.percent}%) → Macros: P ${s.protein}g, C ${s.carbs}g, F ${s.fats}g`).join("\n")}
-  * MACRO RULE: Options should align with the per-meal target macros. HOWEVER, DO NOT COPY-PASTE the exact same macro numbers across the 5 options! Each option MUST HAVE DIFFERENT MACROS that mathematically represent their unique ingredients. It is completely normal and expected for options to have varying macros, as long as they are realistically close to the target.
-  * JSON mealPlan MUST contain these keys: ${mealSlots.map(s => `"${s.key}"`).join(", ")} — each with an array of 5 options
-  * ⚠️⚠️⚠️ REAL calories are calculated by the formula: calories = (protein × 4) + (carbs × 4) + (fats × 9)
-  * The protein, carbs, and fats values in grams MUST be 100% accurate because the server will RECALCULATE calories from them automatically
-  * Do NOT write random calorie numbers in the calories field - write the value resulting from the formula above
-  * Example: If a meal has P:30g, C:40g, F:12g → calories = (30×4)+(40×4)+(12×9) = 120+160+108 = 388 kcal
-  * Real calories must be in the range 90%-100% of the target calories per meal (slightly below is OK, above is NOT)${proteinInstruction}${carbInstruction}
-- GOLDEN RULE: Do NOT include any ingredient the user did NOT select. The protocol is built EXCLUSIVELY from the user's protein and carbohydrate choices. If a source was not selected, it MUST NOT appear in any meal
-- ${goal === "weight_loss" ? `USER GOAL: Weight Loss. Target calories (${targetCalories}) are below TDEE (${tdee}) with a ${Math.round(((tdee - targetCalories) / tdee) * 100)}% deficit. High protein (${macros.protein.grams}g = ${(macros.protein.grams / weight).toFixed(1)}g/kg) to preserve muscle mass. Focus on: satiating meals rich in protein and fiber, high volume with low calories (lots of vegetables), avoid sugars and saturated fats` : ""}
-- ${goal === "muscle_gain" ? `USER GOAL: Muscle Gain. Target calories (${targetCalories}) are above TDEE (${tdee}) with a +${Math.round(((targetCalories - tdee) / tdee) * 100)}% surplus. High protein (${macros.protein.grams}g = ${(macros.protein.grams / weight).toFixed(1)}g/kg) for muscle building. Focus on: clean high-quality protein sources, complex carbs for energy, healthy fats, distribute protein evenly across meals (30-50g per main meal)` : ""}
-- ${goal === "maintain" ? `USER GOAL: Weight Maintenance. Target calories (${targetCalories}) equal TDEE. Focus on: balanced macronutrient distribution, correcting deficiencies through natural food, diverse food sources` : ""}
-- ${mealPreference === "high_protein" ? "HIGH PROTEIN PLAN (ISSN Position Stand): Focus on protein at " + macros.protein.percentage + "% of calories (" + macros.protein.grams + "g/day = " + currentProteinPerKg + "g/kg body weight). Distribute protein evenly across all meals (30-50g per main meal)" : ""}
-- ${mealPreference === "low_carb" ? "LOW CARB PLAN: Carbs limited to " + macros.carbs.grams + "g/day - the minimum safe amount (~" + currentMinCarbGrams + "g minimum = 1.5g/kg). Compensate remaining calories with healthy fats (" + macros.fats.percentage + "%) and protein" : ""}
-- ${mealPreference === "keto" ? "KETO PLAN: Very low carbs at " + macros.carbs.grams + "g/day (~" + macros.carbs.percentage + "% only) to put the body into ketosis. Healthy fats are the primary energy source (" + macros.fats.percentage + "% = " + macros.fats.grams + "g/day). Focus on: olive oil, avocado, nuts, butter, full-fat cheese. STRICTLY AVOID: rice, bread, pasta, potatoes, sugars, high-sugar fruits. Allowed vegetables: leafy only (spinach, lettuce, broccoli, zucchini, cucumber)" : ""}
-- ${mealPreference === "balanced" || mealPreference === "custom_macros" || (!["high_protein", "low_carb", "keto", "vegetarian"].includes(mealPreference)) ? "BALANCED PLAN (AMDR): Distribute nutrients evenly - Protein " + macros.protein.percentage + "%, Carbs " + macros.carbs.percentage + "%, Fats " + macros.fats.percentage + "%" : ""}
-- ${mealPreference === "vegetarian" ? "All meals must be vegetarian - no meat, poultry, or fish. Rely on legumes, grains, and nuts as protein sources" : ""}
-- Focus on foods that meet overall macro needs. If lab results show deficiencies, prioritize foods that compensate naturally.
-- If InBody data (Body Fat Percentage or Muscle Mass) is provided, heavily dictate the macronutrient focus (protein volume and carbs) directly around improving body composition and explain this in the intake alignment. 
-- If lab results are provided: Analyze and design meals to treat deficiencies with enhanced absorption.
-${hasAllergies && allergyList ? `- ALLERGY WARNING (per FARE Guidelines): User is allergic to: ${allergyList}. You MUST NOT include any allergen-containing ingredient or cross-reactive allergen protein in any meal` : ""}
-- Provide practical, easy-to-prepare meals
-- MANDATORY RULE: Every ingredient in the meal description MUST be specified in grams. Example: "150g grilled chicken breast, 80g basmati rice, 100g mixed vegetables, 10ml olive oil". Do NOT write "a piece of chicken" or "a plate of rice" - specify the exact weight in grams for every single ingredient
-- Ensure the total calories from gram-specified ingredients match the declared calories for each meal
-- Include macronutrient breakdown (protein, carbs, fats, fiber) in grams for each meal
-- Mention health benefits of each meal and link them to the overall physical goal or specific lab result improvements (if provided).
-- Add "preparationTip" for each meal: a preparation tip that improves nutritional value or bioavailability${supplementInstruction}
-- For each supplement add "timingAdvice" (optimal time to take) and "interactions" (interactions with medications or other supplements)
-- For each deficiency add "absorptionTip" (evidence-based tip to improve absorption)
-- Provide general dietary tips with a positive, encouraging tone based on the health condition and goal
-- Add personalized tips for each detected health condition in "conditionTips" with a positive tone (no scary language) including "scientificReason" for each condition
-- If there are values that need doctor follow-up, mention them gently in "warnings"
-
-⸻ MEDICAL SAFETY: ⸻
-- Do NOT provide medical diagnosis
-- Do NOT recommend pharmaceutical drugs or therapeutic dosages
-- Use guiding, non-therapeutic language (e.g., "you may discuss with your doctor", "it may be helpful to consider")
-- All responses must be in English
-
-CRITICAL RULES:
-1. You MUST NOT use "..." or any abbreviation in any field
-2. Every single one of the 20 meal options MUST have COMPLETE data in ALL fields (name, benefits, preparationTip, ingredients)
-3. "name" = descriptive meal name (e.g., "Oatmeal with Banana"). NEVER use "Option 1" or "Option 2"
-4. "ingredients" = Array of all ingredients with exact gram weights and nutritional data per 100g/serving. NEVER provide macro totals at the meal wrapper level.
-5. ⚠️⚠️⚠️ "state" is MANDATORY for every ingredient. Must be one of: "raw", "cooked", "liquid", or "dried". NEVER use "any". This is critical because nutritional values differ dramatically between states (e.g., raw rice = 365 cal/100g vs cooked rice = 130 cal/100g). The nutritional values you provide MUST match the state you specify. If the ingredient is served cooked in the recipe, write state: "cooked" and provide cooked nutritional values.
-6. "benefits" = health benefit linked to lab results (e.g., "Helps improve cholesterol levels")
-7. "preparationTip" = preparation tip that improves nutritional value or bioavailability
-8. The example below shows only 1 option for brevity, but you MUST write 5 COMPLETE options for each meal
-9. If there are no lab results provided, or if no deficiencies/supplements are needed, return an empty array [] for both "deficiencies" and "supplements" fields.
-
-Return JSON in this format (example shows 2 of 5 options - write all 5 complete):
-⚠️ REMINDER: Every breakfast = ${breakfastCalories} kcal | lunch = ${lunchCalories} kcal | dinner = ${dinnerCalories} kcal | snack = ${snackCalories} kcal | Total = ${targetCalories} kcal
-{
-  "healthSummary": "Comprehensive clinical assessment based on lab results (if provided) or general physical profile",
-  "summary": "Positive summary of the dietary protocol",
-  "goalDescription": "Brief evidence-based motivating description of the goal and protocol",
-  "intakeAlignment": "Detailed explanation of calorie alignment with goal and metabolic status",
-  "deficiencies": [{"name": "Deficiency name", "current": "Current value", "target": "Target value", "foods": ["food 1 (reason)", "food 2"], "absorptionTip": "Evidence-based tip to improve absorption"}],
-  "supplements": [{"name": "Supplement name", "dosage": "Suggested dosage", "reason": "Reason linked to lab result", "duration": "Duration", "foodSources": ["100g salmon = 600 IU vitamin D", "1 cup fortified milk = 400 IU", "1 egg = 40 IU"], "targetLabValue": "Vitamin D: 30-50 ng/mL", "scientificBasis": "Endocrine Society Clinical Practice Guideline", "timingAdvice": "Take with the fattiest meal of the day for optimal absorption", "interactions": "Conflicts with antacids - separate by 2 hours"}],
-  "mealPlan": {
-    "breakfast": [
-      {
-        "name": "Oatmeal with Banana and Milk",
-        "benefits": "Rich in soluble fiber",
-        "preparationTip": "Soak oats overnight to reduce phytic acid",
-        "ingredients": [
-          {"name": "Oats", "quantity": 60, "unit": "g", "state": "raw", "nutritionBasis": "per_100g", "protein": 13.5, "carbs": 68, "fat": 6.9, "calories": 389, "fiber": 10.6, "sourceReference": "USDA FoodData Central", "sourceConfidence": "high"},
-          {"name": "Low-fat milk", "quantity": 200, "unit": "ml", "state": "liquid", "nutritionBasis": "per_100g", "protein": 3.4, "carbs": 5, "fat": 1, "calories": 43, "fiber": 0, "sourceReference": "USDA", "sourceConfidence": "high"}
-        ]
-      }
-    ],
-    "lunch": [{"name": "Descriptive name", "benefits": "benefit", "preparationTip": "tip", "ingredients": [{"name": "Chicken Breast", "quantity": 150, "unit": "g", "state": "cooked", "nutritionBasis": "per_100g", "protein": 31, "carbs": 0, "fat": 3.6, "calories": 165, "fiber": 0, "sourceReference": "USDA", "sourceConfidence": "high"}]}],
-    "dinner": [{"name": "Descriptive name", "benefits": "benefit", "preparationTip": "tip", "ingredients": []}],
-    "snacks": [{"name": "Descriptive name", "benefits": "benefit", "preparationTip": "tip", "ingredients": []}]
-  },
-  "mealTimingAdvice": "Chrononutrition recommendations: optimal meal timing based on circadian rhythm and goal",
-  "tips": ["tip with health reason and scientific reference"],
-  "warnings": ["We recommend following up on X with your doctor for peace of mind"],
-  "conditionTips": [{"condition": "Condition (positive framing)", "advice": ["tip 1"], "avoidFoods": ["food to reduce"], "scientificReason": "Evidence-based scientific reason for this recommendation"}],
-  "nutrientInteractions": ["Iron + Vitamin C = improved absorption by 2-6x (Hallberg 1991)", "Avoid calcium with iron in the same meal (Cook & Reddy 2001)"],
-  "references": ["Mifflin-St Jeor equation (1990)", "ACSM Guidelines for Exercise Testing", "ASPEN Clinical Guidelines", "ISSN Position Stand on protein", "Hallberg (1991)", "Cook & Reddy (2001)", "ADA 2005 dietary fiber", "Endocrine Society Clinical Practice", "EFSA dietary reference values", "AMDR macronutrient ranges", "FARE Guidelines for Food Allergies"]
-}
-
-${knowledgeContext ? `\n⸻ RETRIEVED CLINICAL KNOWLEDGE BASE: ⸻\nIncorporate the following clinical insights from verified medical literature into your dietary protocol:\n${knowledgeContext}` : ""}`;
-
-  const userContent = isArabic
-    ? `بيانات المستخدم:
-- العمر: ${age} سنة
-- الجنس: ${gender === "male" ? "ذكر" : "أنثى"}
-- الوزن: ${weight} كجم
-- الطول: ${height} سم
-- مؤشر كتلة الجسم (BMI): ${bmi} (${bmiCategoryLabels[bmiCategory].ar})
+  const userContextBlock = isArabic
+    ? `بيانات المستخدم الأساسية:
+- العمر: ${age} سنة | الجنس: ${gender === "male" ? "ذكر" : "أنثى"} | الوزن: ${weight} كجم | الطول: ${height} سم
+- BMI: ${bmi} (${bmiCategoryLabels[bmiCategory].ar})
 - الهدف: ${goalDescriptions[goal].ar}
 - مستوى النشاط: ${activityLabels[activityLevel]?.ar || activityLevel}
 - نوع الوجبات: ${preferenceLabels[mealPreference]?.ar || mealPreference}
 - البروتين المفضل: ${proteinListAr}
 ${carbPrefs.length > 0 ? `- الكربوهيدرات المفضلة: ${carbListAr}` : ""}
 ${hasAllergies && allergyList ? `- الحساسيات الغذائية: ${allergyList}` : "- لا يوجد حساسيات غذائية"}
-
-حسابات الطاقة:
-- BMR (معدل الأيض الأساسي): ${bmr} سعرة (الحد الأدنى الآمن - لا يمكن النزول عنه)
-- TDEE (إجمالي الطاقة اليومية): ${tdee} سعرة
-- السعرات المستهدفة: ${targetCalories} سعرة/يوم (${delta > 0 ? "فائض +" + delta : delta < 0 ? "عجز " + delta : "ثبات"} سعرة)
-- توزيع السعرات على الوجبات: فطور = ${breakfastCalories} سعرة | غداء = ${lunchCalories} سعرة | عشاء = ${dinnerCalories} سعرة | سناك = ${snackCalories} سعرة
+- BMR: ${bmr} سعرة | TDEE: ${tdee} سعرة | السعرات المستهدفة: ${targetCalories} سعرة
 - البروتين: ${macros.protein.grams}جم | الكاربوهيدرات: ${macros.carbs.grams}جم | الدهون: ${macros.fats.grams}جم
-${hasSevereDeficiency ? `\n⚠️ تنبيه: تم اكتشاف نقص حاد في: ${severeDeficiencyList.join("، ")}. ${goal === "weight_loss" ? "تم تخفيف العجز الحراري لضمان تعويض النواقص أولاً." : "الأولوية تصحيح النواقص."}` : ""}
+${hasSevereDeficiency ? `- ⚠️ نقص حاد في: ${severeDeficiencyList.join("، ")}` : ""}
 
 نتائج التحاليل:
-${testsDescription || "لا توجد نتائج تحاليل متوفرة"}
-
-ملخص:
-- فحوصات طبيعية: ${normalTests.length}
-- فحوصات غير طبيعية: ${abnormalTests.length}
-
-المطلوب:
-1. ابدأ بتحليل الحالة الصحية من التحاليل (إن وجدت، وإلا بناءً على الملف الجسدي) (healthSummary)
-2. تحقق من أن السعرات آمنة (لا تقل عن BMR = ${bmr}) وتتوافق مع الحالة الصحية (intakeAlignment)
-3. صمم نظام غذائي مخصص 100% لهذا المستخدم
-4. استخدم فقط البروتينات التي اختارها: [${proteinListAr}]
-5. استخدم فقط الكربوهيدرات التي اختارها: [${carbPrefs.length > 0 ? carbListAr : "لم يحدد"}]
-6. اربط كل وجبة وتوصية بسبب صحي (من التحاليل إن وجدت، أو بناءً على الهدف والملف الجسدي)
-7. عالج النواقص من خلال الغذاء الطبيعي أولاً
-8. اقترح مكملات فقط عند الحاجة الفعلية (بلغة إرشادية)
-9. قدم بالضبط 5 خيارات متنوعة لكل وجبة (فطور = 5، غداء = 5، عشاء = 5، وجبات خفيفة = 5) المجموع 20 خيار - لا تقدم أقل من 5
-10. أضف المراجع العلمية في "references"
-${hasCustomTargetCalories && normalizedCustomTargetCalories ? `11. شرط إلزامي: لا يتجاوز متوسط مجموع سعرات اليوم ${normalizedCustomTargetCalories} سعرة` : ""}`
-    : `User data:
-- Age: ${age} years
-- Gender: ${gender}
-- Weight: ${weight} kg
-- Height: ${height} cm
+${testsDescription || "لا توجد نتائج تحاليل متوفرة"}`
+    : `Core User Data:
+- Age: ${age} | Gender: ${gender} | Weight: ${weight}kg | Height: ${height}cm
 - BMI: ${bmi} (${bmiCategoryLabels[bmiCategory].en})
 - Goal: ${goalDescriptions[goal].en}
-- Activity Level: ${activityLabels[activityLevel]?.en || activityLevel}
+- Activity: ${activityLabels[activityLevel]?.en || activityLevel}
 - Meal Preference: ${preferenceLabels[mealPreference]?.en || mealPreference}
 - Protein Preferences: ${proteinListEn}
 ${carbPrefs.length > 0 ? `- Carb Preferences: ${carbListEn}` : ""}
-${hasAllergies && allergyList ? `- Food Allergies: ${allergyList}` : "- No food allergies"}
-
-Energy Calculations:
-- BMR (Basal Metabolic Rate): ${bmr} kcal (minimum safe threshold - cannot go below this)
-- TDEE (Total Daily Energy Expenditure): ${tdee} kcal
-- Target Calories: ${targetCalories} kcal/day (${delta > 0 ? "surplus +" + delta : delta < 0 ? "deficit " + delta : "maintenance"} kcal)
-- Meal Calorie Distribution: Breakfast = ${breakfastCalories} kcal | Lunch = ${lunchCalories} kcal | Dinner = ${dinnerCalories} kcal | Snack = ${snackCalories} kcal
+${hasAllergies && allergyList ? `- Allergies: ${allergyList}` : "- No allergies"}
+- BMR: ${bmr} kcal | TDEE: ${tdee} kcal | Target: ${targetCalories} kcal
 - Protein: ${macros.protein.grams}g | Carbs: ${macros.carbs.grams}g | Fats: ${macros.fats.grams}g
-${hasSevereDeficiency ? `\nWARNING: Severe deficiencies detected in: ${severeDeficiencyList.join(", ")}. ${goal === "weight_loss" ? "Calorie deficit reduced to ensure deficiency correction first." : "Priority is correcting deficiencies."}` : ""}
+${hasSevereDeficiency ? `- WARNING: Severe deficiencies in: ${severeDeficiencyList.join(", ")}` : ""}
 
 Lab Results:
-${testsDescription || "No lab results available"}
+${testsDescription || "No lab results available"}`;
 
-Summary:
-- Normal tests: ${normalTests.length}
-- Abnormal tests: ${abnormalTests.length}
+  // ═══════════════════════════════════════════════════════════
+  // PHASE 1: Health Analysis (no meals)
+  // ═══════════════════════════════════════════════════════════
+  const phase1SystemPrompt = isArabic
+    ? `أنت بروفيسور في التغذية العلاجية والطب الوقائي. مهمتك في هذه المرحلة: التحليل الصحي فقط (بدون وجبات).
+
+${userContextBlock}
+
+المطلوب:
+1. "healthSummary": تقييم سريري شامل بناءً على التحاليل (إن وجدت) أو الملف الجسدي
+2. "intakeAlignment": شرح التوافق بين السعرات المستهدفة (${targetCalories}) والهدف والحالة الأيضية
+3. "deficiencies": مصفوفة للنواقص المكتشفة (إن وجدت). لكل نقص: name, current, target, foods (3-5 أطعمة غنية بالعنصر), absorptionTip
+4. "supplements": مصفوفة للمكملات المقترحة (إن وجدت). لكل مكمل: name, dosage, reason, duration, foodSources (3-5 مصادر مع الكمية), targetLabValue, scientificBasis, timingAdvice, interactions
+5. "conditionTips": نصائح مخصصة لكل حالة مكتشفة. لكل حالة: condition, advice[], avoidFoods[], scientificReason
+6. "tips": نصائح غذائية عامة إيجابية ومحفزة (5-8 نصائح)
+7. "warnings": تنبيهات لطيفة للمتابعة الطبية (إن لزم)
+8. "mealTimingAdvice": توصيات التوقيت الغذائي (Chrononutrition)
+9. "nutrientInteractions": تفاعلات غذائية مهمة لهذا المستخدم
+10. "references": المراجع العلمية
+11. "summary": ملخص إيجابي عن البروتوكول
+12. "goalDescription": وصف مختصر تحفيزي للهدف
+
+${toneInstruction}
+${deficiencyCalorieNote}
+${supplementInstruction}
+
+- إذا لم تتوفر تحاليل: اعتمد على الملف الجسدي والهدف فقط، وأرجع مصفوفات فارغة [] لـ deficiencies و supplements
+- لا تقدم تشخيصاً طبياً. استخدم لغة إرشادية
+- جميع الردود باللغة العربية
+- أرجع JSON فقط`
+    : `You are a Professor of Clinical Nutrition and Preventive Medicine. Your task in this phase: Health analysis ONLY (no meals).
+
+${userContextBlock}
 
 Requirements:
-1. Start with health analysis from lab results (if available) or general physical profile (healthSummary)
-2. Verify calories are safe (not below BMR = ${bmr}) and aligned with health status (intakeAlignment)
-3. Design a 100% personalized diet plan for this specific user
-4. Use ONLY the proteins they selected: [${proteinListEn}]
-5. Use ONLY the carbs they selected: [${carbPrefs.length > 0 ? carbListEn : "not specified"}]
-6. Link every meal and recommendation to a clear health reason (from lab results if available, or based on goal/profile)
-7. Treat deficiencies through natural food first
-8. Suggest supplements ONLY when truly needed (use guiding language)
-9. Provide EXACTLY 5 varied options for each meal (breakfast = 5, lunch = 5, dinner = 5, snacks = 5) Total 20 options - do NOT provide fewer than 5
-10. Add scientific references in "references"
-${hasCustomTargetCalories && normalizedCustomTargetCalories ? `11. Mandatory: Keep average total daily calories at or below ${normalizedCustomTargetCalories} kcal` : ""}`;
+1. "healthSummary": Comprehensive clinical assessment based on lab results (if available) or physical profile
+2. "intakeAlignment": Explain alignment between target calories (${targetCalories}), goal, and metabolic status
+3. "deficiencies": Array of detected deficiencies (if any). Each: name, current, target, foods (3-5 rich foods), absorptionTip
+4. "supplements": Array of suggested supplements (if any). Each: name, dosage, reason, duration, foodSources (3-5 with amounts), targetLabValue, scientificBasis, timingAdvice, interactions
+5. "conditionTips": Personalized tips for each detected condition. Each: condition, advice[], avoidFoods[], scientificReason
+6. "tips": General positive dietary tips (5-8 tips)
+7. "warnings": Gentle follow-up reminders (if needed)
+8. "mealTimingAdvice": Chrononutrition recommendations
+9. "nutrientInteractions": Important nutrient interactions for this user
+10. "references": Scientific references
+11. "summary": Positive protocol summary
+12. "goalDescription": Brief motivating goal description
 
-  if (knowledgeContext) {
-    console.log(`[KnowledgeEngine] Found relevant knowledge context (${knowledgeContext.length} chars)`);
+${toneInstruction}
+${deficiencyCalorieNote}
+${supplementInstruction}
+
+- If no lab results: base assessment on physical profile and goal only, return empty arrays [] for deficiencies and supplements
+- Do NOT provide medical diagnosis. Use guiding language
+- All responses in English
+- Return JSON only`;
+
+  console.log("[Phase 1] Starting health analysis...");
+  if (onProgress) {
+    try { await onProgress(['analysis_started'], {}); } catch (e) { /* ignore */ }
   }
 
-  const finalUserContent = userContent; // knowledgeSection removed from here
+  const phase1Response = await openai.chat.completions.create({
+    model: "gpt-4o",
+    messages: [
+      { role: "system", content: phase1SystemPrompt },
+      { role: "user", content: isArabic ? "حلل الحالة الصحية وقدم التوصيات بناءً على البيانات أعلاه. أرجع JSON فقط." : "Analyze the health status and provide recommendations based on the data above. Return JSON only." },
+    ],
+    response_format: { type: "json_object" },
+    temperature: 0.3,
+    max_completion_tokens: 8000,
+  });
 
-  console.log("Calling OpenAI for diet plan generation...");
-  const callStart = Date.now();
+  const phase1Content = phase1Response.choices[0]?.message?.content || '{}';
+  const phase1Data = JSON.parse(phase1Content.match(/\{[\s\S]*\}/)?.[0] || '{}');
+  console.log(`[Phase 1] Health analysis complete at ${((Date.now() - callStart) / 1000).toFixed(1)}s`);
 
-  let content: string;
+  const phase1Summary = isArabic
+    ? `ملخص التحليل الصحي من المرحلة 1:
+- الملخص: ${(phase1Data.healthSummary || '').slice(0, 300)}
+- النواقص: ${(phase1Data.deficiencies || []).map((d: any) => d.name).join("، ") || "لا يوجد"}
+- المكملات: ${(phase1Data.supplements || []).map((s: any) => s.name).join("، ") || "لا يوجد"}
+- الحالات: ${(phase1Data.conditionTips || []).map((c: any) => c.condition).join("، ") || "لا يوجد"}`
+    : `Phase 1 Health Analysis Summary:
+- Summary: ${(phase1Data.healthSummary || '').slice(0, 300)}
+- Deficiencies: ${(phase1Data.deficiencies || []).map((d: any) => d.name).join(", ") || "None"}
+- Supplements: ${(phase1Data.supplements || []).map((s: any) => s.name).join(", ") || "None"}
+- Conditions: ${(phase1Data.conditionTips || []).map((c: any) => c.condition).join(", ") || "None"}`;
+
+  // ═══════════════════════════════════════════════════════════
+  // PHASE 2: Breakfast + Lunch meals
+  // ═══════════════════════════════════════════════════════════
+  const phase2MealSlots = mealSplits.filter(s => s.key === 'breakfast' || s.key === 'lunch');
+  const phase2MealKeys = phase2MealSlots.map(s => s.key);
+
+  const mealRulesBlock = isArabic
+    ? `⸻ قواعد الدقة العلمية: ⸻
+- يُمنع تخمين السعرات أو الماكروز. احسب من جداول USDA لكل مكون بالجرام
+- معادلة السعرات: (بروتين×4) + (كارب×4) + (دهون×9) — هامش ±10 سعرات فقط
+- كل مكون يجب تحديد وزنه بالجرام بدقة
+
+⸻ قواعد التنوع: ⸻
+- 5 خيارات مختلفة تماماً لكل وجبة في المكونات الرئيسية وأسلوب الطهي
+- لا تكرر نفس المكون الرئيسي في أكثر من خيارين
+- استلهم من قوائم شركات الوجبات الصحية (Calo, RightBite, Diet Center)
+- نوّع أساليب الطهي (مشوي، مسلوق، مخبوز، مقلي بالهواء) والمطابخ
+- كل خيار وجبة كاملة (بروتين + كارب + خضار + دهون صحية)
+${proteinInstruction}${carbInstruction}
+- ⚠️ لا تضع أي مكون لم يختره المستخدم
+
+⸻ هيكل JSON لكل وجبة: ⸻
+كل خيار يحتوي: name (اسم وصفي), benefits (فائدة صحية مرتبطة بالتحاليل/الهدف), preparationTip (نصيحة تحسين القيمة الغذائية), ingredients (مصفوفة المكونات)
+كل مكون: name, quantity (بالجرام), unit ("g"), state ("raw"/"cooked"/"liquid"/"dried" — إلزامي), nutritionBasis ("per_100g"), protein, carbs, fat, calories, fiber, sourceReference, sourceConfidence
+- ⚠️ state إلزامي ويؤثر على القيم الغذائية (أرز ني=365 سعرة vs مطبوخ=130 سعرة)`
+    : `⸻ SCIENTIFIC ACCURACY RULES: ⸻
+- NEVER guess calories or macros. Calculate from USDA tables per ingredient in grams
+- Calorie formula: (protein×4) + (carbs×4) + (fats×9) — ±10 kcal tolerance only
+- Every ingredient MUST have exact weight in grams
+
+⸻ VARIETY RULES: ⸻
+- 5 completely different options per meal in main ingredients and cooking method
+- Do NOT repeat the same main ingredient in more than 2 options
+- Draw inspiration from premium meal-prep companies (Calo, RightBite, Diet Center)
+- Vary cooking methods (grilled, boiled, baked, air-fried) and cuisines
+- Each option = complete meal (protein + carb + vegetables + healthy fats)
+${proteinInstruction}${carbInstruction}
+- GOLDEN RULE: Do NOT include any ingredient the user did NOT select
+
+⸻ JSON STRUCTURE per meal: ⸻
+Each option: name (descriptive), benefits (health benefit linked to labs/goal), preparationTip (nutrient optimization tip), ingredients (array)
+Each ingredient: name, quantity (grams), unit ("g"), state ("raw"/"cooked"/"liquid"/"dried" — MANDATORY), nutritionBasis ("per_100g"), protein, carbs, fat, calories, fiber, sourceReference, sourceConfidence
+- state is MANDATORY and affects nutritional values (raw rice=365cal vs cooked=130cal)`;
+
+  const phase2SystemPrompt = isArabic
+    ? `أنت بروفيسور تغذية علاجية. مهمتك: تصميم وجبات الفطور والغداء فقط (5 خيارات لكل وجبة).
+
+${userContextBlock}
+
+${phase1Summary}
+
+${mealRulesBlock}
+
+⚠️ بناءً على التحليل الصحي أعلاه، صمم الوجبات لمعالجة النواقص المكتشفة من خلال الغذاء الطبيعي.
+${hasAllergies && allergyList ? `- ⚠️ حساسية: ${allergyList}. يُمنع وضع أي مسبب حساسية` : ""}
+${customCalorieInstruction}
+
+أرجع JSON بهذا الشكل:
+{
+  "mealPlan": {
+${phase2MealSlots.map(s => `    "${s.key}": [5 خيارات — كل خيار ${s.calories} سعرة (P:${s.protein}g C:${s.carbs}g F:${s.fats}g)]`).join(",\n")}
+  }
+}
+- يجب بالضبط 5 خيارات كاملة لكل وجبة
+- أرجع JSON فقط`
+    : `You are a Professor of Clinical Nutrition. Your task: Design Breakfast and Lunch meals ONLY (5 options each).
+
+${userContextBlock}
+
+${phase1Summary}
+
+${mealRulesBlock}
+
+Based on the health analysis above, design meals that address detected deficiencies through natural food.
+${hasAllergies && allergyList ? `- ALLERGY WARNING: ${allergyList}. MUST NOT include any allergen` : ""}
+${customCalorieInstruction}
+
+Return JSON in this format:
+{
+  "mealPlan": {
+${phase2MealSlots.map(s => `    "${s.key}": [5 options — each ~${s.calories} kcal (P:${s.protein}g C:${s.carbs}g F:${s.fats}g)]`).join(",\n")}
+  }
+}
+- EXACTLY 5 complete options per meal
+- Return JSON only`;
+
+  console.log("[Phase 2] Generating breakfast + lunch...");
+  if (onProgress) {
+    try { await onProgress(['analysis_complete'], {}); } catch (e) { /* ignore */ }
+  }
+
+  const phase2Response = await openai.chat.completions.create({
+    model: "gpt-4o",
+    messages: [
+      { role: "system", content: phase2SystemPrompt },
+      { role: "user", content: isArabic ? "صمم وجبات الفطور والغداء (5 خيارات لكل وجبة) بناءً على البيانات والتحليل الصحي أعلاه. أرجع JSON فقط." : "Design breakfast and lunch meals (5 options each) based on the data and health analysis above. Return JSON only." },
+    ],
+    response_format: { type: "json_object" },
+    temperature: 0.4,
+    max_completion_tokens: 12000,
+  });
+
+  const phase2Content = phase2Response.choices[0]?.message?.content || '{}';
+  const phase2Data = JSON.parse(phase2Content.match(/\{[\s\S]*\}/)?.[0] || '{}');
+  console.log(`[Phase 2] Breakfast + Lunch complete at ${((Date.now() - callStart) / 1000).toFixed(1)}s`);
 
   if (onProgress) {
-    const stream = await openai.chat.completions.create({
-      model: "gpt-4o",
-      messages: [
-        { role: "system", content: systemPrompt },
-        { role: "user", content: finalUserContent },
-      ],
-      response_format: { type: "json_object" },
-      temperature: 0.2,
-      max_completion_tokens: 32000,
-      stream: true,
-    });
-
-    let accumulated = '';
-    const completedSections: string[] = [];
     const partialMeals: Record<string, any[]> = {};
-
-    for await (const chunk of stream) {
-      const delta = chunk.choices[0]?.delta?.content || '';
-      accumulated += delta;
-
-      for (const section of ['breakfast', 'lunch', 'dinner', 'snacks']) {
-        if (!completedSections.includes(section) && isMealSectionComplete(accumulated, section)) {
-          const meals = extractMealSection(accumulated, section);
-          if (meals && meals.length > 0) {
-            completedSections.push(section);
-            partialMeals[section] = meals;
-            console.log(`[Streaming] ${section} complete (${meals.length} options) at ${((Date.now() - callStart) / 1000).toFixed(1)}s`);
-            try { await onProgress([...completedSections], { ...partialMeals }); } catch (e) { console.warn("Progress callback error:", e); }
-          }
-        }
-      }
+    for (const key of phase2MealKeys) {
+      if (phase2Data.mealPlan?.[key]) partialMeals[key] = phase2Data.mealPlan[key];
     }
-
-    content = accumulated;
-    console.log(`[Streaming] Full response received at ${((Date.now() - callStart) / 1000).toFixed(1)}s`);
-  } else {
-    const response = await openai.chat.completions.create({
-      model: "gpt-4o",
-      messages: [
-        { role: "system", content: systemPrompt },
-        { role: "user", content: finalUserContent },
-      ],
-      response_format: { type: "json_object" },
-      temperature: 0.2,
-      max_completion_tokens: 32000,
-    });
-
-    content = response.choices[0]?.message?.content || '';
+    try { await onProgress(['breakfast', 'lunch'], partialMeals); } catch (e) { /* ignore */ }
   }
 
-  if (!content) {
+  const phase2MealNames = isArabic
+    ? `أسماء وجبات الفطور والغداء التي تم تصميمها (يُمنع تكرار نفس المكونات الرئيسية):
+${phase2MealKeys.map(key => {
+      const meals = phase2Data.mealPlan?.[key] || [];
+      return meals.map((m: any, i: number) => `- ${key} ${i + 1}: ${m.name || 'N/A'}`).join("\n");
+    }).join("\n")}`
+    : `Breakfast and Lunch meal names already designed (DO NOT repeat the same main ingredients):
+${phase2MealKeys.map(key => {
+      const meals = phase2Data.mealPlan?.[key] || [];
+      return meals.map((m: any, i: number) => `- ${key} ${i + 1}: ${m.name || 'N/A'}`).join("\n");
+    }).join("\n")}`;
+
+  // ═══════════════════════════════════════════════════════════
+  // PHASE 3: Dinner + Snacks meals
+  // ═══════════════════════════════════════════════════════════
+  const phase3MealSlots = mealSplits.filter(s => s.key !== 'breakfast' && s.key !== 'lunch');
+  const phase3MealKeys = phase3MealSlots.map(s => s.key);
+
+  const phase3SystemPrompt = isArabic
+    ? `أنت بروفيسور تغذية علاجية. مهمتك: تصميم وجبات ${phase3MealSlots.map(s => s.labelAr).join(" و ")} فقط (5 خيارات لكل وجبة).
+
+${userContextBlock}
+
+${phase1Summary}
+
+${phase2MealNames}
+
+${mealRulesBlock}
+
+⚠️ بناءً على التحليل الصحي، صمم الوجبات لمعالجة النواقص. لا تكرر نفس المكونات الرئيسية من الفطور والغداء أعلاه.
+${hasAllergies && allergyList ? `- ⚠️ حساسية: ${allergyList}. يُمنع وضع أي مسبب حساسية` : ""}
+${customCalorieInstruction}
+
+أرجع JSON بهذا الشكل:
+{
+  "mealPlan": {
+${phase3MealSlots.map(s => `    "${s.key}": [5 خيارات — كل خيار ${s.calories} سعرة (P:${s.protein}g C:${s.carbs}g F:${s.fats}g)]`).join(",\n")}
+  }
+}
+- يجب بالضبط 5 خيارات كاملة لكل وجبة
+- أرجع JSON فقط`
+    : `You are a Professor of Clinical Nutrition. Your task: Design ${phase3MealSlots.map(s => s.labelEn).join(" and ")} meals ONLY (5 options each).
+
+${userContextBlock}
+
+${phase1Summary}
+
+${phase2MealNames}
+
+${mealRulesBlock}
+
+Based on the health analysis, design meals that address deficiencies. DO NOT repeat main ingredients from breakfast/lunch above.
+${hasAllergies && allergyList ? `- ALLERGY WARNING: ${allergyList}. MUST NOT include any allergen` : ""}
+${customCalorieInstruction}
+
+Return JSON in this format:
+{
+  "mealPlan": {
+${phase3MealSlots.map(s => `    "${s.key}": [5 options — each ~${s.calories} kcal (P:${s.protein}g C:${s.carbs}g F:${s.fats}g)]`).join(",\n")}
+  }
+}
+- EXACTLY 5 complete options per meal
+- Return JSON only`;
+
+  console.log("[Phase 3] Generating dinner + snacks...");
+
+  const phase3Response = await openai.chat.completions.create({
+    model: "gpt-4o",
+    messages: [
+      { role: "system", content: phase3SystemPrompt },
+      { role: "user", content: isArabic ? `صمم وجبات ${phase3MealSlots.map(s => s.labelAr).join(" و ")} (5 خيارات لكل وجبة) بناءً على البيانات والتحليل الصحي. تجنب تكرار مكونات الفطور والغداء. أرجع JSON فقط.` : `Design ${phase3MealSlots.map(s => s.labelEn).join(" and ")} meals (5 options each) based on the data and health analysis. Avoid repeating breakfast/lunch ingredients. Return JSON only.` },
+    ],
+    response_format: { type: "json_object" },
+    temperature: 0.4,
+    max_completion_tokens: 12000,
+  });
+
+  const phase3Content = phase3Response.choices[0]?.message?.content || '{}';
+  const phase3Data = JSON.parse(phase3Content.match(/\{[\s\S]*\}/)?.[0] || '{}');
+  console.log(`[Phase 3] Dinner + Snacks complete at ${((Date.now() - callStart) / 1000).toFixed(1)}s`);
+
+  if (onProgress) {
+    const allMeals: Record<string, any[]> = {};
+    for (const key of phase2MealKeys) {
+      if (phase2Data.mealPlan?.[key]) allMeals[key] = phase2Data.mealPlan[key];
+    }
+    for (const key of phase3MealKeys) {
+      if (phase3Data.mealPlan?.[key]) allMeals[key] = phase3Data.mealPlan[key];
+    }
+    try { await onProgress(['breakfast', 'lunch', 'dinner', 'snacks'], allMeals); } catch (e) { /* ignore */ }
+  }
+
+  console.log(`[3-Phase] All phases complete in ${((Date.now() - callStart) / 1000).toFixed(1)}s`);
+
+  const mergedMealPlan: Record<string, any[]> = {};
+  for (const key of phase2MealKeys) {
+    mergedMealPlan[key] = phase2Data.mealPlan?.[key] || [];
+  }
+  for (const key of phase3MealKeys) {
+    mergedMealPlan[key] = phase3Data.mealPlan?.[key] || [];
+  }
+
+  const content = JSON.stringify({
+    ...phase1Data,
+    mealPlan: mergedMealPlan,
+  });
+
+  if (!content || content === '{}') {
     throw new Error("No content generated by AI");
   }
 
