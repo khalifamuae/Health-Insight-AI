@@ -8,8 +8,8 @@ import {
   I18nManager,
   Pressable,
   Modal,
-  Alert,
-  Share
+  TextInput,
+  Alert
 } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { isArabicLanguage } from '../lib/isArabic';
@@ -20,7 +20,6 @@ import { api, queries } from '../lib/api';
 import { useAppTheme } from '../context/ThemeContext';
 import { formatAppDate, getDateCalendarPreference, type CalendarType } from '../lib/dateFormat';
 import { scheduleLabReminderNotification } from '../services/ReminderNotificationService';
-import AppTextInput from '../components/AppTextInput';
 
 interface AllTestData {
   id: string;
@@ -686,49 +685,6 @@ export default function TestsScreen() {
   const testsWithResults = filteredAndSortedTests.filter(t => t.hasResult).length;
   const abnormalTests = filteredAndSortedTests.filter(t => t.status === 'high' || t.status === 'low').length;
 
-  const handleShareAllTests = async () => {
-    const testsWithData = tests.filter(t => t.hasResult);
-    if (testsWithData.length === 0) {
-      Alert.alert(
-        isArabic ? 'لا توجد نتائج' : 'No Results',
-        isArabic ? 'لا توجد تحاليل بنتائج لمشاركتها.' : 'No test results to share.'
-      );
-      return;
-    }
-
-    const statusEmoji = (s: string) => s === 'normal' ? '✅' : s === 'high' ? '⬆️' : s === 'low' ? '⬇️' : '⏳';
-    const statusLabel = (s: string) => {
-      if (isArabic) return s === 'normal' ? 'طبيعي' : s === 'high' ? 'مرتفع' : s === 'low' ? 'منخفض' : 'معلق';
-      return s === 'normal' ? 'Normal' : s === 'high' ? 'High' : s === 'low' ? 'Low' : 'Pending';
-    };
-
-    const header = isArabic
-      ? `📋 تقرير تحاليل الدم\n${'─'.repeat(30)}\n`
-      : `📋 Blood Test Report\n${'─'.repeat(30)}\n`;
-
-    const lines = testsWithData.map(t => {
-      const name = isArabic ? t.nameAr : t.nameEn;
-      const range = (t.normalRangeMin !== null && t.normalRangeMax !== null)
-        ? `${t.normalRangeMin} - ${t.normalRangeMax} ${t.unit || ''}`
-        : '-';
-      const date = t.testDate ? formatAppDate(t.testDate, i18n.language, dateCalendar) : '-';
-      return isArabic
-        ? `${statusEmoji(t.status)} ${name}\n   القيمة: ${t.value} ${t.unit || ''}\n   الطبيعي: ${range}\n   الحالة: ${statusLabel(t.status)}\n   التاريخ: ${date}`
-        : `${statusEmoji(t.status)} ${name}\n   Value: ${t.value} ${t.unit || ''}\n   Normal: ${range}\n   Status: ${statusLabel(t.status)}\n   Date: ${date}`;
-    }).join('\n\n');
-
-    const abnormalCount = testsWithData.filter(t => t.status === 'high' || t.status === 'low').length;
-    const summary = isArabic
-      ? `\n${'─'.repeat(30)}\nالملخص: ${testsWithData.length} تحليل | ${abnormalCount} خارج المعدل\n\nتم المشاركة من Health Insight AI`
-      : `\n${'─'.repeat(30)}\nSummary: ${testsWithData.length} tests | ${abnormalCount} abnormal\n\nShared from Health Insight AI`;
-
-    try {
-      await Share.share({ message: header + lines + summary });
-    } catch (e) {
-      // User cancelled share
-    }
-  };
-
   const getSortIcon = (): string => {
     if (sortMode === 'worstToBest') return 'arrow-down';
     if (sortMode === 'bestToWorst') return 'arrow-up';
@@ -865,29 +821,7 @@ export default function TestsScreen() {
         <Text style={[styles.disclaimerSmallText, { color: colors.mutedText }]}>{t('disclaimer.text')}</Text>
       </View>
       <View style={[styles.header, { backgroundColor: colors.card, borderBottomColor: isDark ? '#1f2937' : colors.border }]}>
-        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-          <Text style={[styles.title, { color: colors.text }]}>{t('myTests')}</Text>
-          <TouchableOpacity
-            onPress={handleShareAllTests}
-            style={{
-              flexDirection: 'row',
-              alignItems: 'center',
-              backgroundColor: isDark ? '#1e3a8a' : '#eff6ff',
-              paddingHorizontal: 12,
-              paddingVertical: 6,
-              borderRadius: 16,
-              gap: 4,
-              borderWidth: 1,
-              borderColor: isDark ? '#3b82f6' : '#bfdbfe',
-            }}
-            testID="button-share-all-tests"
-          >
-            <Ionicons name="share-social-outline" size={16} color="#3b82f6" />
-            <Text style={{ fontSize: 12, fontWeight: '600', color: isDark ? '#93c5fd' : '#1e40af' }}>
-              {isArabic ? 'مشاركة' : 'Share'}
-            </Text>
-          </TouchableOpacity>
-        </View>
+        <Text style={[styles.title, { color: colors.text }]}>{t('myTests')}</Text>
         <Text style={[styles.count, { color: colors.mutedText }]}>
           {testsWithResults}/{filteredAndSortedTests.length} {t('testsCompleted')} | {abnormalTests} {t('abnormal')}
         </Text>
@@ -1008,7 +942,7 @@ export default function TestsScreen() {
             <Text style={[styles.modalHint, { color: colors.mutedText }]}>
               {isArabic ? 'أدخل التاريخ بصيغة: YYYY-MM-DD' : 'Enter date as: YYYY-MM-DD'}
             </Text>
-            <AppTextInput
+            <TextInput
               value={reminderDateInput}
               onChangeText={setReminderDateInput}
               style={[styles.modalInput, { backgroundColor: colors.cardAlt, borderColor: colors.border, color: colors.text }]}
