@@ -40,11 +40,7 @@ async function getCredentials() {
   if (!connectionSettings || (!connectionSettings.settings.api_key)) {
     throw new Error('Resend not connected');
   }
-
-  return {
-    apiKey: connectionSettings.settings.api_key,
-    fromEmail: connectionSettings.settings.from_email
-  };
+  return { apiKey: connectionSettings.settings.api_key, fromEmail: connectionSettings.settings.from_email };
 }
 
 export async function getResendClient() {
@@ -54,24 +50,3 @@ export async function getResendClient() {
     fromEmail
   };
 }
-
-export async function sendTestEmail(to: string) {
-  const { client, fromEmail } = await getResendClient();
-
-  const result = await client.emails.send({
-    from: fromEmail || "BioTrack AI <onboarding@resend.dev>",
-    to,
-    subject: "Test OTP Email",
-    html: `
-      <div style="font-family: Arial, sans-serif; padding: 20px;">
-        <h1 style="margin-bottom: 8px;">123456</h1>
-        <p style="margin: 0;">This is a test email from Resend.</p>
-      </div>
-    `,
-  });
-
-  console.log("Email result:", result);
-  return result;
-}
-
-
