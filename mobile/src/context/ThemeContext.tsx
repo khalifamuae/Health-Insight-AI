@@ -30,24 +30,24 @@ const lightColors: AppThemeColors = {
   background: '#f8fafc',
   card: '#ffffff',
   cardAlt: '#f1f5f9',
-  text: '#0f172a',
+  text: '#1e293b',
   mutedText: '#64748b',
   border: '#e2e8f0',
-  primary: '#2563eb',
-  success: '#10b981',
+  primary: '#3b82f6',
+  success: '#16a34a',
   warning: '#f59e0b',
-  danger: '#ef4444',
+  danger: '#dc2626',
 };
 
 const darkColors: AppThemeColors = {
-  background: '#0f172a',
-  card: '#1e293b',
-  cardAlt: '#334155',
-  text: '#f8fafc',
+  background: '#0b1220',
+  card: '#111827',
+  cardAlt: '#1f2937',
+  text: '#e2e8f0',
   mutedText: '#94a3b8',
   border: '#334155',
-  primary: '#3b82f6',
-  success: '#34d399',
+  primary: '#60a5fa',
+  success: '#4ade80',
   warning: '#fbbf24',
   danger: '#f87171',
 };
@@ -65,7 +65,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
           setModeState(value);
         }
       })
-      .catch(() => { });
+      .catch(() => {});
   }, []);
 
   const isDark = mode === 'dark' || (mode === 'system' && systemScheme === 'dark');
