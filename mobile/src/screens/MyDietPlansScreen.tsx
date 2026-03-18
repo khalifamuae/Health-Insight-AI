@@ -216,7 +216,7 @@ const styles = StyleSheet.create({
   },
   content: {
     padding: 16,
-    paddingBottom: 250,
+    paddingBottom: 110,
     gap: 10,
   },
   noteCard: {
@@ -232,6 +232,7 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 13,
     lineHeight: 18,
+    textAlign: 'left',
   },
   infoText: {
     fontSize: 14,
