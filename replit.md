@@ -5,7 +5,7 @@ BioTrack AI is a comprehensive health tracking application that analyzes PDF lab
 
 ## Key Features
 - **AI PDF Analysis**: Upload lab results and AI automatically extracts test values
-- **AI Diet Plan**: Personalized nutrition plans based on lab results, weight, height, and deficiencies
+- **AI Diet Plan**: Personalized nutrition plans based on lab results, weight, height, and deficiencies (3-phase AI generation)
 - **Test Comparison**: Side-by-side comparison of old vs new test results with trend indicators
 - **50 Test Types**: Vitamins, minerals, hormones, organ functions, lipids, immunity, blood, coagulation, and special tests
 - **Color-Coded Results**: Red for abnormal (High/Low), green for normal
@@ -40,6 +40,12 @@ BioTrack AI is a comprehensive health tracking application that analyzes PDF lab
   - Webhook security: x-webhook-secret header verification (set IAP_WEBHOOK_SECRET env var)
   - react-native-iap SDK integrated with purchase listeners, receipt validation, and restore flow
   - Graceful fallback to server-only mode when native IAP module unavailable (dev/testing)
+- **3-Phase Diet Plan Generation**: Split monolithic AI prompt into 3 sequential phases to stay within model token limits (16384 max)
+  - Phase 1: Health analysis — healthSummary, intakeAlignment, deficiencies, supplements, conditionTips, tips, warnings, references, nutrientInteractions, mealTimingAdvice (max_completion_tokens: 8000)
+  - Phase 2: Breakfast + Lunch meals — 5 options each, with Phase 1 health context and user data (max_completion_tokens: 12000)
+  - Phase 3: Dinner + Snacks meals — 5 options each, with Phase 1 context + Phase 2 meal names to prevent ingredient repetition (max_completion_tokens: 12000)
+  - Each phase receives full user context: weight, height, age, gender, activity, allergies, protein/carb preferences, lab results
+  - Replaces old single-call approach that used max_completion_tokens: 32000 (exceeded model limit)
 - **Professor-Level Clinical Nutrition System**: Upgraded diet plan AI to Evidence-Based Medicine methodology
   - 5-Phase Clinical Protocol: Clinical Assessment, Advanced Energy Calculations, Metabolic Assessment, Bioavailability Optimization, Dietary Protocol Design
   - TEF (Thermic Effect of Food) calculation: protein 25%, carbs 8%, fats 3%
