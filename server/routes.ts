@@ -273,7 +273,7 @@ export async function registerRoutes(
       try {
         const { client, fromEmail } = await getResendClient();
         await client.emails.send({
-          from: fromEmail || "BioTrack AI <noreply@resend.dev>",
+          from: fromEmail || "BioTrack AI <noreply@biotrack-ai.com>",
           to: email,
           subject: "BioTrack AI - Verification Code / رمز التحقق",
           html: `<!DOCTYPE html><html><head><meta charset="utf-8"></head><body><div style="font-family: Arial, sans-serif; max-width: 480px; margin: 0 auto; padding: 32px; text-align: center;"><h2 style="color: #10b981;">BioTrack AI</h2><p style="font-size: 16px; color: #374151;">Your verification code is:</p><p style="font-size: 16px; color: #374151; direction: rtl;">رمز التحقق الخاص بك:</p><div style="background: #f3f4f6; border-radius: 12px; padding: 24px; margin: 24px 0;"><span style="font-size: 36px; font-weight: bold; letter-spacing: 8px; color: #10b981;">${code}</span></div><p style="font-size: 14px; color: #6b7280;">This code expires in 10 minutes.</p><p style="font-size: 14px; color: #6b7280; direction: rtl;">ينتهي هذا الرمز خلال 10 دقائق.</p></div></body></html>`,
@@ -314,7 +314,7 @@ export async function registerRoutes(
       try {
         const { client, fromEmail } = await getResendClient();
         await client.emails.send({
-          from: fromEmail || "BioTrack AI <noreply@resend.dev>",
+          from: fromEmail || "BioTrack AI <noreply@biotrack-ai.com>",
           to: email,
           subject: "BioTrack AI - Password Reset Code / رمز استعادة كلمة المرور",
           html: `<!DOCTYPE html><html><head><meta charset="utf-8"></head><body><div style="font-family: Arial, sans-serif; max-width: 480px; margin: 0 auto; padding: 32px; text-align: center;"><h2 style="color: #3b82f6;">BioTrack AI</h2><p style="font-size: 16px; color: #374151;">Your password reset code is:</p><p style="font-size: 16px; color: #374151; direction: rtl;">رمز استعادة كلمة المرور الخاص بك:</p><div style="background: #f3f4f6; border-radius: 12px; padding: 24px; margin: 24px 0;"><span style="font-size: 36px; font-weight: bold; letter-spacing: 8px; color: #3b82f6;">${code}</span></div><p style="font-size: 14px; color: #6b7280;">This code expires in 10 minutes. If you didn't request this, ignore this email.</p><p style="font-size: 14px; color: #6b7280; direction: rtl;">ينتهي هذا الرمز خلال 10 دقائق. إذا لم تطلب ذلك، تجاهل هذا البريد.</p></div></body></html>`,

@@ -7,7 +7,7 @@ async function getCredentials() {
   if (process.env.RESEND_API_KEY) {
     return {
       apiKey: process.env.RESEND_API_KEY,
-      fromEmail: process.env.RESEND_FROM_EMAIL || "BioTrack AI <noreply@resend.dev>"
+      fromEmail: process.env.RESEND_FROM_EMAIL || "BioTrack AI <noreply@biotrack-ai.com>"
     };
   }
 
@@ -20,8 +20,8 @@ async function getCredentials() {
   const xReplitToken = process.env.REPL_IDENTITY
     ? 'repl ' + process.env.REPL_IDENTITY
     : process.env.WEB_REPL_RENEWAL
-    ? 'depl ' + process.env.WEB_REPL_RENEWAL
-    : null;
+      ? 'depl ' + process.env.WEB_REPL_RENEWAL
+      : null;
 
   if (!xReplitToken) {
     throw new Error('X_REPLIT_TOKEN not found for repl/depl');
