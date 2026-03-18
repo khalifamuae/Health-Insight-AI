@@ -5,6 +5,7 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
+  TextInput,
   Alert,
   Share,
   I18nManager,
@@ -18,7 +19,6 @@ import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import { api } from '../lib/api';
 import { formatAppDate, getDateCalendarPreference, type CalendarType } from '../lib/dateFormat';
-import AppTextInput from '../components/AppTextInput';
 
 interface AffiliateDashboard {
   referralCode: string;
@@ -274,7 +274,7 @@ export default function AffiliateScreen() {
             </View>
 
             <Text style={styles.modalLabel}>{t('affiliate.amount')}</Text>
-            <AppTextInput
+            <TextInput
               style={styles.modalInput}
               value={withdrawAmount}
               onChangeText={setWithdrawAmount}
@@ -304,7 +304,7 @@ export default function AffiliateScreen() {
             </View>
 
             <Text style={styles.modalLabel}>{t('affiliate.paymentDetails')}</Text>
-            <AppTextInput
+            <TextInput
               style={[styles.modalInput, styles.modalInputMultiline]}
               value={paymentDetails}
               onChangeText={setPaymentDetails}
