@@ -28,7 +28,7 @@ export default function MyDietPlansScreen({ navigation }: any) {
   const [translatingId, setTranslatingId] = useState<string | null>(null);
   const queryClient = useQueryClient();
 
-  const { data: savedPlans, isLoading } = useQuery<SavedPlan[]>({
+  const { data: savedPlans, isLoading, refetch } = useQuery<SavedPlan[]>({
     queryKey: ['savedDietPlans'],
     queryFn: async () => (await queries.savedDietPlans()) as SavedPlan[],
   });
@@ -40,7 +40,8 @@ export default function MyDietPlansScreen({ navigation }: any) {
       getDateCalendarPreference()
         .then(setDateCalendar)
         .catch(() => setDateCalendar('gregorian'));
-    }, [])
+      refetch();
+    }, [refetch])
   );
 
   const translateMutation = useMutation({

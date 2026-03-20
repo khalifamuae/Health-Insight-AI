@@ -113,48 +113,52 @@ const ExerciseCard = ({ savedExercise, globalExercise, groupId, onRemove }: { sa
       </View>
 
       <View style={[styles.statsRow, { backgroundColor: colors.card, borderColor: colors.border, padding: 12, borderRadius: 12 }]}>
-        <View style={{ flexDirection: isArabic ? 'row-reverse' : 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-          <Text style={{ fontSize: 13, fontWeight: '700', color: colors.text }}>
-            {isArabic ? "تفاصيل التمرين" : "Exercise Details"}
+        <View style={{ flexDirection: isArabic ? 'row-reverse' : 'row', justifyContent: 'center', marginBottom: 16 }}>
+          <Text style={{ fontSize: 16, fontWeight: '800', color: colors.text }}>
+            {isArabic ? "جدول تدريبك اليومي" : "Daily Training Plan"}
           </Text>
-          <TouchableOpacity
-            style={{ backgroundColor: colors.primary + '20', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8 }}
-            onPress={() => {
-              const newUnit = (weightUnit === 'kg' ? 'lbs' : 'kg');
-              setWeightUnit(newUnit);
-              WorkoutStore.updateExerciseWeights(groupId, savedExercise.id, startWeight, endWeight, newUnit);
-            }}
-          >
-            <Text style={{ fontSize: 11, fontWeight: 'bold', color: colors.primary }}>
-              {isArabic ? `الوحدة: ${weightUnit.toUpperCase()}` : `Unit: ${weightUnit.toUpperCase()}`}
-            </Text>
-          </TouchableOpacity>
         </View>
 
-        {/* 2x2 Grid */}
+        {/* 2x2 Grid matching reference image */}
         <View style={{ gap: 12 }}>
           {/* Row 1: Sets and Reps */}
           <View style={{ flexDirection: isArabic ? 'row-reverse' : 'row', gap: 12 }}>
-            <View style={[styles.gridBox, { borderColor: colors.border, backgroundColor: isDark ? 'rgba(30, 41, 59, 0.4)' : '#f8fafc' }]}>
-              <Text style={[styles.gridLabel, { color: colors.mutedText }]}>{isArabic ? "الجولات (Sets)" : "Sets"}</Text>
-              <Text style={[styles.gridValue, { color: colors.text }]}>{savedExercise.sets}</Text>
+            <View style={[styles.gridCard, { borderColor: colors.border, backgroundColor: isDark ? 'rgba(30,41,59,0.5)' : '#f8fafc' }]}>
+              <View style={[styles.gridHeader, { backgroundColor: '#709dbd' }]}>
+                <Text style={styles.gridHeaderText}>{isArabic ? "عدد الجولات" : "Sets"}</Text>
+              </View>
+              <View style={styles.gridBody}>
+                <Text style={[styles.gridBigValue, { color: colors.text }]}>{savedExercise.sets}</Text>
+                <Text style={[styles.gridSubText, { color: colors.mutedText }]}>{isArabic ? "الجولات الإجمالية" : "Total Sets"}</Text>
+              </View>
             </View>
-            <View style={[styles.gridBox, { borderColor: colors.border, backgroundColor: isDark ? 'rgba(30, 41, 59, 0.4)' : '#f8fafc' }]}>
-              <Text style={[styles.gridLabel, { color: colors.mutedText }]}>{isArabic ? "التكرار (Reps)" : "Reps"}</Text>
-              <Text style={[styles.gridValue, { color: colors.text }]}>{savedExercise.reps}</Text>
+
+            <View style={[styles.gridCard, { borderColor: colors.border, backgroundColor: isDark ? 'rgba(30,41,59,0.5)' : '#f8fafc' }]}>
+              <View style={[styles.gridHeader, { backgroundColor: '#7eb59f' }]}>
+                <Text style={styles.gridHeaderText}>{isArabic ? "عدد التكرارات" : "Reps"}</Text>
+              </View>
+              <View style={styles.gridBody}>
+                <Text style={[styles.gridBigValue, { color: colors.text }]}>{savedExercise.reps}</Text>
+                <Text style={[styles.gridSubText, { color: colors.mutedText }]}>{isArabic ? "لكل جولة" : "Per Set"}</Text>
+              </View>
             </View>
           </View>
 
           {/* Row 2: Weights */}
           <View style={{ flexDirection: isArabic ? 'row-reverse' : 'row', gap: 12 }}>
-            <View style={[styles.gridBox, { borderColor: colors.border, backgroundColor: isDark ? 'rgba(15, 23, 42, 0.6)' : '#ffffff' }]}>
-              <Text style={[styles.gridLabel, { color: colors.primary }]}>{isArabic ? "المجموعة الأولى" : "First Set"}</Text>
-              <View style={{ flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'center' }}>
+            <View style={[styles.gridCard, { borderColor: colors.border, backgroundColor: isDark ? 'rgba(15,23,42,0.8)' : '#ffffff' }]}>
+              <View style={[styles.gridHeader, { backgroundColor: '#7eb59f' }]}>
+                <Text style={styles.gridHeaderText}>{isArabic ? "الجولة الأولى" : "First Set"}</Text>
+              </View>
+              <View style={styles.gridBodyRow}>
+                <Text style={[styles.gridInputLabel, { color: colors.text }]}>
+                  {isArabic ? "الوزن" : "Weight"} ({weightUnit}):
+                </Text>
                 <AppTextInput
-                  style={[styles.gridInput, { color: colors.text }]}
+                  style={[styles.gridInput, { color: colors.text, backgroundColor: isDark ? '#1e293b' : '#f1f5f9', borderColor: colors.border }]}
                   keyboardType="numeric"
-                  placeholder="0.0"
-                  placeholderTextColor={colors.border}
+                  placeholder="---"
+                  placeholderTextColor={colors.mutedText}
                   value={startWeight !== undefined ? String(startWeight) : ''}
                   onChangeText={(text) => {
                     const val = text.replace(/[^0-9.]/g, '');
@@ -166,18 +170,22 @@ const ExerciseCard = ({ savedExercise, globalExercise, groupId, onRemove }: { sa
                     }, 600);
                   }}
                 />
-                <Text style={{ fontSize: 10, color: colors.mutedText, marginBottom: 4, marginLeft: 2 }}>{weightUnit}</Text>
               </View>
             </View>
 
-            <View style={[styles.gridBox, { borderColor: colors.border, backgroundColor: isDark ? 'rgba(15, 23, 42, 0.6)' : '#ffffff' }]}>
-              <Text style={[styles.gridLabel, { color: colors.primary }]}>{isArabic ? "المجموعة الأخيرة" : "Last Set"}</Text>
-              <View style={{ flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'center' }}>
+            <View style={[styles.gridCard, { borderColor: colors.border, backgroundColor: isDark ? 'rgba(15,23,42,0.8)' : '#ffffff' }]}>
+              <View style={[styles.gridHeader, { backgroundColor: isDark ? '#333' : '#111' }]}>
+                <Text style={styles.gridHeaderText}>{isArabic ? "الجولة الأخيرة" : "Last Set"}</Text>
+              </View>
+              <View style={styles.gridBodyRow}>
+                <Text style={[styles.gridInputLabel, { color: colors.text }]}>
+                  {isArabic ? "الوزن" : "Weight"} ({weightUnit}):
+                </Text>
                 <AppTextInput
-                  style={[styles.gridInput, { color: colors.text }]}
+                  style={[styles.gridInput, { color: colors.text, backgroundColor: isDark ? '#1e293b' : '#f1f5f9', borderColor: colors.border }]}
                   keyboardType="numeric"
-                  placeholder="0.0"
-                  placeholderTextColor={colors.border}
+                  placeholder="---"
+                  placeholderTextColor={colors.mutedText}
                   value={endWeight !== undefined ? String(endWeight) : ''}
                   onChangeText={(text) => {
                     const val = text.replace(/[^0-9.]/g, '');
@@ -189,23 +197,38 @@ const ExerciseCard = ({ savedExercise, globalExercise, groupId, onRemove }: { sa
                     }, 600);
                   }}
                 />
-                <Text style={{ fontSize: 10, color: colors.mutedText, marginBottom: 4, marginLeft: 2 }}>{weightUnit}</Text>
               </View>
             </View>
           </View>
+          <View style={{ alignItems: isArabic ? 'flex-start' : 'flex-end', marginTop: 4 }}>
+            <TouchableOpacity
+              style={{ paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8, backgroundColor: colors.border }}
+              onPress={() => {
+                const newUnit = (weightUnit === 'kg' ? 'lbs' : 'kg');
+                setWeightUnit(newUnit);
+                WorkoutStore.updateExerciseWeights(groupId, savedExercise.id, startWeight, endWeight, newUnit);
+              }}
+            >
+              <Text style={{ fontSize: 11, fontWeight: 'bold', color: colors.text }}>
+                {isArabic ? `الوحدة: ${weightUnit.toUpperCase()}` : `Unit: ${weightUnit.toUpperCase()}`}
+              </Text>
+            </TouchableOpacity>
+          </View>
         </View>
-      </View>
 
-      {savedExercise.dateAdded && (
-        <Text style={{ fontSize: 11, color: colors.mutedText, textAlign: isArabic ? 'right' : 'left', marginTop: 8 }}>
-          {isArabic ? 'تاريخ الإضافة: ' : 'Added on: '}
-          {new Date(savedExercise.dateAdded).toLocaleDateString(isArabic ? 'ar-AE' : 'en-US', {
-            year: 'numeric',
-            month: 'short',
-            day: 'numeric'
-          })}
-        </Text>
-      )}
+        {savedExercise.dateAdded && (
+          <View style={{ marginTop: 12, paddingHorizontal: 4 }}>
+            <Text style={{ fontSize: 11, color: colors.mutedText, textAlign: isArabic ? 'right' : 'left' }}>
+              {isArabic ? 'تاريخ الإضافة: ' : 'Added on: '}
+              {new Date(savedExercise.dateAdded).toLocaleDateString(isArabic ? 'ar-AE' : 'en-US', {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric'
+              })}
+            </Text>
+          </View>
+        )}
+      </View>
     </View>
   );
 }
@@ -603,29 +626,55 @@ const styles = StyleSheet.create({
     fontSize: 12,
     marginTop: 2,
   },
-  gridBox: {
+  gridCard: {
     flex: 1,
     borderWidth: 1,
     borderRadius: 8,
-    paddingVertical: 10,
+    overflow: 'hidden',
+  },
+  gridHeader: {
+    paddingVertical: 6,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  gridLabel: {
-    fontSize: 11,
-    fontWeight: '600',
-    marginBottom: 4,
+  gridHeaderText: {
+    color: '#ffffff',
+    fontSize: 12,
+    fontWeight: '700',
   },
-  gridValue: {
-    fontSize: 18,
-    fontWeight: 'bold',
+  gridBody: {
+    paddingVertical: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  gridBigValue: {
+    fontSize: 26,
+    fontWeight: '900',
+  },
+  gridSubText: {
+    fontSize: 10,
+    marginTop: 2,
+    fontWeight: '600',
+  },
+  gridBodyRow: {
+    paddingVertical: 12,
+    paddingHorizontal: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  gridInputLabel: {
+    fontSize: 11,
+    fontWeight: '700',
   },
   gridInput: {
-    fontSize: 18,
+    fontSize: 14,
     fontWeight: 'bold',
     textAlign: 'center',
-    minWidth: 40,
-    padding: 0,
-    margin: 0,
+    width: 60,
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+    borderWidth: 1,
+    borderRadius: 6,
   }
 });
