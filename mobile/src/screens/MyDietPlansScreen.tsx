@@ -71,10 +71,11 @@ export default function MyDietPlansScreen({ navigation }: any) {
     } catch (e) { }
 
     if (parsedPlan) {
+      const isManual = parsedPlan.source === 'manual';
       const planStr = JSON.stringify(parsedPlan);
       const isPlanContentArabic = /[\u0600-\u06FF]/.test(planStr);
 
-      const needsTranslation = (isArabic && !isPlanContentArabic) || (!isArabic && isPlanContentArabic);
+      const needsTranslation = !isManual && ((isArabic && !isPlanContentArabic) || (!isArabic && isPlanContentArabic));
 
       if (needsTranslation) {
         setTranslatingId(id);

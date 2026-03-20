@@ -113,81 +113,87 @@ const ExerciseCard = ({ savedExercise, globalExercise, groupId, onRemove }: { sa
       </View>
 
       <View style={[styles.statsRow, { backgroundColor: colors.card, borderColor: colors.border, padding: 12, borderRadius: 12 }]}>
-        <View style={{ flexDirection: 'row', justifyContent: 'space-around', marginBottom: 12 }}>
-          <View style={styles.statBox}>
-            <Text style={[styles.statValue, { color: colors.text }]}>{savedExercise.sets}</Text>
-            <Text style={[styles.statLabel, { color: colors.mutedText }]}>{isArabic ? "الجولات" : "Sets"}</Text>
-          </View>
-          <View style={[styles.statDivider, { backgroundColor: colors.border, height: '80%', alignSelf: 'center' }]} />
-          <View style={styles.statBox}>
-            <Text style={[styles.statValue, { color: colors.text }]}>{savedExercise.reps}</Text>
-            <Text style={[styles.statLabel, { color: colors.mutedText }]}>{isArabic ? "التكرار" : "Reps"}</Text>
-          </View>
-        </View>
-
-        {/* Weights Tracking Input */}
-        <View style={{ borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border, paddingTop: 12 }}>
-          <View style={{ flexDirection: isArabic ? 'row-reverse' : 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-            <Text style={{ fontSize: 13, fontWeight: '600', color: colors.text }}>
-              {isArabic ? "الوزن المستخدم" : "Weight Tracking"}
+        <View style={{ flexDirection: isArabic ? 'row-reverse' : 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+          <Text style={{ fontSize: 13, fontWeight: '700', color: colors.text }}>
+            {isArabic ? "تفاصيل التمرين" : "Exercise Details"}
+          </Text>
+          <TouchableOpacity
+            style={{ backgroundColor: colors.primary + '20', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8 }}
+            onPress={() => {
+              const newUnit = (weightUnit === 'kg' ? 'lbs' : 'kg');
+              setWeightUnit(newUnit);
+              WorkoutStore.updateExerciseWeights(groupId, savedExercise.id, startWeight, endWeight, newUnit);
+            }}
+          >
+            <Text style={{ fontSize: 11, fontWeight: 'bold', color: colors.primary }}>
+              {isArabic ? `الوحدة: ${weightUnit.toUpperCase()}` : `Unit: ${weightUnit.toUpperCase()}`}
             </Text>
-            <TouchableOpacity
-              style={{ backgroundColor: colors.primary + '20', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6 }}
-              onPress={() => {
-                const newUnit = (weightUnit === 'kg' ? 'lbs' : 'kg');
-                setWeightUnit(newUnit);
-                WorkoutStore.updateExerciseWeights(groupId, savedExercise.id, startWeight, endWeight, newUnit);
-              }}
-            >
-              <Text style={{ fontSize: 11, fontWeight: 'bold', color: colors.primary }}>
-                {weightUnit.toUpperCase()}
-              </Text>
-            </TouchableOpacity>
+          </TouchableOpacity>
+        </View>
+
+        {/* 2x2 Grid */}
+        <View style={{ gap: 12 }}>
+          {/* Row 1: Sets and Reps */}
+          <View style={{ flexDirection: isArabic ? 'row-reverse' : 'row', gap: 12 }}>
+            <View style={[styles.gridBox, { borderColor: colors.border, backgroundColor: isDark ? 'rgba(30, 41, 59, 0.4)' : '#f8fafc' }]}>
+              <Text style={[styles.gridLabel, { color: colors.mutedText }]}>{isArabic ? "الجولات (Sets)" : "Sets"}</Text>
+              <Text style={[styles.gridValue, { color: colors.text }]}>{savedExercise.sets}</Text>
+            </View>
+            <View style={[styles.gridBox, { borderColor: colors.border, backgroundColor: isDark ? 'rgba(30, 41, 59, 0.4)' : '#f8fafc' }]}>
+              <Text style={[styles.gridLabel, { color: colors.mutedText }]}>{isArabic ? "التكرار (Reps)" : "Reps"}</Text>
+              <Text style={[styles.gridValue, { color: colors.text }]}>{savedExercise.reps}</Text>
+            </View>
           </View>
 
-          <View style={{ flexDirection: isArabic ? 'row-reverse' : 'row', gap: 10 }}>
-            <View style={[styles.weightInputBox, { backgroundColor: isDark ? 'rgba(15, 23, 42, 0.8)' : '#f8fafc', borderColor: colors.border, flex: 1 }]}>
-              <Text style={[styles.weightInputLabel, { color: colors.mutedText }]}>{isArabic ? "المجموعة 1" : "Set 1"}</Text>
-              <AppTextInput
-                style={[styles.weightInput, { color: colors.primary }]}
-                keyboardType="numeric"
-                placeholder="0.0"
-                placeholderTextColor={colors.border}
-                value={startWeight !== undefined ? String(startWeight) : ''}
-                onChangeText={(text) => {
-                  const val = text.replace(/[^0-9.]/g, '');
-                  const num = val === '' ? undefined : parseFloat(val);
-                  setStartWeight(num);
-                  if (handleSaveWeights.current) clearTimeout(handleSaveWeights.current);
-                  handleSaveWeights.current = setTimeout(() => {
-                    WorkoutStore.updateExerciseWeights(groupId, savedExercise.id, num, endWeight, weightUnit);
-                  }, 600);
-                }}
-              />
+          {/* Row 2: Weights */}
+          <View style={{ flexDirection: isArabic ? 'row-reverse' : 'row', gap: 12 }}>
+            <View style={[styles.gridBox, { borderColor: colors.border, backgroundColor: isDark ? 'rgba(15, 23, 42, 0.6)' : '#ffffff' }]}>
+              <Text style={[styles.gridLabel, { color: colors.primary }]}>{isArabic ? "المجموعة الأولى" : "First Set"}</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'center' }}>
+                <AppTextInput
+                  style={[styles.gridInput, { color: colors.text }]}
+                  keyboardType="numeric"
+                  placeholder="0.0"
+                  placeholderTextColor={colors.border}
+                  value={startWeight !== undefined ? String(startWeight) : ''}
+                  onChangeText={(text) => {
+                    const val = text.replace(/[^0-9.]/g, '');
+                    const num = val === '' ? undefined : parseFloat(val);
+                    setStartWeight(num);
+                    if (handleSaveWeights.current) clearTimeout(handleSaveWeights.current);
+                    handleSaveWeights.current = setTimeout(() => {
+                      WorkoutStore.updateExerciseWeights(groupId, savedExercise.id, num, endWeight, weightUnit);
+                    }, 600);
+                  }}
+                />
+                <Text style={{ fontSize: 10, color: colors.mutedText, marginBottom: 4, marginLeft: 2 }}>{weightUnit}</Text>
+              </View>
             </View>
 
-            <View style={[styles.weightInputBox, { backgroundColor: isDark ? 'rgba(15, 23, 42, 0.8)' : '#f8fafc', borderColor: colors.border, flex: 1 }]}>
-              <Text style={[styles.weightInputLabel, { color: colors.mutedText }]}>{isArabic ? "المجموعة الأخيرة" : "Last Set"}</Text>
-              <AppTextInput
-                style={[styles.weightInput, { color: colors.primary }]}
-                keyboardType="numeric"
-                placeholder="0.0"
-                placeholderTextColor={colors.border}
-                value={endWeight !== undefined ? String(endWeight) : ''}
-                onChangeText={(text) => {
-                  const val = text.replace(/[^0-9.]/g, '');
-                  const num = val === '' ? undefined : parseFloat(val);
-                  setEndWeight(num);
-                  if (handleSaveWeights.current) clearTimeout(handleSaveWeights.current);
-                  handleSaveWeights.current = setTimeout(() => {
-                    WorkoutStore.updateExerciseWeights(groupId, savedExercise.id, startWeight, num, weightUnit);
-                  }, 600);
-                }}
-              />
+            <View style={[styles.gridBox, { borderColor: colors.border, backgroundColor: isDark ? 'rgba(15, 23, 42, 0.6)' : '#ffffff' }]}>
+              <Text style={[styles.gridLabel, { color: colors.primary }]}>{isArabic ? "المجموعة الأخيرة" : "Last Set"}</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'center' }}>
+                <AppTextInput
+                  style={[styles.gridInput, { color: colors.text }]}
+                  keyboardType="numeric"
+                  placeholder="0.0"
+                  placeholderTextColor={colors.border}
+                  value={endWeight !== undefined ? String(endWeight) : ''}
+                  onChangeText={(text) => {
+                    const val = text.replace(/[^0-9.]/g, '');
+                    const num = val === '' ? undefined : parseFloat(val);
+                    setEndWeight(num);
+                    if (handleSaveWeights.current) clearTimeout(handleSaveWeights.current);
+                    handleSaveWeights.current = setTimeout(() => {
+                      WorkoutStore.updateExerciseWeights(groupId, savedExercise.id, startWeight, num, weightUnit);
+                    }, 600);
+                  }}
+                />
+                <Text style={{ fontSize: 10, color: colors.mutedText, marginBottom: 4, marginLeft: 2 }}>{weightUnit}</Text>
+              </View>
             </View>
           </View>
         </View>
-
       </View>
 
       {savedExercise.dateAdded && (
@@ -597,22 +603,29 @@ const styles = StyleSheet.create({
     fontSize: 12,
     marginTop: 2,
   },
-  weightInputBox: {
-    padding: 10,
-    borderRadius: 8,
+  gridBox: {
+    flex: 1,
     borderWidth: 1,
+    borderRadius: 8,
+    paddingVertical: 10,
     alignItems: 'center',
-    gap: 4
+    justifyContent: 'center',
   },
-  weightInputLabel: {
+  gridLabel: {
     fontSize: 11,
-    fontWeight: '600'
+    fontWeight: '600',
+    marginBottom: 4,
   },
-  weightInput: {
+  gridValue: {
     fontSize: 18,
     fontWeight: 'bold',
-    width: '100%',
+  },
+  gridInput: {
+    fontSize: 18,
+    fontWeight: 'bold',
     textAlign: 'center',
-    padding: 4,
+    minWidth: 40,
+    padding: 0,
+    margin: 0,
   }
 });
