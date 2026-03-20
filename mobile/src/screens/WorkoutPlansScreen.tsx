@@ -604,7 +604,6 @@ const styles = StyleSheet.create({
     fontWeight: 'bold'
   },
   statsRow: {
-    flexDirection: 'row',
     borderRadius: 8,
     borderWidth: 1,
     overflow: 'hidden',

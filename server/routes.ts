@@ -1604,10 +1604,6 @@ export async function registerRoutes(
   app.get("/api/saved-diet-plans", isAuthenticated, async (req: any, res: Response) => {
     try {
       const userId = req.user.claims.sub;
-      const access = await checkSubscriptionAccess(userId);
-      if (!access.hasAccess) {
-        return res.status(403).json({ error: "SUBSCRIPTION_REQUIRED", message: access.reason, messageAr: access.reasonAr });
-      }
       const plans = await storage.getSavedDietPlans(userId);
       res.json(plans);
     } catch (error) {
