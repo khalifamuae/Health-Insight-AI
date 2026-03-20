@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
     View, Text, StyleSheet, TextInput, TouchableOpacity, FlatList,
     ScrollView, ActivityIndicator, I18nManager, Alert, KeyboardAvoidingView, Platform,
-    SafeAreaView,
+    SafeAreaView, Modal,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useAppTheme } from '../context/ThemeContext';
@@ -40,26 +40,38 @@ interface SelectedFood {
 }
 
 // ── Built-in food database for instant search ─────────────────────────────────
-const DEFAULT_UNITS: ServingUnit[] = [
+const ALL_UNITS: ServingUnit[] = [
     { unit: 'g', grams: 1, labelEn: 'g', labelAr: 'غرام' },
+    { unit: 'oz', grams: 28.35, labelEn: 'oz', labelAr: 'أونصة' },
+    { unit: 'container', grams: 150, labelEn: 'container (150g)', labelAr: 'علبة (150غ)' },
+    { unit: 'cup', grams: 240, labelEn: 'cup', labelAr: 'كوب' },
+    { unit: 'tbsp', grams: 15, labelEn: 'tbsp', labelAr: 'ملعقة طعام' },
+    { unit: 'tsp', grams: 5, labelEn: 'tsp', labelAr: 'ملعقة صغيرة' },
 ];
-const withUnits = (extra: ServingUnit[]): ServingUnit[] => [
-    { unit: 'g', grams: 1, labelEn: 'g', labelAr: 'غرام' },
-    ...extra,
-];
+
+const withUnits = (extra: ServingUnit[]): ServingUnit[] => {
+    // Merge default units + extra units, without duplicates
+    const map = new Map<string, ServingUnit>();
+    ALL_UNITS.forEach(u => map.set(u.unit, u));
+    extra.forEach(u => map.set(u.unit, { ...u, labelEn: u.labelEn || u.unit, labelAr: u.labelAr || u.unit }));
+    return Array.from(map.values());
+};
 
 const LOCAL_FOODS: FoodResult[] = [
     // ── Protein ──
     { id: 'chicken-breast', nameEn: 'Chicken Breast', nameAr: 'صدر دجاج', calories: 165, protein: 31.0, carbs: 0, fat: 3.6, fiber: 0, servingUnits: withUnits([{ unit: 'piece', grams: 174, labelEn: 'piece', labelAr: 'قطعة' }]) },
-    { id: 'chicken-thigh', nameEn: 'Chicken Thigh', nameAr: 'فخذ دجاج', calories: 209, protein: 26.0, carbs: 0, fat: 10.9, fiber: 0, servingUnits: DEFAULT_UNITS },
-    { id: 'chicken', nameEn: 'Chicken', nameAr: 'دجاج', calories: 165, protein: 31.0, carbs: 0, fat: 3.6, fiber: 0, servingUnits: DEFAULT_UNITS },
-    { id: 'beef', nameEn: 'Beef (Ground, Lean)', nameAr: 'لحم بقر مفروم', calories: 217, protein: 26.1, carbs: 0, fat: 11.8, fiber: 0, servingUnits: DEFAULT_UNITS },
-    { id: 'lamb', nameEn: 'Lamb', nameAr: 'لحم غنم', calories: 282, protein: 25.5, carbs: 0, fat: 19.4, fiber: 0, servingUnits: DEFAULT_UNITS },
+    { id: 'grilled-chicken', nameEn: 'Grilled Chicken', nameAr: 'دجاج مشوي', calories: 165, protein: 31.0, carbs: 0, fat: 3.6, fiber: 0, servingUnits: withUnits([{ unit: 'piece', grams: 174, labelEn: 'piece', labelAr: 'قطعة' }]) },
+    { id: 'boiled-chicken', nameEn: 'Boiled Chicken', nameAr: 'دجاج مسلوق', calories: 150, protein: 29.0, carbs: 0, fat: 3.0, fiber: 0, servingUnits: withUnits([{ unit: 'piece', grams: 174, labelEn: 'piece', labelAr: 'قطعة' }]) },
+    { id: 'chicken-thigh', nameEn: 'Chicken Thigh', nameAr: 'فخذ دجاج', calories: 209, protein: 26.0, carbs: 0, fat: 10.9, fiber: 0, servingUnits: ALL_UNITS },
+    { id: 'chicken', nameEn: 'Chicken', nameAr: 'دجاج', calories: 165, protein: 31.0, carbs: 0, fat: 3.6, fiber: 0, servingUnits: ALL_UNITS },
+    { id: 'beef', nameEn: 'Beef (Ground, Lean)', nameAr: 'لحم بقر مفروم', calories: 217, protein: 26.1, carbs: 0, fat: 11.8, fiber: 0, servingUnits: ALL_UNITS },
+    { id: 'grilled-steak', nameEn: 'Grilled Beef Steak', nameAr: 'ستيك لحم مشوي', calories: 271, protein: 25.0, carbs: 0, fat: 19.0, fiber: 0, servingUnits: withUnits([{ unit: 'piece', grams: 200, labelEn: 'steak', labelAr: 'شريحة ستيك' }]) },
+    { id: 'lamb', nameEn: 'Lamb', nameAr: 'لحم غنم', calories: 282, protein: 25.5, carbs: 0, fat: 19.4, fiber: 0, servingUnits: ALL_UNITS },
     { id: 'salmon', nameEn: 'Salmon', nameAr: 'سلمون', calories: 182, protein: 25.4, carbs: 0, fat: 8.1, fiber: 0, servingUnits: withUnits([{ unit: 'fillet', grams: 170, labelEn: 'fillet', labelAr: 'فيليه' }]) },
     { id: 'tuna', nameEn: 'Tuna (canned)', nameAr: 'تونة معلبة', calories: 116, protein: 25.5, carbs: 0, fat: 0.8, fiber: 0, servingUnits: withUnits([{ unit: 'can', grams: 165, labelEn: 'can', labelAr: 'علبة' }]) },
     { id: 'eggs', nameEn: 'Egg', nameAr: 'بيض', calories: 155, protein: 12.6, carbs: 1.1, fat: 10.6, fiber: 0, servingUnits: withUnits([{ unit: 'egg', grams: 50, labelEn: 'egg', labelAr: 'بيضة' }]) },
-    { id: 'shrimp', nameEn: 'Shrimp', nameAr: 'ربيان', calories: 99, protein: 24.0, carbs: 0.2, fat: 0.3, fiber: 0, servingUnits: DEFAULT_UNITS },
-    { id: 'turkey', nameEn: 'Turkey Breast', nameAr: 'ديك رومي', calories: 135, protein: 30.0, carbs: 0, fat: 1.0, fiber: 0, servingUnits: DEFAULT_UNITS },
+    { id: 'shrimp', nameEn: 'Shrimp', nameAr: 'ربيان', calories: 99, protein: 24.0, carbs: 0.2, fat: 0.3, fiber: 0, servingUnits: ALL_UNITS },
+    { id: 'turkey', nameEn: 'Turkey Breast', nameAr: 'ديك رومي', calories: 135, protein: 30.0, carbs: 0, fat: 1.0, fiber: 0, servingUnits: ALL_UNITS },
 
     // ── Grains ──
     { id: 'rice', nameEn: 'White Rice (cooked)', nameAr: 'أرز أبيض', calories: 130, protein: 2.7, carbs: 28.2, fat: 0.3, fiber: 0.4, servingUnits: withUnits([{ unit: 'cup', grams: 186, labelEn: 'cup', labelAr: 'كوب' }]) },
@@ -68,8 +80,8 @@ const LOCAL_FOODS: FoodResult[] = [
     { id: 'quinoa', nameEn: 'Quinoa (cooked)', nameAr: 'كينوا', calories: 120, protein: 4.4, carbs: 21.3, fat: 1.9, fiber: 2.8, servingUnits: withUnits([{ unit: 'cup', grams: 185, labelEn: 'cup', labelAr: 'كوب' }]) },
     { id: 'pasta', nameEn: 'Pasta (cooked)', nameAr: 'معكرونة', calories: 158, protein: 5.8, carbs: 30.9, fat: 0.9, fiber: 1.8, servingUnits: withUnits([{ unit: 'cup', grams: 140, labelEn: 'cup', labelAr: 'كوب' }]) },
     { id: 'bread', nameEn: 'Whole Wheat Bread', nameAr: 'خبز أسمر', calories: 252, protein: 12.5, carbs: 43.1, fat: 3.5, fiber: 6.0, servingUnits: withUnits([{ unit: 'slice', grams: 28, labelEn: 'slice', labelAr: 'شريحة' }]) },
-    { id: 'sweet-potato', nameEn: 'Sweet Potato', nameAr: 'بطاطا حلوة', calories: 90, protein: 2.0, carbs: 20.7, fat: 0.1, fiber: 3.3, servingUnits: DEFAULT_UNITS },
-    { id: 'potato', nameEn: 'Potato', nameAr: 'بطاطا', calories: 87, protein: 1.7, carbs: 20.0, fat: 0.1, fiber: 1.8, servingUnits: DEFAULT_UNITS },
+    { id: 'sweet-potato', nameEn: 'Sweet Potato', nameAr: 'بطاطا حلوة', calories: 90, protein: 2.0, carbs: 20.7, fat: 0.1, fiber: 3.3, servingUnits: ALL_UNITS },
+    { id: 'potato', nameEn: 'Potato', nameAr: 'بطاطا', calories: 87, protein: 1.7, carbs: 20.0, fat: 0.1, fiber: 1.8, servingUnits: ALL_UNITS },
 
     // ── Dairy ──
     { id: 'greek-yogurt', nameEn: 'Greek Yogurt', nameAr: 'زبادي يوناني', calories: 59, protein: 10.0, carbs: 3.6, fat: 0.7, fiber: 0, servingUnits: withUnits([{ unit: 'cup', grams: 245, labelEn: 'cup', labelAr: 'كوب' }]) },
@@ -163,7 +175,7 @@ export default function ManualDietBuilderScreen({ navigation }: any) {
 
     // ── Combined search: local first, then API backup ───────────────────────────
 
-    const performSearch = useCallback(async (query: string) => {
+    const performSearch = useCallback(async (query: string, forceApiResult = false) => {
         const q = query.trim();
         if (q.length < 2) {
             setSearchResults([]);
@@ -176,16 +188,26 @@ export default function ManualDietBuilderScreen({ navigation }: any) {
         setSearchResults(localResults);
         setShowResults(true);
 
-        // Step 2: Also try API for more results (in background)
-        if (localResults.length < 5) {
+        // Step 2: Also try API for more results (in background or forced)
+        if (localResults.length < 5 || forceApiResult) {
             setIsSearching(true);
             try {
                 const data = await api.get<{ foods: FoodResult[] }>(`/api/food/search?q=${encodeURIComponent(q)}`);
                 const apiResults = data.foods || [];
+
+                // Give apiResults proper units if missing
+                apiResults.forEach(r => {
+                    if (!r.servingUnits || r.servingUnits.length === 0) {
+                        r.servingUnits = ALL_UNITS;
+                    } else {
+                        r.servingUnits = withUnits(r.servingUnits);
+                    }
+                });
+
                 // Merge API results with local, avoid duplicates
                 const existingIds = new Set(localResults.map(r => r.id));
                 const merged = [...localResults, ...apiResults.filter(r => !existingIds.has(r.id))];
-                setSearchResults(merged.slice(0, 20));
+                setSearchResults(merged.slice(0, 30));
             } catch {
                 // Keep local results if API fails
             } finally {
@@ -226,19 +248,28 @@ export default function ManualDietBuilderScreen({ navigation }: any) {
         setSearchResults([]);
     }, []);
 
+    const [unitSelectionModalVisible, setUnitSelectionModalVisible] = useState(false);
+    const [activeUnitSelectionKey, setActiveUnitSelectionKey] = useState<string | null>(null);
+
     const updateQuantity = useCallback((key: string, qty: number) => {
         setSelectedFoods(prev => prev.map(item => item.key === key ? { ...item, quantity: qty } : item));
     }, []);
 
-    const cycleUnit = useCallback((key: string) => {
-        setSelectedFoods(prev => prev.map(item => {
-            if (item.key !== key) return item;
-            const units = item.food.servingUnits;
-            const currentIdx = units.findIndex(u => u.unit === item.selectedUnit.unit);
-            const nextIdx = (currentIdx + 1) % units.length;
-            return { ...item, selectedUnit: units[nextIdx] };
-        }));
+    const openUnitSelector = useCallback((key: string) => {
+        setActiveUnitSelectionKey(key);
+        setUnitSelectionModalVisible(true);
     }, []);
+
+    const selectUnit = useCallback((unit: ServingUnit) => {
+        if (activeUnitSelectionKey) {
+            setSelectedFoods(prev => prev.map(item => {
+                if (item.key !== activeUnitSelectionKey) return item;
+                return { ...item, selectedUnit: unit };
+            }));
+        }
+        setUnitSelectionModalVisible(false);
+        setActiveUnitSelectionKey(null);
+    }, [activeUnitSelectionKey]);
 
     const removeFood = useCallback((key: string) => {
         setSelectedFoods(prev => prev.filter(item => item.key !== key));
@@ -402,18 +433,38 @@ export default function ManualDietBuilderScreen({ navigation }: any) {
                                     <Ionicons name="add-circle" size={26} color={colors.primary} />
                                 </TouchableOpacity>
                             )}
+                            ListFooterComponent={() => (
+                                <TouchableOpacity
+                                    style={[styles.resultItem, { borderBottomColor: colors.border, justifyContent: 'center', backgroundColor: isDark ? 'rgba(56, 189, 248, 0.1)' : 'rgba(56, 189, 248, 0.05)' }]}
+                                    onPress={() => performSearch(searchText, true)}
+                                    disabled={isSearching}
+                                >
+                                    <Ionicons name="cloud-download-outline" size={20} color={colors.primary} style={{ marginRight: 8 }} />
+                                    <Text style={[styles.resultName, { color: colors.primary }]}>
+                                        {isSearching ? (isArabic ? 'جاري البحث في القاعدة العالمية...' : 'Searching global database...') : (isArabic ? 'لم تجد الصنف؟ ابحث في القاعدة العالمية' : "Can't find it? Search global database")}
+                                    </Text>
+                                </TouchableOpacity>
+                            )}
                         />
                     </View>
                 )}
 
                 {showResults && searchResults.length === 0 && !isSearching && searchText.length >= 2 && (
                     <View style={[styles.resultsDropdown, { backgroundColor: isDark ? '#1e293b' : '#ffffff', borderColor: colors.border, padding: 16 }]}>
-                        <Text style={{ textAlign: 'center', color: colors.mutedText, fontSize: 14 }}>
-                            {isArabic ? 'لم يتم العثور على نتائج' : 'No results found'}
+                        <Text style={{ textAlign: 'center', color: colors.mutedText, fontSize: 14, marginBottom: 12 }}>
+                            {isArabic ? 'لم يتم العثور على نتائج في القاعدة المحلية' : 'No local results found'}
                         </Text>
+                        <TouchableOpacity
+                            style={[styles.saveButton, { paddingVertical: 10 }]}
+                            onPress={() => performSearch(searchText, true)}
+                            disabled={isSearching}
+                        >
+                            {isSearching ? <ActivityIndicator size="small" color="#fff" /> : (
+                                <Text style={styles.saveButtonText}>{isArabic ? 'ابحث في القاعدة العالمية (USDA)' : 'Search Global Database (USDA)'}</Text>
+                            )}
+                        </TouchableOpacity>
                     </View>
                 )}
-
                 {/* ── Selected Foods List ── */}
                 <ScrollView
                     style={{ flex: 1 }}
@@ -459,7 +510,7 @@ export default function ManualDietBuilderScreen({ navigation }: any) {
                                     />
                                     <TouchableOpacity
                                         style={[styles.unitButton, { backgroundColor: isDark ? 'rgba(59,130,246,0.15)' : 'rgba(59,130,246,0.1)', borderColor: colors.primary }]}
-                                        onPress={() => cycleUnit(item.key)}
+                                        onPress={() => openUnitSelector(item.key)}
                                     >
                                         <Text style={[styles.unitText, { color: colors.primary }]}>
                                             {isArabic ? item.selectedUnit.labelAr : item.selectedUnit.labelEn}
@@ -541,6 +592,40 @@ export default function ManualDietBuilderScreen({ navigation }: any) {
                     </View>
                 )}
             </KeyboardAvoidingView>
+
+            {/* ── Unit Selection Modal ── */}
+            <Modal
+                visible={unitSelectionModalVisible}
+                transparent={true}
+                animationType="fade"
+            >
+                <TouchableOpacity
+                    style={styles.modalOverlay}
+                    activeOpacity={1}
+                    onPress={() => {
+                        setUnitSelectionModalVisible(false);
+                        setActiveUnitSelectionKey(null);
+                    }}
+                >
+                    <View style={[styles.modalContent, { backgroundColor: colors.card, borderColor: colors.border }]}>
+                        <Text style={[styles.modalTitle, { color: colors.text }]}>
+                            {isArabic ? 'اختر وحدة القياس' : 'Select Unit'}
+                        </Text>
+                        {activeUnitSelectionKey && selectedFoods.find(f => f.key === activeUnitSelectionKey)?.food.servingUnits.map((u, i) => (
+                            <TouchableOpacity
+                                key={i}
+                                style={[styles.modalItem, { borderBottomColor: colors.border }]}
+                                onPress={() => selectUnit(u)}
+                            >
+                                <Text style={[styles.modalItemText, { color: colors.text }]}>
+                                    {isArabic ? u.labelAr : u.labelEn}
+                                </Text>
+                            </TouchableOpacity>
+                        ))}
+                    </View>
+                </TouchableOpacity>
+            </Modal>
+
         </View>
     );
 }
@@ -695,5 +780,37 @@ const styles = StyleSheet.create({
         color: '#ffffff',
         fontSize: 16,
         fontWeight: '700',
+    },
+    modalOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0,0,0,0.5)',
+        justifyContent: 'center',
+        alignItems: 'center',
+        padding: 20,
+    },
+    modalContent: {
+        width: '100%',
+        maxWidth: 340,
+        borderRadius: 16,
+        borderWidth: 1,
+        paddingVertical: 10,
+        overflow: 'hidden',
+    },
+    modalTitle: {
+        fontSize: 18,
+        fontWeight: '700',
+        textAlign: 'center',
+        paddingVertical: 12,
+        borderBottomWidth: StyleSheet.hairlineWidth,
+        borderBottomColor: 'rgba(148,163,184,0.3)',
+    },
+    modalItem: {
+        paddingVertical: 16,
+        paddingHorizontal: 20,
+        borderBottomWidth: StyleSheet.hairlineWidth,
+    },
+    modalItemText: {
+        fontSize: 16,
+        textAlign: 'center',
     },
 });

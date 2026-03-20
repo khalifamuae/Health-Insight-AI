@@ -1,6 +1,6 @@
 import { storage } from "./server/storage";
 import { authStorage } from "./server/replit_integrations/auth/storage";
-import * as bcrypt from "bcrypt";
+import * as bcrypt from "bcryptjs";
 import * as crypto from "crypto";
 import { db } from "./server/db";
 import { userProfiles } from "./shared/schema";
