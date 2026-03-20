@@ -209,7 +209,7 @@ export default function TabNavigator({ navigation }: any) {
           name="ManualDietBuilder"
           component={ManualDietBuilderScreen}
           options={{
-            title: isArabic ? 'تصميم جدول غذائي' : 'Diet Builder',
+            title: isArabic ? 'تصميم جدول غذائي بنفسي' : 'Manual Diet Builder',
             headerShown: false,
             tabBarButton: () => null,
             tabBarItemStyle: { display: 'none' },
@@ -220,7 +220,7 @@ export default function TabNavigator({ navigation }: any) {
           name="Diet"
           component={DietScreen}
           options={{
-            title: isArabic ? 'الغذاء' : 'Diet',
+            title: isArabic ? 'تصميم جدول غذائي بواسطة AI' : 'AI Diet Builder',
             tabBarButton: () => null,
             tabBarItemStyle: { display: 'none' },
           }}
@@ -407,7 +407,7 @@ export default function TabNavigator({ navigation }: any) {
                       },
                     ]}
                   >
-                    {isArabic ? 'تصميم جدول غذائي' : 'Diet Builder'}
+                    {isArabic ? 'تصميم جدول غذائي بنفسي' : 'Manual Diet Builder'}
                   </Text>
                   <View style={{ backgroundColor: 'rgba(34,197,94,0.15)', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6 }}>
                     <Text style={{ color: '#22c55e', fontSize: 10, fontWeight: '700' }}>{isArabic ? 'مجاني' : 'FREE'}</Text>

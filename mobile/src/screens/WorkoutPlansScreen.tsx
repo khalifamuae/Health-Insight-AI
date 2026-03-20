@@ -21,6 +21,11 @@ const ExerciseCard = ({ savedExercise, globalExercise, groupId, onRemove }: { sa
   const [isOffline, setIsOffline] = useState(false);
   const [playbackUri, setPlaybackUri] = useState(globalExercise.videoUrl);
 
+  const [startWeight, setStartWeight] = useState<number | undefined>(savedExercise.startWeight);
+  const [endWeight, setEndWeight] = useState<number | undefined>(savedExercise.endWeight);
+  const [weightUnit, setWeightUnit] = useState<'kg' | 'lbs'>(savedExercise.weightUnit || 'kg');
+  const handleSaveWeights = React.useRef<NodeJS.Timeout | null>(null);
+
   useFocusEffect(
     useCallback(() => {
       checkOfflineStatus();
@@ -107,16 +112,82 @@ const ExerciseCard = ({ savedExercise, globalExercise, groupId, onRemove }: { sa
         )}
       </View>
 
-      <View style={[styles.statsRow, { backgroundColor: colors.card, borderColor: colors.border }]}>
-        <View style={styles.statBox}>
-          <Text style={[styles.statValue, { color: colors.text, textAlign: isArabic ? 'right' : 'center', width: '100%' }]}>{savedExercise.sets}</Text>
-          <Text style={[styles.statLabel, { color: colors.mutedText, textAlign: isArabic ? 'right' : 'center', width: '100%' }]}>{isArabic ? "جولات (Sets)" : "Sets"}</Text>
+      <View style={[styles.statsRow, { backgroundColor: colors.card, borderColor: colors.border, padding: 12, borderRadius: 12 }]}>
+        <View style={{ flexDirection: 'row', justifyContent: 'space-around', marginBottom: 12 }}>
+          <View style={styles.statBox}>
+            <Text style={[styles.statValue, { color: colors.text }]}>{savedExercise.sets}</Text>
+            <Text style={[styles.statLabel, { color: colors.mutedText }]}>{isArabic ? "الجولات" : "Sets"}</Text>
+          </View>
+          <View style={[styles.statDivider, { backgroundColor: colors.border, height: '80%', alignSelf: 'center' }]} />
+          <View style={styles.statBox}>
+            <Text style={[styles.statValue, { color: colors.text }]}>{savedExercise.reps}</Text>
+            <Text style={[styles.statLabel, { color: colors.mutedText }]}>{isArabic ? "التكرار" : "Reps"}</Text>
+          </View>
         </View>
-        <View style={[styles.statDivider, { backgroundColor: colors.border }]} />
-        <View style={styles.statBox}>
-          <Text style={[styles.statValue, { color: colors.text, textAlign: isArabic ? 'right' : 'center', width: '100%' }]}>{savedExercise.reps}</Text>
-          <Text style={[styles.statLabel, { color: colors.mutedText, textAlign: isArabic ? 'right' : 'center', width: '100%' }]}>{isArabic ? "تكرار (Reps)" : "Reps"}</Text>
+
+        {/* Weights Tracking Input */}
+        <View style={{ borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border, paddingTop: 12 }}>
+          <View style={{ flexDirection: isArabic ? 'row-reverse' : 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+            <Text style={{ fontSize: 13, fontWeight: '600', color: colors.text }}>
+              {isArabic ? "الوزن المستخدم" : "Weight Tracking"}
+            </Text>
+            <TouchableOpacity
+              style={{ backgroundColor: colors.primary + '20', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6 }}
+              onPress={() => {
+                const newUnit = (weightUnit === 'kg' ? 'lbs' : 'kg');
+                setWeightUnit(newUnit);
+                WorkoutStore.updateExerciseWeights(groupId, savedExercise.id, startWeight, endWeight, newUnit);
+              }}
+            >
+              <Text style={{ fontSize: 11, fontWeight: 'bold', color: colors.primary }}>
+                {weightUnit.toUpperCase()}
+              </Text>
+            </TouchableOpacity>
+          </View>
+
+          <View style={{ flexDirection: isArabic ? 'row-reverse' : 'row', gap: 10 }}>
+            <View style={[styles.weightInputBox, { backgroundColor: isDark ? 'rgba(15, 23, 42, 0.8)' : '#f8fafc', borderColor: colors.border, flex: 1 }]}>
+              <Text style={[styles.weightInputLabel, { color: colors.mutedText }]}>{isArabic ? "المجموعة 1" : "Set 1"}</Text>
+              <AppTextInput
+                style={[styles.weightInput, { color: colors.primary }]}
+                keyboardType="numeric"
+                placeholder="0.0"
+                placeholderTextColor={colors.border}
+                value={startWeight !== undefined ? String(startWeight) : ''}
+                onChangeText={(text) => {
+                  const val = text.replace(/[^0-9.]/g, '');
+                  const num = val === '' ? undefined : parseFloat(val);
+                  setStartWeight(num);
+                  if (handleSaveWeights.current) clearTimeout(handleSaveWeights.current);
+                  handleSaveWeights.current = setTimeout(() => {
+                    WorkoutStore.updateExerciseWeights(groupId, savedExercise.id, num, endWeight, weightUnit);
+                  }, 600);
+                }}
+              />
+            </View>
+
+            <View style={[styles.weightInputBox, { backgroundColor: isDark ? 'rgba(15, 23, 42, 0.8)' : '#f8fafc', borderColor: colors.border, flex: 1 }]}>
+              <Text style={[styles.weightInputLabel, { color: colors.mutedText }]}>{isArabic ? "المجموعة الأخيرة" : "Last Set"}</Text>
+              <AppTextInput
+                style={[styles.weightInput, { color: colors.primary }]}
+                keyboardType="numeric"
+                placeholder="0.0"
+                placeholderTextColor={colors.border}
+                value={endWeight !== undefined ? String(endWeight) : ''}
+                onChangeText={(text) => {
+                  const val = text.replace(/[^0-9.]/g, '');
+                  const num = val === '' ? undefined : parseFloat(val);
+                  setEndWeight(num);
+                  if (handleSaveWeights.current) clearTimeout(handleSaveWeights.current);
+                  handleSaveWeights.current = setTimeout(() => {
+                    WorkoutStore.updateExerciseWeights(groupId, savedExercise.id, startWeight, num, weightUnit);
+                  }, 600);
+                }}
+              />
+            </View>
+          </View>
         </View>
+
       </View>
 
       {savedExercise.dateAdded && (
@@ -525,5 +596,23 @@ const styles = StyleSheet.create({
   statLabel: {
     fontSize: 12,
     marginTop: 2,
+  },
+  weightInputBox: {
+    padding: 10,
+    borderRadius: 8,
+    borderWidth: 1,
+    alignItems: 'center',
+    gap: 4
+  },
+  weightInputLabel: {
+    fontSize: 11,
+    fontWeight: '600'
+  },
+  weightInput: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    width: '100%',
+    textAlign: 'center',
+    padding: 4,
   }
 });

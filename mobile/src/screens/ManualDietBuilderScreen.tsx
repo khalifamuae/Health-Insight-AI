@@ -323,7 +323,7 @@ export default function ManualDietBuilderScreen({ navigation }: any) {
                     text: isArabic ? 'عرض الجداول' : 'View Plans',
                     onPress: () => {
                         setSelectedFoods([]);
-                        navigation.navigate({ name: 'Main', params: { screen: 'DietTable' }, merge: true } as any);
+                        navigation.navigate('DietTable');
                     },
                 }, {
                     text: isArabic ? 'إضافة جدول آخر' : 'Add Another',
