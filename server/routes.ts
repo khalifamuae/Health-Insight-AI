@@ -17,6 +17,7 @@ import crypto from "crypto";
 import { emailVerificationCodes } from "@shared/schema";
 import { getResendClient } from "./resendClient";
 import adminRouter from "./routes/admin";
+import { registerFoodSearchRoutes } from "./foodSearchRoutes";
 
 // Strip sensitive fields before sending profile to client
 function sanitizeProfile(profile: any) {
@@ -216,6 +217,9 @@ export async function registerRoutes(
 
   // Register Admin Routes
   app.use("/api/admin", adminRouter);
+
+  // Register Food Search Routes
+  registerFoodSearchRoutes(app);
 
   // Auto-seed test definitions if table is empty
   try {

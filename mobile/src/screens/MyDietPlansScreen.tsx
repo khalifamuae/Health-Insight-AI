@@ -148,31 +148,49 @@ export default function MyDietPlansScreen({ navigation }: any) {
           </Text>
           <Text style={[styles.emptyDesc, { color: colors.mutedText }]}>
             {isArabic
-              ? 'أنشئ جدولًا غذائيًا من صفحة الغذاء ثم اضغط "تصدير إلى جدولي الغذائي".'
-              : 'Generate a diet plan, then tap "Export to My Diet Plans".'}
+              ? 'أنشئ جدولًا غذائيًا يدوياً أو بواسطة AI ثم احفظه هنا.'
+              : 'Create a diet plan manually or with AI, then save it here.'}
           </Text>
         </View>
       ) : (
         savedPlansList.map((plan, index) => {
           const isExpanded = expandedId === plan.id;
-          let parsedPlan = null;
-          if (isExpanded) {
-            try {
-              parsedPlan = typeof plan.planData === 'string' ? JSON.parse(plan.planData) : plan.planData;
-            } catch (e) { }
-          }
+          let parsedPlan: any = null;
+          try {
+            parsedPlan = typeof plan.planData === 'string' ? JSON.parse(plan.planData as string) : plan.planData;
+          } catch (e) { }
+
+          const isManual = parsedPlan?.source === 'manual';
 
           return (
             <View key={plan.id} style={[styles.planCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
               <View style={styles.planHeaderContainer}>
                 <TouchableOpacity activeOpacity={0.7} style={styles.planHeader} onPress={() => toggleExpand(plan.id, plan.planData)}>
-                  <View>
-                    <Text style={[styles.planTitle, { color: colors.text }]}>
-                      {isArabic ? `الخطة رقم ${savedPlansList.length - index}` : `Plan #${savedPlansList.length - index}`}
-                    </Text>
+                  <View style={{ flex: 1 }}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                      <Text style={[styles.planTitle, { color: colors.text }]}>
+                        {isManual
+                          ? (parsedPlan?.title || (isArabic ? 'جدول يدوي' : 'Manual Plan'))
+                          : (isArabic ? `الخطة رقم ${savedPlansList.length - index}` : `Plan #${savedPlansList.length - index}`)}
+                      </Text>
+                      <View style={{ backgroundColor: isManual ? 'rgba(34,197,94,0.15)' : 'rgba(245,158,11,0.15)', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6 }}>
+                        <Text style={{ color: isManual ? '#22c55e' : '#f59e0b', fontSize: 9, fontWeight: '700' }}>
+                          {isManual ? (isArabic ? 'يدوي' : 'Manual') : 'AI'}
+                        </Text>
+                      </View>
+                    </View>
                     <Text style={[styles.planDate, { color: colors.mutedText }]}>
                       {formatAppDate(plan.createdAt, i18n.language, dateCalendar)}
                     </Text>
+                    {/* Show macros summary for manual plans */}
+                    {isManual && parsedPlan && (
+                      <View style={{ flexDirection: 'row', marginTop: 6, gap: 8 }}>
+                        <Text style={{ color: colors.primary, fontSize: 13, fontWeight: '700' }}>{parsedPlan.totalCalories} {isArabic ? 'سعرة' : 'Cal'}</Text>
+                        <Text style={{ color: '#3b82f6', fontSize: 12 }}>P:{parsedPlan.totalProtein}g</Text>
+                        <Text style={{ color: '#f59e0b', fontSize: 12 }}>C:{parsedPlan.totalCarbs}g</Text>
+                        <Text style={{ color: '#ef4444', fontSize: 12 }}>F:{parsedPlan.totalFat}g</Text>
+                      </View>
+                    )}
                   </View>
                   <Ionicons name={isExpanded ? 'chevron-up' : 'chevron-down'} size={24} color={colors.text} />
                 </TouchableOpacity>
@@ -187,7 +205,30 @@ export default function MyDietPlansScreen({ navigation }: any) {
 
               {isExpanded && (
                 <View style={[styles.planContentContainer, { borderTopColor: colors.border }]}>
-                  {translatingId === plan.id ? (
+                  {isManual && parsedPlan?.items ? (
+                    <View style={{ gap: 8 }}>
+                      {parsedPlan.items.map((item: any, idx: number) => (
+                        <View key={idx} style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 8, borderBottomWidth: idx < parsedPlan.items.length - 1 ? StyleSheet.hairlineWidth : 0, borderBottomColor: colors.border }}>
+                          <View style={{ flex: 1 }}>
+                            <Text style={{ color: colors.text, fontSize: 14, fontWeight: '600' }}>
+                              {isArabic ? item.nameAr : item.nameEn}
+                            </Text>
+                            <Text style={{ color: colors.mutedText, fontSize: 12, marginTop: 2 }}>
+                              {item.quantity} {item.unit}
+                            </Text>
+                          </View>
+                          <View style={{ alignItems: 'flex-end' }}>
+                            <Text style={{ color: colors.primary, fontSize: 15, fontWeight: '700' }}>{item.calories} {isArabic ? 'سعرة' : 'Cal'}</Text>
+                            <Text style={{ color: colors.mutedText, fontSize: 10, marginTop: 1 }}>P:{item.protein}g C:{item.carbs}g F:{item.fat}g</Text>
+                          </View>
+                        </View>
+                      ))}
+                      <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingTop: 10, marginTop: 4, borderTopWidth: 1, borderTopColor: colors.border }}>
+                        <Text style={{ color: colors.text, fontSize: 15, fontWeight: '700' }}>{isArabic ? 'الإجمالي' : 'Total'}</Text>
+                        <Text style={{ color: colors.primary, fontSize: 17, fontWeight: '800' }}>{parsedPlan.totalCalories} {isArabic ? 'سعرة' : 'Cal'}</Text>
+                      </View>
+                    </View>
+                  ) : translatingId === plan.id ? (
                     <Text style={[styles.infoText, { color: colors.primary, marginVertical: 20 }]}>
                       {isArabic ? 'جاري ترجمة الخطة لتناسب لغة التطبيق...' : 'Translating plan to match app language...'}
                     </Text>

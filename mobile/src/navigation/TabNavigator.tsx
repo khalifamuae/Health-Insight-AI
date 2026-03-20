@@ -16,6 +16,7 @@ import ProfileScreen from '../screens/ProfileScreen';
 import MyDietPlansScreen from '../screens/MyDietPlansScreen';
 import WorkoutPlansScreen from '../screens/WorkoutPlansScreen';
 import WorkoutBuilderScreen from '../screens/WorkoutBuilderScreen';
+import ManualDietBuilderScreen from '../screens/ManualDietBuilderScreen';
 
 const Tab = createBottomTabNavigator();
 
@@ -52,6 +53,10 @@ export default function TabNavigator({ navigation }: any) {
 
   const navigateToDietDesigner = () => {
     navigateToTab('Diet');
+  };
+
+  const navigateToManualDietBuilder = () => {
+    navigateToTab('ManualDietBuilder' as any);
   };
 
   const navigateToExercisesDesigner = () => {
@@ -198,6 +203,15 @@ export default function TabNavigator({ navigation }: any) {
             tabBarIcon: ({ color }: { color: string; size: number }) => (
               <Ionicons name="cloud-upload" size={22} color={color} />
             )
+          }}
+        />
+        <Tab.Screen
+          name="ManualDietBuilder"
+          component={ManualDietBuilderScreen}
+          options={{
+            title: isArabic ? 'تصميم جدول غذائي' : 'Diet Builder',
+            tabBarButton: () => null,
+            tabBarItemStyle: { display: 'none' },
           }}
         />
         <Tab.Screen
@@ -377,10 +391,10 @@ export default function TabNavigator({ navigation }: any) {
                       flexDirection: 'row',
                     },
                   ]}
-                  onPress={navigateToDietDesigner}
-                  testID="button-menu-diet-designer"
+                  onPress={navigateToManualDietBuilder}
+                  testID="button-menu-manual-diet"
                 >
-                  <Ionicons name="nutrition" size={18} color={colors.primary} />
+                  <Ionicons name="restaurant" size={18} color={colors.primary} />
                   <Text
                     numberOfLines={1}
                     style={[
@@ -391,8 +405,40 @@ export default function TabNavigator({ navigation }: any) {
                       },
                     ]}
                   >
-                    {isArabic ? 'تصميم جدول غذائي' : 'Diet Designer'}
+                    {isArabic ? 'تصميم جدول غذائي' : 'Diet Builder'}
                   </Text>
+                  <View style={{ backgroundColor: 'rgba(34,197,94,0.15)', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6 }}>
+                    <Text style={{ color: '#22c55e', fontSize: 10, fontWeight: '700' }}>{isArabic ? 'مجاني' : 'FREE'}</Text>
+                  </View>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[
+                    styles.menuItem,
+                    {
+                      borderBottomColor: menuDividerColor,
+                      flexDirection: 'row',
+                    },
+                  ]}
+                  onPress={navigateToDietDesigner}
+                  testID="button-menu-ai-diet"
+                >
+                  <Ionicons name="sparkles" size={18} color={colors.warning} />
+                  <Text
+                    numberOfLines={1}
+                    style={[
+                      styles.menuItemText,
+                      {
+                        color: colors.text,
+                        textAlign: 'left',
+                      },
+                    ]}
+                  >
+                    {isArabic ? 'تصميم جدول غذائي AI' : 'AI Diet Designer'}
+                  </Text>
+                  <View style={{ backgroundColor: 'rgba(245,158,11,0.15)', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6 }}>
+                    <Text style={{ color: '#f59e0b', fontSize: 10, fontWeight: '700' }}>{isArabic ? 'مدفوع' : 'PRO'}</Text>
+                  </View>
                 </TouchableOpacity>
 
                 <TouchableOpacity
