@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
     View, Text, StyleSheet, TextInput, TouchableOpacity, FlatList,
     ScrollView, ActivityIndicator, I18nManager, Alert, KeyboardAvoidingView, Platform,
+    SafeAreaView,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useAppTheme } from '../context/ThemeContext';
@@ -32,11 +33,89 @@ interface FoodResult {
 }
 
 interface SelectedFood {
-    key: string; // unique key per entry
+    key: string;
     food: FoodResult;
     quantity: number;
     selectedUnit: ServingUnit;
 }
+
+// ── Built-in food database for instant search ─────────────────────────────────
+const DEFAULT_UNITS: ServingUnit[] = [
+    { unit: 'g', grams: 1, labelEn: 'g', labelAr: 'غرام' },
+];
+const withUnits = (extra: ServingUnit[]): ServingUnit[] => [
+    { unit: 'g', grams: 1, labelEn: 'g', labelAr: 'غرام' },
+    ...extra,
+];
+
+const LOCAL_FOODS: FoodResult[] = [
+    // ── Protein ──
+    { id: 'chicken-breast', nameEn: 'Chicken Breast', nameAr: 'صدر دجاج', calories: 165, protein: 31.0, carbs: 0, fat: 3.6, fiber: 0, servingUnits: withUnits([{ unit: 'piece', grams: 174, labelEn: 'piece', labelAr: 'قطعة' }]) },
+    { id: 'chicken-thigh', nameEn: 'Chicken Thigh', nameAr: 'فخذ دجاج', calories: 209, protein: 26.0, carbs: 0, fat: 10.9, fiber: 0, servingUnits: DEFAULT_UNITS },
+    { id: 'chicken', nameEn: 'Chicken', nameAr: 'دجاج', calories: 165, protein: 31.0, carbs: 0, fat: 3.6, fiber: 0, servingUnits: DEFAULT_UNITS },
+    { id: 'beef', nameEn: 'Beef (Ground, Lean)', nameAr: 'لحم بقر مفروم', calories: 217, protein: 26.1, carbs: 0, fat: 11.8, fiber: 0, servingUnits: DEFAULT_UNITS },
+    { id: 'lamb', nameEn: 'Lamb', nameAr: 'لحم غنم', calories: 282, protein: 25.5, carbs: 0, fat: 19.4, fiber: 0, servingUnits: DEFAULT_UNITS },
+    { id: 'salmon', nameEn: 'Salmon', nameAr: 'سلمون', calories: 182, protein: 25.4, carbs: 0, fat: 8.1, fiber: 0, servingUnits: withUnits([{ unit: 'fillet', grams: 170, labelEn: 'fillet', labelAr: 'فيليه' }]) },
+    { id: 'tuna', nameEn: 'Tuna (canned)', nameAr: 'تونة معلبة', calories: 116, protein: 25.5, carbs: 0, fat: 0.8, fiber: 0, servingUnits: withUnits([{ unit: 'can', grams: 165, labelEn: 'can', labelAr: 'علبة' }]) },
+    { id: 'eggs', nameEn: 'Egg', nameAr: 'بيض', calories: 155, protein: 12.6, carbs: 1.1, fat: 10.6, fiber: 0, servingUnits: withUnits([{ unit: 'egg', grams: 50, labelEn: 'egg', labelAr: 'بيضة' }]) },
+    { id: 'shrimp', nameEn: 'Shrimp', nameAr: 'ربيان', calories: 99, protein: 24.0, carbs: 0.2, fat: 0.3, fiber: 0, servingUnits: DEFAULT_UNITS },
+    { id: 'turkey', nameEn: 'Turkey Breast', nameAr: 'ديك رومي', calories: 135, protein: 30.0, carbs: 0, fat: 1.0, fiber: 0, servingUnits: DEFAULT_UNITS },
+
+    // ── Grains ──
+    { id: 'rice', nameEn: 'White Rice (cooked)', nameAr: 'أرز أبيض', calories: 130, protein: 2.7, carbs: 28.2, fat: 0.3, fiber: 0.4, servingUnits: withUnits([{ unit: 'cup', grams: 186, labelEn: 'cup', labelAr: 'كوب' }]) },
+    { id: 'brown-rice', nameEn: 'Brown Rice (cooked)', nameAr: 'أرز بني', calories: 112, protein: 2.6, carbs: 23.5, fat: 0.9, fiber: 1.8, servingUnits: withUnits([{ unit: 'cup', grams: 195, labelEn: 'cup', labelAr: 'كوب' }]) },
+    { id: 'oats', nameEn: 'Oats (dry)', nameAr: 'شوفان', calories: 379, protein: 13.2, carbs: 67.7, fat: 6.5, fiber: 10.1, servingUnits: withUnits([{ unit: 'cup', grams: 81, labelEn: 'cup', labelAr: 'كوب' }, { unit: 'tbsp', grams: 5, labelEn: 'tbsp', labelAr: 'ملعقة كبيرة' }]) },
+    { id: 'quinoa', nameEn: 'Quinoa (cooked)', nameAr: 'كينوا', calories: 120, protein: 4.4, carbs: 21.3, fat: 1.9, fiber: 2.8, servingUnits: withUnits([{ unit: 'cup', grams: 185, labelEn: 'cup', labelAr: 'كوب' }]) },
+    { id: 'pasta', nameEn: 'Pasta (cooked)', nameAr: 'معكرونة', calories: 158, protein: 5.8, carbs: 30.9, fat: 0.9, fiber: 1.8, servingUnits: withUnits([{ unit: 'cup', grams: 140, labelEn: 'cup', labelAr: 'كوب' }]) },
+    { id: 'bread', nameEn: 'Whole Wheat Bread', nameAr: 'خبز أسمر', calories: 252, protein: 12.5, carbs: 43.1, fat: 3.5, fiber: 6.0, servingUnits: withUnits([{ unit: 'slice', grams: 28, labelEn: 'slice', labelAr: 'شريحة' }]) },
+    { id: 'sweet-potato', nameEn: 'Sweet Potato', nameAr: 'بطاطا حلوة', calories: 90, protein: 2.0, carbs: 20.7, fat: 0.1, fiber: 3.3, servingUnits: DEFAULT_UNITS },
+    { id: 'potato', nameEn: 'Potato', nameAr: 'بطاطا', calories: 87, protein: 1.7, carbs: 20.0, fat: 0.1, fiber: 1.8, servingUnits: DEFAULT_UNITS },
+
+    // ── Dairy ──
+    { id: 'greek-yogurt', nameEn: 'Greek Yogurt', nameAr: 'زبادي يوناني', calories: 59, protein: 10.0, carbs: 3.6, fat: 0.7, fiber: 0, servingUnits: withUnits([{ unit: 'cup', grams: 245, labelEn: 'cup', labelAr: 'كوب' }]) },
+    { id: 'yogurt', nameEn: 'Yogurt', nameAr: 'زبادي', calories: 63, protein: 5.3, carbs: 7.0, fat: 1.6, fiber: 0, servingUnits: withUnits([{ unit: 'cup', grams: 245, labelEn: 'cup', labelAr: 'كوب' }]) },
+    { id: 'milk', nameEn: 'Milk (low fat)', nameAr: 'حليب قليل الدسم', calories: 42, protein: 3.4, carbs: 5.0, fat: 1.0, fiber: 0, servingUnits: withUnits([{ unit: 'cup', grams: 244, labelEn: 'cup', labelAr: 'كوب' }]) },
+    { id: 'cheese', nameEn: 'Cheese', nameAr: 'جبن', calories: 402, protein: 25.0, carbs: 1.3, fat: 33.1, fiber: 0, servingUnits: withUnits([{ unit: 'slice', grams: 28, labelEn: 'slice', labelAr: 'شريحة' }]) },
+    { id: 'cottage-cheese', nameEn: 'Cottage Cheese', nameAr: 'جبن قريش', calories: 81, protein: 11.8, carbs: 3.1, fat: 2.3, fiber: 0, servingUnits: withUnits([{ unit: 'cup', grams: 226, labelEn: 'cup', labelAr: 'كوب' }]) },
+
+    // ── Fruits ──
+    { id: 'banana', nameEn: 'Banana', nameAr: 'موز', calories: 89, protein: 1.1, carbs: 22.8, fat: 0.3, fiber: 2.6, servingUnits: withUnits([{ unit: 'piece', grams: 118, labelEn: 'piece', labelAr: 'حبة' }]) },
+    { id: 'apple', nameEn: 'Apple', nameAr: 'تفاح', calories: 52, protein: 0.3, carbs: 13.8, fat: 0.2, fiber: 2.4, servingUnits: withUnits([{ unit: 'piece', grams: 182, labelEn: 'piece', labelAr: 'حبة' }]) },
+    { id: 'dates', nameEn: 'Dates', nameAr: 'تمر', calories: 277, protein: 1.8, carbs: 75.0, fat: 0.2, fiber: 6.7, servingUnits: withUnits([{ unit: 'piece', grams: 24, labelEn: 'piece', labelAr: 'حبة' }]) },
+    { id: 'orange', nameEn: 'Orange', nameAr: 'برتقال', calories: 47, protein: 0.9, carbs: 11.8, fat: 0.1, fiber: 2.4, servingUnits: withUnits([{ unit: 'piece', grams: 131, labelEn: 'piece', labelAr: 'حبة' }]) },
+    { id: 'strawberry', nameEn: 'Strawberry', nameAr: 'فراولة', calories: 32, protein: 0.7, carbs: 7.7, fat: 0.3, fiber: 2.0, servingUnits: withUnits([{ unit: 'cup', grams: 152, labelEn: 'cup', labelAr: 'كوب' }]) },
+    { id: 'mango', nameEn: 'Mango', nameAr: 'مانجو', calories: 60, protein: 0.8, carbs: 15.0, fat: 0.4, fiber: 1.6, servingUnits: withUnits([{ unit: 'cup', grams: 165, labelEn: 'cup', labelAr: 'كوب' }]) },
+    { id: 'grapes', nameEn: 'Grapes', nameAr: 'عنب', calories: 69, protein: 0.7, carbs: 18.1, fat: 0.2, fiber: 0.9, servingUnits: withUnits([{ unit: 'cup', grams: 151, labelEn: 'cup', labelAr: 'كوب' }]) },
+    { id: 'avocado', nameEn: 'Avocado', nameAr: 'أفوكادو', calories: 160, protein: 2.0, carbs: 8.5, fat: 14.7, fiber: 6.7, servingUnits: withUnits([{ unit: 'half', grams: 68, labelEn: 'half', labelAr: 'نصف' }]) },
+    { id: 'watermelon', nameEn: 'Watermelon', nameAr: 'بطيخ', calories: 30, protein: 0.6, carbs: 7.6, fat: 0.2, fiber: 0.4, servingUnits: withUnits([{ unit: 'cup', grams: 152, labelEn: 'cup', labelAr: 'كوب' }]) },
+
+    // ── Vegetables ──
+    { id: 'broccoli', nameEn: 'Broccoli', nameAr: 'بروكلي', calories: 35, protein: 2.4, carbs: 7.2, fat: 0.4, fiber: 3.3, servingUnits: withUnits([{ unit: 'cup', grams: 156, labelEn: 'cup', labelAr: 'كوب' }]) },
+    { id: 'spinach', nameEn: 'Spinach', nameAr: 'سبانخ', calories: 23, protein: 2.9, carbs: 3.6, fat: 0.4, fiber: 2.2, servingUnits: withUnits([{ unit: 'cup', grams: 30, labelEn: 'cup', labelAr: 'كوب' }]) },
+    { id: 'tomato', nameEn: 'Tomato', nameAr: 'طماطم', calories: 18, protein: 0.9, carbs: 3.9, fat: 0.2, fiber: 1.2, servingUnits: withUnits([{ unit: 'piece', grams: 123, labelEn: 'piece', labelAr: 'حبة' }]) },
+    { id: 'cucumber', nameEn: 'Cucumber', nameAr: 'خيار', calories: 15, protein: 0.7, carbs: 3.6, fat: 0.1, fiber: 0.5, servingUnits: withUnits([{ unit: 'piece', grams: 201, labelEn: 'piece', labelAr: 'حبة' }]) },
+    { id: 'carrot', nameEn: 'Carrot', nameAr: 'جزر', calories: 41, protein: 0.9, carbs: 9.6, fat: 0.2, fiber: 2.8, servingUnits: withUnits([{ unit: 'piece', grams: 61, labelEn: 'piece', labelAr: 'حبة' }]) },
+    { id: 'lettuce', nameEn: 'Lettuce', nameAr: 'خس', calories: 15, protein: 1.4, carbs: 2.9, fat: 0.2, fiber: 1.3, servingUnits: withUnits([{ unit: 'cup', grams: 36, labelEn: 'cup', labelAr: 'كوب' }]) },
+
+    // ── Legumes ──
+    { id: 'lentils', nameEn: 'Lentils (cooked)', nameAr: 'عدس', calories: 116, protein: 9.0, carbs: 20.1, fat: 0.4, fiber: 7.9, servingUnits: withUnits([{ unit: 'cup', grams: 198, labelEn: 'cup', labelAr: 'كوب' }]) },
+    { id: 'chickpeas', nameEn: 'Chickpeas', nameAr: 'حمص', calories: 164, protein: 8.9, carbs: 27.4, fat: 2.6, fiber: 7.6, servingUnits: withUnits([{ unit: 'cup', grams: 164, labelEn: 'cup', labelAr: 'كوب' }]) },
+    { id: 'beans', nameEn: 'Beans', nameAr: 'فاصوليا', calories: 127, protein: 8.7, carbs: 22.8, fat: 0.5, fiber: 7.4, servingUnits: withUnits([{ unit: 'cup', grams: 177, labelEn: 'cup', labelAr: 'كوب' }]) },
+
+    // ── Nuts & Seeds ──
+    { id: 'almonds', nameEn: 'Almonds', nameAr: 'لوز', calories: 579, protein: 21.2, carbs: 21.7, fat: 49.9, fiber: 12.5, servingUnits: withUnits([{ unit: 'handful', grams: 28, labelEn: 'handful (28g)', labelAr: 'حفنة (28غ)' }]) },
+    { id: 'walnuts', nameEn: 'Walnuts', nameAr: 'جوز', calories: 654, protein: 15.2, carbs: 13.7, fat: 65.2, fiber: 6.7, servingUnits: withUnits([{ unit: 'handful', grams: 28, labelEn: 'handful (28g)', labelAr: 'حفنة (28غ)' }]) },
+    { id: 'peanut-butter', nameEn: 'Peanut Butter', nameAr: 'زبدة فول سوداني', calories: 588, protein: 25.1, carbs: 19.6, fat: 50.4, fiber: 6.0, servingUnits: withUnits([{ unit: 'tbsp', grams: 16, labelEn: 'tbsp', labelAr: 'ملعقة كبيرة' }]) },
+    { id: 'chia-seeds', nameEn: 'Chia Seeds', nameAr: 'بذور شيا', calories: 486, protein: 16.5, carbs: 42.1, fat: 30.7, fiber: 34.4, servingUnits: withUnits([{ unit: 'tbsp', grams: 12, labelEn: 'tbsp', labelAr: 'ملعقة كبيرة' }]) },
+
+    // ── Oils & Fats ──
+    { id: 'olive-oil', nameEn: 'Olive Oil', nameAr: 'زيت زيتون', calories: 884, protein: 0, carbs: 0, fat: 100, fiber: 0, servingUnits: withUnits([{ unit: 'tbsp', grams: 14, labelEn: 'tbsp', labelAr: 'ملعقة كبيرة' }, { unit: 'tsp', grams: 5, labelEn: 'tsp', labelAr: 'ملعقة صغيرة' }]) },
+    { id: 'butter', nameEn: 'Butter', nameAr: 'زبدة', calories: 717, protein: 0.9, carbs: 0.1, fat: 81.1, fiber: 0, servingUnits: withUnits([{ unit: 'tbsp', grams: 14, labelEn: 'tbsp', labelAr: 'ملعقة كبيرة' }]) },
+    { id: 'coconut-oil', nameEn: 'Coconut Oil', nameAr: 'زيت جوز الهند', calories: 862, protein: 0, carbs: 0, fat: 100, fiber: 0, servingUnits: withUnits([{ unit: 'tbsp', grams: 14, labelEn: 'tbsp', labelAr: 'ملعقة كبيرة' }]) },
+
+    // ── Sweeteners ──
+    { id: 'honey', nameEn: 'Honey', nameAr: 'عسل', calories: 304, protein: 0.3, carbs: 82.4, fat: 0, fiber: 0.2, servingUnits: withUnits([{ unit: 'tbsp', grams: 21, labelEn: 'tbsp', labelAr: 'ملعقة كبيرة' }]) },
+];
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
@@ -52,37 +131,87 @@ export default function ManualDietBuilderScreen({ navigation }: any) {
     const searchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const nextKeyRef = useRef(0);
 
-    // ── Search ──────────────────────────────────────────────────────────────────
+    // ── LOCAL instant search (prefix + substring match) ─────────────────────────
+
+    const searchLocal = useCallback((query: string): FoodResult[] => {
+        const q = query.toLowerCase().trim();
+        if (q.length < 2) return [];
+
+        // Score-based matching: prefix match gets higher priority
+        const scored = LOCAL_FOODS.map(food => {
+            const en = food.nameEn.toLowerCase();
+            const ar = food.nameAr;
+            const id = food.id;
+            let score = 0;
+            if (en.startsWith(q) || id.startsWith(q)) score = 100;
+            else if (en.includes(q) || ar.includes(q) || id.includes(q)) score = 50;
+            // Check individual words for prefix match
+            if (score === 0) {
+                const words = en.split(/[\s,()-]+/);
+                for (const w of words) {
+                    if (w.startsWith(q)) { score = 80; break; }
+                }
+            }
+            return { food, score };
+        })
+            .filter(x => x.score > 0)
+            .sort((a, b) => b.score - a.score)
+            .map(x => x.food);
+
+        return scored.slice(0, 15);
+    }, []);
+
+    // ── Combined search: local first, then API backup ───────────────────────────
 
     const performSearch = useCallback(async (query: string) => {
-        if (query.trim().length < 2) {
+        const q = query.trim();
+        if (q.length < 2) {
             setSearchResults([]);
             setShowResults(false);
             return;
         }
-        setIsSearching(true);
-        try {
-            const data = await api.get<{ foods: FoodResult[] }>(`/api/food/search?q=${encodeURIComponent(query)}`);
-            setSearchResults(data.foods || []);
-            setShowResults(true);
-        } catch (err) {
-            console.error('Food search error:', err);
-            setSearchResults([]);
-        } finally {
-            setIsSearching(false);
+
+        // Step 1: Instant local results
+        const localResults = searchLocal(q);
+        setSearchResults(localResults);
+        setShowResults(true);
+
+        // Step 2: Also try API for more results (in background)
+        if (localResults.length < 5) {
+            setIsSearching(true);
+            try {
+                const data = await api.get<{ foods: FoodResult[] }>(`/api/food/search?q=${encodeURIComponent(q)}`);
+                const apiResults = data.foods || [];
+                // Merge API results with local, avoid duplicates
+                const existingIds = new Set(localResults.map(r => r.id));
+                const merged = [...localResults, ...apiResults.filter(r => !existingIds.has(r.id))];
+                setSearchResults(merged.slice(0, 20));
+            } catch {
+                // Keep local results if API fails
+            } finally {
+                setIsSearching(false);
+            }
         }
-    }, []);
+    }, [searchLocal]);
 
     useEffect(() => {
         if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current);
-        if (searchText.trim().length < 2) {
+        const q = searchText.trim();
+        if (q.length < 2) {
             setSearchResults([]);
             setShowResults(false);
             return;
         }
-        searchTimeoutRef.current = setTimeout(() => performSearch(searchText), 300);
+        // Instant local search
+        const localResults = searchLocal(q);
+        if (localResults.length > 0) {
+            setSearchResults(localResults);
+            setShowResults(true);
+        }
+        // Debounced API search
+        searchTimeoutRef.current = setTimeout(() => performSearch(searchText), 400);
         return () => { if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current); };
-    }, [searchText, performSearch]);
+    }, [searchText, searchLocal, performSearch]);
 
     // ── Add food ────────────────────────────────────────────────────────────────
 
@@ -97,29 +226,19 @@ export default function ManualDietBuilderScreen({ navigation }: any) {
         setSearchResults([]);
     }, []);
 
-    // ── Update quantity ─────────────────────────────────────────────────────────
-
     const updateQuantity = useCallback((key: string, qty: number) => {
-        setSelectedFoods(prev =>
-            prev.map(item => item.key === key ? { ...item, quantity: qty } : item)
-        );
+        setSelectedFoods(prev => prev.map(item => item.key === key ? { ...item, quantity: qty } : item));
     }, []);
-
-    // ── Update unit ─────────────────────────────────────────────────────────────
 
     const cycleUnit = useCallback((key: string) => {
-        setSelectedFoods(prev =>
-            prev.map(item => {
-                if (item.key !== key) return item;
-                const units = item.food.servingUnits;
-                const currentIdx = units.findIndex(u => u.unit === item.selectedUnit.unit);
-                const nextIdx = (currentIdx + 1) % units.length;
-                return { ...item, selectedUnit: units[nextIdx] };
-            })
-        );
+        setSelectedFoods(prev => prev.map(item => {
+            if (item.key !== key) return item;
+            const units = item.food.servingUnits;
+            const currentIdx = units.findIndex(u => u.unit === item.selectedUnit.unit);
+            const nextIdx = (currentIdx + 1) % units.length;
+            return { ...item, selectedUnit: units[nextIdx] };
+        }));
     }, []);
-
-    // ── Remove food ─────────────────────────────────────────────────────────────
 
     const removeFood = useCallback((key: string) => {
         setSelectedFoods(prev => prev.filter(item => item.key !== key));
@@ -160,14 +279,17 @@ export default function ManualDietBuilderScreen({ navigation }: any) {
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['savedDietPlans'] });
             Alert.alert(
-                isArabic ? 'تم الحفظ' : 'Saved',
-                isArabic ? 'تم حفظ الجدول الغذائي بنجاح' : 'Diet plan saved successfully',
+                isArabic ? 'تم الحفظ ✅' : 'Saved ✅',
+                isArabic ? 'تم حفظ الجدول الغذائي بنجاح في جدولي الغذائي' : 'Diet plan saved successfully to My Diet Plans',
                 [{
-                    text: isArabic ? 'حسناً' : 'OK',
+                    text: isArabic ? 'عرض الجداول' : 'View Plans',
                     onPress: () => {
                         setSelectedFoods([]);
                         navigation.navigate({ name: 'Main', params: { screen: 'DietTable' }, merge: true } as any);
                     },
+                }, {
+                    text: isArabic ? 'إضافة جدول آخر' : 'Add Another',
+                    onPress: () => setSelectedFoods([]),
                 }]
             );
         },
@@ -195,239 +317,256 @@ export default function ManualDietBuilderScreen({ navigation }: any) {
             items: selectedFoods.map(item => {
                 const macros = calculateItemMacros(item);
                 return {
-                    nameEn: item.food.nameEn,
-                    nameAr: item.food.nameAr,
+                    nameEn: item.food.nameEn, nameAr: item.food.nameAr,
                     quantity: item.quantity,
                     unit: isArabic ? item.selectedUnit.labelAr : item.selectedUnit.labelEn,
                     unitKey: item.selectedUnit.unit,
                     gramsPerUnit: item.selectedUnit.grams,
-                    calories: macros.calories,
-                    protein: macros.protein,
-                    carbs: macros.carbs,
-                    fat: macros.fat,
+                    ...macros,
                 };
             }),
         };
         saveMutation.mutate(planData);
     };
 
-    // ── Render ──────────────────────────────────────────────────────────────────
+    // ── Render helpers ──────────────────────────────────────────────────────────
 
     const cardBg = isDark ? 'rgba(30, 41, 59, 0.7)' : 'rgba(255, 255, 255, 0.9)';
     const inputBg = isDark ? 'rgba(15, 23, 42, 0.8)' : '#f1f5f9';
 
+    const hasItems = selectedFoods.length > 0;
+
     return (
-        <KeyboardAvoidingView
-            style={[styles.container, { backgroundColor: colors.background }]}
-            behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-            keyboardVerticalOffset={90}
-        >
-            {/* Search Bar */}
-            <View style={[styles.searchContainer, { backgroundColor: cardBg, borderColor: colors.border }]}>
-                <Ionicons name="search" size={20} color={colors.mutedText} style={styles.searchIcon} />
-                <TextInput
-                    style={[styles.searchInput, { color: colors.text, backgroundColor: inputBg }]}
-                    placeholder={isArabic ? 'ابحث عن طعام... (مثال: دجاج، أرز)' : 'Search food... (e.g., chicken, rice)'}
-                    placeholderTextColor={colors.mutedText}
-                    value={searchText}
-                    onChangeText={setSearchText}
-                    autoCorrect={false}
-                    textAlign={isArabic ? 'right' : 'left'}
-                    testID="input-food-search"
-                />
-                {isSearching && <ActivityIndicator size="small" color={colors.primary} />}
-                {searchText.length > 0 && (
-                    <TouchableOpacity onPress={() => { setSearchText(''); setShowResults(false); }}>
-                        <Ionicons name="close-circle" size={20} color={colors.mutedText} />
+        <View style={[styles.container, { backgroundColor: colors.background }]}>
+            {/* ── Back button + Title bar ── */}
+            <SafeAreaView style={{ backgroundColor: colors.card }}>
+                <View style={[styles.headerBar, { backgroundColor: colors.card, borderBottomColor: colors.border }]}>
+                    <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton} testID="button-back">
+                        <Ionicons name={isArabic ? 'chevron-forward' : 'chevron-back'} size={24} color={colors.text} />
                     </TouchableOpacity>
-                )}
-            </View>
-
-            {/* Search Results Dropdown */}
-            {showResults && searchResults.length > 0 && (
-                <View style={[styles.resultsContainer, { backgroundColor: cardBg, borderColor: colors.border }]}>
-                    <FlatList
-                        data={searchResults}
-                        keyExtractor={item => item.id}
-                        keyboardShouldPersistTaps="handled"
-                        style={{ maxHeight: 250 }}
-                        renderItem={({ item }) => (
-                            <TouchableOpacity
-                                style={[styles.resultItem, { borderBottomColor: colors.border }]}
-                                onPress={() => addFood(item)}
-                                testID={`result-${item.id}`}
-                            >
-                                <View style={styles.resultTextContainer}>
-                                    <Text style={[styles.resultName, { color: colors.text }]} numberOfLines={1}>
-                                        {isArabic ? item.nameAr : item.nameEn}
-                                    </Text>
-                                    <Text style={[styles.resultSub, { color: colors.mutedText }]} numberOfLines={1}>
-                                        {isArabic ? item.nameEn : item.nameAr}
-                                    </Text>
-                                </View>
-                                <Ionicons name="add-circle" size={24} color={colors.primary} />
-                            </TouchableOpacity>
-                        )}
-                    />
-                </View>
-            )}
-
-            {showResults && searchResults.length === 0 && !isSearching && searchText.length >= 2 && (
-                <View style={[styles.resultsContainer, { backgroundColor: cardBg, borderColor: colors.border, padding: 16 }]}>
-                    <Text style={[styles.noResults, { color: colors.mutedText }]}>
-                        {isArabic ? 'لم يتم العثور على نتائج' : 'No results found'}
+                    <Text style={[styles.headerTitle, { color: colors.text }]}>
+                        {isArabic ? 'تصميم جدول غذائي' : 'Diet Builder'}
                     </Text>
+                    <View style={{ width: 40 }} />
                 </View>
-            )}
+            </SafeAreaView>
 
-            {/* Selected Foods List */}
-            <ScrollView
-                style={styles.selectedList}
-                contentContainerStyle={styles.selectedListContent}
-                keyboardShouldPersistTaps="handled"
-                showsVerticalScrollIndicator={false}
+            <KeyboardAvoidingView
+                style={{ flex: 1 }}
+                behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+                keyboardVerticalOffset={0}
             >
-                {selectedFoods.length === 0 && (
-                    <View style={styles.emptyState}>
-                        <Ionicons name="restaurant-outline" size={48} color={colors.mutedText} />
-                        <Text style={[styles.emptyText, { color: colors.mutedText }]}>
-                            {isArabic ? 'ابحث عن الأطعمة وأضفها هنا' : 'Search for foods and add them here'}
+                {/* ── Search Bar ── */}
+                <View style={[styles.searchContainer, { backgroundColor: cardBg, borderColor: colors.border }]}>
+                    <Ionicons name="search" size={20} color={colors.mutedText} />
+                    <TextInput
+                        style={[styles.searchInput, { color: colors.text, backgroundColor: inputBg }]}
+                        placeholder={isArabic ? 'ابحث عن طعام... (مثال: دجاج، أرز، chicken)' : 'Search food... (e.g., chicken, rice, دجاج)'}
+                        placeholderTextColor={colors.mutedText}
+                        value={searchText}
+                        onChangeText={setSearchText}
+                        autoCorrect={false}
+                        autoCapitalize="none"
+                        textAlign={isArabic ? 'right' : 'left'}
+                        testID="input-food-search"
+                    />
+                    {isSearching && <ActivityIndicator size="small" color={colors.primary} />}
+                    {searchText.length > 0 && (
+                        <TouchableOpacity onPress={() => { setSearchText(''); setShowResults(false); }}>
+                            <Ionicons name="close-circle" size={20} color={colors.mutedText} />
+                        </TouchableOpacity>
+                    )}
+                </View>
+
+                {/* ── Search Results Dropdown ── */}
+                {showResults && searchResults.length > 0 && (
+                    <View style={[styles.resultsDropdown, { backgroundColor: isDark ? '#1e293b' : '#ffffff', borderColor: colors.border }]}>
+                        <FlatList
+                            data={searchResults}
+                            keyExtractor={item => item.id}
+                            keyboardShouldPersistTaps="handled"
+                            style={{ maxHeight: 280 }}
+                            renderItem={({ item }) => (
+                                <TouchableOpacity
+                                    style={[styles.resultItem, { borderBottomColor: colors.border }]}
+                                    onPress={() => addFood(item)}
+                                >
+                                    <View style={{ flex: 1, marginRight: 8 }}>
+                                        <Text style={[styles.resultName, { color: colors.text }]} numberOfLines={1}>
+                                            {isArabic ? item.nameAr : item.nameEn}
+                                        </Text>
+                                        <Text style={{ fontSize: 11, color: colors.mutedText, marginTop: 1 }} numberOfLines={1}>
+                                            {isArabic ? item.nameEn : item.nameAr} · {item.calories} cal/100g
+                                        </Text>
+                                    </View>
+                                    <Ionicons name="add-circle" size={26} color={colors.primary} />
+                                </TouchableOpacity>
+                            )}
+                        />
+                    </View>
+                )}
+
+                {showResults && searchResults.length === 0 && !isSearching && searchText.length >= 2 && (
+                    <View style={[styles.resultsDropdown, { backgroundColor: isDark ? '#1e293b' : '#ffffff', borderColor: colors.border, padding: 16 }]}>
+                        <Text style={{ textAlign: 'center', color: colors.mutedText, fontSize: 14 }}>
+                            {isArabic ? 'لم يتم العثور على نتائج' : 'No results found'}
                         </Text>
                     </View>
                 )}
 
-                {selectedFoods.map(item => {
-                    const macros = calculateItemMacros(item);
-                    return (
-                        <View key={item.key} style={[styles.foodCard, { backgroundColor: cardBg, borderColor: colors.border }]}>
-                            {/* Header row: name + delete */}
-                            <View style={styles.foodCardHeader}>
-                                <Text style={[styles.foodName, { color: colors.text }]} numberOfLines={1}>
-                                    {isArabic ? item.food.nameAr : item.food.nameEn}
-                                </Text>
-                                <TouchableOpacity onPress={() => removeFood(item.key)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-                                    <Ionicons name="trash-outline" size={18} color={colors.danger} />
-                                </TouchableOpacity>
+                {/* ── Selected Foods List ── */}
+                <ScrollView
+                    style={{ flex: 1 }}
+                    contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 8, paddingBottom: hasItems ? 230 : 30, gap: 10 }}
+                    keyboardShouldPersistTaps="handled"
+                    showsVerticalScrollIndicator={false}
+                >
+                    {!hasItems && (
+                        <View style={styles.emptyState}>
+                            <Ionicons name="restaurant-outline" size={52} color={colors.mutedText} />
+                            <Text style={{ fontSize: 16, color: colors.mutedText, textAlign: 'center', fontWeight: '600' }}>
+                                {isArabic ? 'ابحث عن الأطعمة وأضفها هنا' : 'Search for foods and add them here'}
+                            </Text>
+                            <Text style={{ fontSize: 13, color: colors.mutedText, textAlign: 'center', marginTop: 4, lineHeight: 20 }}>
+                                {isArabic
+                                    ? 'اكتب اسم الطعام بالعربي أو الإنجليزي\nمثال: دجاج، أرز، chicken، rice'
+                                    : 'Type a food name in English or Arabic\ne.g., chicken, rice, دجاج، أرز'}
+                            </Text>
+                        </View>
+                    )}
+
+                    {selectedFoods.map(item => {
+                        const macros = calculateItemMacros(item);
+                        return (
+                            <View key={item.key} style={[styles.foodCard, { backgroundColor: cardBg, borderColor: colors.border }]}>
+                                <View style={styles.foodCardHeader}>
+                                    <Text style={[styles.foodName, { color: colors.text }]} numberOfLines={1}>
+                                        {isArabic ? item.food.nameAr : item.food.nameEn}
+                                    </Text>
+                                    <TouchableOpacity onPress={() => removeFood(item.key)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                                        <Ionicons name="trash-outline" size={18} color={colors.danger} />
+                                    </TouchableOpacity>
+                                </View>
+
+                                <View style={styles.quantityRow}>
+                                    <TextInput
+                                        style={[styles.quantityInput, { color: colors.text, backgroundColor: inputBg, borderColor: colors.border }]}
+                                        value={item.quantity.toString()}
+                                        onChangeText={val => updateQuantity(item.key, parseFloat(val) || 0)}
+                                        keyboardType="numeric"
+                                        selectTextOnFocus
+                                        textAlign="center"
+                                    />
+                                    <TouchableOpacity
+                                        style={[styles.unitButton, { backgroundColor: isDark ? 'rgba(59,130,246,0.15)' : 'rgba(59,130,246,0.1)', borderColor: colors.primary }]}
+                                        onPress={() => cycleUnit(item.key)}
+                                    >
+                                        <Text style={[styles.unitText, { color: colors.primary }]}>
+                                            {isArabic ? item.selectedUnit.labelAr : item.selectedUnit.labelEn}
+                                        </Text>
+                                        <Ionicons name="chevron-down" size={14} color={colors.primary} />
+                                    </TouchableOpacity>
+                                    <View style={{ flex: 1, alignItems: 'flex-end' }}>
+                                        <Text style={{ fontSize: 22, fontWeight: '800', color: colors.primary }}>{macros.calories}</Text>
+                                        <Text style={{ fontSize: 10, color: colors.mutedText, marginTop: -2 }}>{isArabic ? 'سعرة' : 'Cal'}</Text>
+                                    </View>
+                                </View>
+
+                                <View style={styles.macrosRow}>
+                                    <View style={{ alignItems: 'center', flex: 1 }}>
+                                        <Text style={{ fontSize: 14, fontWeight: '700', color: '#3b82f6' }}>{macros.protein}g</Text>
+                                        <Text style={{ fontSize: 10, color: colors.mutedText }}>{isArabic ? 'بروتين' : 'Protein'}</Text>
+                                    </View>
+                                    <View style={{ width: 1, height: 24, backgroundColor: colors.border, opacity: 0.4 }} />
+                                    <View style={{ alignItems: 'center', flex: 1 }}>
+                                        <Text style={{ fontSize: 14, fontWeight: '700', color: '#f59e0b' }}>{macros.carbs}g</Text>
+                                        <Text style={{ fontSize: 10, color: colors.mutedText }}>{isArabic ? 'كربوهيدرات' : 'Carbs'}</Text>
+                                    </View>
+                                    <View style={{ width: 1, height: 24, backgroundColor: colors.border, opacity: 0.4 }} />
+                                    <View style={{ alignItems: 'center', flex: 1 }}>
+                                        <Text style={{ fontSize: 14, fontWeight: '700', color: '#ef4444' }}>{macros.fat}g</Text>
+                                        <Text style={{ fontSize: 10, color: colors.mutedText }}>{isArabic ? 'دهون' : 'Fat'}</Text>
+                                    </View>
+                                </View>
                             </View>
+                        );
+                    })}
+                </ScrollView>
 
-                            {/* Quantity + Unit row */}
-                            <View style={styles.quantityRow}>
-                                <TextInput
-                                    style={[styles.quantityInput, { color: colors.text, backgroundColor: inputBg, borderColor: colors.border }]}
-                                    value={item.quantity.toString()}
-                                    onChangeText={val => {
-                                        const num = parseFloat(val) || 0;
-                                        updateQuantity(item.key, num);
-                                    }}
-                                    keyboardType="numeric"
-                                    selectTextOnFocus
-                                    textAlign="center"
-                                    testID={`qty-${item.key}`}
-                                />
-                                <TouchableOpacity
-                                    style={[styles.unitButton, { backgroundColor: isDark ? 'rgba(59,130,246,0.15)' : 'rgba(59,130,246,0.1)', borderColor: colors.primary }]}
-                                    onPress={() => cycleUnit(item.key)}
-                                >
-                                    <Text style={[styles.unitText, { color: colors.primary }]}>
-                                        {isArabic ? item.selectedUnit.labelAr : item.selectedUnit.labelEn}
-                                    </Text>
-                                    <Ionicons name="chevron-down" size={14} color={colors.primary} />
-                                </TouchableOpacity>
+                {/* ── Total Bar + Save Button (always visible when items exist) ── */}
+                {hasItems && (
+                    <View style={[styles.totalBar, { backgroundColor: isDark ? '#0f172a' : '#ffffff', borderTopColor: colors.border }]}>
+                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <Text style={{ fontSize: 17, fontWeight: '700', color: colors.text }}>
+                                {isArabic ? 'إجمالي السعرات' : 'Total Calories'}
+                            </Text>
+                            <Text style={{ fontSize: 28, fontWeight: '800', color: colors.primary }}>
+                                {totals.calories}
+                            </Text>
+                        </View>
 
-                                {/* Calories for this item */}
-                                <View style={styles.itemCaloriesContainer}>
-                                    <Text style={[styles.itemCalories, { color: colors.primary }]}>
-                                        {macros.calories}
-                                    </Text>
-                                    <Text style={[styles.itemCaloriesLabel, { color: colors.mutedText }]}>
-                                        {isArabic ? 'سعرة' : 'Cal'}
-                                    </Text>
-                                </View>
+                        <View style={{ flexDirection: 'row', gap: 8 }}>
+                            <View style={[styles.totalMacroChip, { backgroundColor: 'rgba(59,130,246,0.1)' }]}>
+                                <Text style={{ fontSize: 15, fontWeight: '700', color: '#3b82f6' }}>{totals.protein}g</Text>
+                                <Text style={{ fontSize: 10, fontWeight: '600', color: '#3b82f6', marginTop: 1 }}>{isArabic ? 'بروتين' : 'Protein'}</Text>
                             </View>
-
-                            {/* Macros detail */}
-                            <View style={styles.macrosRow}>
-                                <View style={styles.macroItem}>
-                                    <Text style={[styles.macroValue, { color: '#3b82f6' }]}>{macros.protein}g</Text>
-                                    <Text style={[styles.macroLabel, { color: colors.mutedText }]}>{isArabic ? 'بروتين' : 'Protein'}</Text>
-                                </View>
-                                <View style={[styles.macroDivider, { backgroundColor: colors.border }]} />
-                                <View style={styles.macroItem}>
-                                    <Text style={[styles.macroValue, { color: '#f59e0b' }]}>{macros.carbs}g</Text>
-                                    <Text style={[styles.macroLabel, { color: colors.mutedText }]}>{isArabic ? 'كربوهيدرات' : 'Carbs'}</Text>
-                                </View>
-                                <View style={[styles.macroDivider, { backgroundColor: colors.border }]} />
-                                <View style={styles.macroItem}>
-                                    <Text style={[styles.macroValue, { color: '#ef4444' }]}>{macros.fat}g</Text>
-                                    <Text style={[styles.macroLabel, { color: colors.mutedText }]}>{isArabic ? 'دهون' : 'Fat'}</Text>
-                                </View>
+                            <View style={[styles.totalMacroChip, { backgroundColor: 'rgba(245,158,11,0.1)' }]}>
+                                <Text style={{ fontSize: 15, fontWeight: '700', color: '#f59e0b' }}>{totals.carbs}g</Text>
+                                <Text style={{ fontSize: 10, fontWeight: '600', color: '#f59e0b', marginTop: 1 }}>{isArabic ? 'كربوهيدرات' : 'Carbs'}</Text>
+                            </View>
+                            <View style={[styles.totalMacroChip, { backgroundColor: 'rgba(239,68,68,0.1)' }]}>
+                                <Text style={{ fontSize: 15, fontWeight: '700', color: '#ef4444' }}>{totals.fat}g</Text>
+                                <Text style={{ fontSize: 10, fontWeight: '600', color: '#ef4444', marginTop: 1 }}>{isArabic ? 'دهون' : 'Fat'}</Text>
                             </View>
                         </View>
-                    );
-                })}
 
-                {/* Bottom spacer for total bar */}
-                <View style={{ height: 200 }} />
-            </ScrollView>
-
-            {/* Total Bar + Save Button (Fixed at bottom) */}
-            {selectedFoods.length > 0 && (
-                <View style={[styles.totalBarContainer, { backgroundColor: isDark ? '#0f172a' : '#ffffff', borderTopColor: colors.border }]}>
-                    {/* Total Calories */}
-                    <View style={styles.totalCaloriesRow}>
-                        <Text style={[styles.totalCaloriesLabel, { color: colors.text }]}>
-                            {isArabic ? 'إجمالي السعرات' : 'Total Calories'}
-                        </Text>
-                        <Text style={[styles.totalCaloriesValue, { color: colors.primary }]}>
-                            {totals.calories}
-                        </Text>
+                        <TouchableOpacity
+                            style={[styles.saveButton, { opacity: saveMutation.isPending ? 0.6 : 1 }]}
+                            onPress={handleSave}
+                            disabled={saveMutation.isPending}
+                            testID="button-save-manual-plan"
+                            activeOpacity={0.8}
+                        >
+                            {saveMutation.isPending ? (
+                                <ActivityIndicator size="small" color="#ffffff" />
+                            ) : (
+                                <>
+                                    <Ionicons name="bookmark" size={20} color="#ffffff" style={{ marginRight: 8 }} />
+                                    <Text style={styles.saveButtonText}>
+                                        {isArabic ? 'حفظ في جدولي الغذائي' : 'Save to My Diet Plans'}
+                                    </Text>
+                                </>
+                            )}
+                        </TouchableOpacity>
                     </View>
-
-                    {/* Macro breakdown */}
-                    <View style={styles.totalMacrosRow}>
-                        <View style={[styles.totalMacroItem, { backgroundColor: 'rgba(59,130,246,0.1)' }]}>
-                            <Text style={[styles.totalMacroValue, { color: '#3b82f6' }]}>{totals.protein}g</Text>
-                            <Text style={[styles.totalMacroLabel, { color: '#3b82f6' }]}>{isArabic ? 'بروتين' : 'Protein'}</Text>
-                        </View>
-                        <View style={[styles.totalMacroItem, { backgroundColor: 'rgba(245,158,11,0.1)' }]}>
-                            <Text style={[styles.totalMacroValue, { color: '#f59e0b' }]}>{totals.carbs}g</Text>
-                            <Text style={[styles.totalMacroLabel, { color: '#f59e0b' }]}>{isArabic ? 'كربوهيدرات' : 'Carbs'}</Text>
-                        </View>
-                        <View style={[styles.totalMacroItem, { backgroundColor: 'rgba(239,68,68,0.1)' }]}>
-                            <Text style={[styles.totalMacroValue, { color: '#ef4444' }]}>{totals.fat}g</Text>
-                            <Text style={[styles.totalMacroLabel, { color: '#ef4444' }]}>{isArabic ? 'دهون' : 'Fat'}</Text>
-                        </View>
-                    </View>
-
-                    {/* Save Button */}
-                    <TouchableOpacity
-                        style={[styles.saveButton, { opacity: saveMutation.isPending ? 0.6 : 1 }]}
-                        onPress={handleSave}
-                        disabled={saveMutation.isPending}
-                        testID="button-save-manual-plan"
-                    >
-                        {saveMutation.isPending ? (
-                            <ActivityIndicator size="small" color="#ffffff" />
-                        ) : (
-                            <>
-                                <Ionicons name="bookmark" size={18} color="#ffffff" style={{ marginRight: 8 }} />
-                                <Text style={styles.saveButtonText}>
-                                    {isArabic ? 'حفظ في جدولي الغذائي' : 'Save to My Diet Plans'}
-                                </Text>
-                            </>
-                        )}
-                    </TouchableOpacity>
-                </View>
-            )}
-        </KeyboardAvoidingView>
+                )}
+            </KeyboardAvoidingView>
+        </View>
     );
 }
 
 // ── Styles ─────────────────────────────────────────────────────────────────────
 
 const styles = StyleSheet.create({
-    container: {
-        flex: 1,
+    container: { flex: 1 },
+    headerBar: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        paddingHorizontal: 8,
+        paddingVertical: 10,
+        borderBottomWidth: 1,
+    },
+    backButton: {
+        width: 40, height: 40,
+        alignItems: 'center',
+        justifyContent: 'center',
+        borderRadius: 12,
+    },
+    headerTitle: {
+        fontSize: 17,
+        fontWeight: '700',
+        textAlign: 'center',
     },
     searchContainer: {
         flexDirection: 'row',
@@ -436,27 +575,28 @@ const styles = StyleSheet.create({
         marginTop: 12,
         marginBottom: 4,
         paddingHorizontal: 12,
-        paddingVertical: 8,
-        borderRadius: 16,
+        paddingVertical: 6,
+        borderRadius: 14,
         borderWidth: 1,
         gap: 8,
-    },
-    searchIcon: {
-        marginRight: 4,
     },
     searchInput: {
         flex: 1,
         fontSize: 15,
         paddingVertical: 8,
-        paddingHorizontal: 12,
+        paddingHorizontal: 10,
         borderRadius: 10,
     },
-    resultsContainer: {
+    resultsDropdown: {
         marginHorizontal: 16,
         borderRadius: 14,
         borderWidth: 1,
         overflow: 'hidden',
-        zIndex: 10,
+        elevation: 8,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.15,
+        shadowRadius: 8,
     },
     resultItem: {
         flexDirection: 'row',
@@ -465,39 +605,15 @@ const styles = StyleSheet.create({
         paddingVertical: 12,
         borderBottomWidth: StyleSheet.hairlineWidth,
     },
-    resultTextContainer: {
-        flex: 1,
-        marginRight: 8,
-    },
     resultName: {
         fontSize: 15,
         fontWeight: '600',
-    },
-    resultSub: {
-        fontSize: 12,
-        marginTop: 2,
-    },
-    noResults: {
-        textAlign: 'center',
-        fontSize: 14,
-    },
-    selectedList: {
-        flex: 1,
-    },
-    selectedListContent: {
-        paddingHorizontal: 16,
-        paddingTop: 8,
-        gap: 10,
     },
     emptyState: {
         alignItems: 'center',
         justifyContent: 'center',
         paddingTop: 80,
-        gap: 12,
-    },
-    emptyText: {
-        fontSize: 15,
-        textAlign: 'center',
+        gap: 10,
     },
     foodCard: {
         borderRadius: 14,
@@ -522,8 +638,7 @@ const styles = StyleSheet.create({
         gap: 8,
     },
     quantityInput: {
-        width: 70,
-        height: 40,
+        width: 70, height: 40,
         borderRadius: 10,
         borderWidth: 1,
         fontSize: 16,
@@ -542,19 +657,6 @@ const styles = StyleSheet.create({
         fontSize: 14,
         fontWeight: '600',
     },
-    itemCaloriesContainer: {
-        flex: 1,
-        alignItems: 'flex-end',
-    },
-    itemCalories: {
-        fontSize: 22,
-        fontWeight: '800',
-    },
-    itemCaloriesLabel: {
-        fontSize: 11,
-        fontWeight: '500',
-        marginTop: -2,
-    },
     macrosRow: {
         flexDirection: 'row',
         justifyContent: 'space-around',
@@ -563,74 +665,27 @@ const styles = StyleSheet.create({
         borderTopWidth: StyleSheet.hairlineWidth,
         borderTopColor: 'rgba(148,163,184,0.2)',
     },
-    macroItem: {
-        alignItems: 'center',
-        flex: 1,
-    },
-    macroValue: {
-        fontSize: 14,
-        fontWeight: '700',
-    },
-    macroLabel: {
-        fontSize: 10,
-        marginTop: 2,
-    },
-    macroDivider: {
-        width: 1,
-        height: 24,
-        opacity: 0.4,
-    },
-    totalBarContainer: {
-        position: 'absolute',
-        bottom: 0,
-        left: 0,
-        right: 0,
+    totalBar: {
         paddingHorizontal: 16,
         paddingTop: 14,
-        paddingBottom: 36,
+        paddingBottom: 32,
         borderTopWidth: 1,
         gap: 10,
     },
-    totalCaloriesRow: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-    },
-    totalCaloriesLabel: {
-        fontSize: 17,
-        fontWeight: '700',
-    },
-    totalCaloriesValue: {
-        fontSize: 26,
-        fontWeight: '800',
-    },
-    totalMacrosRow: {
-        flexDirection: 'row',
-        gap: 8,
-    },
-    totalMacroItem: {
+    totalMacroChip: {
         flex: 1,
         alignItems: 'center',
         paddingVertical: 8,
         borderRadius: 10,
     },
-    totalMacroValue: {
-        fontSize: 15,
-        fontWeight: '700',
-    },
-    totalMacroLabel: {
-        fontSize: 10,
-        fontWeight: '600',
-        marginTop: 2,
-    },
     saveButton: {
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
-        backgroundColor: '#3b82f6',
-        paddingVertical: 14,
+        backgroundColor: '#10b981',
+        paddingVertical: 15,
         borderRadius: 14,
-        shadowColor: '#3b82f6',
+        shadowColor: '#10b981',
         shadowOffset: { width: 0, height: 4 },
         shadowOpacity: 0.3,
         shadowRadius: 8,

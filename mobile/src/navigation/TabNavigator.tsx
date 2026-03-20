@@ -210,6 +210,7 @@ export default function TabNavigator({ navigation }: any) {
           component={ManualDietBuilderScreen}
           options={{
             title: isArabic ? 'تصميم جدول غذائي' : 'Diet Builder',
+            headerShown: false,
             tabBarButton: () => null,
             tabBarItemStyle: { display: 'none' },
           }}
