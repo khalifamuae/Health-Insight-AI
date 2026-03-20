@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useState, useEffect } from 'react';
 import { Alert, StyleSheet, Text, TouchableOpacity, View, ScrollView, Share, ActivityIndicator } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
@@ -25,6 +25,12 @@ const ExerciseCard = ({ savedExercise, globalExercise, groupId, onRemove, onUpda
   const [endWeight, setEndWeight] = useState<number | undefined>(savedExercise.endWeight);
   const [weightUnit, setWeightUnit] = useState<'kg' | 'lbs'>(savedExercise.weightUnit || 'kg');
   const handleSaveWeights = React.useRef<NodeJS.Timeout | null>(null);
+
+  useEffect(() => {
+    setStartWeight(savedExercise.startWeight);
+    setEndWeight(savedExercise.endWeight);
+    setWeightUnit(savedExercise.weightUnit || 'kg');
+  }, [savedExercise.startWeight, savedExercise.endWeight, savedExercise.weightUnit]);
 
   useFocusEffect(
     useCallback(() => {
@@ -163,10 +169,11 @@ const ExerciseCard = ({ savedExercise, globalExercise, groupId, onRemove, onUpda
                   onChangeText={(text) => {
                     const val = text.replace(/[^0-9.]/g, '');
                     const num = val === '' ? undefined : parseFloat(val);
+                    setStartWeight(num); // Ensure UI updates instantly!
                     if (handleSaveWeights.current) clearTimeout(handleSaveWeights.current);
                     handleSaveWeights.current = setTimeout(() => {
                       onUpdateWeights(groupId, savedExercise.id, num, endWeight, weightUnit);
-                    }, 600);
+                    }, 400);
                   }}
                 />
               </View>
@@ -189,10 +196,11 @@ const ExerciseCard = ({ savedExercise, globalExercise, groupId, onRemove, onUpda
                   onChangeText={(text) => {
                     const val = text.replace(/[^0-9.]/g, '');
                     const num = val === '' ? undefined : parseFloat(val);
+                    setEndWeight(num); // Ensure UI updates instantly!
                     if (handleSaveWeights.current) clearTimeout(handleSaveWeights.current);
                     handleSaveWeights.current = setTimeout(() => {
                       onUpdateWeights(groupId, savedExercise.id, startWeight, num, weightUnit);
-                    }, 600);
+                    }, 400);
                   }}
                 />
               </View>
