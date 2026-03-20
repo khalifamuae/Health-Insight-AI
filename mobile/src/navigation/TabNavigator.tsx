@@ -27,7 +27,7 @@ export default function TabNavigator({ navigation }: any) {
   const normalizedLanguage = (i18n.resolvedLanguage || i18n.language || '').toLowerCase();
   const isArabic = normalizedLanguage.startsWith('ar');
   const { width } = useWindowDimensions();
-  const drawerWidth = isArabic ? Math.max(190, Math.round(width * 0.3)) : Math.max(240, Math.round(width * 0.36));
+  const drawerWidth = Math.min(width * 0.8, Math.max(280, Math.round(width * 0.65)));
   const [isMenuVisible, setIsMenuVisible] = useState(false);
   const glassTint = isDark ? 'dark' : 'light';
   const glassOverlayColor = isDark ? 'rgba(8, 15, 30, 0.34)' : 'rgba(255, 255, 255, 0.28)';
@@ -213,6 +213,7 @@ export default function TabNavigator({ navigation }: any) {
             headerShown: false,
             tabBarButton: () => null,
             tabBarItemStyle: { display: 'none' },
+            tabBarStyle: { display: 'none' },
           }}
         />
         <Tab.Screen

@@ -40,93 +40,97 @@ interface SelectedFood {
 }
 
 // ── Built-in food database for instant search ─────────────────────────────────
-const ALL_UNITS: ServingUnit[] = [
+const WEIGHT_UNITS: ServingUnit[] = [
     { unit: 'g', grams: 1, labelEn: 'g', labelAr: 'غرام' },
     { unit: 'oz', grams: 28.35, labelEn: 'oz', labelAr: 'أونصة' },
-    { unit: 'container', grams: 150, labelEn: 'container (150g)', labelAr: 'علبة (150غ)' },
+];
+
+const VOLUME_UNITS: ServingUnit[] = [
+    ...WEIGHT_UNITS,
     { unit: 'cup', grams: 240, labelEn: 'cup', labelAr: 'كوب' },
+    { unit: 'container', grams: 150, labelEn: 'container', labelAr: 'علبة' },
     { unit: 'tbsp', grams: 15, labelEn: 'tbsp', labelAr: 'ملعقة طعام' },
     { unit: 'tsp', grams: 5, labelEn: 'tsp', labelAr: 'ملعقة صغيرة' },
 ];
 
-const withUnits = (extra: ServingUnit[]): ServingUnit[] => {
+const withUnits = (base: ServingUnit[], extra: ServingUnit[]): ServingUnit[] => {
     // Merge default units + extra units, without duplicates
     const map = new Map<string, ServingUnit>();
-    ALL_UNITS.forEach(u => map.set(u.unit, u));
+    base.forEach(u => map.set(u.unit, u));
     extra.forEach(u => map.set(u.unit, { ...u, labelEn: u.labelEn || u.unit, labelAr: u.labelAr || u.unit }));
     return Array.from(map.values());
 };
 
 const LOCAL_FOODS: FoodResult[] = [
     // ── Protein ──
-    { id: 'chicken-breast', nameEn: 'Chicken Breast', nameAr: 'صدر دجاج', calories: 165, protein: 31.0, carbs: 0, fat: 3.6, fiber: 0, servingUnits: withUnits([{ unit: 'piece', grams: 174, labelEn: 'piece', labelAr: 'قطعة' }]) },
-    { id: 'grilled-chicken', nameEn: 'Grilled Chicken', nameAr: 'دجاج مشوي', calories: 165, protein: 31.0, carbs: 0, fat: 3.6, fiber: 0, servingUnits: withUnits([{ unit: 'piece', grams: 174, labelEn: 'piece', labelAr: 'قطعة' }]) },
-    { id: 'boiled-chicken', nameEn: 'Boiled Chicken', nameAr: 'دجاج مسلوق', calories: 150, protein: 29.0, carbs: 0, fat: 3.0, fiber: 0, servingUnits: withUnits([{ unit: 'piece', grams: 174, labelEn: 'piece', labelAr: 'قطعة' }]) },
-    { id: 'chicken-thigh', nameEn: 'Chicken Thigh', nameAr: 'فخذ دجاج', calories: 209, protein: 26.0, carbs: 0, fat: 10.9, fiber: 0, servingUnits: ALL_UNITS },
-    { id: 'chicken', nameEn: 'Chicken', nameAr: 'دجاج', calories: 165, protein: 31.0, carbs: 0, fat: 3.6, fiber: 0, servingUnits: ALL_UNITS },
-    { id: 'beef', nameEn: 'Beef (Ground, Lean)', nameAr: 'لحم بقر مفروم', calories: 217, protein: 26.1, carbs: 0, fat: 11.8, fiber: 0, servingUnits: ALL_UNITS },
-    { id: 'grilled-steak', nameEn: 'Grilled Beef Steak', nameAr: 'ستيك لحم مشوي', calories: 271, protein: 25.0, carbs: 0, fat: 19.0, fiber: 0, servingUnits: withUnits([{ unit: 'piece', grams: 200, labelEn: 'steak', labelAr: 'شريحة ستيك' }]) },
-    { id: 'lamb', nameEn: 'Lamb', nameAr: 'لحم غنم', calories: 282, protein: 25.5, carbs: 0, fat: 19.4, fiber: 0, servingUnits: ALL_UNITS },
-    { id: 'salmon', nameEn: 'Salmon', nameAr: 'سلمون', calories: 182, protein: 25.4, carbs: 0, fat: 8.1, fiber: 0, servingUnits: withUnits([{ unit: 'fillet', grams: 170, labelEn: 'fillet', labelAr: 'فيليه' }]) },
-    { id: 'tuna', nameEn: 'Tuna (canned)', nameAr: 'تونة معلبة', calories: 116, protein: 25.5, carbs: 0, fat: 0.8, fiber: 0, servingUnits: withUnits([{ unit: 'can', grams: 165, labelEn: 'can', labelAr: 'علبة' }]) },
-    { id: 'eggs', nameEn: 'Egg', nameAr: 'بيض', calories: 155, protein: 12.6, carbs: 1.1, fat: 10.6, fiber: 0, servingUnits: withUnits([{ unit: 'egg', grams: 50, labelEn: 'egg', labelAr: 'بيضة' }]) },
-    { id: 'shrimp', nameEn: 'Shrimp', nameAr: 'ربيان', calories: 99, protein: 24.0, carbs: 0.2, fat: 0.3, fiber: 0, servingUnits: ALL_UNITS },
-    { id: 'turkey', nameEn: 'Turkey Breast', nameAr: 'ديك رومي', calories: 135, protein: 30.0, carbs: 0, fat: 1.0, fiber: 0, servingUnits: ALL_UNITS },
+    { id: 'chicken-breast', nameEn: 'Chicken Breast', nameAr: 'صدر دجاج', calories: 165, protein: 31.0, carbs: 0, fat: 3.6, fiber: 0, servingUnits: withUnits(WEIGHT_UNITS, [{ unit: 'piece', grams: 174, labelEn: 'piece', labelAr: 'قطعة' }]) },
+    { id: 'grilled-chicken', nameEn: 'Grilled Chicken', nameAr: 'دجاج مشوي', calories: 165, protein: 31.0, carbs: 0, fat: 3.6, fiber: 0, servingUnits: withUnits(WEIGHT_UNITS, [{ unit: 'piece', grams: 174, labelEn: 'piece', labelAr: 'قطعة' }, { unit: 'whole', grams: 800, labelEn: 'whole chicken', labelAr: 'دجاجة كاملة' }]) },
+    { id: 'boiled-chicken', nameEn: 'Boiled Chicken', nameAr: 'دجاج مسلوق', calories: 150, protein: 29.0, carbs: 0, fat: 3.0, fiber: 0, servingUnits: withUnits(WEIGHT_UNITS, [{ unit: 'piece', grams: 174, labelEn: 'piece', labelAr: 'قطعة' }, { unit: 'whole', grams: 800, labelEn: 'whole chicken', labelAr: 'دجاجة كاملة' }]) },
+    { id: 'chicken-thigh', nameEn: 'Chicken Thigh', nameAr: 'فخذ دجاج', calories: 209, protein: 26.0, carbs: 0, fat: 10.9, fiber: 0, servingUnits: withUnits(WEIGHT_UNITS, [{ unit: 'piece', grams: 110, labelEn: 'piece', labelAr: 'قطعة' }]) },
+    { id: 'chicken', nameEn: 'Chicken', nameAr: 'دجاج', calories: 165, protein: 31.0, carbs: 0, fat: 3.6, fiber: 0, servingUnits: withUnits(WEIGHT_UNITS, [{ unit: 'whole', grams: 800, labelEn: 'whole chicken', labelAr: 'دجاجة كاملة' }]) },
+    { id: 'beef', nameEn: 'Beef (Ground, Lean)', nameAr: 'لحم بقر مفروم', calories: 217, protein: 26.1, carbs: 0, fat: 11.8, fiber: 0, servingUnits: WEIGHT_UNITS },
+    { id: 'grilled-steak', nameEn: 'Grilled Beef Steak', nameAr: 'ستيك لحم مشوي', calories: 271, protein: 25.0, carbs: 0, fat: 19.0, fiber: 0, servingUnits: withUnits(WEIGHT_UNITS, [{ unit: 'piece', grams: 200, labelEn: 'steak', labelAr: 'شريحة ستيك' }]) },
+    { id: 'lamb', nameEn: 'Lamb', nameAr: 'لحم غنم', calories: 282, protein: 25.5, carbs: 0, fat: 19.4, fiber: 0, servingUnits: WEIGHT_UNITS },
+    { id: 'salmon', nameEn: 'Salmon', nameAr: 'سلمون', calories: 182, protein: 25.4, carbs: 0, fat: 8.1, fiber: 0, servingUnits: withUnits(WEIGHT_UNITS, [{ unit: 'fillet', grams: 170, labelEn: 'fillet', labelAr: 'فيليه' }]) },
+    { id: 'tuna', nameEn: 'Tuna (canned)', nameAr: 'تونة معلبة', calories: 116, protein: 25.5, carbs: 0, fat: 0.8, fiber: 0, servingUnits: withUnits(WEIGHT_UNITS, [{ unit: 'can', grams: 165, labelEn: 'can', labelAr: 'علبة' }]) },
+    { id: 'eggs', nameEn: 'Egg', nameAr: 'بيض', calories: 155, protein: 12.6, carbs: 1.1, fat: 10.6, fiber: 0, servingUnits: withUnits(WEIGHT_UNITS, [{ unit: 'egg', grams: 50, labelEn: 'egg', labelAr: 'بيضة' }]) },
+    { id: 'shrimp', nameEn: 'Shrimp', nameAr: 'ربيان', calories: 99, protein: 24.0, carbs: 0.2, fat: 0.3, fiber: 0, servingUnits: WEIGHT_UNITS },
+    { id: 'turkey', nameEn: 'Turkey Breast', nameAr: 'ديك رومي', calories: 135, protein: 30.0, carbs: 0, fat: 1.0, fiber: 0, servingUnits: WEIGHT_UNITS },
 
     // ── Grains ──
-    { id: 'rice', nameEn: 'White Rice (cooked)', nameAr: 'أرز أبيض', calories: 130, protein: 2.7, carbs: 28.2, fat: 0.3, fiber: 0.4, servingUnits: withUnits([{ unit: 'cup', grams: 186, labelEn: 'cup', labelAr: 'كوب' }]) },
-    { id: 'brown-rice', nameEn: 'Brown Rice (cooked)', nameAr: 'أرز بني', calories: 112, protein: 2.6, carbs: 23.5, fat: 0.9, fiber: 1.8, servingUnits: withUnits([{ unit: 'cup', grams: 195, labelEn: 'cup', labelAr: 'كوب' }]) },
-    { id: 'oats', nameEn: 'Oats (dry)', nameAr: 'شوفان', calories: 379, protein: 13.2, carbs: 67.7, fat: 6.5, fiber: 10.1, servingUnits: withUnits([{ unit: 'cup', grams: 81, labelEn: 'cup', labelAr: 'كوب' }, { unit: 'tbsp', grams: 5, labelEn: 'tbsp', labelAr: 'ملعقة كبيرة' }]) },
-    { id: 'quinoa', nameEn: 'Quinoa (cooked)', nameAr: 'كينوا', calories: 120, protein: 4.4, carbs: 21.3, fat: 1.9, fiber: 2.8, servingUnits: withUnits([{ unit: 'cup', grams: 185, labelEn: 'cup', labelAr: 'كوب' }]) },
-    { id: 'pasta', nameEn: 'Pasta (cooked)', nameAr: 'معكرونة', calories: 158, protein: 5.8, carbs: 30.9, fat: 0.9, fiber: 1.8, servingUnits: withUnits([{ unit: 'cup', grams: 140, labelEn: 'cup', labelAr: 'كوب' }]) },
-    { id: 'bread', nameEn: 'Whole Wheat Bread', nameAr: 'خبز أسمر', calories: 252, protein: 12.5, carbs: 43.1, fat: 3.5, fiber: 6.0, servingUnits: withUnits([{ unit: 'slice', grams: 28, labelEn: 'slice', labelAr: 'شريحة' }]) },
-    { id: 'sweet-potato', nameEn: 'Sweet Potato', nameAr: 'بطاطا حلوة', calories: 90, protein: 2.0, carbs: 20.7, fat: 0.1, fiber: 3.3, servingUnits: ALL_UNITS },
-    { id: 'potato', nameEn: 'Potato', nameAr: 'بطاطا', calories: 87, protein: 1.7, carbs: 20.0, fat: 0.1, fiber: 1.8, servingUnits: ALL_UNITS },
+    { id: 'rice', nameEn: 'White Rice (cooked)', nameAr: 'أرز أبيض', calories: 130, protein: 2.7, carbs: 28.2, fat: 0.3, fiber: 0.4, servingUnits: withUnits(WEIGHT_UNITS, [{ unit: 'cup', grams: 186, labelEn: 'cup', labelAr: 'كوب' }, { unit: 'tbsp', grams: 15, labelEn: 'tbsp', labelAr: 'ملعقة طعام' }]) },
+    { id: 'brown-rice', nameEn: 'Brown Rice (cooked)', nameAr: 'أرز بني', calories: 112, protein: 2.6, carbs: 23.5, fat: 0.9, fiber: 1.8, servingUnits: withUnits(WEIGHT_UNITS, [{ unit: 'cup', grams: 195, labelEn: 'cup', labelAr: 'كوب' }, { unit: 'tbsp', grams: 15, labelEn: 'tbsp', labelAr: 'ملعقة طعام' }]) },
+    { id: 'oats', nameEn: 'Oats (dry)', nameAr: 'شوفان', calories: 379, protein: 13.2, carbs: 67.7, fat: 6.5, fiber: 10.1, servingUnits: withUnits(WEIGHT_UNITS, [{ unit: 'cup', grams: 81, labelEn: 'cup', labelAr: 'كوب' }, { unit: 'tbsp', grams: 5, labelEn: 'tbsp', labelAr: 'ملعقة كبيرة' }]) },
+    { id: 'quinoa', nameEn: 'Quinoa (cooked)', nameAr: 'كينوا', calories: 120, protein: 4.4, carbs: 21.3, fat: 1.9, fiber: 2.8, servingUnits: withUnits(WEIGHT_UNITS, [{ unit: 'cup', grams: 185, labelEn: 'cup', labelAr: 'كوب' }]) },
+    { id: 'pasta', nameEn: 'Pasta (cooked)', nameAr: 'معكرونة', calories: 158, protein: 5.8, carbs: 30.9, fat: 0.9, fiber: 1.8, servingUnits: withUnits(WEIGHT_UNITS, [{ unit: 'cup', grams: 140, labelEn: 'cup', labelAr: 'كوب' }]) },
+    { id: 'bread', nameEn: 'Whole Wheat Bread', nameAr: 'خبز أسمر', calories: 252, protein: 12.5, carbs: 43.1, fat: 3.5, fiber: 6.0, servingUnits: withUnits(WEIGHT_UNITS, [{ unit: 'slice', grams: 28, labelEn: 'slice', labelAr: 'شريحة' }]) },
+    { id: 'sweet-potato', nameEn: 'Sweet Potato', nameAr: 'بطاطا حلوة', calories: 90, protein: 2.0, carbs: 20.7, fat: 0.1, fiber: 3.3, servingUnits: withUnits(WEIGHT_UNITS, [{ unit: 'piece', grams: 130, labelEn: 'piece', labelAr: 'حبة' }]) },
+    { id: 'potato', nameEn: 'Potato', nameAr: 'بطاطا', calories: 87, protein: 1.7, carbs: 20.0, fat: 0.1, fiber: 1.8, servingUnits: withUnits(WEIGHT_UNITS, [{ unit: 'piece', grams: 150, labelEn: 'piece', labelAr: 'حبة' }]) },
 
     // ── Dairy ──
-    { id: 'greek-yogurt', nameEn: 'Greek Yogurt', nameAr: 'زبادي يوناني', calories: 59, protein: 10.0, carbs: 3.6, fat: 0.7, fiber: 0, servingUnits: withUnits([{ unit: 'cup', grams: 245, labelEn: 'cup', labelAr: 'كوب' }]) },
-    { id: 'yogurt', nameEn: 'Yogurt', nameAr: 'زبادي', calories: 63, protein: 5.3, carbs: 7.0, fat: 1.6, fiber: 0, servingUnits: withUnits([{ unit: 'cup', grams: 245, labelEn: 'cup', labelAr: 'كوب' }]) },
-    { id: 'milk', nameEn: 'Milk (low fat)', nameAr: 'حليب قليل الدسم', calories: 42, protein: 3.4, carbs: 5.0, fat: 1.0, fiber: 0, servingUnits: withUnits([{ unit: 'cup', grams: 244, labelEn: 'cup', labelAr: 'كوب' }]) },
-    { id: 'cheese', nameEn: 'Cheese', nameAr: 'جبن', calories: 402, protein: 25.0, carbs: 1.3, fat: 33.1, fiber: 0, servingUnits: withUnits([{ unit: 'slice', grams: 28, labelEn: 'slice', labelAr: 'شريحة' }]) },
-    { id: 'cottage-cheese', nameEn: 'Cottage Cheese', nameAr: 'جبن قريش', calories: 81, protein: 11.8, carbs: 3.1, fat: 2.3, fiber: 0, servingUnits: withUnits([{ unit: 'cup', grams: 226, labelEn: 'cup', labelAr: 'كوب' }]) },
+    { id: 'greek-yogurt', nameEn: 'Greek Yogurt', nameAr: 'زبادي يوناني', calories: 59, protein: 10.0, carbs: 3.6, fat: 0.7, fiber: 0, servingUnits: withUnits(VOLUME_UNITS, []) },
+    { id: 'yogurt', nameEn: 'Yogurt', nameAr: 'زبادي', calories: 63, protein: 5.3, carbs: 7.0, fat: 1.6, fiber: 0, servingUnits: withUnits(VOLUME_UNITS, []) },
+    { id: 'milk', nameEn: 'Milk (low fat)', nameAr: 'حليب قليل الدسم', calories: 42, protein: 3.4, carbs: 5.0, fat: 1.0, fiber: 0, servingUnits: withUnits(VOLUME_UNITS, []) },
+    { id: 'cheese', nameEn: 'Cheese', nameAr: 'جبن', calories: 402, protein: 25.0, carbs: 1.3, fat: 33.1, fiber: 0, servingUnits: withUnits(WEIGHT_UNITS, [{ unit: 'slice', grams: 28, labelEn: 'slice', labelAr: 'شريحة' }]) },
+    { id: 'cottage-cheese', nameEn: 'Cottage Cheese', nameAr: 'جبن قريش', calories: 81, protein: 11.8, carbs: 3.1, fat: 2.3, fiber: 0, servingUnits: withUnits(VOLUME_UNITS, []) },
 
     // ── Fruits ──
-    { id: 'banana', nameEn: 'Banana', nameAr: 'موز', calories: 89, protein: 1.1, carbs: 22.8, fat: 0.3, fiber: 2.6, servingUnits: withUnits([{ unit: 'piece', grams: 118, labelEn: 'piece', labelAr: 'حبة' }]) },
-    { id: 'apple', nameEn: 'Apple', nameAr: 'تفاح', calories: 52, protein: 0.3, carbs: 13.8, fat: 0.2, fiber: 2.4, servingUnits: withUnits([{ unit: 'piece', grams: 182, labelEn: 'piece', labelAr: 'حبة' }]) },
-    { id: 'dates', nameEn: 'Dates', nameAr: 'تمر', calories: 277, protein: 1.8, carbs: 75.0, fat: 0.2, fiber: 6.7, servingUnits: withUnits([{ unit: 'piece', grams: 24, labelEn: 'piece', labelAr: 'حبة' }]) },
-    { id: 'orange', nameEn: 'Orange', nameAr: 'برتقال', calories: 47, protein: 0.9, carbs: 11.8, fat: 0.1, fiber: 2.4, servingUnits: withUnits([{ unit: 'piece', grams: 131, labelEn: 'piece', labelAr: 'حبة' }]) },
-    { id: 'strawberry', nameEn: 'Strawberry', nameAr: 'فراولة', calories: 32, protein: 0.7, carbs: 7.7, fat: 0.3, fiber: 2.0, servingUnits: withUnits([{ unit: 'cup', grams: 152, labelEn: 'cup', labelAr: 'كوب' }]) },
-    { id: 'mango', nameEn: 'Mango', nameAr: 'مانجو', calories: 60, protein: 0.8, carbs: 15.0, fat: 0.4, fiber: 1.6, servingUnits: withUnits([{ unit: 'cup', grams: 165, labelEn: 'cup', labelAr: 'كوب' }]) },
-    { id: 'grapes', nameEn: 'Grapes', nameAr: 'عنب', calories: 69, protein: 0.7, carbs: 18.1, fat: 0.2, fiber: 0.9, servingUnits: withUnits([{ unit: 'cup', grams: 151, labelEn: 'cup', labelAr: 'كوب' }]) },
-    { id: 'avocado', nameEn: 'Avocado', nameAr: 'أفوكادو', calories: 160, protein: 2.0, carbs: 8.5, fat: 14.7, fiber: 6.7, servingUnits: withUnits([{ unit: 'half', grams: 68, labelEn: 'half', labelAr: 'نصف' }]) },
-    { id: 'watermelon', nameEn: 'Watermelon', nameAr: 'بطيخ', calories: 30, protein: 0.6, carbs: 7.6, fat: 0.2, fiber: 0.4, servingUnits: withUnits([{ unit: 'cup', grams: 152, labelEn: 'cup', labelAr: 'كوب' }]) },
+    { id: 'banana', nameEn: 'Banana', nameAr: 'موز', calories: 89, protein: 1.1, carbs: 22.8, fat: 0.3, fiber: 2.6, servingUnits: withUnits(WEIGHT_UNITS, [{ unit: 'piece', grams: 118, labelEn: 'piece', labelAr: 'حبة' }]) },
+    { id: 'apple', nameEn: 'Apple', nameAr: 'تفاح', calories: 52, protein: 0.3, carbs: 13.8, fat: 0.2, fiber: 2.4, servingUnits: withUnits(WEIGHT_UNITS, [{ unit: 'piece', grams: 182, labelEn: 'piece', labelAr: 'حبة' }]) },
+    { id: 'dates', nameEn: 'Dates', nameAr: 'تمر', calories: 277, protein: 1.8, carbs: 75.0, fat: 0.2, fiber: 6.7, servingUnits: withUnits(WEIGHT_UNITS, [{ unit: 'piece', grams: 24, labelEn: 'piece', labelAr: 'حبة' }]) },
+    { id: 'orange', nameEn: 'Orange', nameAr: 'برتقال', calories: 47, protein: 0.9, carbs: 11.8, fat: 0.1, fiber: 2.4, servingUnits: withUnits(WEIGHT_UNITS, [{ unit: 'piece', grams: 131, labelEn: 'piece', labelAr: 'حبة' }]) },
+    { id: 'strawberry', nameEn: 'Strawberry', nameAr: 'فراولة', calories: 32, protein: 0.7, carbs: 7.7, fat: 0.3, fiber: 2.0, servingUnits: withUnits(WEIGHT_UNITS, [{ unit: 'cup', grams: 152, labelEn: 'cup', labelAr: 'كوب' }]) },
+    { id: 'mango', nameEn: 'Mango', nameAr: 'مانجو', calories: 60, protein: 0.8, carbs: 15.0, fat: 0.4, fiber: 1.6, servingUnits: withUnits(WEIGHT_UNITS, [{ unit: 'cup', grams: 165, labelEn: 'cup', labelAr: 'كوب' }]) },
+    { id: 'grapes', nameEn: 'Grapes', nameAr: 'عنب', calories: 69, protein: 0.7, carbs: 18.1, fat: 0.2, fiber: 0.9, servingUnits: withUnits(WEIGHT_UNITS, [{ unit: 'cup', grams: 151, labelEn: 'cup', labelAr: 'كوب' }]) },
+    { id: 'avocado', nameEn: 'Avocado', nameAr: 'أفوكادو', calories: 160, protein: 2.0, carbs: 8.5, fat: 14.7, fiber: 6.7, servingUnits: withUnits(WEIGHT_UNITS, [{ unit: 'half', grams: 68, labelEn: 'half', labelAr: 'نصف' }]) },
+    { id: 'watermelon', nameEn: 'Watermelon', nameAr: 'بطيخ', calories: 30, protein: 0.6, carbs: 7.6, fat: 0.2, fiber: 0.4, servingUnits: withUnits(WEIGHT_UNITS, [{ unit: 'cup', grams: 152, labelEn: 'cup', labelAr: 'كوب' }]) },
 
     // ── Vegetables ──
-    { id: 'broccoli', nameEn: 'Broccoli', nameAr: 'بروكلي', calories: 35, protein: 2.4, carbs: 7.2, fat: 0.4, fiber: 3.3, servingUnits: withUnits([{ unit: 'cup', grams: 156, labelEn: 'cup', labelAr: 'كوب' }]) },
-    { id: 'spinach', nameEn: 'Spinach', nameAr: 'سبانخ', calories: 23, protein: 2.9, carbs: 3.6, fat: 0.4, fiber: 2.2, servingUnits: withUnits([{ unit: 'cup', grams: 30, labelEn: 'cup', labelAr: 'كوب' }]) },
-    { id: 'tomato', nameEn: 'Tomato', nameAr: 'طماطم', calories: 18, protein: 0.9, carbs: 3.9, fat: 0.2, fiber: 1.2, servingUnits: withUnits([{ unit: 'piece', grams: 123, labelEn: 'piece', labelAr: 'حبة' }]) },
-    { id: 'cucumber', nameEn: 'Cucumber', nameAr: 'خيار', calories: 15, protein: 0.7, carbs: 3.6, fat: 0.1, fiber: 0.5, servingUnits: withUnits([{ unit: 'piece', grams: 201, labelEn: 'piece', labelAr: 'حبة' }]) },
-    { id: 'carrot', nameEn: 'Carrot', nameAr: 'جزر', calories: 41, protein: 0.9, carbs: 9.6, fat: 0.2, fiber: 2.8, servingUnits: withUnits([{ unit: 'piece', grams: 61, labelEn: 'piece', labelAr: 'حبة' }]) },
-    { id: 'lettuce', nameEn: 'Lettuce', nameAr: 'خس', calories: 15, protein: 1.4, carbs: 2.9, fat: 0.2, fiber: 1.3, servingUnits: withUnits([{ unit: 'cup', grams: 36, labelEn: 'cup', labelAr: 'كوب' }]) },
+    { id: 'broccoli', nameEn: 'Broccoli', nameAr: 'بروكلي', calories: 35, protein: 2.4, carbs: 7.2, fat: 0.4, fiber: 3.3, servingUnits: withUnits(WEIGHT_UNITS, [{ unit: 'cup', grams: 156, labelEn: 'cup', labelAr: 'كوب' }]) },
+    { id: 'spinach', nameEn: 'Spinach', nameAr: 'سبانخ', calories: 23, protein: 2.9, carbs: 3.6, fat: 0.4, fiber: 2.2, servingUnits: withUnits(WEIGHT_UNITS, [{ unit: 'cup', grams: 30, labelEn: 'cup', labelAr: 'كوب' }]) },
+    { id: 'tomato', nameEn: 'Tomato', nameAr: 'طماطم', calories: 18, protein: 0.9, carbs: 3.9, fat: 0.2, fiber: 1.2, servingUnits: withUnits(WEIGHT_UNITS, [{ unit: 'piece', grams: 123, labelEn: 'piece', labelAr: 'حبة' }]) },
+    { id: 'cucumber', nameEn: 'Cucumber', nameAr: 'خيار', calories: 15, protein: 0.7, carbs: 3.6, fat: 0.1, fiber: 0.5, servingUnits: withUnits(WEIGHT_UNITS, [{ unit: 'piece', grams: 201, labelEn: 'piece', labelAr: 'حبة' }]) },
+    { id: 'carrot', nameEn: 'Carrot', nameAr: 'جزر', calories: 41, protein: 0.9, carbs: 9.6, fat: 0.2, fiber: 2.8, servingUnits: withUnits(WEIGHT_UNITS, [{ unit: 'piece', grams: 61, labelEn: 'piece', labelAr: 'حبة' }]) },
+    { id: 'lettuce', nameEn: 'Lettuce', nameAr: 'خس', calories: 15, protein: 1.4, carbs: 2.9, fat: 0.2, fiber: 1.3, servingUnits: withUnits(WEIGHT_UNITS, [{ unit: 'cup', grams: 36, labelEn: 'cup', labelAr: 'كوب' }]) },
 
     // ── Legumes ──
-    { id: 'lentils', nameEn: 'Lentils (cooked)', nameAr: 'عدس', calories: 116, protein: 9.0, carbs: 20.1, fat: 0.4, fiber: 7.9, servingUnits: withUnits([{ unit: 'cup', grams: 198, labelEn: 'cup', labelAr: 'كوب' }]) },
-    { id: 'chickpeas', nameEn: 'Chickpeas', nameAr: 'حمص', calories: 164, protein: 8.9, carbs: 27.4, fat: 2.6, fiber: 7.6, servingUnits: withUnits([{ unit: 'cup', grams: 164, labelEn: 'cup', labelAr: 'كوب' }]) },
-    { id: 'beans', nameEn: 'Beans', nameAr: 'فاصوليا', calories: 127, protein: 8.7, carbs: 22.8, fat: 0.5, fiber: 7.4, servingUnits: withUnits([{ unit: 'cup', grams: 177, labelEn: 'cup', labelAr: 'كوب' }]) },
+    { id: 'lentils', nameEn: 'Lentils (cooked)', nameAr: 'عدس', calories: 116, protein: 9.0, carbs: 20.1, fat: 0.4, fiber: 7.9, servingUnits: withUnits(VOLUME_UNITS, []) },
+    { id: 'chickpeas', nameEn: 'Chickpeas', nameAr: 'حمص', calories: 164, protein: 8.9, carbs: 27.4, fat: 2.6, fiber: 7.6, servingUnits: withUnits(VOLUME_UNITS, []) },
+    { id: 'beans', nameEn: 'Beans', nameAr: 'فاصوليا', calories: 127, protein: 8.7, carbs: 22.8, fat: 0.5, fiber: 7.4, servingUnits: withUnits(VOLUME_UNITS, []) },
 
     // ── Nuts & Seeds ──
-    { id: 'almonds', nameEn: 'Almonds', nameAr: 'لوز', calories: 579, protein: 21.2, carbs: 21.7, fat: 49.9, fiber: 12.5, servingUnits: withUnits([{ unit: 'handful', grams: 28, labelEn: 'handful (28g)', labelAr: 'حفنة (28غ)' }]) },
-    { id: 'walnuts', nameEn: 'Walnuts', nameAr: 'جوز', calories: 654, protein: 15.2, carbs: 13.7, fat: 65.2, fiber: 6.7, servingUnits: withUnits([{ unit: 'handful', grams: 28, labelEn: 'handful (28g)', labelAr: 'حفنة (28غ)' }]) },
-    { id: 'peanut-butter', nameEn: 'Peanut Butter', nameAr: 'زبدة فول سوداني', calories: 588, protein: 25.1, carbs: 19.6, fat: 50.4, fiber: 6.0, servingUnits: withUnits([{ unit: 'tbsp', grams: 16, labelEn: 'tbsp', labelAr: 'ملعقة كبيرة' }]) },
-    { id: 'chia-seeds', nameEn: 'Chia Seeds', nameAr: 'بذور شيا', calories: 486, protein: 16.5, carbs: 42.1, fat: 30.7, fiber: 34.4, servingUnits: withUnits([{ unit: 'tbsp', grams: 12, labelEn: 'tbsp', labelAr: 'ملعقة كبيرة' }]) },
+    { id: 'almonds', nameEn: 'Almonds', nameAr: 'لوز', calories: 579, protein: 21.2, carbs: 21.7, fat: 49.9, fiber: 12.5, servingUnits: withUnits(WEIGHT_UNITS, [{ unit: 'handful', grams: 28, labelEn: 'handful (28g)', labelAr: 'حفنة (28غ)' }, { unit: 'cup', grams: 143, labelEn: 'cup', labelAr: 'كوب' }]) },
+    { id: 'walnuts', nameEn: 'Walnuts', nameAr: 'جوز', calories: 654, protein: 15.2, carbs: 13.7, fat: 65.2, fiber: 6.7, servingUnits: withUnits(WEIGHT_UNITS, [{ unit: 'handful', grams: 28, labelEn: 'handful (28g)', labelAr: 'حفنة (28غ)' }, { unit: 'cup', grams: 117, labelEn: 'cup', labelAr: 'كوب' }]) },
+    { id: 'peanut-butter', nameEn: 'Peanut Butter', nameAr: 'زبدة فول سوداني', calories: 588, protein: 25.1, carbs: 19.6, fat: 50.4, fiber: 6.0, servingUnits: withUnits(VOLUME_UNITS, []) },
+    { id: 'chia-seeds', nameEn: 'Chia Seeds', nameAr: 'بذور شيا', calories: 486, protein: 16.5, carbs: 42.1, fat: 30.7, fiber: 34.4, servingUnits: withUnits(VOLUME_UNITS, []) },
 
     // ── Oils & Fats ──
-    { id: 'olive-oil', nameEn: 'Olive Oil', nameAr: 'زيت زيتون', calories: 884, protein: 0, carbs: 0, fat: 100, fiber: 0, servingUnits: withUnits([{ unit: 'tbsp', grams: 14, labelEn: 'tbsp', labelAr: 'ملعقة كبيرة' }, { unit: 'tsp', grams: 5, labelEn: 'tsp', labelAr: 'ملعقة صغيرة' }]) },
-    { id: 'butter', nameEn: 'Butter', nameAr: 'زبدة', calories: 717, protein: 0.9, carbs: 0.1, fat: 81.1, fiber: 0, servingUnits: withUnits([{ unit: 'tbsp', grams: 14, labelEn: 'tbsp', labelAr: 'ملعقة كبيرة' }]) },
-    { id: 'coconut-oil', nameEn: 'Coconut Oil', nameAr: 'زيت جوز الهند', calories: 862, protein: 0, carbs: 0, fat: 100, fiber: 0, servingUnits: withUnits([{ unit: 'tbsp', grams: 14, labelEn: 'tbsp', labelAr: 'ملعقة كبيرة' }]) },
+    { id: 'olive-oil', nameEn: 'Olive Oil', nameAr: 'زيت زيتون', calories: 884, protein: 0, carbs: 0, fat: 100, fiber: 0, servingUnits: withUnits(VOLUME_UNITS, []) },
+    { id: 'butter', nameEn: 'Butter', nameAr: 'زبدة', calories: 717, protein: 0.9, carbs: 0.1, fat: 81.1, fiber: 0, servingUnits: withUnits(VOLUME_UNITS, []) },
+    { id: 'coconut-oil', nameEn: 'Coconut Oil', nameAr: 'زيت جوز الهند', calories: 862, protein: 0, carbs: 0, fat: 100, fiber: 0, servingUnits: withUnits(VOLUME_UNITS, []) },
 
     // ── Sweeteners ──
-    { id: 'honey', nameEn: 'Honey', nameAr: 'عسل', calories: 304, protein: 0.3, carbs: 82.4, fat: 0, fiber: 0.2, servingUnits: withUnits([{ unit: 'tbsp', grams: 21, labelEn: 'tbsp', labelAr: 'ملعقة كبيرة' }]) },
+    { id: 'honey', nameEn: 'Honey', nameAr: 'عسل', calories: 304, protein: 0.3, carbs: 82.4, fat: 0, fiber: 0.2, servingUnits: withUnits(VOLUME_UNITS, []) },
 ];
 
 // ── Component ─────────────────────────────────────────────────────────────────
@@ -183,9 +187,12 @@ export default function ManualDietBuilderScreen({ navigation }: any) {
             return;
         }
 
-        // Step 1: Instant local results
+        // Step 1: Instant local results - only update state if we are NOT forcing API
+        // If we're forcing API, we want to keep current results visible while loading
         const localResults = searchLocal(q);
-        setSearchResults(localResults);
+        if (!forceApiResult) {
+            setSearchResults(localResults);
+        }
         setShowResults(true);
 
         // Step 2: Also try API for more results (in background or forced)
@@ -198,9 +205,9 @@ export default function ManualDietBuilderScreen({ navigation }: any) {
                 // Give apiResults proper units if missing
                 apiResults.forEach(r => {
                     if (!r.servingUnits || r.servingUnits.length === 0) {
-                        r.servingUnits = ALL_UNITS;
+                        r.servingUnits = WEIGHT_UNITS; // Fallback for external API items where we don't know the exact type
                     } else {
-                        r.servingUnits = withUnits(r.servingUnits);
+                        r.servingUnits = withUnits(WEIGHT_UNITS, r.servingUnits);
                     }
                 });
 
@@ -449,17 +456,19 @@ export default function ManualDietBuilderScreen({ navigation }: any) {
                     </View>
                 )}
 
-                {showResults && searchResults.length === 0 && !isSearching && searchText.length >= 2 && (
+                {showResults && searchResults.length === 0 && searchText.length >= 2 && (
                     <View style={[styles.resultsDropdown, { backgroundColor: isDark ? '#1e293b' : '#ffffff', borderColor: colors.border, padding: 16 }]}>
                         <Text style={{ textAlign: 'center', color: colors.mutedText, fontSize: 14, marginBottom: 12 }}>
-                            {isArabic ? 'لم يتم العثور على نتائج في القاعدة المحلية' : 'No local results found'}
+                            {isArabic ? 'لم يتم العثور على نتائج محلية' : 'No local results found'}
                         </Text>
                         <TouchableOpacity
-                            style={[styles.saveButton, { paddingVertical: 10 }]}
+                            style={[styles.saveButton, { paddingVertical: 10, backgroundColor: isSearching ? colors.mutedText : '#3b82f6' }]}
                             onPress={() => performSearch(searchText, true)}
                             disabled={isSearching}
                         >
-                            {isSearching ? <ActivityIndicator size="small" color="#fff" /> : (
+                            {isSearching ? (
+                                <Text style={styles.saveButtonText}>{isArabic ? 'جاري البحث...' : 'Searching...'}</Text>
+                            ) : (
                                 <Text style={styles.saveButtonText}>{isArabic ? 'ابحث في القاعدة العالمية (USDA)' : 'Search Global Database (USDA)'}</Text>
                             )}
                         </TouchableOpacity>
