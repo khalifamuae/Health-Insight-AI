@@ -150,6 +150,7 @@ export default function ManualDietBuilderScreen({ navigation }: any) {
     const [showScanner, setShowScanner] = useState(false);
     const [permission, requestPermission] = useCameraPermissions();
     const [isScanning, setIsScanning] = useState(false);
+    const isScanningRef = useRef(false);
 
     const searchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const nextKeyRef = useRef(0);
@@ -252,24 +253,28 @@ export default function ManualDietBuilderScreen({ navigation }: any) {
     // ── Barcode Scanner Handler ──────────────────────────────────────────
 
     const handleBarcodeScanned = async ({ type, data }: any) => {
-        if (isScanning) return;
+        if (isScanningRef.current) return;
+        isScanningRef.current = true;
         setIsScanning(true);
         setShowScanner(false); // Close camera immediately for better UX
 
         try {
             const res = await queries.lookupBarcode(data) as any;
             if (res && res.food) {
-                // Instantly select this food so user can input quantity
                 const newItem: FoodResult = res.food;
-
-                // Emulate picking it from the list
                 const newKey = `item_${newItem.id}_${Date.now()}_${nextKeyRef.current++}`;
-                setSelectedFoods(prev => [...prev, {
-                    key: newKey,
-                    food: newItem,
-                    quantity: newItem.servingUnits[0].grams || 100, // Def grams
-                    selectedUnit: newItem.servingUnits[0]
-                }]);
+
+                setSelectedFoods(prev => {
+                    // Extra safety net: prevent adding the exact same barcode twice in 2 seconds
+                    if (prev.some(f => f.food.id === newItem.id && Date.now() - parseInt(f.key.split('_')[2] || '0') < 2000)) return prev;
+                    return [...prev, {
+                        key: newKey,
+                        food: newItem,
+                        quantity: newItem.servingUnits[0].grams || 100,
+                        selectedUnit: newItem.servingUnits[0]
+                    }];
+                });
+
                 Alert.alert(
                     isArabic ? 'تمت القراءة ✅' : 'Scanned ✅',
                     isArabic ? `تم إيجاد المنتج: ${newItem.nameAr}` : `Product found: ${newItem.nameEn}`
@@ -277,9 +282,10 @@ export default function ManualDietBuilderScreen({ navigation }: any) {
             }
         } catch (error) {
             console.error('Barcode Error:', error);
-            Alert.alert(isArabic ? 'عذراً' : 'Sorry', isArabic ? 'لم نتمكن من التعرف على هذا المنتج' : 'We could not recognize this product');
+            Alert.alert(isArabic ? 'عذراً' : 'Sorry', isArabic ? 'لم نتمكن من التعرف على المنتج أو حدث خطأ في الاتصال' : 'We could not recognize this product or connection failed');
         } finally {
             setIsScanning(false);
+            setTimeout(() => { isScanningRef.current = false; }, 2000);
         }
     };
 
