@@ -206,6 +206,58 @@ async function searchUSDAApi(query: string): Promise<FoodItem[]> {
     }
 }
 
+async function searchOpenFoodFactsAPI(barcode: string): Promise<FoodItem | null> {
+    try {
+        const response = await fetch(`https://world.openfoodfacts.org/api/v2/product/${barcode}.json`, {
+            headers: { "User-Agent": "HealthInsightAI - Expo App - UAE" },
+            signal: AbortSignal.timeout(5000),
+        });
+        if (!response.ok) return null;
+
+        const data = await response.json();
+        if (data.status !== 1 || !data.product) return null;
+
+        const p = data.product;
+        const nameEn = p.product_name_en || p.product_name || `Product ${barcode}`;
+        const nameAr = p.product_name_ar || nameEn;
+
+        const nut = p.nutriments || {};
+        const calories = Math.round(Number(nut['energy-kcal_100g']) || 0);
+        const protein = Math.round((Number(nut.proteins_100g) || 0) * 10) / 10;
+        const carbs = Math.round((Number(nut.carbohydrates_100g) || 0) * 10) / 10;
+        const fat = Math.round((Number(nut.fat_100g) || 0) * 10) / 10;
+        const fiber = Math.round((Number(nut.fiber_100g) || 0) * 10) / 10;
+
+        if (calories === 0 && protein === 0 && carbs === 0 && fat === 0) {
+            // No nutritional data found for this barcode
+            return null;
+        }
+
+        const item: FoodItem = {
+            id: `barcode-${barcode}`,
+            nameEn,
+            nameAr,
+            calories, protein, carbs, fat, fiber,
+            servingUnits: [
+                { unit: "g", grams: 1, labelEn: "g", labelAr: "غرام" },
+                { unit: "oz", grams: 28.35, labelEn: "oz", labelAr: "أونصة" },
+                { unit: "100g", grams: 100, labelEn: "100g", labelAr: "١٠٠ غرام" },
+            ],
+        };
+
+        if (p.serving_quantity) {
+            const sq = Number(p.serving_quantity);
+            if (sq > 0) {
+                item.servingUnits.push({ unit: "serving", grams: sq, labelEn: "serving", labelAr: "حصة" });
+            }
+        }
+        return item;
+    } catch (err) {
+        console.warn("[FoodSearch] OpenFoodFacts API error:", err);
+        return null;
+    }
+}
+
 export function registerFoodSearchRoutes(app: Express) {
     // Search for foods
     app.get("/api/food/search", isAuthenticated, async (req: any, res: Response) => {
@@ -234,6 +286,26 @@ export function registerFoodSearchRoutes(app: Express) {
         } catch (error) {
             console.error("Food search error:", error);
             res.status(500).json({ error: "Food search failed" });
+        }
+    });
+
+    // Lookup food by Barcode
+    app.get("/api/food/barcode/:code", isAuthenticated, async (req: any, res: Response) => {
+        try {
+            const code = req.params.code;
+            if (!code) {
+                return res.status(400).json({ error: "Barcode is required" });
+            }
+
+            const item = await searchOpenFoodFactsAPI(code);
+            if (!item) {
+                return res.status(404).json({ error: "Product not found or has no nutritional data" });
+            }
+
+            res.json({ food: item });
+        } catch (error) {
+            console.error("Barcode lookup error:", error);
+            res.status(500).json({ error: "Barcode lookup failed" });
         }
     });
 }

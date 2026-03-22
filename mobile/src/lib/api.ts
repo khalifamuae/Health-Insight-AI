@@ -238,4 +238,5 @@ export const queries = {
   uploadedPdfs: () => api.get('/api/uploaded-pdfs'),
   savedDietPlans: () => api.get('/api/saved-diet-plans'),
   subscriptionStatus: () => api.get('/api/subscription/status'),
+  lookupBarcode: (code: string) => api.get(`/api/food/barcode/${code}`),
 };

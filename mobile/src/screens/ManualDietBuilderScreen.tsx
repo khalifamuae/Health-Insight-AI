@@ -6,8 +6,9 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useAppTheme } from '../context/ThemeContext';
-import { api } from '../lib/api';
+import { api, queries } from '../lib/api';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { CameraView, useCameraPermissions } from 'expo-camera';
 
 const isArabic = I18nManager.isRTL;
 
@@ -144,6 +145,12 @@ export default function ManualDietBuilderScreen({ navigation }: any) {
     const [isSearching, setIsSearching] = useState(false);
     const [showResults, setShowResults] = useState(false);
     const [selectedFoods, setSelectedFoods] = useState<SelectedFood[]>([]);
+
+    // Barcode Scanner State
+    const [showScanner, setShowScanner] = useState(false);
+    const [permission, requestPermission] = useCameraPermissions();
+    const [isScanning, setIsScanning] = useState(false);
+
     const searchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const nextKeyRef = useRef(0);
 
@@ -241,6 +248,40 @@ export default function ManualDietBuilderScreen({ navigation }: any) {
         searchTimeoutRef.current = setTimeout(() => performSearch(searchText), 400);
         return () => { if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current); };
     }, [searchText, searchLocal, performSearch]);
+
+    // ── Barcode Scanner Handler ──────────────────────────────────────────
+
+    const handleBarcodeScanned = async ({ type, data }: any) => {
+        if (isScanning) return;
+        setIsScanning(true);
+        setShowScanner(false); // Close camera immediately for better UX
+
+        try {
+            const res = await queries.lookupBarcode(data) as any;
+            if (res && res.food) {
+                // Instantly select this food so user can input quantity
+                const newItem: FoodResult = res.food;
+
+                // Emulate picking it from the list
+                const newKey = `item_${newItem.id}_${Date.now()}_${nextKeyRef.current++}`;
+                setSelectedFoods(prev => [...prev, {
+                    key: newKey,
+                    food: newItem,
+                    quantity: newItem.servingUnits[0].grams || 100, // Def grams
+                    selectedUnit: newItem.servingUnits[0]
+                }]);
+                Alert.alert(
+                    isArabic ? 'تمت القراءة ✅' : 'Scanned ✅',
+                    isArabic ? `تم إيجاد المنتج: ${newItem.nameAr}` : `Product found: ${newItem.nameEn}`
+                );
+            }
+        } catch (error) {
+            console.error('Barcode Error:', error);
+            Alert.alert(isArabic ? 'عذراً' : 'Sorry', isArabic ? 'لم نتمكن من التعرف على هذا المنتج' : 'We could not recognize this product');
+        } finally {
+            setIsScanning(false);
+        }
+    };
 
     // ── Add food ────────────────────────────────────────────────────────────────
 
@@ -410,10 +451,19 @@ export default function ManualDietBuilderScreen({ navigation }: any) {
                     />
                     {isSearching && <ActivityIndicator size="small" color={colors.primary} />}
                     {searchText.length > 0 && (
-                        <TouchableOpacity onPress={() => { setSearchText(''); setShowResults(false); }}>
+                        <TouchableOpacity onPress={() => { setSearchText(''); setShowResults(false); }} style={{ marginHorizontal: 4 }}>
                             <Ionicons name="close-circle" size={20} color={colors.mutedText} />
                         </TouchableOpacity>
                     )}
+                    <TouchableOpacity
+                        onPress={() => {
+                            if (!permission?.granted) requestPermission();
+                            setShowScanner(true);
+                        }}
+                        style={{ padding: 6, backgroundColor: isDark ? 'rgba(59,130,246,0.15)' : 'rgba(59,130,246,0.1)', borderRadius: 8, marginLeft: 4 }}
+                    >
+                        <Ionicons name="barcode-outline" size={22} color={colors.primary} />
+                    </TouchableOpacity>
                 </View>
 
                 {/* ── Search Results Dropdown ── */}
@@ -633,6 +683,37 @@ export default function ManualDietBuilderScreen({ navigation }: any) {
                         ))}
                     </View>
                 </TouchableOpacity>
+            </Modal>
+
+            {/* ── Barcode Scanner Modal ── */}
+            <Modal visible={showScanner} animationType="slide" onRequestClose={() => setShowScanner(false)}>
+                <View style={{ flex: 1, backgroundColor: '#000' }}>
+                    {showScanner && (
+                        <CameraView
+                            style={{ flex: 1 }}
+                            facing="back"
+                            barcodeScannerSettings={{ barcodeTypes: ["qr", "ean13", "ean8", "upc_a", "upc_e"] }}
+                            onBarcodeScanned={handleBarcodeScanned}
+                        >
+                            <View style={{ flex: 1, justifyContent: 'space-between', padding: 40, paddingTop: 60 }}>
+                                <TouchableOpacity
+                                    onPress={() => setShowScanner(false)}
+                                    style={{ alignSelf: 'flex-start', padding: 12, backgroundColor: 'rgba(0,0,0,0.6)', borderRadius: 24 }}
+                                >
+                                    <Ionicons name="close" size={28} color="#fff" />
+                                </TouchableOpacity>
+
+                                <View style={{ alignItems: 'center' }}>
+                                    <Ionicons name="scan-outline" size={250} color="rgba(255,255,255,0.4)" />
+                                </View>
+
+                                <Text style={{ color: '#fff', textAlign: 'center', fontSize: 16, fontWeight: '600', backgroundColor: 'rgba(0,0,0,0.6)', padding: 16, borderRadius: 12, overflow: 'hidden' }}>
+                                    {isArabic ? 'وجّه الكاميرا نحو الباركود الخاص بالمنتج' : 'Point camera at product barcode'}
+                                </Text>
+                            </View>
+                        </CameraView>
+                    )}
+                </View>
             </Modal>
 
         </View>
