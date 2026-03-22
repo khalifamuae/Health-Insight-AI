@@ -206,6 +206,111 @@ async function searchUSDAApi(query: string): Promise<FoodItem[]> {
     }
 }
 
+// ── FatSecret Integration ──────────────────────────────────────────
+
+const FATSECRET_CLIENT_ID = process.env.FATSECRET_CLIENT_ID || "b05a23d48f30473e913d510cbb849edf";
+const FATSECRET_CLIENT_SECRET = process.env.FATSECRET_CLIENT_SECRET || "5309bbf3e588493695e37ab4f93ffc58";
+
+let fatSecretToken: string | null = null;
+let fatSecretTokenExpires: number = 0;
+
+async function getFatSecretToken(): Promise<string> {
+    if (fatSecretToken && Date.now() < fatSecretTokenExpires) {
+        return fatSecretToken;
+    }
+    const auth = Buffer.from(`${FATSECRET_CLIENT_ID}:${FATSECRET_CLIENT_SECRET}`).toString('base64');
+    const res = await fetch("https://oauth.api.fatsecret.com/connect/token", {
+        method: "POST",
+        headers: {
+            "Authorization": `Basic ${auth}`,
+            "Content-Type": "application/x-www-form-urlencoded"
+        },
+        body: "grant_type=client_credentials&scope=basic"
+    });
+    if (!res.ok) throw new Error("Failed to get FatSecret token");
+    const data = await res.json();
+    fatSecretToken = data.access_token;
+    fatSecretTokenExpires = Date.now() + (data.expires_in - 300) * 1000;
+    return fatSecretToken;
+}
+
+async function searchFatSecretAPI(barcode: string): Promise<FoodItem | null> {
+    try {
+        const token = await getFatSecretToken();
+        const findRes = await fetch(`https://platform.fatsecret.com/rest/server.api?method=food.find_id_for_barcode&barcode=${barcode}&format=json`, {
+            headers: { "Authorization": `Bearer ${token}` }
+        });
+        if (!findRes.ok) return null;
+
+        const findData = await findRes.json();
+        if (!findData || !findData.food_id || !findData.food_id.value) {
+            return null; // Not found
+        }
+
+        const foodId = findData.food_id.value;
+        const getRes = await fetch(`https://platform.fatsecret.com/rest/server.api?method=food.get.v3&food_id=${foodId}&format=json`, {
+            headers: { "Authorization": `Bearer ${token}` }
+        });
+        if (!getRes.ok) return null;
+
+        const getData = await getRes.json();
+        if (!getData || !getData.food) return null;
+
+        const food = getData.food;
+        const nameEn = food.food_name || `Product ${barcode}`;
+        const nameAr = nameEn;
+
+        if (!food.servings || !food.servings.serving) return null;
+
+        let servingsArray = Array.isArray(food.servings.serving) ? food.servings.serving : [food.servings.serving];
+        let defaultServing = servingsArray[0];
+
+        let calories = Number(defaultServing.calories) || 0;
+        let protein = Math.round(Number(defaultServing.protein) * 10) / 10 || 0;
+        let carbs = Math.round(Number(defaultServing.carbohydrate) * 10) / 10 || 0;
+        let fat = Math.round(Number(defaultServing.fat) * 10) / 10 || 0;
+        let fiber = Math.round(Number(defaultServing.fiber) * 10) / 10 || 0;
+
+        // Normalize to 100g if appropriate
+        const amt = Number(defaultServing.metric_serving_amount);
+        const unit = String(defaultServing.metric_serving_unit).toLowerCase();
+        if (amt && amt > 0 && (unit === 'g' || unit === 'ml')) {
+            const ratio = 100 / amt;
+            calories = Math.round(calories * ratio);
+            protein = Math.round(protein * ratio * 10) / 10;
+            carbs = Math.round(carbs * ratio * 10) / 10;
+            fat = Math.round(fat * ratio * 10) / 10;
+            fiber = Math.round(fiber * ratio * 10) / 10;
+        }
+
+        const item: FoodItem = {
+            id: `fs-${foodId}`,
+            nameEn,
+            nameAr,
+            calories, protein, carbs, fat, fiber,
+            servingUnits: [
+                { unit: "g", grams: 1, labelEn: "g", labelAr: "غرام" },
+                { unit: "oz", grams: 28.35, labelEn: "oz", labelAr: "أونصة" },
+                { unit: "100g", grams: 100, labelEn: "100g", labelAr: "١٠٠ غرام" },
+            ]
+        };
+
+        for (const s of servingsArray) {
+            const svAmt = Number(s.metric_serving_amount);
+            if (svAmt > 0 && s.measurement_description) {
+                item.servingUnits.push({ unit: s.measurement_description, grams: svAmt, labelEn: s.measurement_description, labelAr: s.measurement_description });
+            }
+        }
+
+        return item;
+    } catch (err) {
+        console.warn("[FoodSearch] FatSecret API error:", err);
+        return null;
+    }
+}
+
+// ── OpenFoodFacts Integration ──────────────────────────────────────────
+
 async function searchOpenFoodFactsAPI(barcode: string): Promise<FoodItem | null> {
     try {
         const response = await fetch(`https://world.openfoodfacts.org/api/v2/product/${barcode}.json`, {
@@ -297,7 +402,14 @@ export function registerFoodSearchRoutes(app: Express) {
                 return res.status(400).json({ error: "Barcode is required" });
             }
 
-            const item = await searchOpenFoodFactsAPI(code);
+            // 1. Try FatSecret API (Premium commercial database, highly accurate)
+            let item = await searchFatSecretAPI(code);
+
+            // 2. Fallback to OpenFoodFacts (Massive open-source global database)
+            if (!item) {
+                item = await searchOpenFoodFactsAPI(code);
+            }
+
             if (!item) {
                 return res.status(404).json({ error: "Product not found or has no nutritional data" });
             }
