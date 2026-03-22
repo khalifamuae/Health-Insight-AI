@@ -397,6 +397,7 @@ const styles = StyleSheet.create({
   globalTotalsContainer: {
     paddingVertical: 14,
     paddingHorizontal: 16,
+    paddingBottom: 105,
     borderTopWidth: 1,
     elevation: 8,
     shadowColor: '#000',
