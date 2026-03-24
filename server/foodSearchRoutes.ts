@@ -231,12 +231,13 @@ async function getFatSecretToken(): Promise<string> {
     const data = await res.json();
     fatSecretToken = data.access_token;
     fatSecretTokenExpires = Date.now() + (data.expires_in - 300) * 1000;
-    return fatSecretToken;
+    return fatSecretToken || '';
 }
 
 async function searchFatSecretAPI(barcode: string): Promise<FoodItem | null> {
     try {
         const token = await getFatSecretToken();
+        if (!token) return null;
         const findRes = await fetch(`https://platform.fatsecret.com/rest/server.api?method=food.find_id_for_barcode&barcode=${barcode}&format=json`, {
             headers: { "Authorization": `Bearer ${token}` }
         });

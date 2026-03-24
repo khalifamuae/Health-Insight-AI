@@ -1,5 +1,5 @@
 import React, { useCallback, useMemo, useState } from 'react';
-import { Alert, I18nManager, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, I18nManager, ScrollView, StyleSheet, Text, TouchableOpacity, View, TextInput, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
@@ -25,7 +25,11 @@ export default function MyDietPlansScreen({ navigation }: any) {
   const isArabic = isArabicLanguage();
   const [dateCalendar, setDateCalendar] = useState<CalendarType>('gregorian');
   const [expandedId, setExpandedId] = useState<string | null>(null);
+
   const [translatingId, setTranslatingId] = useState<string | null>(null);
+  const [importCode, setImportCode] = useState('');
+  const [isImporting, setIsImporting] = useState(false);
+  const [isSharing, setIsSharing] = useState(false);
   const queryClient = useQueryClient();
 
   const { data: savedPlans, isLoading, refetch } = useQuery<SavedPlan[]>({
@@ -153,17 +157,234 @@ export default function MyDietPlansScreen({ navigation }: any) {
       ]
     );
   };
+  const handleShareAllManualPlans = async () => {
+    const allGroups: any[] = [];
+    savedPlansList.forEach(p => {
+      try {
+        const data = typeof p.planData === 'string' ? JSON.parse(p.planData) : p.planData;
+        if (data?.source === 'manual' && data.groups) {
+          allGroups.push(...data.groups);
+        }
+      } catch (e) { }
+    });
+
+    if (allGroups.length === 0) {
+      Alert.alert(isArabic ? 'لا توجد بيانات' : 'Empty', isArabic ? 'لا توجد جداول يدوية للمشاركة' : 'No manual plans to share');
+      return;
+    }
+
+    let calories = 0, protein = 0, carbs = 0, fat = 0;
+    allGroups.forEach(g => {
+      g.items?.forEach((item: any) => {
+        calories += Number(item.calories) || 0;
+        protein += Number(item.protein) || 0;
+        carbs += Number(item.carbs) || 0;
+        fat += Number(item.fat) || 0;
+      });
+    });
+
+    setIsSharing(true);
+    try {
+      const planData = {
+        source: 'manual',
+        title: isArabic ? 'جميع الجداول' : 'All Plans',
+        totalCalories: calories,
+        totalProtein: Math.round(protein * 10) / 10,
+        totalCarbs: Math.round(carbs * 10) / 10,
+        totalFat: Math.round(fat * 10) / 10,
+        groups: allGroups
+      };
+      const res = await api.post<{ shareCode: string }>('/api/diet-plans/share', { planData });
+      Alert.alert(
+        isArabic ? 'تم النسخ ✅' : 'Copied ✅',
+        isArabic ? `رمز المشاركة لجميع المجموعات:\n\n${res.shareCode}` : `Share Code for All Plans:\n\n${res.shareCode}`
+      );
+    } catch (e) {
+      Alert.alert(isArabic ? 'خطأ' : 'Error', isArabic ? 'فشل في مشاركة الجداول' : 'Failed to share plans');
+    } finally {
+      setIsSharing(false);
+    }
+  };
+
+  const handleDeleteAllPlans = () => {
+    Alert.alert(
+      isArabic ? 'تأكيد الحذف' : 'Confirm Delete All',
+      isArabic ? 'هل أنت متأكد من حذف جميع الجداول اليدوية بشكل نهائي؟' : 'Are you sure you want to delete ALL manual plans permanently?',
+      [
+        { text: isArabic ? 'إلغاء' : 'Cancel', style: 'cancel' },
+        {
+          text: isArabic ? 'حذف الكل' : 'Delete All', style: 'destructive', onPress: async () => {
+            const manualIds = savedPlansList.filter(p => {
+              try {
+                const data = typeof p.planData === 'string' ? JSON.parse(p.planData) : p.planData;
+                return data?.source === 'manual';
+              } catch { return false; }
+            }).map(p => p.id);
+
+            if (manualIds.length === 0) return;
+
+            for (const id of manualIds) {
+              await api.delete(`/api/saved-diet-plans/${id}`);
+            }
+            queryClient.invalidateQueries({ queryKey: ['savedDietPlans'] });
+          }
+        }
+      ]
+    );
+  };
+
+
+  const handleImportPlan = async () => {
+    const code = importCode.trim().toUpperCase();
+    if (!code) return;
+    setIsImporting(true);
+    try {
+      const res = await api.get<{ planData: any }>(`/api/diet-plans/shared/${code}`);
+      if (res && res.planData && res.planData.groups) {
+        // Automatically save it using the same structure as builder
+        await api.post('/api/saved-diet-plans', { planData: res.planData });
+        setImportCode('');
+        Alert.alert(isArabic ? 'نجاح' : 'Success', isArabic ? 'تم استيراد الجدول بنجاح!' : 'Diet plan imported successfully!');
+        queryClient.invalidateQueries({ queryKey: ['savedDietPlans'] });
+      } else {
+        Alert.alert(isArabic ? 'فشل' : 'Failed', isArabic ? 'بيانات الجدول غير صالحة' : 'Invalid diet plan data');
+      }
+    } catch (error) {
+      console.error(error);
+      Alert.alert(isArabic ? 'خطأ' : 'Error', isArabic ? 'تأكد من صحة الرمز' : 'Please check the code and try again');
+    } finally {
+      setIsImporting(false);
+    }
+  };
+
+  const handleSharePlan = async (parsedPlan: any) => {
+    setIsSharing(true);
+    try {
+      const res = await api.post<{ shareCode: string }>('/api/diet-plans/share', { planData: parsedPlan });
+      Alert.alert(
+        isArabic ? 'تم النسخ ✅' : 'Copied ✅',
+        isArabic ? `رمز المشاركة: ${res.shareCode}\nتم نسخ الرمز للحافظة.` : `Share Code: ${res.shareCode}\nCopied to clipboard.`
+      );
+    } catch (e) {
+      Alert.alert(isArabic ? 'خطأ' : 'Error', isArabic ? 'فشل في مشاركة الجدول' : 'Failed to share plan');
+    } finally {
+      setIsSharing(false);
+    }
+  };
+
+  const handleShareGroup = async (group: any) => {
+    setIsSharing(true);
+    try {
+      let calories = 0, protein = 0, carbs = 0, fat = 0;
+      if (group.items) {
+        group.items.forEach((item: any) => {
+          calories += Number(item.calories) || 0;
+          protein += Number(item.protein) || 0;
+          carbs += Number(item.carbs) || 0;
+          fat += Number(item.fat) || 0;
+        });
+      }
+      const planData = {
+        source: 'manual',
+        title: group.name,
+        totalCalories: calories,
+        totalProtein: Math.round(protein * 10) / 10,
+        totalCarbs: Math.round(carbs * 10) / 10,
+        totalFat: Math.round(fat * 10) / 10,
+        groups: [group]
+      };
+      const res = await api.post<{ shareCode: string }>('/api/diet-plans/share', { planData });
+      Alert.alert(
+        isArabic ? 'تم النسخ ✅' : 'Copied ✅',
+        isArabic ? `رمز مشاركة ${group.name}:\n\n${res.shareCode}` : `Share Code for ${group.name}:\n\n${res.shareCode}`
+      );
+    } catch (e) {
+      Alert.alert(isArabic ? 'خطأ' : 'Error', isArabic ? 'فشل في مشاركة المجموعة' : 'Failed to share group');
+    } finally {
+      setIsSharing(false);
+    }
+  };
+
+  const handleDeleteGroup = (planId: string, groupId: string, parsedPlan: any) => {
+    Alert.alert(
+      isArabic ? 'تأكيد الحذف' : 'Confirm Delete',
+      isArabic ? 'هل أنت متأكد من حذف هذه المجموعة بالكامل؟' : 'Are you sure you want to delete this group?',
+      [
+        { text: isArabic ? 'إلغاء' : 'Cancel', style: 'cancel' },
+        {
+          text: isArabic ? 'حذف' : 'Delete', style: 'destructive', onPress: async () => {
+            try {
+              const newGroups = parsedPlan.groups.filter((g: any) => g.id !== groupId);
+              if (newGroups.length === 0) {
+                deleteMutation.mutate(planId);
+                return;
+              }
+              let totalCalories = 0, totalProtein = 0, totalCarbs = 0, totalFat = 0;
+              newGroups.forEach((g: any) => {
+                g.items?.forEach((item: any) => {
+                  totalCalories += Number(item.calories) || 0;
+                  totalProtein += Number(item.protein) || 0;
+                  totalCarbs += Number(item.carbs) || 0;
+                  totalFat += Number(item.fat) || 0;
+                });
+              });
+              const newPlanData = {
+                ...parsedPlan,
+                groups: newGroups,
+                totalCalories: Math.round(totalCalories),
+                totalProtein: Math.round(totalProtein * 10) / 10,
+                totalCarbs: Math.round(totalCarbs * 10) / 10,
+                totalFat: Math.round(totalFat * 10) / 10
+              };
+              await api.put(`/api/saved-diet-plans/${planId}`, { planData: newPlanData });
+              queryClient.invalidateQueries({ queryKey: ['savedDietPlans'] });
+            } catch (e) {
+              Alert.alert(isArabic ? 'خطأ' : 'Error', isArabic ? 'فشل الحذف' : 'Failed to delete');
+            }
+          }
+        }
+      ]
+    );
+  };
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.content}>
         <View style={[styles.noteCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
           <Ionicons name="information-circle" size={18} color={colors.primary} />
-          <Text style={[styles.noteText, { color: colors.text }]}>
+          <Text style={[styles.noteText, { color: colors.text, textAlign: 'left' }]}>
             {isArabic
               ? 'ملاحظة: يُفضّل تحديث الجدول الغذائي كل شهر للحصول على أفضل النتائج.'
               : 'Note: For best results, update your diet plan every month.'}
           </Text>
+        </View>
+
+        <View style={{ marginBottom: 16 }}>
+          <View style={{ flexDirection: 'row', gap: 8 }}>
+            <TextInput
+              style={[{ flex: 1, backgroundColor: colors.card, color: colors.text, borderColor: colors.border, borderWidth: 1, borderRadius: 12, paddingHorizontal: 12, paddingVertical: 10, textAlign: 'left' }]}
+              placeholder={isArabic ? 'كود الجدول (استيراد)...' : 'Shared plan code (Import)...'}
+              placeholderTextColor={colors.mutedText}
+              value={importCode}
+              onChangeText={setImportCode}
+              autoCapitalize="characters"
+            />
+            <TouchableOpacity style={{ backgroundColor: isImporting ? colors.mutedText : '#10b981', paddingHorizontal: 16, borderRadius: 12, justifyContent: 'center', alignItems: 'center' }} onPress={handleImportPlan} disabled={isImporting}>
+              {isImporting ? <ActivityIndicator color="#fff" size="small" /> : <Ionicons name="download-outline" size={22} color="#fff" />}
+            </TouchableOpacity>
+          </View>
+          {savedPlansList.some(p => { try { const data = typeof p.planData === 'string' ? JSON.parse(p.planData) : p.planData; return data?.source === 'manual'; } catch { return false; } }) && (
+            <View style={{ flexDirection: 'row', gap: 8, marginTop: 12 }}>
+              <TouchableOpacity style={[styles.planHeader, { flex: 1, backgroundColor: isDark ? 'rgba(59, 130, 246, 0.15)' : '#eff6ff', justifyContent: 'center', alignItems: 'center', borderColor: '#3b82f6', borderWidth: 1 }]} onPress={handleShareAllManualPlans}>
+                <Ionicons name="share-social-outline" size={18} color="#3b82f6" />
+                <Text style={{ color: '#3b82f6', fontWeight: 'bold', marginHorizontal: 6 }}>{isArabic ? 'مشاركة الكل' : 'Share All'}</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={[styles.planHeader, { flex: 1, backgroundColor: isDark ? 'rgba(239, 68, 68, 0.15)' : '#fef2f2', justifyContent: 'center', alignItems: 'center', borderColor: '#ef4444', borderWidth: 1 }]} onPress={handleDeleteAllPlans}>
+                <Ionicons name="trash-outline" size={18} color="#ef4444" />
+                <Text style={{ color: '#ef4444', fontWeight: 'bold', marginHorizontal: 6 }}>{isArabic ? 'حذف الكل' : 'Delete All'}</Text>
+              </TouchableOpacity>
+            </View>
+          )}
         </View>
 
         {isLoading ? (
@@ -198,9 +419,9 @@ export default function MyDietPlansScreen({ navigation }: any) {
                   <TouchableOpacity activeOpacity={0.7} style={styles.planHeader} onPress={() => toggleExpand(plan.id, plan.planData)}>
                     <View style={{ flex: 1 }}>
                       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                        <Text style={[styles.planTitle, { color: colors.text }]}>
+                        <Text style={[styles.planTitle, { color: colors.text }]} numberOfLines={1} ellipsizeMode="tail">
                           {isManual
-                            ? (parsedPlan?.title || (isArabic ? 'جدول يدوي' : 'Manual Plan'))
+                            ? (parsedPlan?.title || (parsedPlan?.groups && parsedPlan.groups.length > 0 ? parsedPlan.groups.map((g: any) => g.name).join(' + ') : (isArabic ? 'جدول يدوي' : 'Manual Plan')))
                             : (isArabic ? `الخطة رقم ${savedPlansList.length - index}` : `Plan #${savedPlansList.length - index}`)}
                         </Text>
                         <View style={{ backgroundColor: isManual ? 'rgba(34,197,94,0.15)' : 'rgba(245,158,11,0.15)', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6 }}>
@@ -224,20 +445,60 @@ export default function MyDietPlansScreen({ navigation }: any) {
                     </View>
                     <Ionicons name={isExpanded ? 'chevron-up' : 'chevron-down'} size={24} color={colors.text} />
                   </TouchableOpacity>
-                  <TouchableOpacity
-                    style={styles.deleteButton}
-                    onPress={() => handleDelete(plan.id)}
-                    disabled={deleteMutation.isPending}
-                  >
-                    <Ionicons name="trash-outline" size={20} color="#ef4444" />
-                  </TouchableOpacity>
+                  <View style={{ flexDirection: 'row', gap: 8 }}>
+                    {isManual && (
+                      <TouchableOpacity
+                        style={[styles.deleteButton, { backgroundColor: isDark ? 'rgba(59, 130, 246, 0.15)' : '#eff6ff' }]}
+                        onPress={() => navigation.navigate('ManualDietBuilder', { editPlanId: plan.id })}
+                      >
+                        <Ionicons name="pencil" size={20} color="#3b82f6" />
+                      </TouchableOpacity>
+                    )}
+                    {isManual && (
+                      <TouchableOpacity
+                        style={[styles.deleteButton, { backgroundColor: isDark ? 'rgba(59, 130, 246, 0.15)' : '#eff6ff' }]}
+                        onPress={() => handleSharePlan(parsedPlan)}
+                      >
+                        <Ionicons name="share-social-outline" size={20} color="#3b82f6" />
+                      </TouchableOpacity>
+                    )}
+                    <TouchableOpacity
+                      style={styles.deleteButton}
+                      onPress={() => handleDelete(plan.id)}
+                      disabled={deleteMutation.isPending}
+                    >
+                      <Ionicons name="trash-outline" size={20} color="#ef4444" />
+                    </TouchableOpacity>
+                  </View>
                 </View>
 
                 {isExpanded && (
                   <View style={[styles.planContentContainer, { borderTopColor: colors.border }]}>
-                    {isManual && parsedPlan?.items ? (
+                    {isManual && (parsedPlan?.groups || parsedPlan?.items) ? (
                       <View style={{ gap: 8 }}>
-                        {parsedPlan.items.map((item: any, idx: number) => (
+                        {parsedPlan.groups ? parsedPlan.groups.map((group: any, gIdx: number) => (
+                          <View key={gIdx} style={{ marginBottom: 12 }}>
+
+                            <View style={{ backgroundColor: isDark ? 'rgba(30, 41, 59, 0.4)' : '#f8fafc', borderRadius: 12, paddingHorizontal: 12 }}>
+                              {group.items.map((item: any, idx: number) => (
+                                <View key={idx} style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 10, borderBottomWidth: idx < group.items.length - 1 ? StyleSheet.hairlineWidth : 0, borderBottomColor: colors.border }}>
+                                  <View style={{ flex: 1, paddingEnd: 8 }}>
+                                    <Text style={{ color: colors.text, fontSize: 14, fontWeight: '600', textAlign: 'left' }} numberOfLines={2}>
+                                      {isArabic ? item.nameAr : item.nameEn}
+                                    </Text>
+                                    <Text style={{ color: colors.mutedText, fontSize: 12, marginTop: 4, textAlign: 'left' }}>
+                                      {item.quantity} {item.unit}
+                                    </Text>
+                                  </View>
+                                  <View style={{ alignItems: 'flex-end', marginStart: 4 }}>
+                                    <Text style={{ color: colors.primary, fontSize: 15, fontWeight: '700', textAlign: 'right' }}>{item.calories} {isArabic ? 'سعرة' : 'Cal'}</Text>
+                                    <Text style={{ color: colors.mutedText, fontSize: 10, marginTop: 2, textAlign: 'right' }}>P:{item.protein}g C:{item.carbs}g F:{item.fat}g</Text>
+                                  </View>
+                                </View>
+                              ))}
+                            </View>
+                          </View>
+                        )) : parsedPlan.items.map((item: any, idx: number) => (
                           <View key={idx} style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 8, borderBottomWidth: idx < parsedPlan.items.length - 1 ? StyleSheet.hairlineWidth : 0, borderBottomColor: colors.border }}>
                             <View style={{ flex: 1 }}>
                               <Text style={{ color: colors.text, fontSize: 14, fontWeight: '600' }}>
@@ -253,9 +514,9 @@ export default function MyDietPlansScreen({ navigation }: any) {
                             </View>
                           </View>
                         ))}
-                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingTop: 10, marginTop: 4, borderTopWidth: 1, borderTopColor: colors.border }}>
-                          <Text style={{ color: colors.text, fontSize: 15, fontWeight: '700' }}>{isArabic ? 'الإجمالي' : 'Total'}</Text>
-                          <Text style={{ color: colors.primary, fontSize: 17, fontWeight: '800' }}>{parsedPlan.totalCalories} {isArabic ? 'سعرة' : 'Cal'}</Text>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingTop: 10, marginTop: 4, borderTopWidth: 1, borderTopColor: colors.border }}>
+                          <Text style={{ color: colors.text, fontSize: 15, fontWeight: '700', textAlign: 'left' }}>{isArabic ? 'الإجمالي' : 'Total'}</Text>
+                          <Text style={{ color: colors.primary, fontSize: 17, fontWeight: '800', textAlign: 'right' }}>{parsedPlan.totalCalories} {isArabic ? 'سعرة' : 'Cal'}</Text>
                         </View>
                       </View>
                     ) : translatingId === plan.id ? (

@@ -167,6 +167,16 @@ export const sharedWorkouts = pgTable("shared_workouts", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+// Shared diet plans
+export const sharedDietPlans = pgTable("shared_diet_plans", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  shareCode: varchar("share_code", { length: 6 }).notNull().unique(),
+  authorId: varchar("author_id").notNull(),
+  planData: jsonb("plan_data").notNull(),
+  downloads: integer("downloads").default(0),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 // Nutrition Ingredients - Curated Reference Table
 export const nutritionIngredients = pgTable("nutrition_ingredients", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),

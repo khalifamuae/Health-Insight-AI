@@ -7,7 +7,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useAppTheme } from '../context/ThemeContext';
 import { api, queries } from '../lib/api';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 
 const isArabic = I18nManager.isRTL;
@@ -33,12 +33,20 @@ interface FoodResult {
     servingUnits: ServingUnit[];
 }
 
+
+interface DietGroup {
+    id: string;
+    name: string;
+    items: SelectedFood[];
+}
+
 interface SelectedFood {
     key: string;
     food: FoodResult;
     quantity: number;
     selectedUnit: ServingUnit;
 }
+
 
 // ── Built-in food database for instant search ─────────────────────────────────
 const WEIGHT_UNITS: ServingUnit[] = [
@@ -136,15 +144,22 @@ const LOCAL_FOODS: FoodResult[] = [
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
-export default function ManualDietBuilderScreen({ navigation }: any) {
+export default function ManualDietBuilderScreen({ navigation, route }: any) {
     const { colors, isDark } = useAppTheme();
     const queryClient = useQueryClient();
+
+    const { editPlanId } = route.params || {};
 
     const [searchText, setSearchText] = useState('');
     const [searchResults, setSearchResults] = useState<FoodResult[]>([]);
     const [isSearching, setIsSearching] = useState(false);
     const [showResults, setShowResults] = useState(false);
-    const [selectedFoods, setSelectedFoods] = useState<SelectedFood[]>([]);
+    const [groups, setGroups] = useState<DietGroup[]>([]);
+    const [planTitle, setPlanTitle] = useState('');
+    const [targetFoodToAdd, setTargetFoodToAdd] = useState<FoodResult | null>(null);
+    const [isGroupModalVisible, setGroupModalVisible] = useState(false);
+    const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null);
+    const [newGroupName, setNewGroupName] = useState('');
 
     // Barcode Scanner State
     const [showScanner, setShowScanner] = useState(false);
@@ -231,6 +246,56 @@ export default function ManualDietBuilderScreen({ navigation }: any) {
         }
     }, [searchLocal]);
 
+    const { data: savedPlans } = useQuery<any[]>({
+        queryKey: ['savedDietPlans'],
+        queryFn: async () => (await queries.savedDietPlans()) as any[],
+    });
+
+    const suggestedGroupNames = useMemo(() => {
+        const defaults = isArabic ? ['الفطور', 'الغداء', 'العشاء', 'وجبة خفيفة'] : ['Breakfast', 'Lunch', 'Dinner', 'Snack'];
+        const names = new Set<string>(defaults);
+        if (savedPlans) {
+            savedPlans.forEach(p => {
+                try {
+                    const data = typeof p.planData === 'string' ? JSON.parse(p.planData) : p.planData;
+                    if (data?.groups) {
+                        data.groups.forEach((g: any) => {
+                            if (g.name && g.name.trim()) {
+                                names.add(g.name.trim());
+                            }
+                        });
+                    }
+                } catch {}
+            });
+        }
+        return Array.from(names);
+    }, [savedPlans, isArabic]);
+
+    useEffect(() => {
+        if (editPlanId && savedPlans) {
+            const planToEdit = savedPlans.find(p => p.id === editPlanId);
+            if (planToEdit) {
+                try {
+                    const parsed = typeof planToEdit.planData === 'string' ? JSON.parse(planToEdit.planData) : planToEdit.planData;
+                    if (parsed.groups) {
+                        const mappedGroups = parsed.groups.map((g: any) => ({
+                            id: g.id,
+                            name: g.name,
+                            items: (g.items || []).map((item: any, idx: number) => ({
+                                key: item.key || `loaded_${idx}_${Date.now()}`,
+                                food: item.foodItem || item.food,
+                                quantity: item.quantity || 1,
+                                selectedUnit: item.servingUnit || item.selectedUnit || { unit: 'g', grams: 1, labelEn: 'g', labelAr: 'غرام' }
+                            }))
+                        }));
+                        setGroups(mappedGroups);
+                    }
+                    if (parsed.title) setPlanTitle(parsed.title);
+                } catch (e) {}
+            }
+        }
+    }, [editPlanId, savedPlans]);
+
     useEffect(() => {
         if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current);
         const q = searchText.trim();
@@ -262,23 +327,7 @@ export default function ManualDietBuilderScreen({ navigation }: any) {
             const res = await queries.lookupBarcode(data) as any;
             if (res && res.food) {
                 const newItem: FoodResult = res.food;
-                const newKey = `item_${newItem.id}_${Date.now()}_${nextKeyRef.current++}`;
-
-                setSelectedFoods(prev => {
-                    // Extra safety net: prevent adding the exact same barcode twice in 2 seconds
-                    if (prev.some(f => f.food.id === newItem.id && Date.now() - parseInt(f.key.split('_')[2] || '0') < 2000)) return prev;
-                    return [...prev, {
-                        key: newKey,
-                        food: newItem,
-                        quantity: newItem.servingUnits[0].grams || 100,
-                        selectedUnit: newItem.servingUnits[0]
-                    }];
-                });
-
-                Alert.alert(
-                    isArabic ? 'تمت القراءة ✅' : 'Scanned ✅',
-                    isArabic ? `تم إيجاد المنتج: ${newItem.nameAr}` : `Product found: ${newItem.nameEn}`
-                );
+                handleAddFoodInit(newItem);
             }
         } catch (error) {
             console.error('Barcode Error:', error);
@@ -291,22 +340,73 @@ export default function ManualDietBuilderScreen({ navigation }: any) {
 
     // ── Add food ────────────────────────────────────────────────────────────────
 
-    const addFood = useCallback((food: FoodResult) => {
-        const defaultUnit = food.servingUnits[0] || { unit: 'g', grams: 1, labelEn: 'g', labelAr: 'غرام' };
-        setSelectedFoods(prev => [
-            ...prev,
-            { key: `${food.id}-${nextKeyRef.current++}`, food, quantity: 100, selectedUnit: defaultUnit },
-        ]);
+    const handleAddFoodInit = useCallback((food: FoodResult) => {
+        setTargetFoodToAdd(food);
+        setNewGroupName('');
+        setSelectedGroupId(null);
+        setGroupModalVisible(true);
         setSearchText('');
         setShowResults(false);
         setSearchResults([]);
     }, []);
 
+    const processAddFoodToGroup = () => {
+        if (!targetFoodToAdd) return;
+
+        let groupIdToUse = selectedGroupId;
+        let finalGroups = [...groups];
+
+        if (groupIdToUse === 'NEW') {
+            if (!newGroupName.trim()) {
+                Alert.alert(isArabic ? 'خطأ' : 'Error', isArabic ? 'يرجى إدخال اسم المجموعة' : 'Please enter a group name');
+                return;
+            }
+            const existingGroup = groups.find(g => g.name.trim().toLowerCase() === newGroupName.trim().toLowerCase());
+            if (existingGroup) {
+                groupIdToUse = existingGroup.id;
+            } else {
+                const newGroup: DietGroup = { id: Date.now().toString(), name: newGroupName.trim(), items: [] };
+                finalGroups.push(newGroup);
+                groupIdToUse = newGroup.id;
+            }
+        }
+
+        if (!groupIdToUse) {
+            Alert.alert(isArabic ? 'خطأ' : 'Error', isArabic ? 'يرجى اختيار مجموعة' : 'Please select a group');
+            return;
+        }
+
+        const defaultUnit = targetFoodToAdd.servingUnits[0] || { unit: 'g', grams: 1, labelEn: 'g', labelAr: 'غرام' };
+        const newKey = `item_${targetFoodToAdd.id}_${Date.now()}_${nextKeyRef.current++}`;
+
+        const updatedGroups = finalGroups.map(g => {
+            if (g.id !== groupIdToUse) return g;
+            return {
+                ...g,
+                items: [
+                    ...g.items,
+                    { key: newKey, food: targetFoodToAdd, quantity: 100, selectedUnit: defaultUnit }
+                ]
+            };
+        });
+
+        setGroups(updatedGroups);
+        setGroupModalVisible(false);
+        setTargetFoodToAdd(null);
+        Alert.alert(
+            isArabic ? 'تمت الإضافة ✅' : 'Added ✅',
+            isArabic ? `تم إضافته للمجموعة بنجاح` : `Added to group successfully`
+        );
+    };
+
     const [unitSelectionModalVisible, setUnitSelectionModalVisible] = useState(false);
     const [activeUnitSelectionKey, setActiveUnitSelectionKey] = useState<string | null>(null);
 
     const updateQuantity = useCallback((key: string, qty: number) => {
-        setSelectedFoods(prev => prev.map(item => item.key === key ? { ...item, quantity: qty } : item));
+        setGroups(prev => prev.map(g => ({
+            ...g,
+            items: g.items.map(item => item.key === key ? { ...item, quantity: qty } : item)
+        })));
     }, []);
 
     const openUnitSelector = useCallback((key: string) => {
@@ -316,18 +416,36 @@ export default function ManualDietBuilderScreen({ navigation }: any) {
 
     const selectUnit = useCallback((unit: ServingUnit) => {
         if (activeUnitSelectionKey) {
-            setSelectedFoods(prev => prev.map(item => {
-                if (item.key !== activeUnitSelectionKey) return item;
-                return { ...item, selectedUnit: unit };
-            }));
+            setGroups(prev => prev.map(g => ({
+                ...g,
+                items: g.items.map(item => item.key === activeUnitSelectionKey ? { ...item, selectedUnit: unit } : item)
+            })));
         }
         setUnitSelectionModalVisible(false);
         setActiveUnitSelectionKey(null);
     }, [activeUnitSelectionKey]);
 
     const removeFood = useCallback((key: string) => {
-        setSelectedFoods(prev => prev.filter(item => item.key !== key));
+        setGroups(prev => prev.map(g => ({
+            ...g,
+            items: g.items.filter(item => item.key !== key)
+        })));
     }, []);
+
+    const removeGroup = useCallback((groupId: string) => {
+        Alert.alert(
+            isArabic ? 'تأكيد الحذف' : 'Confirm Delete',
+            isArabic ? 'هل تريد حذف هذه المجموعة؟' : 'Are you sure you want to delete this group?',
+            [
+                { text: isArabic ? 'إلغاء' : 'Cancel', style: 'cancel' },
+                { text: isArabic ? 'حذف' : 'Delete', style: 'destructive', onPress: () => {
+                    setGroups(prev => prev.filter(g => g.id !== groupId));
+                } }
+            ]
+        );
+    }, [isArabic]);
+
+
 
     // ── Calculate macros ────────────────────────────────────────────────────────
 
@@ -343,21 +461,61 @@ export default function ManualDietBuilderScreen({ navigation }: any) {
     };
 
     const totals = useMemo(() => {
-        return selectedFoods.reduce(
-            (acc, item) => {
-                const m = calculateItemMacros(item);
+        return groups.reduce(
+            (acc, group) => {
+                const groupTotals = group.items.reduce(
+                    (gAcc, item) => {
+                        const m = calculateItemMacros(item);
+                        return {
+                            calories: gAcc.calories + m.calories,
+                            protein: Math.round((gAcc.protein + m.protein) * 10) / 10,
+                            carbs: Math.round((gAcc.carbs + m.carbs) * 10) / 10,
+                            fat: Math.round((gAcc.fat + m.fat) * 10) / 10,
+                        };
+                    },
+                    { calories: 0, protein: 0, carbs: 0, fat: 0 }
+                );
                 return {
-                    calories: acc.calories + m.calories,
-                    protein: Math.round((acc.protein + m.protein) * 10) / 10,
-                    carbs: Math.round((acc.carbs + m.carbs) * 10) / 10,
-                    fat: Math.round((acc.fat + m.fat) * 10) / 10,
+                    calories: acc.calories + groupTotals.calories,
+                    protein: Math.round((acc.protein + groupTotals.protein) * 10) / 10,
+                    carbs: Math.round((acc.carbs + groupTotals.carbs) * 10) / 10,
+                    fat: Math.round((acc.fat + groupTotals.fat) * 10) / 10,
                 };
             },
             { calories: 0, protein: 0, carbs: 0, fat: 0 }
         );
-    }, [selectedFoods]);
+    }, [groups]);
 
-    // ── Save plan ───────────────────────────────────────────────────────────────
+    // ── External Actions (Save / Import / Share) ────────────────────────────────
+
+    const getPlanData = (groupsToExport: DietGroup[], title: string) => {
+        return {
+            source: 'manual',
+            title: title,
+            createdAt: new Date().toISOString(),
+            totalCalories: totals.calories,
+            totalProtein: totals.protein,
+            totalCarbs: totals.carbs,
+            totalFat: totals.fat,
+            groups: groupsToExport.map(g => ({
+                id: g.id,
+                name: g.name,
+                items: g.items.map(item => {
+                    const macros = calculateItemMacros(item);
+                    return {
+                        nameEn: item.food.nameEn, nameAr: item.food.nameAr,
+                        quantity: item.quantity,
+                        unit: isArabic ? item.selectedUnit.labelAr : item.selectedUnit.labelEn,
+                        unitKey: item.selectedUnit.unit,
+                        gramsPerUnit: item.selectedUnit.grams,
+                        ...macros,
+                        foodItem: item.food, // Retain original for re-importing
+                        servingUnit: item.selectedUnit,
+                    };
+                })
+            })),
+        };
+    };
 
     const saveMutation = useMutation({
         mutationFn: (planData: any) => api.post('/api/saved-diet-plans', { planData }),
@@ -369,57 +527,138 @@ export default function ManualDietBuilderScreen({ navigation }: any) {
                 [{
                     text: isArabic ? 'عرض الجداول' : 'View Plans',
                     onPress: () => {
-                        setSelectedFoods([]);
+                        setGroups([]);
                         navigation.navigate('DietTable');
                     },
                 }, {
                     text: isArabic ? 'إضافة جدول آخر' : 'Add Another',
-                    onPress: () => setSelectedFoods([]),
+                    onPress: () => setGroups([]),
                 }]
             );
         },
-        onError: (err: any) => {
-            Alert.alert(isArabic ? 'خطأ' : 'Error', err.message || 'Failed to save');
+        onError: (err: any) => Alert.alert(isArabic ? 'خطأ' : 'Error', err.message || 'Failed to save'),
+    });
+
+    const updateMutation = useMutation({
+        mutationFn: ({ id, planData }: { id: string, planData: any }) => api.put(`/api/saved-diet-plans/${id}`, { planData }),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['savedDietPlans'] });
+            Alert.alert(
+                isArabic ? 'تم التعديل ✅' : 'Updated ✅',
+                isArabic ? 'تم تعديل الجدول الغذائي بنجاح' : 'Diet plan updated successfully',
+                [{
+                    text: isArabic ? 'استمرار التعديل' : 'Keep Editing',
+                    style: 'cancel',
+                }, {
+                    text: isArabic ? 'عرض الجداول' : 'View Plans',
+                    onPress: () => navigation.navigate('DietTable'),
+                }]
+            );
         },
+        onError: (err: any) => Alert.alert(isArabic ? 'خطأ' : 'Error', err.message || 'Failed to update'),
     });
 
     const handleSave = () => {
-        if (selectedFoods.length === 0) {
-            Alert.alert(
-                isArabic ? 'لا توجد أصناف' : 'No items',
-                isArabic ? 'أضف بعض الأصناف أولاً' : 'Add some food items first'
-            );
+        if (groups.every(g => g.items.length === 0)) {
+            Alert.alert(isArabic ? 'لا توجد أصناف' : 'No items', isArabic ? 'أضف بعض الأصناف أولاً' : 'Add some food items first');
             return;
         }
-        const planData = {
-            source: 'manual',
-            title: isArabic ? 'جدول غذائي يدوي' : 'Manual Diet Plan',
-            createdAt: new Date().toISOString(),
-            totalCalories: totals.calories,
-            totalProtein: totals.protein,
-            totalCarbs: totals.carbs,
-            totalFat: totals.fat,
-            items: selectedFoods.map(item => {
-                const macros = calculateItemMacros(item);
-                return {
-                    nameEn: item.food.nameEn, nameAr: item.food.nameAr,
-                    quantity: item.quantity,
-                    unit: isArabic ? item.selectedUnit.labelAr : item.selectedUnit.labelEn,
-                    unitKey: item.selectedUnit.unit,
-                    gramsPerUnit: item.selectedUnit.grams,
-                    ...macros,
-                };
-            }),
-        };
-        saveMutation.mutate(planData);
+
+        let baseTitle = planTitle.trim() || (groups.length > 0 ? groups[0].name : (isArabic ? 'جدول غذائي' : 'Diet Plan'));
+        
+        let existingMatchedPlanId: string | null = null;
+        let existingMatchedPlanData: any = null;
+
+        if (savedPlans && !editPlanId) {
+            const matchedPlan = savedPlans.find(p => {
+                try {
+                    const pd = typeof p.planData === 'string' ? JSON.parse(p.planData) : p.planData;
+                    return pd?.title?.toLowerCase() === baseTitle.toLowerCase();
+                } catch { return false; }
+            });
+
+            if (matchedPlan) {
+                existingMatchedPlanId = matchedPlan.id;
+                try {
+                    existingMatchedPlanData = typeof matchedPlan.planData === 'string' ? JSON.parse(matchedPlan.planData) : matchedPlan.planData;
+                } catch {}
+            }
+        }
+
+        const localPlanData = getPlanData(groups, baseTitle);
+
+        if (existingMatchedPlanId && existingMatchedPlanData && existingMatchedPlanData.groups) {
+            // MERGE MODE
+            const mergedGroups = [...existingMatchedPlanData.groups];
+            localPlanData.groups.forEach((localGroup: any) => {
+                const existingGroupIndex = mergedGroups.findIndex((g: any) => g.name && localGroup.name && g.name.trim().toLowerCase() === localGroup.name.trim().toLowerCase());
+                if (existingGroupIndex >= 0) {
+                    // Append items to existing group
+                    mergedGroups[existingGroupIndex] = {
+                        ...mergedGroups[existingGroupIndex],
+                        items: [...(mergedGroups[existingGroupIndex].items || []), ...(localGroup.items || [])]
+                    };
+                } else {
+                    // Add as a new group
+                    mergedGroups.push({ ...localGroup, id: Date.now().toString() + Math.random().toString() });
+                }
+            });
+
+            // Recalculate totals
+            let totalCalories = 0, totalProtein = 0, totalCarbs = 0, totalFat = 0;
+            mergedGroups.forEach((g: any) => {
+                g.items?.forEach((item: any) => {
+                    totalCalories += Number(item.calories) || 0;
+                    totalProtein += Number(item.protein) || 0;
+                    totalCarbs += Number(item.carbs) || 0;
+                    totalFat += Number(item.fat) || 0;
+                });
+            });
+
+            const mergedPlanData = {
+                ...existingMatchedPlanData,
+                groups: mergedGroups,
+                totalCalories: Math.round(totalCalories),
+                totalProtein: Math.round(totalProtein * 10) / 10,
+                totalCarbs: Math.round(totalCarbs * 10) / 10,
+                totalFat: Math.round(totalFat * 10) / 10,
+            };
+
+            updateMutation.mutate({ id: existingMatchedPlanId, planData: mergedPlanData });
+            return;
+        }
+
+        let finalTitle = baseTitle;
+
+        if (savedPlans && !existingMatchedPlanId) {
+            let attempt = 1;
+            while (savedPlans.some(p => {
+                if (editPlanId && p.id === editPlanId) return false;
+                try {
+                    const pd = typeof p.planData === 'string' ? JSON.parse(p.planData) : p.planData;
+                    return pd?.title?.toLowerCase() === finalTitle.toLowerCase();
+                } catch { return false; }
+            })) {
+                attempt++;
+                finalTitle = `${baseTitle} ${attempt}`;
+            }
+        }
+
+        const finalPlanData = getPlanData(groups, finalTitle);
+        if (editPlanId) {
+            updateMutation.mutate({ id: editPlanId, planData: finalPlanData });
+        } else {
+            saveMutation.mutate(finalPlanData);
+        }
     };
+
 
     // ── Render helpers ──────────────────────────────────────────────────────────
 
     const cardBg = isDark ? 'rgba(30, 41, 59, 0.7)' : 'rgba(255, 255, 255, 0.9)';
     const inputBg = isDark ? 'rgba(15, 23, 42, 0.8)' : '#f1f5f9';
 
-    const hasItems = selectedFoods.length > 0;
+    const hasItems = groups.some(g => g.items.length > 0);
 
     return (
         <View style={[styles.container, { backgroundColor: colors.background }]}>
@@ -430,7 +669,7 @@ export default function ManualDietBuilderScreen({ navigation }: any) {
                         <Ionicons name={isArabic ? 'chevron-forward' : 'chevron-back'} size={24} color={colors.text} />
                     </TouchableOpacity>
                     <Text style={[styles.headerTitle, { color: colors.text }]}>
-                        {isArabic ? 'تصميم جدول غذائي' : 'Diet Builder'}
+                        {editPlanId ? (isArabic ? 'تعديل الجدول الغذائي' : 'Edit Diet Plan') : (isArabic ? 'تصميم جدول غذائي' : 'Diet Builder')}
                     </Text>
                     <View style={{ width: 40 }} />
                 </View>
@@ -466,7 +705,7 @@ export default function ManualDietBuilderScreen({ navigation }: any) {
                             if (!permission?.granted) requestPermission();
                             setShowScanner(true);
                         }}
-                        style={{ padding: 6, backgroundColor: isDark ? 'rgba(59,130,246,0.15)' : 'rgba(59,130,246,0.1)', borderRadius: 8, marginLeft: 4 }}
+                        style={{ padding: 6, backgroundColor: isDark ? 'rgba(59,130,246,0.15)' : 'rgba(59,130,246,0.1)', borderRadius: 8, marginStart: 4 }}
                     >
                         <Ionicons name="barcode-outline" size={22} color={colors.primary} />
                     </TouchableOpacity>
@@ -483,13 +722,13 @@ export default function ManualDietBuilderScreen({ navigation }: any) {
                             renderItem={({ item }) => (
                                 <TouchableOpacity
                                     style={[styles.resultItem, { borderBottomColor: colors.border }]}
-                                    onPress={() => addFood(item)}
+                                    onPress={() => handleAddFoodInit(item)}
                                 >
-                                    <View style={{ flex: 1, marginRight: 8 }}>
-                                        <Text style={[styles.resultName, { color: colors.text }]} numberOfLines={1}>
+                                    <View style={{ flex: 1, marginEnd: 8 }}>
+                                        <Text style={[styles.resultName, { color: colors.text, textAlign: isArabic ? 'right' : 'left' }]} numberOfLines={1}>
                                             {isArabic ? item.nameAr : item.nameEn}
                                         </Text>
-                                        <Text style={{ fontSize: 11, color: colors.mutedText, marginTop: 1 }} numberOfLines={1}>
+                                        <Text style={{ fontSize: 11, color: colors.mutedText, marginTop: 1, textAlign: isArabic ? 'right' : 'left' }} numberOfLines={1}>
                                             {isArabic ? item.nameEn : item.nameAr} · {item.calories} cal/100g
                                         </Text>
                                     </View>
@@ -502,7 +741,7 @@ export default function ManualDietBuilderScreen({ navigation }: any) {
                                     onPress={() => performSearch(searchText, true)}
                                     disabled={isSearching}
                                 >
-                                    <Ionicons name="cloud-download-outline" size={20} color={colors.primary} style={{ marginRight: 8 }} />
+                                    <Ionicons name="cloud-download-outline" size={20} color={colors.primary} style={{ marginEnd: 8 }} />
                                     <Text style={[styles.resultName, { color: colors.primary }]}>
                                         {isSearching ? (isArabic ? 'جاري البحث في القاعدة العالمية...' : 'Searching global database...') : (isArabic ? 'لم تجد الصنف؟ ابحث في القاعدة العالمية' : "Can't find it? Search global database")}
                                     </Text>
@@ -530,10 +769,11 @@ export default function ManualDietBuilderScreen({ navigation }: any) {
                         </TouchableOpacity>
                     </View>
                 )}
-                {/* ── Selected Foods List ── */}
+
+                {/* ── Groups & Foods List ── */}
                 <ScrollView
                     style={{ flex: 1 }}
-                    contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 8, paddingBottom: hasItems ? 230 : 30, gap: 10 }}
+                    contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 8, paddingBottom: hasItems ? 230 : 30, gap: 16 }}
                     keyboardShouldPersistTaps="handled"
                     showsVerticalScrollIndicator={false}
                 >
@@ -541,69 +781,109 @@ export default function ManualDietBuilderScreen({ navigation }: any) {
                         <View style={styles.emptyState}>
                             <Ionicons name="restaurant-outline" size={52} color={colors.mutedText} />
                             <Text style={{ fontSize: 16, color: colors.mutedText, textAlign: 'center', fontWeight: '600' }}>
-                                {isArabic ? 'ابحث عن الأطعمة وأضفها هنا' : 'Search for foods and add them here'}
+                                {isArabic ? 'جدولك فارغ حالياً' : 'Your plan is currently empty'}
                             </Text>
                             <Text style={{ fontSize: 13, color: colors.mutedText, textAlign: 'center', marginTop: 4, lineHeight: 20 }}>
                                 {isArabic
-                                    ? 'اكتب اسم الطعام بالعربي أو الإنجليزي\nمثال: دجاج، أرز، chicken، rice'
-                                    : 'Type a food name in English or Arabic\ne.g., chicken, rice, دجاج، أرز'}
+                                    ? 'ابحث عن الأطعمة وأضفها في مجموعات (وجبات) لتكوين جدولك'
+                                    : 'Search for foods and add them into groups (meals) to build your plan'}
                             </Text>
                         </View>
                     )}
 
-                    {selectedFoods.map(item => {
-                        const macros = calculateItemMacros(item);
+                    {groups.map(group => {
+                        const groupMacros = group.items.reduce((acc, item) => {
+                            const m = calculateItemMacros(item);
+                            return {
+                                calories: acc.calories + m.calories,
+                                protein: acc.protein + m.protein,
+                                carbs: acc.carbs + m.carbs,
+                                fat: acc.fat + m.fat,
+                            };
+                        }, { calories: 0, protein: 0, carbs: 0, fat: 0 });
+
                         return (
-                            <View key={item.key} style={[styles.foodCard, { backgroundColor: cardBg, borderColor: colors.border }]}>
-                                <View style={styles.foodCardHeader}>
-                                    <Text style={[styles.foodName, { color: colors.text }]} numberOfLines={1}>
-                                        {isArabic ? item.food.nameAr : item.food.nameEn}
-                                    </Text>
-                                    <TouchableOpacity onPress={() => removeFood(item.key)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-                                        <Ionicons name="trash-outline" size={18} color={colors.danger} />
+                            <View key={group.id} style={{ marginBottom: 16 }}>
+                                {/* Group Header */}
+                                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8, paddingHorizontal: 4 }}>
+                                    <Text style={{ fontSize: 18, fontWeight: 'bold', color: colors.text, flex: 1, textAlign: isArabic ? 'right' : 'left' }}>{group.name}</Text>
+                                    <TouchableOpacity onPress={() => removeGroup(group.id)} style={{ padding: 4 }}>
+                                        <Ionicons name="trash-outline" size={20} color={colors.danger} />
                                     </TouchableOpacity>
                                 </View>
 
-                                <View style={styles.quantityRow}>
-                                    <TextInput
-                                        style={[styles.quantityInput, { color: colors.text, backgroundColor: inputBg, borderColor: colors.border }]}
-                                        value={item.quantity.toString()}
-                                        onChangeText={val => updateQuantity(item.key, parseFloat(val) || 0)}
-                                        keyboardType="numeric"
-                                        selectTextOnFocus
-                                        textAlign="center"
-                                    />
-                                    <TouchableOpacity
-                                        style={[styles.unitButton, { backgroundColor: isDark ? 'rgba(59,130,246,0.15)' : 'rgba(59,130,246,0.1)', borderColor: colors.primary }]}
-                                        onPress={() => openUnitSelector(item.key)}
-                                    >
-                                        <Text style={[styles.unitText, { color: colors.primary }]}>
-                                            {isArabic ? item.selectedUnit.labelAr : item.selectedUnit.labelEn}
-                                        </Text>
-                                        <Ionicons name="chevron-down" size={14} color={colors.primary} />
-                                    </TouchableOpacity>
-                                    <View style={{ flex: 1, alignItems: 'flex-end' }}>
-                                        <Text style={{ fontSize: 22, fontWeight: '800', color: colors.primary }}>{macros.calories}</Text>
-                                        <Text style={{ fontSize: 10, color: colors.mutedText, marginTop: -2 }}>{isArabic ? 'سعرة' : 'Cal'}</Text>
+                                {group.items.length === 0 && (
+                                    <View style={{ padding: 16, backgroundColor: cardBg, borderRadius: 14, borderColor: colors.border, borderWidth: 1, alignItems: 'center' }}>
+                                        <Text style={{ color: colors.mutedText }}>{isArabic ? 'لا توجد أطعمة في هذه المجموعة' : 'No foods currently in this group'}</Text>
                                     </View>
+                                )}
+
+                                <View style={{ gap: 10 }}>
+                                    {group.items.map(item => {
+                                        const macros = calculateItemMacros(item);
+                                        return (
+                                            <View key={item.key} style={[styles.foodCard, { backgroundColor: cardBg, borderColor: colors.border }]}>
+                                                <View style={styles.foodCardHeader}>
+                                                    <Text style={[styles.foodName, { color: colors.text, textAlign: isArabic ? 'right' : 'left' }]} numberOfLines={1}>
+                                                        {isArabic ? item.food.nameAr : item.food.nameEn}
+                                                    </Text>
+                                                    <TouchableOpacity onPress={() => removeFood(item.key)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                                                        <Ionicons name="trash-outline" size={18} color={colors.danger} />
+                                                    </TouchableOpacity>
+                                                </View>
+
+                                                <View style={styles.quantityRow}>
+                                                    <TextInput
+                                                        style={[styles.quantityInput, { color: colors.text, backgroundColor: inputBg, borderColor: colors.border }]}
+                                                        value={item.quantity.toString()}
+                                                        onChangeText={val => updateQuantity(item.key, parseFloat(val) || 0)}
+                                                        keyboardType="numeric"
+                                                        selectTextOnFocus
+                                                        textAlign="center"
+                                                    />
+                                                    <TouchableOpacity
+                                                        style={[styles.unitButton, { backgroundColor: isDark ? 'rgba(59,130,246,0.15)' : 'rgba(59,130,246,0.1)', borderColor: colors.primary }]}
+                                                        onPress={() => openUnitSelector(item.key)}
+                                                    >
+                                                        <Text style={[styles.unitText, { color: colors.primary }]}>
+                                                            {isArabic ? item.selectedUnit.labelAr : item.selectedUnit.labelEn}
+                                                        </Text>
+                                                        <Ionicons name="chevron-down" size={14} color={colors.primary} />
+                                                    </TouchableOpacity>
+                                                    <View style={{ flex: 1, alignItems: 'flex-end' }}>
+                                                        <Text style={{ fontSize: 22, fontWeight: '800', color: colors.primary, textAlign: 'right' }}>{macros.calories}</Text>
+                                                        <Text style={{ fontSize: 10, color: colors.mutedText, marginTop: -2, textAlign: 'right' }}>{isArabic ? 'سعرة' : 'Cal'}</Text>
+                                                    </View>
+                                                </View>
+
+                                                <View style={styles.macrosRow}>
+                                                    <View style={{ alignItems: 'center', flex: 1 }}>
+                                                        <Text style={{ fontSize: 14, fontWeight: '700', color: '#3b82f6' }}>{macros.protein}g</Text>
+                                                        <Text style={{ fontSize: 10, color: colors.mutedText }}>{isArabic ? 'بروتين' : 'Protein'}</Text>
+                                                    </View>
+                                                    <View style={{ width: 1, height: 24, backgroundColor: colors.border, opacity: 0.4 }} />
+                                                    <View style={{ alignItems: 'center', flex: 1 }}>
+                                                        <Text style={{ fontSize: 14, fontWeight: '700', color: '#f59e0b' }}>{macros.carbs}g</Text>
+                                                        <Text style={{ fontSize: 10, color: colors.mutedText }}>{isArabic ? 'كربوهيدرات' : 'Carbs'}</Text>
+                                                    </View>
+                                                    <View style={{ width: 1, height: 24, backgroundColor: colors.border, opacity: 0.4 }} />
+                                                    <View style={{ alignItems: 'center', flex: 1 }}>
+                                                        <Text style={{ fontSize: 14, fontWeight: '700', color: '#ef4444' }}>{macros.fat}g</Text>
+                                                        <Text style={{ fontSize: 10, color: colors.mutedText }}>{isArabic ? 'دهون' : 'Fat'}</Text>
+                                                    </View>
+                                                </View>
+                                            </View>
+                                        );
+                                    })}
                                 </View>
 
-                                <View style={styles.macrosRow}>
-                                    <View style={{ alignItems: 'center', flex: 1 }}>
-                                        <Text style={{ fontSize: 14, fontWeight: '700', color: '#3b82f6' }}>{macros.protein}g</Text>
-                                        <Text style={{ fontSize: 10, color: colors.mutedText }}>{isArabic ? 'بروتين' : 'Protein'}</Text>
+                                {/* Group Footer Totals */}
+                                {group.items.length > 0 && (
+                                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 6, marginTop: 8 }}>
+                                        <Text style={{ fontSize: 12, fontWeight: '600', color: colors.mutedText }}>{isArabic ? 'إجمالي المجموعة' : 'Group Total'}</Text>
+                                        <Text style={{ fontSize: 12, fontWeight: 'bold', color: colors.primary }}>{groupMacros.calories} Cal | {Math.round(groupMacros.protein)}g P | {Math.round(groupMacros.carbs)}g C | {Math.round(groupMacros.fat)}g F</Text>
                                     </View>
-                                    <View style={{ width: 1, height: 24, backgroundColor: colors.border, opacity: 0.4 }} />
-                                    <View style={{ alignItems: 'center', flex: 1 }}>
-                                        <Text style={{ fontSize: 14, fontWeight: '700', color: '#f59e0b' }}>{macros.carbs}g</Text>
-                                        <Text style={{ fontSize: 10, color: colors.mutedText }}>{isArabic ? 'كربوهيدرات' : 'Carbs'}</Text>
-                                    </View>
-                                    <View style={{ width: 1, height: 24, backgroundColor: colors.border, opacity: 0.4 }} />
-                                    <View style={{ alignItems: 'center', flex: 1 }}>
-                                        <Text style={{ fontSize: 14, fontWeight: '700', color: '#ef4444' }}>{macros.fat}g</Text>
-                                        <Text style={{ fontSize: 10, color: colors.mutedText }}>{isArabic ? 'دهون' : 'Fat'}</Text>
-                                    </View>
-                                </View>
+                                )}
                             </View>
                         );
                     })}
@@ -612,6 +892,26 @@ export default function ManualDietBuilderScreen({ navigation }: any) {
                 {/* ── Total Bar + Save Button (always visible when items exist) ── */}
                 {hasItems && (
                     <View style={[styles.totalBar, { backgroundColor: isDark ? '#0f172a' : '#ffffff', borderTopColor: colors.border }]}>
+                        
+                        <TouchableOpacity
+                            style={[styles.saveButton, { opacity: saveMutation.isPending || updateMutation.isPending ? 0.6 : 1, marginBottom: 12, marginTop: 4 }]}
+                            onPress={handleSave}
+                            disabled={saveMutation.isPending || updateMutation.isPending}
+                            testID="button-save-manual-plan"
+                            activeOpacity={0.8}
+                        >
+                            {saveMutation.isPending || updateMutation.isPending ? (
+                                <ActivityIndicator size="small" color="#ffffff" />
+                            ) : (
+                                <>
+                                    <Ionicons name="bookmark" size={20} color="#ffffff" style={{ marginHorizontal: 8 }} />
+                                    <Text style={styles.saveButtonText}>
+                                        {editPlanId ? (isArabic ? 'حفظ التعديلات' : 'Save Changes') : (isArabic ? 'حفظ في جدولي الغذائي' : 'Save to My Diet Plans')}
+                                    </Text>
+                                </>
+                            )}
+                        </TouchableOpacity>
+
                         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
                             <Text style={{ fontSize: 17, fontWeight: '700', color: colors.text }}>
                                 {isArabic ? 'إجمالي السعرات' : 'Total Calories'}
@@ -635,25 +935,6 @@ export default function ManualDietBuilderScreen({ navigation }: any) {
                                 <Text style={{ fontSize: 10, fontWeight: '600', color: '#ef4444', marginTop: 1 }}>{isArabic ? 'دهون' : 'Fat'}</Text>
                             </View>
                         </View>
-
-                        <TouchableOpacity
-                            style={[styles.saveButton, { opacity: saveMutation.isPending ? 0.6 : 1 }]}
-                            onPress={handleSave}
-                            disabled={saveMutation.isPending}
-                            testID="button-save-manual-plan"
-                            activeOpacity={0.8}
-                        >
-                            {saveMutation.isPending ? (
-                                <ActivityIndicator size="small" color="#ffffff" />
-                            ) : (
-                                <>
-                                    <Ionicons name="bookmark" size={20} color="#ffffff" style={{ marginRight: 8 }} />
-                                    <Text style={styles.saveButtonText}>
-                                        {isArabic ? 'حفظ في جدولي الغذائي' : 'Save to My Diet Plans'}
-                                    </Text>
-                                </>
-                            )}
-                        </TouchableOpacity>
                     </View>
                 )}
             </KeyboardAvoidingView>
@@ -676,7 +957,7 @@ export default function ManualDietBuilderScreen({ navigation }: any) {
                         <Text style={[styles.modalTitle, { color: colors.text }]}>
                             {isArabic ? 'اختر وحدة القياس' : 'Select Unit'}
                         </Text>
-                        {activeUnitSelectionKey && selectedFoods.find(f => f.key === activeUnitSelectionKey)?.food.servingUnits.map((u, i) => (
+                        {activeUnitSelectionKey && groups.flatMap(g => g.items).find(f => f.key === activeUnitSelectionKey)?.food.servingUnits.map((u, i) => (
                             <TouchableOpacity
                                 key={i}
                                 style={[styles.modalItem, { borderBottomColor: colors.border }]}
@@ -719,6 +1000,76 @@ export default function ManualDietBuilderScreen({ navigation }: any) {
                             </View>
                         </CameraView>
                     )}
+                </View>
+            </Modal>
+
+            {/* ── Group Selection Modal ── */}
+            <Modal visible={isGroupModalVisible} transparent animationType="slide">
+                <View style={[styles.modalOverlay, { backgroundColor: 'rgba(0,0,0,0.6)' }]}>
+                    <View style={[styles.modalContent, { backgroundColor: isDark ? '#1e293b' : '#ffffff', borderColor: colors.border }]}>
+                        <View style={styles.modalHeader}>
+                            <Text style={[styles.modalTitle, { color: colors.text, flex: 1, textAlign: isArabic ? 'right' : 'left' }]}>
+                                {isArabic ? targetFoodToAdd?.nameAr : targetFoodToAdd?.nameEn}
+                            </Text>
+                            <TouchableOpacity onPress={() => setGroupModalVisible(false)} style={{ marginStart: 12 }}>
+                                <Ionicons name="close" size={24} color={colors.text} />
+                            </TouchableOpacity>
+                        </View>
+
+                        <Text style={[{ color: colors.mutedText, marginBottom: 12, textAlign: isArabic ? 'right' : 'left', paddingHorizontal: 16 }]}>
+                            {isArabic ? 'اختر مجموعة أو أضف مجموعة جديدة:' : 'Select a group or add a new one:'}
+                        </Text>
+
+                        <ScrollView style={{ maxHeight: 200, marginBottom: 16 }}>
+                            {groups.map(g => (
+                                <TouchableOpacity
+                                    key={g.id}
+                                    style={[styles.groupSelector, { borderColor: selectedGroupId === g.id ? colors.primary : colors.border }]}
+                                    onPress={() => setSelectedGroupId(g.id)}
+                                >
+                                    <Text style={{ flex: 1, color: selectedGroupId === g.id ? colors.primary : colors.text, textAlign: isArabic ? 'right' : 'left' }}>{g.name}</Text>
+                                    {selectedGroupId === g.id && <Ionicons name="checkmark-circle" size={20} color={colors.primary} style={{ marginStart: 8 }} />}
+                                </TouchableOpacity>
+                            ))}
+                            <TouchableOpacity
+                                style={[styles.groupSelector, { borderColor: selectedGroupId === 'NEW' ? colors.primary : colors.border }]}
+                                onPress={() => setSelectedGroupId('NEW')}
+                            >
+                                <Text style={{ flex: 1, color: selectedGroupId === 'NEW' ? colors.primary : colors.text, textAlign: isArabic ? 'right' : 'left' }}>
+                                    {isArabic ? '+ مجموعة جديدة (وجبة جديدة)' : '+ New Group (Meal)'}
+                                </Text>
+                            </TouchableOpacity>
+                        </ScrollView>
+
+                        {selectedGroupId === 'NEW' && (
+                            <View style={{ marginBottom: 20 }}>
+                                <TextInput
+                                    style={[{ fontSize: 16, paddingVertical: 12, paddingHorizontal: 12, borderRadius: 10, color: colors.text, borderColor: colors.border, borderWidth: 1, backgroundColor: inputBg, textAlign: isArabic ? 'right' : 'left' }]}
+                                    value={newGroupName}
+                                    onChangeText={setNewGroupName}
+                                    placeholder={isArabic ? 'أدخل اسم المجموعة...' : 'Enter group name...'}
+                                    placeholderTextColor={colors.mutedText}
+                                />
+                                {suggestedGroupNames.filter(n => !groups.some(g => g.name === n)).length > 0 && (
+                                    <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginTop: 12 }} contentContainerStyle={{ gap: 8, paddingHorizontal: 2 }}>
+                                        {suggestedGroupNames.filter(n => !groups.some(g => g.name === n)).map(name => (
+                                            <TouchableOpacity 
+                                                key={`sugg_${name}`} 
+                                                style={{ backgroundColor: isDark ? 'rgba(59,130,246,0.1)' : '#eff6ff', paddingHorizontal: 14, paddingVertical: 10, borderRadius: 20, borderWidth: 1, borderColor: colors.primary }}
+                                                onPress={() => setNewGroupName(name)}
+                                            >
+                                                <Text style={{ color: colors.primary, fontSize: 13, fontWeight: '600' }}>{name}</Text>
+                                            </TouchableOpacity>
+                                        ))}
+                                    </ScrollView>
+                                )}
+                            </View>
+                        )}
+
+                        <TouchableOpacity style={[styles.saveButton, { width: '100%', paddingVertical: 14 }]} onPress={processAddFoodToGroup}>
+                            <Text style={[styles.saveButtonText, { textAlign: 'center', flex: 1 }]}>{isArabic ? 'إضافة' : 'Add'}</Text>
+                        </TouchableOpacity>
+                    </View>
                 </View>
             </Modal>
 
@@ -811,7 +1162,7 @@ const styles = StyleSheet.create({
         fontSize: 15,
         fontWeight: '700',
         flex: 1,
-        marginRight: 8,
+        marginEnd: 8,
     },
     quantityRow: {
         flexDirection: 'row',
@@ -849,7 +1200,7 @@ const styles = StyleSheet.create({
     totalBar: {
         paddingHorizontal: 16,
         paddingTop: 14,
-        paddingBottom: 32,
+        paddingBottom: 90,
         borderTopWidth: 1,
         gap: 10,
     },
@@ -908,5 +1259,23 @@ const styles = StyleSheet.create({
     modalItemText: {
         fontSize: 16,
         textAlign: 'center',
+    },
+    modalHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        paddingHorizontal: 16,
+        paddingTop: 16,
+        paddingBottom: 8,
+    },
+    groupSelector: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingVertical: 14,
+        paddingHorizontal: 16,
+        borderWidth: 1,
+        borderRadius: 12,
+        marginBottom: 8,
+        marginHorizontal: 16,
     },
 });

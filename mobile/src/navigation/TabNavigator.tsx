@@ -213,7 +213,6 @@ export default function TabNavigator({ navigation }: any) {
             headerShown: false,
             tabBarButton: () => null,
             tabBarItemStyle: { display: 'none' },
-            tabBarStyle: { display: 'none' },
           }}
         />
         <Tab.Screen

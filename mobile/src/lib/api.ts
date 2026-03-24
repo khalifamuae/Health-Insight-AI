@@ -157,6 +157,18 @@ export const api = {
     return parseApiResponse<T>(response);
   },
 
+  async put<T>(endpoint: string, data?: any): Promise<T> {
+    const headers = await getHeaders();
+    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+      method: 'PUT',
+      headers,
+      body: JSON.stringify(data),
+      credentials: 'include',
+    });
+    await extractAndSaveCookie(response);
+    return parseApiResponse<T>(response);
+  },
+
   async patch<T>(endpoint: string, data?: any): Promise<T> {
     const headers = await getHeaders();
     const response = await fetch(`${API_BASE_URL}${endpoint}`, {

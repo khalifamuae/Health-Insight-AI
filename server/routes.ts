@@ -12,7 +12,7 @@ import { generateDietPlan, translateDietPlan } from "./dietPlanGenerator";
 import { getPrivacyPolicyHTML, getPrivacyPolicyArabicHTML, getTermsOfServiceHTML, getTermsOfServiceArabicHTML, getSupportPageHTML, getAccountDeletionHTML } from "./legalPages";
 import { desc, eq, and, gte, sql } from "drizzle-orm";
 import { db } from "./db";
-import { userProfiles, testDefinitions, type TestDefinition, sharedWorkouts } from "@shared/schema";
+import { userProfiles, testDefinitions, type TestDefinition, sharedWorkouts, sharedDietPlans } from "@shared/schema";
 import crypto from "crypto";
 import { emailVerificationCodes } from "@shared/schema";
 import { getResendClient } from "./resendClient";
@@ -1639,6 +1639,30 @@ export async function registerRoutes(
     }
   });
 
+  app.put("/api/saved-diet-plans/:id", isAuthenticated, async (req: any, res: Response) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { id } = req.params;
+      const { planData } = req.body;
+      if (!planData) {
+        return res.status(400).json({ error: "Plan data is required" });
+      }
+
+      const plan = await storage.getSavedDietPlan(id);
+      if (!plan || plan.userId !== userId) {
+        return res.status(404).json({ error: "Plan not found" });
+      }
+
+      const updated = await storage.updateSavedDietPlan(id, {
+        planData: typeof planData === "string" ? planData : JSON.stringify(planData)
+      });
+      res.json(updated);
+    } catch (error) {
+      console.error("Error updating saved diet plan:", error);
+      res.status(500).json({ error: "Failed to update saved diet plan" });
+    }
+  });
+
 
   // ===== Subscription / In-App Purchase Endpoints =====
 
@@ -1898,6 +1922,60 @@ export async function registerRoutes(
     } catch (error) {
       console.error("Error fetching shared workout:", error);
       res.status(500).json({ error: "Failed to fetch shared workout." });
+    }
+  });
+  app.post("/api/diet-plans/share", isAuthenticated, async (req: any, res: Response) => {
+    try {
+      const { planData } = req.body;
+      const userId = req.user.claims?.sub || req.user.id;
+
+      if (!planData || typeof planData !== 'object') {
+        return res.status(400).json({ error: "Invalid diet plan data provided." });
+      }
+
+      // Generate a unique 6-character uppercase alphanumeric code
+      const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+      let shareCode = 'D-';
+      for (let i = 0; i < 5; i++) {
+        shareCode += characters.charAt(Math.floor(Math.random() * characters.length));
+      }
+
+      await db.insert(sharedDietPlans).values({
+        shareCode,
+        authorId: userId,
+        planData: planData,
+      });
+
+      res.status(201).json({ shareCode });
+    } catch (error) {
+      console.error("Error sharing diet plan:", error);
+      res.status(500).json({ error: "Failed to share diet plan." });
+    }
+  });
+
+  app.get("/api/diet-plans/shared/:code", isAuthenticated, async (req: any, res: Response) => {
+    try {
+      const code = req.params.code.toUpperCase();
+      const sharedPlan = await db.query.sharedDietPlans.findFirst({
+        where: eq(sharedDietPlans.shareCode, code),
+      });
+
+      if (!sharedPlan) {
+        return res.status(404).json({ error: "Diet Plan code not found." });
+      }
+
+      // Increment download counter
+      await db.update(sharedDietPlans)
+        .set({ downloads: sql`${sharedDietPlans.downloads} + 1` })
+        .where(eq(sharedDietPlans.shareCode, code));
+
+      res.json({
+        planData: sharedPlan.planData,
+        downloads: (sharedPlan.downloads || 0) + 1,
+      });
+    } catch (error) {
+      console.error("Error fetching shared diet plan:", error);
+      res.status(500).json({ error: "Failed to fetch shared diet plan." });
     }
   });
 
