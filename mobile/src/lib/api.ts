@@ -1,6 +1,12 @@
 import * as SecureStore from 'expo-secure-store';
+import Constants from 'expo-constants';
 
-const API_BASE_URL = 'https://health-insight-ai.replit.app';
+const getDevApiUrl = () => {
+  // Explicitly hardcoded to the local Mac IP since Expo Constants fail to resolve dynamically over the Wi-Fi.
+  return `http://192.168.1.103:5001`;
+};
+
+export const API_BASE_URL = __DEV__ ? getDevApiUrl() : 'https://health-insight-ai.replit.app';
 
 let sessionCookie: string | null = null;
 
@@ -192,6 +198,13 @@ export const api = {
     await parseApiResponse<any>(response);
   },
 
+  async uploadImage(file: { uri: string; name: string; type: string }): Promise<{ url: string }> {
+    const fileName = (file.name || '').toLowerCase();
+    const inferredType = file.type || (/\.(png|jpe?g|heic|webp)$/i.test(fileName) ? 'image/jpeg' : 'application/octet-stream');
+    const normalizedFile = { ...file, type: inferredType };
+    return await uploadMultipart('/api/upload', 'file', normalizedFile);
+  },
+
   async uploadPdf(file: { uri: string; name: string; type: string }): Promise<any> {
     const fileName = (file.name || '').toLowerCase();
     const inferredType =
@@ -239,16 +252,19 @@ export const api = {
   }
 };
 
+const withClient = (endpoint: string, clientId?: string) => 
+  clientId ? `${endpoint}${endpoint.includes('?') ? '&' : '?'}targetClientId=${clientId}` : endpoint;
+
 export const queries = {
-  profile: () => api.get('/api/profile'),
-  tests: () => api.get('/api/tests'),
-  testsHistory: () => api.get('/api/tests/history'),
-  allTests: () => api.get('/api/tests/all'),
-  reminders: () => api.get('/api/reminders'),
+  profile: (clientId?: string) => api.get(withClient('/api/profile', clientId)),
+  tests: (clientId?: string) => api.get(withClient('/api/tests', clientId)),
+  testsHistory: (clientId?: string) => api.get(withClient('/api/tests/history', clientId)),
+  allTests: (clientId?: string) => api.get(withClient('/api/tests/all', clientId)),
+  reminders: (clientId?: string) => api.get(withClient('/api/reminders', clientId)),
   testDefinitions: () => api.get('/api/test-definitions'),
-  stats: () => api.get('/api/stats'),
-  uploadedPdfs: () => api.get('/api/uploaded-pdfs'),
-  savedDietPlans: () => api.get('/api/saved-diet-plans'),
-  subscriptionStatus: () => api.get('/api/subscription/status'),
+  stats: (clientId?: string) => api.get(withClient('/api/stats', clientId)),
+  uploadedPdfs: (clientId?: string) => api.get(withClient('/api/uploaded-pdfs', clientId)),
+  savedDietPlans: (clientId?: string) => api.get(withClient('/api/saved-diet-plans', clientId)),
+  subscriptionStatus: (clientId?: string) => api.get(withClient('/api/subscription/status', clientId)),
   lookupBarcode: (code: string) => api.get(`/api/food/barcode/${code}`),
 };

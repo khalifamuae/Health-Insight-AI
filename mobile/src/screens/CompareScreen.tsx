@@ -92,17 +92,18 @@ const getCategoryIcon = (category: string): keyof typeof Ionicons.glyphMap => {
 };
 
 
-export default function CompareScreen() {
+export default function CompareScreen({ route, navigation }: any) {
+  const { clientId } = route?.params || {};
   const { t, i18n } = useTranslation();
   const { colors, isDark } = useAppTheme();
   const isArabic = isArabicLanguage();
   const styles = getStyles(isArabic);
   const [dateCalendar, setDateCalendar] = useState<CalendarType>('gregorian');
-  const [compareTab, setCompareTab] = useState<'lab' | 'inbody'>('lab');
+  const [compareTab, setCompareTab] = useState<'lab' | 'inbody'>(route?.params?.initialTab || 'lab');
 
   const { data: testsData, isLoading } = useQuery({
-    queryKey: ['testsHistory'],
-    queryFn: queries.testsHistory,
+    queryKey: ['testsHistory', clientId],
+    queryFn: () => queries.testsHistory(clientId),
   });
 
   const tests = (testsData as TestResultWithDefinition[]) || [];
@@ -340,6 +341,11 @@ export default function CompareScreen() {
 
       <View style={[styles.header, { backgroundColor: colors.card, borderBottomColor: colors.border }]}>
         <View style={styles.headerRow}>
+          {route?.params?.clientId && navigation.canGoBack() && (
+            <TouchableOpacity onPress={() => navigation.goBack()} style={{ marginRight: 8, marginLeft: isArabic ? 8 : 0 }}>
+              <Ionicons name={isArabic ? 'arrow-forward' : 'arrow-back'} size={24} color={colors.text} />
+            </TouchableOpacity>
+          )}
           <Ionicons name="git-compare" size={22} color={colors.primary} />
           <Text style={[styles.title, { color: colors.text }]}>{isArabic ? 'مقارنة النتائج' : 'Compare Results'}</Text>
         </View>

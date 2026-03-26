@@ -15,11 +15,14 @@ interface SavedPlan {
   id: string;
   planData: string | unknown;
   createdAt: string;
+  authorId?: string;
+  userId?: string;
 }
 
 const isArabic = I18nManager.isRTL;
 
-export default function MyDietPlansScreen({ navigation }: any) {
+export default function MyDietPlansScreen({ route, navigation }: any) {
+  const { clientId } = route?.params || {};
   const { t, i18n } = useTranslation();
   const { colors, isDark } = useAppTheme();
   const isArabic = isArabicLanguage();
@@ -33,8 +36,8 @@ export default function MyDietPlansScreen({ navigation }: any) {
   const queryClient = useQueryClient();
 
   const { data: savedPlans, isLoading, refetch } = useQuery<SavedPlan[]>({
-    queryKey: ['savedDietPlans'],
-    queryFn: async () => (await queries.savedDietPlans()) as SavedPlan[],
+    queryKey: ['savedDietPlans', clientId],
+    queryFn: async () => (await queries.savedDietPlans(clientId)) as SavedPlan[],
   });
 
   const savedPlansList = useMemo(() => (Array.isArray(savedPlans) ? savedPlans : []), [savedPlans]);
@@ -81,7 +84,7 @@ export default function MyDietPlansScreen({ navigation }: any) {
       return res;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['savedDietPlans'] });
+      queryClient.invalidateQueries({ queryKey: ['savedDietPlans', clientId] });
     },
     onError: () => {
       Alert.alert(
@@ -130,10 +133,10 @@ export default function MyDietPlansScreen({ navigation }: any) {
 
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
-      await api.delete(`/api/saved-diet-plans/${id}`);
+      await api.delete(clientId ? `/api/saved-diet-plans/${id}?targetClientId=${clientId}` : `/api/saved-diet-plans/${id}`);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['savedDietPlans'] });
+      queryClient.invalidateQueries({ queryKey: ['savedDietPlans', clientId] });
     },
     onError: () => {
       Alert.alert(
@@ -224,9 +227,9 @@ export default function MyDietPlansScreen({ navigation }: any) {
             if (manualIds.length === 0) return;
 
             for (const id of manualIds) {
-              await api.delete(`/api/saved-diet-plans/${id}`);
+              await api.delete(clientId ? `/api/saved-diet-plans/${id}?targetClientId=${clientId}` : `/api/saved-diet-plans/${id}`);
             }
-            queryClient.invalidateQueries({ queryKey: ['savedDietPlans'] });
+            queryClient.invalidateQueries({ queryKey: ['savedDietPlans', clientId] });
           }
         }
       ]
@@ -242,10 +245,10 @@ export default function MyDietPlansScreen({ navigation }: any) {
       const res = await api.get<{ planData: any }>(`/api/diet-plans/shared/${code}`);
       if (res && res.planData && res.planData.groups) {
         // Automatically save it using the same structure as builder
-        await api.post('/api/saved-diet-plans', { planData: res.planData });
+        await api.post(clientId ? `/api/saved-diet-plans?targetClientId=${clientId}` : '/api/saved-diet-plans', { planData: res.planData });
         setImportCode('');
         Alert.alert(isArabic ? 'نجاح' : 'Success', isArabic ? 'تم استيراد الجدول بنجاح!' : 'Diet plan imported successfully!');
-        queryClient.invalidateQueries({ queryKey: ['savedDietPlans'] });
+        queryClient.invalidateQueries({ queryKey: ['savedDietPlans', clientId] });
       } else {
         Alert.alert(isArabic ? 'فشل' : 'Failed', isArabic ? 'بيانات الجدول غير صالحة' : 'Invalid diet plan data');
       }
@@ -336,8 +339,8 @@ export default function MyDietPlansScreen({ navigation }: any) {
                 totalCarbs: Math.round(totalCarbs * 10) / 10,
                 totalFat: Math.round(totalFat * 10) / 10
               };
-              await api.put(`/api/saved-diet-plans/${planId}`, { planData: newPlanData });
-              queryClient.invalidateQueries({ queryKey: ['savedDietPlans'] });
+              await api.put(clientId ? `/api/saved-diet-plans/${planId}?targetClientId=${clientId}` : `/api/saved-diet-plans/${planId}`, { planData: newPlanData });
+              queryClient.invalidateQueries({ queryKey: ['savedDietPlans', clientId] });
             } catch (e) {
               Alert.alert(isArabic ? 'خطأ' : 'Error', isArabic ? 'فشل الحذف' : 'Failed to delete');
             }
@@ -373,7 +376,7 @@ export default function MyDietPlansScreen({ navigation }: any) {
               {isImporting ? <ActivityIndicator color="#fff" size="small" /> : <Ionicons name="download-outline" size={22} color="#fff" />}
             </TouchableOpacity>
           </View>
-          {savedPlansList.some(p => { try { const data = typeof p.planData === 'string' ? JSON.parse(p.planData) : p.planData; return data?.source === 'manual'; } catch { return false; } }) && (
+          {(!savedPlansList.some(p => p.authorId && p.authorId !== p.userId) && savedPlansList.some(p => { try { const data = typeof p.planData === 'string' ? JSON.parse(p.planData) : p.planData; return data?.source === 'manual'; } catch { return false; } })) && (
             <View style={{ flexDirection: 'row', gap: 8, marginTop: 12 }}>
               <TouchableOpacity style={[styles.planHeader, { flex: 1, backgroundColor: isDark ? 'rgba(59, 130, 246, 0.15)' : '#eff6ff', justifyContent: 'center', alignItems: 'center', borderColor: '#3b82f6', borderWidth: 1 }]} onPress={handleShareAllManualPlans}>
                 <Ionicons name="share-social-outline" size={18} color="#3b82f6" />
@@ -406,6 +409,7 @@ export default function MyDietPlansScreen({ navigation }: any) {
         ) : (
           savedPlansList.map((plan, index) => {
             const isExpanded = expandedId === plan.id;
+            const isProtected = plan.authorId && plan.authorId !== plan.userId;
             let parsedPlan: any = null;
             try {
               parsedPlan = typeof plan.planData === 'string' ? JSON.parse(plan.planData as string) : plan.planData;
@@ -429,6 +433,11 @@ export default function MyDietPlansScreen({ navigation }: any) {
                             {isManual ? (isArabic ? 'يدوي' : 'Manual') : 'AI'}
                           </Text>
                         </View>
+                        {isProtected && (
+                          <View style={{ backgroundColor: 'rgba(59,130,246,0.15)', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6 }}>
+                             <Text style={{ color: '#3b82f6', fontSize: 9, fontWeight: '700' }}>{isArabic ? 'صُمم بواسطة المدرب' : 'Trainer Designed'}</Text>
+                          </View>
+                        )}
                       </View>
                       <Text style={[styles.planDate, { color: colors.mutedText }]}>
                         {formatAppDate(plan.createdAt, i18n.language, dateCalendar)}
@@ -449,12 +458,12 @@ export default function MyDietPlansScreen({ navigation }: any) {
                     {isManual && (
                       <TouchableOpacity
                         style={[styles.deleteButton, { backgroundColor: isDark ? 'rgba(59, 130, 246, 0.15)' : '#eff6ff' }]}
-                        onPress={() => navigation.navigate('ManualDietBuilder', { editPlanId: plan.id })}
+                        onPress={() => navigation.navigate('ManualDietBuilder', { editPlanId: plan.id, clientId })}
                       >
                         <Ionicons name="pencil" size={20} color="#3b82f6" />
                       </TouchableOpacity>
                     )}
-                    {isManual && (
+                    {isManual && !isProtected && (
                       <TouchableOpacity
                         style={[styles.deleteButton, { backgroundColor: isDark ? 'rgba(59, 130, 246, 0.15)' : '#eff6ff' }]}
                         onPress={() => handleSharePlan(parsedPlan)}

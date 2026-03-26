@@ -1,4 +1,4 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { api } from './api';
 
 export interface ExerciseDefinition {
     id: string;
@@ -24,46 +24,51 @@ export interface WorkoutGroup {
     id: string;
     name: string; // User-defined name, e.g., "Day 1: Chest & Triceps"
     exercises: SavedExercise[];
+    authorId?: string;
+    userId?: string;
 }
-
-const WORKOUT_PLANS_KEY = '@health_insight_workout_plans';
 
 export const WorkoutStore = {
     // Get all user-created workout groups
-    async getGroups(): Promise<WorkoutGroup[]> {
+    async getGroups(clientId?: string): Promise<WorkoutGroup[]> {
         try {
-            const data = await AsyncStorage.getItem(WORKOUT_PLANS_KEY);
-            return data ? JSON.parse(data) : [];
+            const data: any[] = await api.get(clientId ? `/api/saved-workouts?targetClientId=${clientId}` : '/api/saved-workouts');
+            if (data && data.length > 0) {
+                const planStr = data[0].planData;
+                const parsed = typeof planStr === 'string' ? JSON.parse(planStr) : planStr;
+                return parsed.map((g: any) => ({ ...g, authorId: data[0].authorId, userId: data[0].userId }));
+            }
+            return [];
         } catch (e) {
-            console.error('Failed to load workout groups', e);
+            console.error('Failed to load workout groups from cloud', e);
             return [];
         }
     },
 
     // Save the entire list of groups (used for reordering, adding, updating)
-    async saveGroups(groups: WorkoutGroup[]): Promise<void> {
+    async saveGroups(groups: WorkoutGroup[], clientId?: string): Promise<void> {
         try {
-            await AsyncStorage.setItem(WORKOUT_PLANS_KEY, JSON.stringify(groups));
+            await api.post(clientId ? `/api/saved-workouts/sync?targetClientId=${clientId}` : '/api/saved-workouts/sync', { planData: groups });
         } catch (e) {
-            console.error('Failed to save workout groups', e);
+            console.error('Failed to sync workout groups to cloud', e);
         }
     },
 
     // Create a new empty group (e.g. "Upper Body Day")
-    async createGroup(name: string): Promise<WorkoutGroup> {
-        const groups = await this.getGroups();
+    async createGroup(name: string, clientId?: string): Promise<WorkoutGroup> {
+        const groups = await this.getGroups(clientId);
         const newGroup: WorkoutGroup = {
             id: Date.now().toString(),
             name,
             exercises: [],
         };
-        await this.saveGroups([...groups, newGroup]);
+        await this.saveGroups([...groups, newGroup], clientId);
         return newGroup;
     },
 
     // Add an exercise with specific sets/reps to a specific group
-    async addExerciseToGroup(groupId: string, exerciseId: string, sets: number, reps: number): Promise<void> {
-        const groups = await this.getGroups();
+    async addExerciseToGroup(groupId: string, exerciseId: string, sets: number, reps: number, clientId?: string): Promise<void> {
+        const groups = await this.getGroups(clientId);
         const updatedGroups = groups.map((g) => {
             if (g.id === groupId) {
                 return {
@@ -79,12 +84,12 @@ export const WorkoutStore = {
             }
             return g;
         });
-        await this.saveGroups(updatedGroups);
+        await this.saveGroups(updatedGroups, clientId);
     },
 
     // Remove a specific exercise instance from a group
-    async removeExerciseFromGroup(groupId: string, savedExerciseId: string): Promise<void> {
-        const groups = await this.getGroups();
+    async removeExerciseFromGroup(groupId: string, savedExerciseId: string, clientId?: string): Promise<void> {
+        const groups = await this.getGroups(clientId);
         const updatedGroups = groups.map((g) => {
             if (g.id === groupId) {
                 return {
@@ -94,19 +99,19 @@ export const WorkoutStore = {
             }
             return g;
         });
-        await this.saveGroups(updatedGroups);
+        await this.saveGroups(updatedGroups, clientId);
     },
 
     // Update sets/reps for a specific exercise instance
-    async updateExerciseSetsReps(groupId: string, savedExerciseId: string, sets: number, reps: number): Promise<void> {
-        const groups = await this.getGroups();
+    async updateExerciseDetails(groupId: string, savedExerciseId: string, updates: Partial<SavedExercise>, clientId?: string): Promise<void> {
+        const groups = await this.getGroups(clientId);
         const updatedGroups = groups.map((g) => {
             if (g.id === groupId) {
                 return {
                     ...g,
                     exercises: g.exercises.map((ex) => {
                         if (ex.id === savedExerciseId) {
-                            return { ...ex, sets, reps }
+                            return { ...ex, ...updates };
                         }
                         return ex;
                     }),
@@ -114,32 +119,13 @@ export const WorkoutStore = {
             }
             return g;
         });
-        await this.saveGroups(updatedGroups);
+        await this.saveGroups(updatedGroups, clientId);
     },
 
-    // Update weight tracking for a specific exercise instance
-    async updateExerciseWeights(groupId: string, savedExerciseId: string, startWeight: number | undefined, endWeight: number | undefined, weightUnit: 'kg' | 'lbs'): Promise<void> {
-        const groups = await this.getGroups();
-        const updatedGroups = groups.map((g) => {
-            if (g.id === groupId) {
-                return {
-                    ...g,
-                    exercises: g.exercises.map((ex) => {
-                        if (ex.id === savedExerciseId) {
-                            return { ...ex, startWeight, endWeight, weightUnit };
-                        }
-                        return ex;
-                    }),
-                };
-            }
-            return g;
-        });
-        await this.saveGroups(updatedGroups);
-    },
 
     // Share a group to the cloud and get a 6-character code
-    async shareGroup(groupId: string): Promise<string> {
-        const groups = await this.getGroups();
+    async shareGroup(groupId: string, clientId?: string): Promise<string> {
+        const groups = await this.getGroups(clientId);
         const group = groups.find(g => g.id === groupId);
         if (!group) throw new Error("Workout group not found");
 
@@ -150,8 +136,8 @@ export const WorkoutStore = {
     },
 
     // Share all groups bundled together
-    async shareAllGroups(): Promise<string> {
-        const groups = await this.getGroups();
+    async shareAllGroups(clientId?: string): Promise<string> {
+        const groups = await this.getGroups(clientId);
         if (groups.length === 0) throw new Error("No workout groups to share");
 
         // Dynamically import api to avoid circular dependencies
@@ -164,11 +150,11 @@ export const WorkoutStore = {
     },
 
     // Import a group (or multiple groups) from a 6-character code
-    async importGroup(code: string): Promise<void> {
+    async importGroup(code: string, clientId?: string): Promise<void> {
         const { api } = require('./api');
         const res = await api.importSharedWorkout(code);
 
-        const currentGroups = await this.getGroups();
+        const currentGroups = await this.getGroups(clientId);
         let newGroupsToAdd: WorkoutGroup[] = [];
 
         // Check if this is a bundled multi-group export
@@ -201,6 +187,6 @@ export const WorkoutStore = {
             });
         }
 
-        await this.saveGroups([...currentGroups, ...newGroupsToAdd]);
+        await this.saveGroups([...currentGroups, ...newGroupsToAdd], clientId);
     }
 };

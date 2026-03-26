@@ -17,10 +17,8 @@ import { useTranslation } from 'react-i18next';
 import { isArabicLanguage } from '../lib/isArabic';
 import { Ionicons } from '@expo/vector-icons';
 
-import { setSessionCookie } from '../lib/api';
+import { setSessionCookie, API_BASE_URL } from '../lib/api';
 import { useAppTheme } from '../context/ThemeContext';
-
-const API_BASE_URL = 'https://health-insight-ai.replit.app';
 
 interface LoginScreenProps {
   onLogin: (userData: any, token: string) => void;

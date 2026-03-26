@@ -12,12 +12,13 @@ import { generateDietPlan, translateDietPlan } from "./dietPlanGenerator";
 import { getPrivacyPolicyHTML, getPrivacyPolicyArabicHTML, getTermsOfServiceHTML, getTermsOfServiceArabicHTML, getSupportPageHTML, getAccountDeletionHTML } from "./legalPages";
 import { desc, eq, and, gte, sql } from "drizzle-orm";
 import { db } from "./db";
-import { userProfiles, testDefinitions, type TestDefinition, sharedWorkouts, sharedDietPlans } from "@shared/schema";
+import { userProfiles, testDefinitions, type TestDefinition, sharedWorkouts, sharedDietPlans, subscriberConnections, inbodyResults, savedWorkouts, savedDietPlans } from "@shared/schema";
 import crypto from "crypto";
 import { emailVerificationCodes } from "@shared/schema";
 import { getResendClient } from "./resendClient";
 import adminRouter from "./routes/admin";
 import { registerFoodSearchRoutes } from "./foodSearchRoutes";
+import subscriberManagementRouter from "./routes/subscriberManagement";
 
 // Strip sensitive fields before sending profile to client
 function sanitizeProfile(profile: any) {
@@ -217,6 +218,38 @@ export async function registerRoutes(
 
   // Register Admin Routes
   app.use("/api/admin", adminRouter);
+
+  // Register Subscriber Management Routes
+  app.use("/api/subscriber-management", subscriberManagementRouter);
+
+  // Advanced Proxy Middleware for Native Mobile Client Management
+  // This cleverly swaps req.user with the target client's profile if targetClientId is present and authorized.
+  app.use("/api", async (req: any, res: Response, next: any) => {
+    const targetClientId = req.query.targetClientId as string;
+    if (targetClientId && req.user) {
+      if (req.user.subscriberManagementActive !== true && req.user.role !== 'admin') {
+         return res.status(403).json({ error: "Subscriber management feature not active" });
+      }
+      const conn = await db.query.subscriberConnections.findFirst({
+        where: and(
+          eq(subscriberConnections.ownerId, req.user.id),
+          eq(subscriberConnections.clientId, targetClientId),
+          eq(subscriberConnections.status, 'active')
+        ),
+        with: { client: true }
+      });
+
+      if (!conn) {
+        return res.status(403).json({ error: "Not authorized to manage this client or connection is inactive" });
+      }
+
+      req.originalUser = req.user;
+      req.user = conn.client;
+      // Also intercept any potential re-saves of user fields
+      req.userOverrideActive = true; 
+    }
+    next();
+  });
 
   // Register Food Search Routes
   registerFoodSearchRoutes(app);
@@ -572,14 +605,36 @@ export async function registerRoutes(
   // Profile routes
   app.get("/api/profile", isAuthenticated, async (req: any, res: Response) => {
     try {
-      const userId = req.user.claims.sub;
-      let profile = await storage.getUserProfile(userId);
+      const currentUserId = req.user.claims.sub;
+      const targetClientId = (req.query.clientId || req.query.targetClientId) as string | undefined;
+
+      // Handle fetching a client's profile if requested by an authorized trainer
+      if (targetClientId && targetClientId !== currentUserId) {
+        const [conn] = await db.select().from(subscriberConnections)
+          .where(and(eq(subscriberConnections.ownerId, currentUserId), eq(subscriberConnections.clientId, targetClientId), eq(subscriberConnections.status, "active")))
+          .limit(1);
+
+        if (!conn) {
+          return res.status(403).json({ error: "Access denied to this client's profile" });
+        }
+        
+        const clientProfile = await storage.getUserProfile(targetClientId);
+        if (!clientProfile) return res.status(404).json({ error: "Client profile not found" });
+
+        return res.json({
+          ...sanitizeProfile(clientProfile),
+          linkedAt: conn.createdAt
+        });
+      }
+
+      // Default: fetch own profile
+      let profile = await storage.getUserProfile(currentUserId);
 
       if (!profile) {
         const trialEnd = new Date();
         trialEnd.setDate(trialEnd.getDate() + 15);
         profile = await storage.upsertUserProfile({
-          id: userId,
+          id: currentUserId,
           subscriptionPlan: "free",
           filesUploaded: 0,
           dietPlansGenerated: 0,
@@ -599,10 +654,28 @@ export async function registerRoutes(
   app.patch("/api/profile", isAuthenticated, async (req: any, res: Response) => {
     try {
       const userId = req.user.claims.sub;
-      const { phone, age, weight, height, gender, fitnessGoal, activityLevel, mealPreference, hasAllergies, allergies, proteinPreference, proteinPreferences, carbPreferences, bloodType, firstName, lastName, profileImagePath } = req.body;
+      const { phone, age: providedAge, dateOfBirth, weight, height, gender, fitnessGoal, activityLevel, mealPreference, hasAllergies, allergies, proteinPreference, proteinPreferences, carbPreferences, bloodType, firstName, lastName, profileImagePath } = req.body;
+
+      let computedAge = providedAge;
+      let parsedDateOfBirth: Date | undefined = undefined;
+
+      if (dateOfBirth) {
+        parsedDateOfBirth = new Date(dateOfBirth);
+        if (!isNaN(parsedDateOfBirth.getTime())) {
+          const today = new Date();
+          let calculatedAge = today.getFullYear() - parsedDateOfBirth.getFullYear();
+          const m = today.getMonth() - parsedDateOfBirth.getMonth();
+          if (m < 0 || (m === 0 && today.getDate() < parsedDateOfBirth.getDate())) {
+            calculatedAge--;
+          }
+          if (calculatedAge > 0 && calculatedAge < 150) {
+            computedAge = calculatedAge;
+          }
+        }
+      }
 
       // Input validation
-      if (age !== undefined && age !== null && (typeof age !== 'number' || isNaN(age) || age < 1 || age > 150)) {
+      if (computedAge !== undefined && computedAge !== null && (typeof computedAge !== 'number' || isNaN(computedAge) || computedAge < 1 || computedAge > 150)) {
         return res.status(400).json({ error: "Invalid age" });
       }
       if (weight !== undefined && weight !== null && (typeof weight !== 'number' || isNaN(weight) || weight < 1 || weight > 500)) {
@@ -621,7 +694,8 @@ export async function registerRoutes(
         lastName,
         profileImagePath,
         phone,
-        age,
+        dateOfBirth: parsedDateOfBirth,
+        age: computedAge,
         weight,
         height,
         gender,
@@ -724,12 +798,22 @@ export async function registerRoutes(
   // Test results routes - returns only user's actual test results
   app.get("/api/tests", isAuthenticated, async (req: any, res: Response) => {
     try {
-      const userId = req.user.claims.sub;
-      const access = await checkSubscriptionAccess(userId);
+      const currentUserId = req.user.claims.sub;
+      const access = await checkSubscriptionAccess(currentUserId);
       if (!access.hasAccess) {
         return res.status(403).json({ error: "SUBSCRIPTION_REQUIRED", message: access.reason, messageAr: access.reasonAr });
       }
-      const tests = await storage.getLatestTestResultsByUser(userId);
+
+      const targetClientId = (req.query.clientId || req.query.targetClientId) as string | undefined;
+      const targetId = targetClientId || currentUserId;
+
+      if (targetClientId && targetClientId !== currentUserId) {
+        if (!(await verifyTrainerAccess(currentUserId, targetClientId))) {
+          return res.status(403).json({ error: "Access denied" });
+        }
+      }
+
+      const tests = await storage.getLatestTestResultsByUser(targetId);
       res.json(tests);
     } catch (error) {
       console.error("Error fetching tests:", error);
@@ -740,12 +824,22 @@ export async function registerRoutes(
   // Full history (used for result comparison over time)
   app.get("/api/tests/history", isAuthenticated, async (req: any, res: Response) => {
     try {
-      const userId = req.user.claims.sub;
-      const access = await checkSubscriptionAccess(userId);
+      const currentUserId = req.user.claims.sub;
+      const access = await checkSubscriptionAccess(currentUserId);
       if (!access.hasAccess) {
         return res.status(403).json({ error: "SUBSCRIPTION_REQUIRED", message: access.reason, messageAr: access.reasonAr });
       }
-      const tests = await storage.getTestResultsByUser(userId);
+
+      const targetClientId = (req.query.clientId || req.query.targetClientId) as string | undefined;
+      const targetId = targetClientId || currentUserId;
+
+      if (targetClientId && targetClientId !== currentUserId) {
+        if (!(await verifyTrainerAccess(currentUserId, targetClientId))) {
+          return res.status(403).json({ error: "Access denied" });
+        }
+      }
+
+      const tests = await storage.getTestResultsByUser(targetId);
       res.json(tests);
     } catch (error) {
       console.error("Error fetching test history:", error);
@@ -757,17 +851,26 @@ export async function registerRoutes(
   // Ordered by importance level and category as defined in app
   app.get("/api/tests/all", isAuthenticated, async (req: any, res: Response) => {
     try {
-      const userId = req.user.claims.sub;
-      const access = await checkSubscriptionAccess(userId);
+      const currentUserId = req.user.claims.sub;
+      const access = await checkSubscriptionAccess(currentUserId);
       if (!access.hasAccess) {
         return res.status(403).json({ error: "SUBSCRIPTION_REQUIRED", message: access.reason, messageAr: access.reasonAr });
+      }
+
+      const targetClientId = (req.query.clientId || req.query.targetClientId) as string | undefined;
+      const targetId = targetClientId || currentUserId;
+
+      if (targetClientId && targetClientId !== currentUserId) {
+        if (!(await verifyTrainerAccess(currentUserId, targetClientId))) {
+          return res.status(403).json({ error: "Access denied" });
+        }
       }
 
       // Get all test definitions (ordered by importance and category)
       const definitions = await storage.getTestDefinitions();
 
       // Get user's test results
-      const userTests = await storage.getTestResultsByUser(userId);
+      const userTests = await storage.getTestResultsByUser(targetId);
 
       // Create map of latest user test results by testId
       const userTestMap = new Map<string, any>();
@@ -1262,6 +1365,17 @@ export async function registerRoutes(
     }
   });
 
+  // Generic Media Upload endpoint for Chat and profile images without invoking OCR
+  app.post("/api/upload", isAuthenticated, uploadReport.single("file"), async (req: any, res: Response) => {
+    try {
+      if (!req.file) return res.status(400).json({ error: "No file uploaded" });
+      const url = `/uploads/${req.file.filename}`;
+      res.json({ url });
+    } catch (err) {
+      res.status(500).json({ error: "Upload failed" });
+    }
+  });
+
   // Unified upload endpoint: PDF => Lab analysis, Image => InBody analysis
   app.post("/api/analyze-upload", isAuthenticated, uploadReport.single("file"), async (req: any, res: Response) => {
     try {
@@ -1558,7 +1672,7 @@ export async function registerRoutes(
       const translatedPlan = await translateDietPlan(parsedPlan, targetLanguage);
 
       // Update the DB record so it stays translated
-      await storage.updateSavedDietPlan(planId, { planData: JSON.stringify(translatedPlan) });
+      await storage.updateSavedDietPlan(planId, userId, JSON.stringify(translatedPlan));
 
       res.json(translatedPlan);
     } catch (error: any) {
@@ -1601,10 +1715,30 @@ export async function registerRoutes(
     }
   });
 
+  // Helper string to check trainer access
+  const verifyTrainerAccess = async (trainerId: string, clientId: string) => {
+    // Assuming 'db', 'subscriberConnections', 'eq', 'and' are imported from your ORM/DB client
+    // Example: import { db } from './db'; import { subscriberConnections } from './schema'; import { eq, and } from 'drizzle-orm';
+    if (trainerId === clientId) return true; // A user can always access their own data
+    const [conn] = await db.select().from(subscriberConnections)
+      .where(and(eq(subscriberConnections.ownerId, trainerId), eq(subscriberConnections.clientId, clientId), eq(subscriberConnections.status, "active")))
+      .limit(1);
+    return !!conn;
+  };
+
   app.get("/api/saved-diet-plans", isAuthenticated, async (req: any, res: Response) => {
     try {
-      const userId = req.user.claims.sub;
-      const plans = await storage.getSavedDietPlans(userId);
+      const currentUserId = req.user.claims.sub;
+      const targetClientId = (req.query.clientId || req.query.targetClientId) as string | undefined;
+      const targetId = targetClientId || currentUserId;
+
+      if (targetClientId && targetClientId !== currentUserId) {
+        if (!(await verifyTrainerAccess(currentUserId, targetClientId))) {
+          return res.status(403).json({ error: "Access denied" });
+        }
+      }
+
+      const plans = await storage.getSavedDietPlans(targetId);
       res.json(plans);
     } catch (error) {
       console.error("Error fetching saved diet plans:", error);
@@ -1614,12 +1748,30 @@ export async function registerRoutes(
 
   app.post("/api/saved-diet-plans", isAuthenticated, async (req: any, res: Response) => {
     try {
-      const userId = req.user.claims.sub;
+      const currentUserId = req.user.claims.sub;
+      const targetClientId = (req.query.clientId || req.query.targetClientId) as string | undefined;
+      const targetId = targetClientId || currentUserId;
+
       const { planData } = req.body;
       if (!planData) {
         return res.status(400).json({ error: "Plan data is required" });
       }
-      const saved = await storage.saveDietPlan(userId, typeof planData === "string" ? planData : JSON.stringify(planData));
+
+      if (targetClientId && targetClientId !== currentUserId) {
+        if (!(await verifyTrainerAccess(currentUserId, targetClientId))) {
+          return res.status(403).json({ error: "Access denied" });
+        }
+      }
+
+      const saved = await storage.saveDietPlan(targetId, typeof planData === "string" ? planData : JSON.stringify(planData));
+      
+      // If trainer authored it, try to update author id directly (since storage might not support authorId yet)
+      // Assuming 'db' and 'savedDietPlans' are imported
+      // Example: import { db } from './db'; import { savedDietPlans } from './schema'; import { eq } from 'drizzle-orm';
+      if (targetClientId && targetClientId !== currentUserId) {
+         await db.update(savedDietPlans).set({ authorId: currentUserId }).where(eq(savedDietPlans.id, saved.id));
+      }
+
       res.json(saved);
     } catch (error) {
       console.error("Error saving diet plan:", error);
@@ -1629,9 +1781,18 @@ export async function registerRoutes(
 
   app.delete("/api/saved-diet-plans/:id", isAuthenticated, async (req: any, res: Response) => {
     try {
-      const userId = req.user.claims.sub;
+      const currentUserId = req.user.claims.sub;
+      const targetClientId = (req.query.clientId || req.query.targetClientId) as string | undefined;
+      const targetId = targetClientId || currentUserId;
+
+      if (targetClientId && targetClientId !== currentUserId) {
+        if (!(await verifyTrainerAccess(currentUserId, targetClientId))) {
+          return res.status(403).json({ error: "Access denied" });
+        }
+      }
+
       const { id } = req.params;
-      await storage.deleteSavedDietPlan(id, userId);
+      await storage.deleteSavedDietPlan(id, targetId); // Assuming storage.deleteSavedDietPlan now accepts userId for verification
       res.json({ success: true });
     } catch (error) {
       console.error("Error deleting saved diet plan:", error);
@@ -1639,27 +1800,178 @@ export async function registerRoutes(
     }
   });
 
-  app.put("/api/saved-diet-plans/:id", isAuthenticated, async (req: any, res: Response) => {
+  // ===== Workouts Endpoints =====
+  app.get("/api/saved-workouts", isAuthenticated, async (req: any, res: Response) => {
     try {
-      const userId = req.user.claims.sub;
-      const { id } = req.params;
+      const currentUserId = req.user.claims.sub;
+      const targetClientId = (req.query.clientId || req.query.targetClientId) as string | undefined;
+      const targetId = targetClientId || currentUserId;
+
+      if (targetClientId && targetClientId !== currentUserId) {
+        if (!(await verifyTrainerAccess(currentUserId, targetClientId))) {
+          return res.status(403).json({ error: "Access denied" });
+        }
+      }
+
+      const plans = await storage.getSavedWorkouts(targetId);
+      res.json(plans);
+    } catch (error) {
+      console.error("Error fetching saved workouts:", error);
+      res.status(500).json({ error: "Failed to fetch saved workouts" });
+    }
+  });
+
+  app.post("/api/saved-workouts/sync", isAuthenticated, async (req: any, res: Response) => {
+    try {
+      const currentUserId = req.user.claims.sub;
+      const targetClientId = (req.query.clientId || req.query.targetClientId) as string | undefined;
+      const targetId = targetClientId || currentUserId;
+
       const { planData } = req.body;
       if (!planData) {
         return res.status(400).json({ error: "Plan data is required" });
       }
 
-      const plan = await storage.getSavedDietPlan(id);
-      if (!plan || plan.userId !== userId) {
-        return res.status(404).json({ error: "Plan not found" });
+      if (targetClientId && targetClientId !== currentUserId) {
+        if (!(await verifyTrainerAccess(currentUserId, targetClientId))) {
+          return res.status(403).json({ error: "Access denied" });
+        }
       }
 
-      const updated = await storage.updateSavedDietPlan(id, {
-        planData: typeof planData === "string" ? planData : JSON.stringify(planData)
-      });
-      res.json(updated);
+      // Find if user already has a saved workout document
+      const existing = await storage.getSavedWorkouts(targetId);
+      const stringifiedPlanData = typeof planData === "string" ? planData : JSON.stringify(planData);
+
+      if (existing && existing.length > 0) {
+        // Update the first one
+        const updated = await storage.updateSavedWorkout(existing[0].id, targetId, stringifiedPlanData);
+        if (targetClientId && targetClientId !== currentUserId) {
+           await db.update(savedWorkouts).set({ authorId: currentUserId }).where(eq(savedWorkouts.id, existing[0].id));
+        }
+        res.json(updated);
+      } else {
+        // Create new
+        const saved = await storage.saveWorkout(targetId, stringifiedPlanData);
+        if (targetClientId && targetClientId !== currentUserId) {
+           await db.update(savedWorkouts).set({ authorId: currentUserId }).where(eq(savedWorkouts.id, saved.id));
+        }
+        res.json(saved);
+      }
     } catch (error) {
-      console.error("Error updating saved diet plan:", error);
-      res.status(500).json({ error: "Failed to update saved diet plan" });
+      console.error("Error syncing workout:", error);
+      res.status(500).json({ error: "Failed to sync workout" });
+    }
+  });
+
+  app.post("/api/saved-workouts", isAuthenticated, async (req: any, res: Response) => {
+    try {
+      const currentUserId = req.user.claims.sub;
+      const targetClientId = (req.query.clientId || req.query.targetClientId) as string | undefined;
+      const targetId = targetClientId || currentUserId;
+
+      const { planData } = req.body;
+      if (!planData) {
+        return res.status(400).json({ error: "Plan data is required" });
+      }
+
+      if (targetClientId && targetClientId !== currentUserId) {
+        if (!(await verifyTrainerAccess(currentUserId, targetClientId))) {
+          return res.status(403).json({ error: "Access denied" });
+        }
+      }
+
+      const saved = await storage.saveWorkout(targetId, typeof planData === "string" ? planData : JSON.stringify(planData));
+
+      if (targetClientId && targetClientId !== currentUserId) {
+         await db.update(savedWorkouts).set({ authorId: currentUserId }).where(eq(savedWorkouts.id, saved.id));
+      }
+
+      res.json(saved);
+    } catch (error) {
+      console.error("Error saving workout:", error);
+      res.status(500).json({ error: "Failed to save workout" });
+    }
+  });
+  app.delete("/api/saved-workouts/:id", isAuthenticated, async (req: any, res: Response) => {
+    try {
+      const currentUserId = req.user.claims.sub;
+      const targetClientId = (req.query.clientId || req.query.targetClientId) as string | undefined;
+      const targetId = targetClientId || currentUserId;
+
+      if (targetClientId && targetClientId !== currentUserId) {
+        if (!(await verifyTrainerAccess(currentUserId, targetClientId))) {
+          return res.status(403).json({ error: "Access denied" });
+        }
+      }
+
+      const { id } = req.params;
+      await storage.deleteSavedWorkout(id, targetId);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error deleting saved workout:", error);
+      res.status(500).json({ error: "Failed to delete saved workout" });
+    }
+  });
+
+  // ===== InBody Endpoints =====
+  app.get("/api/inbody-results", isAuthenticated, async (req: any, res: Response) => {
+    try {
+      const currentUserId = req.user.claims.sub;
+      const targetClientId = (req.query.clientId || req.query.targetClientId) as string | undefined;
+      const targetId = targetClientId || currentUserId;
+
+      if (targetClientId && targetClientId !== currentUserId) {
+        if (!(await verifyTrainerAccess(currentUserId, targetClientId))) {
+          return res.status(403).json({ error: "Access denied" });
+        }
+      }
+
+      const results = await storage.getInbodyResults(targetId);
+      res.json(results);
+    } catch (error) {
+      console.error("Error fetching inbody results:", error);
+      res.status(500).json({ error: "Failed to fetch inbody results" });
+    }
+  });
+
+  app.post("/api/inbody-results", isAuthenticated, async (req: any, res: Response) => {
+    try {
+      const currentUserId = req.user.claims.sub;
+      const targetClientId = (req.query.clientId || req.query.targetClientId) as string | undefined;
+      const targetId = targetClientId || currentUserId;
+
+      if (targetClientId && targetClientId !== currentUserId) {
+        if (!(await verifyTrainerAccess(currentUserId, targetClientId))) {
+          return res.status(403).json({ error: "Access denied" });
+        }
+      }
+
+      const created = await storage.createInbodyResult(targetId, req.body);
+      res.json(created);
+    } catch (error) {
+      console.error("Error saving inbody result:", error);
+      res.status(500).json({ error: "Failed to save inbody result" });
+    }
+  });
+
+  app.delete("/api/inbody-results/:id", isAuthenticated, async (req: any, res: Response) => {
+    try {
+      const currentUserId = req.user.claims.sub;
+      const targetClientId = (req.query.clientId || req.query.targetClientId) as string | undefined;
+      const targetId = targetClientId || currentUserId;
+
+      if (targetClientId && targetClientId !== currentUserId) {
+        if (!(await verifyTrainerAccess(currentUserId, targetClientId))) {
+          return res.status(403).json({ error: "Access denied" });
+        }
+      }
+
+      const { id } = req.params;
+      await storage.deleteInbodyResult(id, targetId);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error deleting inbody result:", error);
+      res.status(500).json({ error: "Failed to delete inbody result" });
     }
   });
 

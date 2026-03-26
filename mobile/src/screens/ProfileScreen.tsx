@@ -10,6 +10,7 @@ import {
   Linking,
   Modal,
   Image,
+  Share,
 } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { isArabicLanguage } from '../lib/isArabic';
@@ -27,6 +28,7 @@ interface UserProfile {
   firstName?: string;
   lastName?: string;
   email: string;
+  dateOfBirth?: string;
   age?: number;
   gender?: 'male' | 'female';
   height?: number;
@@ -50,6 +52,7 @@ export default function ProfileScreen({ navigation }: { navigation: any }) {
   const isArabic = isArabicLanguage();
   const styles = getStyles(isArabic);
 
+  const [dateOfBirth, setDateOfBirth] = useState('');
   const [age, setAge] = useState('');
   const [displayName, setDisplayName] = useState('');
   const [gender, setGender] = useState<'male' | 'female' | null>(null);
@@ -63,13 +66,63 @@ export default function ProfileScreen({ navigation }: { navigation: any }) {
 
   const { data: user } = useQuery({
     queryKey: ['profile'],
-    queryFn: queries.profile
+    queryFn: () => queries.profile()
   });
+
+  const { data: myLinkData } = useQuery({
+    queryKey: ['myLinkId'],
+    queryFn: () => api.get<any>('/api/subscriber-management/my-link-id'),
+  });
+  const linkCode = myLinkData?.code;
+
+  const { data: pendingRequests } = useQuery({
+    queryKey: ['pendingRequests'],
+    queryFn: () => api.get<any[]>('/api/subscriber-management/pending-requests'),
+  });
+
+  const approveMutation = useMutation({
+    mutationFn: (connectionId: string) => api.post(`/api/subscriber-management/approve-link/${connectionId}`, { action: 'approve' }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['pendingRequests'] });
+      Alert.alert(isArabic ? 'تم' : 'Success', isArabic ? 'تم ربط الحساب بنجاح' : 'Account linked successfully');
+    }
+  });
+
+  const rejectMutation = useMutation({
+    mutationFn: (connectionId: string) => api.post(`/api/subscriber-management/approve-link/${connectionId}`, { action: 'reject' }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['pendingRequests'] })
+  });
+
+  const { data: activeTrainers } = useQuery({
+    queryKey: ['activeTrainers'],
+    queryFn: () => api.get<any[]>('/api/subscriber-management/active-trainers'),
+  });
+
+  const disconnectMutation = useMutation({
+    mutationFn: (connectionId: string) => api.delete(`/api/subscriber-management/disconnect/${connectionId}`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['activeTrainers'] });
+      Alert.alert(isArabic ? 'تم' : 'Success', isArabic ? 'تم فصل الحساب بنجاح وتم إلغاء صلاحيات المدرب.' : 'Account disconnected successfully. The trainer no longer has access.');
+    }
+  });
+
+  const handleDisconnect = (connectionId: string, trainerName: string) => {
+    Alert.alert(
+      isArabic ? 'فصل الحساب' : 'Disconnect Account',
+      isArabic ? `هل أنت متأكد من رغبتك في فصل حسابك عن المدرب ${trainerName}؟ سيتم إلغاء وصول هذه الجهة لبياناتك بالكامل.` : `Are you sure you want to disconnect your account from trainer ${trainerName}? Their access will be completely revoked.`,
+      [
+         { text: isArabic ? 'إلغاء' : 'Cancel', style: 'cancel' },
+         { text: isArabic ? 'فصل ومسح بياناتي' : 'Disconnect & Erase Data', style: 'destructive', onPress: () => disconnectMutation.mutate(connectionId) }
+      ]
+    );
+  };
+
 
   const profile = user as UserProfile | undefined;
 
   useEffect(() => {
     if (profile) {
+      if (profile.dateOfBirth) setDateOfBirth(new Date(profile.dateOfBirth).toISOString().split('T')[0]);
       if (profile.age) setAge(profile.age.toString());
       if (profile.firstName || profile.lastName) setDisplayName(`${profile.firstName || ''} ${profile.lastName || ''}`.trim());
       if (profile.profileImagePath) setProfileImagePath(profile.profileImagePath);
@@ -105,6 +158,7 @@ export default function ProfileScreen({ navigation }: { navigation: any }) {
       firstName: cleanedDisplayName || undefined,
       lastName: undefined,
       profileImagePath: profileImagePath || undefined,
+      dateOfBirth: dateOfBirth || undefined,
       age: age ? parseInt(age) : undefined,
       gender: gender || undefined,
       height: height ? parseInt(height) : undefined,
@@ -157,6 +211,20 @@ export default function ProfileScreen({ navigation }: { navigation: any }) {
         { text: isArabic ? 'إلغاء' : 'Cancel', style: 'cancel' },
       ]
     );
+  };
+
+  const handleShareLinkCode = async () => {
+    if (!linkCode) return;
+    try {
+      const msg = isArabic 
+        ? `مرحباً كابتن،\nرمز الربط الخاص بي لتطبيق Health Insight AI هو: *${linkCode}*\n⚠️ (تذكير: الكود صالح للاستخدام لمدة ساعة واحدة فقط)`
+        : `Hi Trainer,\nMy Health Insight AI link code is: *${linkCode}*\n⚠️ (Note: Code is valid for 1 hour only)`;
+      await Share.share({
+        message: msg,
+      });
+    } catch (error) {
+       Alert.alert(isArabic ? 'خطأ' : 'Error', isArabic ? 'تعذرت المشاركة' : 'Sharing failed');
+    }
   };
 
   const themeBg = colors.background;
@@ -256,19 +324,27 @@ export default function ProfileScreen({ navigation }: { navigation: any }) {
       </View>
 
       <View style={[styles.section, { backgroundColor: cardBg }]}>
-        <Text style={[styles.sectionTitle, { color: primaryText }]}>{t('profile.age')}</Text>
+        <Text style={[styles.sectionTitle, { color: primaryText }]}>{isArabic ? 'تاريخ الميلاد والعمر' : 'DOB & Age'}</Text>
+
+        <View style={styles.inputGroup}>
+          <Text style={[styles.label, { color: secondaryText }]}>{isArabic ? 'تاريخ الميلاد (YYYY-MM-DD)' : 'Date of Birth (YYYY-MM-DD)'}</Text>
+          <AppTextInput
+            style={[styles.input, { backgroundColor: isDark ? '#0f172a' : '#f8fafc', borderColor: colors.border, color: primaryText }]}
+            value={dateOfBirth}
+            onChangeText={setDateOfBirth}
+            placeholder="1995-08-24"
+            autoComplete="off"
+            testID="input-dob"
+          />
+        </View>
 
         <View style={styles.inputGroup}>
           <Text style={[styles.label, { color: secondaryText }]}>{t('profile.age')}</Text>
           <AppTextInput
-            style={[styles.input, { backgroundColor: isDark ? '#0f172a' : '#f8fafc', borderColor: colors.border, color: primaryText }]}
+            style={[styles.input, { backgroundColor: isDark ? '#1e293b' : '#e2e8f0', borderColor: colors.border, color: secondaryText }]}
             value={age}
-            onChangeText={setAge}
-            keyboardType="number-pad"
-            placeholder="25"
-            autoComplete="off"
-            textContentType="none"
-            autoCorrect={false}
+            editable={false}
+            placeholder="--"
             testID="input-age"
           />
         </View>
@@ -465,6 +541,121 @@ export default function ProfileScreen({ navigation }: { navigation: any }) {
           <Ionicons name="chevron-forward" size={20} color={secondaryText} />
         </TouchableOpacity>
       </View>
+
+      <View style={[styles.section, { backgroundColor: cardBg }]}>
+        <Text style={[styles.sectionTitle, { color: primaryText }]}>{isArabic ? 'نظام التدريب المكتبي' : 'Trainer Access'}</Text>
+        <Text style={{ fontSize: 13, color: secondaryText, marginBottom: 16, textAlign: 'left' }}>
+          {isArabic 
+            ? 'هذا هو الرمز التعريفي الثابت الخاص بك. يمكنك مشاركته مع مدربك ليتمكن من إرسال طلب ربط لمتابعة وتصميم جداولك.' 
+            : 'This is your permanent link ID. Share it with your trainer so they can send you a request to link and manage your plans.'}
+        </Text>
+        
+        <View style={[styles.settingItem, { borderBottomColor: linkCode ? 'transparent' : colors.border, paddingVertical: 12 }]}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
+            <Ionicons name="finger-print-outline" size={24} color="#8b5cf6" />
+            <Text style={[styles.settingText, { color: '#8b5cf6', fontWeight: 'bold', flex: 1 }]}>
+              {isArabic ? 'الرمز التعريفي' : 'Your Link ID'}
+            </Text>
+          </View>
+          
+          {linkCode ? (
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <Text style={{ fontSize: 20, fontWeight: 'bold', color: primaryText, letterSpacing: 2 }}>{linkCode}</Text>
+              <TouchableOpacity onPress={handleShareLinkCode} style={{ backgroundColor: '#3b82f6', padding: 8, borderRadius: 8, marginStart: 12 }}>
+                <Ionicons name="share-social-outline" size={22} color="#fff" />
+              </TouchableOpacity>
+            </View>
+          ) : (
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+               <Text style={{ fontSize: 14, color: secondaryText }}>{isArabic ? 'جاري التحميل...' : 'Loading...'}</Text>
+            </View>
+          )}
+        </View>
+      </View>
+
+      {pendingRequests && pendingRequests.length > 0 && (
+        <View style={[styles.section, { backgroundColor: cardBg }]}>
+          <Text style={[styles.sectionTitle, { color: '#f59e0b', marginBottom: 8 }]}>
+             <Ionicons name="notifications-outline" size={18} /> {isArabic ? 'طلبات التدريب المعلقة' : 'Pending Trainer Requests'}
+          </Text>
+          <Text style={{ fontSize: 13, color: secondaryText, marginBottom: 16, textAlign: 'left' }}>
+            {isArabic ? 'يقوم هؤلاء المدربين بطلب إذن الربط بحسابك.' : 'These trainers are requesting access to manage your account.'}
+          </Text>
+          
+          {pendingRequests.map((req) => (
+            <View key={req.id} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 12, borderTopWidth: 1, borderTopColor: colors.border }}>
+               <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
+                  {req.owner.profileImagePath ? (
+                    <Image source={{ uri: req.owner.profileImagePath }} style={{ width: 40, height: 40, borderRadius: 20, marginRight: 12 }} />
+                  ) : (
+                    <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: colors.border, justifyContent: 'center', alignItems: 'center', marginRight: 12 }}>
+                       <Ionicons name="person" size={20} color={secondaryText} />
+                    </View>
+                  )}
+                  <View>
+                     <Text style={{ color: primaryText, fontWeight: 'bold', fontSize: 15 }}>{req.owner.firstName} {req.owner.lastName}</Text>
+                     <Text style={{ color: secondaryText, fontSize: 12 }}>{isArabic ? 'مدرب' : 'Trainer'}</Text>
+                  </View>
+               </View>
+               <View style={{ flexDirection: 'row', gap: 8 }}>
+                  <TouchableOpacity 
+                    onPress={() => rejectMutation.mutate(req.id)}
+                    style={{ padding: 8, borderRadius: 8, backgroundColor: '#fee2e2' }}
+                  >
+                    <Ionicons name="close" size={20} color="#ef4444" />
+                  </TouchableOpacity>
+                  <TouchableOpacity 
+                    onPress={() => approveMutation.mutate(req.id)}
+                    style={{ padding: 8, borderRadius: 8, backgroundColor: '#dcfce7' }}
+                  >
+                    <Ionicons name="checkmark" size={20} color="#22c55e" />
+                  </TouchableOpacity>
+               </View>
+            </View>
+          ))}
+        </View>
+      )}
+
+      {activeTrainers && activeTrainers.length > 0 && (
+        <View style={[styles.section, { backgroundColor: cardBg }]}>
+          <Text style={[styles.sectionTitle, { color: colors.primary, marginBottom: 12, textAlign: isArabic ? 'right' : 'left' }]}>
+             <Ionicons name="people-outline" size={18} /> {isArabic ? 'المدربون المتصلون' : 'Active Trainers'}
+          </Text>
+          <Text style={{ fontSize: 13, color: secondaryText, marginBottom: 16, textAlign: isArabic ? 'right' : 'left' }}>
+            {isArabic ? 'توضيح: هؤلاء المدربون لديهم حق الوصول وإدارة برامجك الغذائية والرياضية. يمكنك إيقاف الوصول في أي وقت عبر زر الفصل.' : 'Note: These trainers have access to manage your diet and workout plans. You can revoke access at any time by unlinking.'}
+          </Text>
+          
+          {activeTrainers.map((req) => (
+            <View key={req.id} style={{ flexDirection: isArabic ? 'row-reverse' : 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 12, borderTopWidth: 1, borderTopColor: colors.border }}>
+               <View style={{ flexDirection: isArabic ? 'row-reverse' : 'row', alignItems: 'center', flex: 1 }}>
+                  {req.owner.profileImagePath ? (
+                    <Image source={{ uri: req.owner.profileImagePath }} style={{ width: 44, height: 44, borderRadius: 22, marginRight: isArabic ? 0 : 12, marginLeft: isArabic ? 12 : 0 }} />
+                  ) : (
+                    <View style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: colors.border, justifyContent: 'center', alignItems: 'center', marginRight: isArabic ? 0 : 12, marginLeft: isArabic ? 12 : 0 }}>
+                       <Ionicons name="person" size={24} color={secondaryText} />
+                    </View>
+                  )}
+                  <View style={{ alignItems: isArabic ? 'flex-end' : 'flex-start' }}>
+                     <Text style={{ color: primaryText, fontWeight: 'bold', fontSize: 15 }}>{req.owner.firstName} {req.owner.lastName}</Text>
+                     <Text style={{ color: '#22c55e', fontSize: 12, marginTop: 2 }}>{isArabic ? 'حسابك مربوط بالمدرب' : 'Linked to Trainer'}</Text>
+                     {(req.subscriptionStartDate || req.subscriptionEndDate) && (
+                       <Text style={{ color: secondaryText, fontSize: 11, marginTop: 4 }}>
+                         {isArabic ? 'صلاحية الاشتراك:' : 'Subscription:'} {req.subscriptionStartDate ? new Date(req.subscriptionStartDate).toLocaleDateString(isArabic ? 'ar' : 'en-US') : '--'} - {req.subscriptionEndDate ? new Date(req.subscriptionEndDate).toLocaleDateString(isArabic ? 'ar' : 'en-US') : (isArabic ? 'مفتوح' : 'Open')}
+                       </Text>
+                     )}
+                  </View>
+               </View>
+               <TouchableOpacity 
+                 onPress={() => handleDisconnect(req.id, `${req.owner.firstName} ${req.owner.lastName}`)}
+                 style={{ paddingHorizontal: 12, paddingVertical: 8, borderRadius: 8, backgroundColor: '#fee2e2', flexDirection: isArabic ? 'row-reverse' : 'row', alignItems: 'center', gap: 6 }}
+               >
+                 <Ionicons name="trash-outline" size={16} color="#ef4444" />
+                 <Text style={{ color: '#ef4444', fontSize: 13, fontWeight: 'bold' }}>{isArabic ? 'فصل الحساب' : 'Unlink'}</Text>
+               </TouchableOpacity>
+            </View>
+          ))}
+        </View>
+      )}
 
       <View style={[styles.section, { backgroundColor: cardBg }]}>
         <Text style={[styles.sectionTitle, { color: primaryText }]}>{isArabic ? 'القانونية والدعم' : 'Legal & Support'}</Text>

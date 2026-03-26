@@ -9,6 +9,8 @@ import LoginScreen from '../screens/LoginScreen';
 import TabNavigator from './TabNavigator';
 import SubscriptionScreen from '../screens/SubscriptionScreen';
 import CompareScreen from '../screens/CompareScreen';
+import ClientProfileScreen from '../screens/ClientProfileScreen';
+import ClientChatScreen from '../screens/ClientChatScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -54,6 +56,30 @@ export default function RootNavigator() {
             options={{
               headerShown: true,
               headerTitle: isArabic ? 'المقارنة' : 'Compare',
+              headerTitleAlign: 'center',
+              headerTintColor: colors.text,
+              headerStyle: { backgroundColor: colors.card },
+              headerTitleStyle: { color: colors.text, fontWeight: '700' },
+            }}
+          />
+          <Stack.Screen
+            name="ClientProfile"
+            component={ClientProfileScreen}
+            options={{
+              headerShown: true,
+              headerTitle: isArabic ? 'ملف المشترك' : 'Client Profile',
+              headerTitleAlign: 'center',
+              headerTintColor: colors.text,
+              headerStyle: { backgroundColor: colors.card },
+              headerTitleStyle: { color: colors.text, fontWeight: '700' },
+            }}
+          />
+          <Stack.Screen
+            name="ClientChat"
+            component={ClientChatScreen}
+            options={{
+              headerShown: true,
+              headerTitle: isArabic ? 'محادثة خاصة' : 'Private Chat',
               headerTitleAlign: 'center',
               headerTintColor: colors.text,
               headerStyle: { backgroundColor: colors.card },

@@ -532,7 +532,8 @@ function getStatusScore(test: AllTestData): number {
 }
 
 
-export default function TestsScreen() {
+export default function TestsScreen({ route }: any) {
+  const { clientId } = route?.params || {};
   const { t, i18n } = useTranslation();
   const { colors, isDark } = useAppTheme();
   const queryClient = useQueryClient();
@@ -552,12 +553,12 @@ export default function TestsScreen() {
   const [selectedInfoDescription, setSelectedInfoDescription] = useState('');
 
   const { data: allTests, isLoading } = useQuery({
-    queryKey: ['allTests'],
-    queryFn: queries.allTests
+    queryKey: ['allTests', clientId],
+    queryFn: () => queries.allTests(clientId)
   });
   const { data: reminders } = useQuery({
-    queryKey: ['reminders'],
-    queryFn: queries.reminders
+    queryKey: ['reminders', clientId],
+    queryFn: () => queries.reminders(clientId)
   });
 
   const tests = (allTests as AllTestData[]) || [];

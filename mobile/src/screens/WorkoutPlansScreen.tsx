@@ -240,7 +240,8 @@ const ExerciseCard = ({ savedExercise, globalExercise, groupId, onRemove, onUpda
 
 
 // --- Main Screen ---
-export default function WorkoutPlansScreen() {
+export default function WorkoutPlansScreen({ route, navigation }: any) {
+  const { clientId } = route?.params || {};
   const { colors, isDark } = useAppTheme();
   const isArabic = isArabicLanguage();
   const [groups, setGroups] = useState<WorkoutGroup[]>([]);
@@ -251,14 +252,14 @@ export default function WorkoutPlansScreen() {
   const [isSharingAll, setIsSharingAll] = useState(false);
 
   const loadGroups = useCallback(async () => {
-    const data = await WorkoutStore.getGroups();
+    const data = await WorkoutStore.getGroups(clientId);
     setGroups(data);
 
     // Expand all by default initially
     if (expandedGroupIds.length === 0 && data.length > 0) {
       setExpandedGroupIds(data.map(g => g.id));
     }
-  }, []);
+  }, [clientId, expandedGroupIds.length]);
 
   useFocusEffect(
     useCallback(() => {
@@ -281,7 +282,7 @@ export default function WorkoutPlansScreen() {
         {
           text: isArabic ? 'حذف' : 'Delete', style: 'destructive', onPress: async () => {
             const updated = groups.filter(g => g.id !== groupId);
-            await WorkoutStore.saveGroups(updated);
+            await WorkoutStore.saveGroups(updated, clientId);
             setGroups(updated);
           }
         }
@@ -290,7 +291,7 @@ export default function WorkoutPlansScreen() {
   };
 
   const handleRemoveExercise = async (groupId: string, exerciseId: string) => {
-    await WorkoutStore.removeExerciseFromGroup(groupId, exerciseId);
+    await WorkoutStore.removeExerciseFromGroup(groupId, exerciseId, clientId);
     loadGroups();
   };
 
@@ -306,15 +307,15 @@ export default function WorkoutPlansScreen() {
         })
       };
     }));
-    // 2. Persist to async storage
-    WorkoutStore.updateExerciseWeights(groupId, exerciseId, start, end, unit);
+    // 2. Persist to async storage (now Cloud)
+    WorkoutStore.updateExerciseDetails(groupId, exerciseId, { startWeight: start, endWeight: end, weightUnit: unit }, clientId);
   };
 
   const handleImport = async () => {
     if (!importCode.trim()) return;
     setIsImporting(true);
     try {
-      await WorkoutStore.importGroup(importCode.trim());
+      await WorkoutStore.importGroup(importCode.trim(), clientId);
       Alert.alert(
         isArabic ? "تم الاستيراد بنجاح" : "Import Successful",
         isArabic ? "تم إضافة الجدول إلى خطتك." : "The workout plan has been added."
@@ -334,7 +335,7 @@ export default function WorkoutPlansScreen() {
   const handleShareGroup = async (groupId: string, groupName: string) => {
     setIsSharing(groupId);
     try {
-      const code = await WorkoutStore.shareGroup(groupId);
+      const code = await WorkoutStore.shareGroup(groupId, clientId);
       const appLink = 'https://apps.apple.com/ae/app/biotrack-ai/id6759469048?l=ar';
       const message = isArabic
         ? `🔥 قمت بمشاركة جدول تماريني (${groupName}) على تطبيق BioTrack AI!\n\nلتحميل الجدول فوراً، افتح التطبيق وأدخل هذا الكود: ${code}\n\n📲 حمّل التطبيق: ${appLink}`
@@ -351,7 +352,7 @@ export default function WorkoutPlansScreen() {
   const handleShareAllGroups = async () => {
     setIsSharingAll(true);
     try {
-      const code = await WorkoutStore.shareAllGroups();
+      const code = await WorkoutStore.shareAllGroups(clientId);
       const appLink = 'https://apps.apple.com/ae/app/biotrack-ai/id6759469048?l=ar';
       const message = isArabic
         ? `🚀 شاركت جميع جداول التمارين الخاصة بي على تطبيق BioTrack AI خطوة بخطوة!\n\nلتحميل جميع الجداول دفعة واحدة، افتح التطبيق وأدخل هذا الكود: ${code}\n\n📲 حمّل التطبيق: ${appLink}`
@@ -367,7 +368,13 @@ export default function WorkoutPlansScreen() {
 
   return (
     <ScrollView style={[styles.container, { backgroundColor: colors.background }]} contentContainerStyle={styles.content}>
-      {groups.length > 0 && (
+      {navigation.canGoBack() && (
+        <TouchableOpacity style={{ alignSelf: isArabic ? 'flex-end' : 'flex-start', marginBottom: 16 }} onPress={() => navigation.goBack()}>
+          <Ionicons name={isArabic ? 'arrow-forward' : 'arrow-back'} size={24} color={colors.text} />
+        </TouchableOpacity>
+      )}
+
+      {(!groups.some(g => g.authorId && g.authorId !== g.userId) && groups.length > 0) && (
         <TouchableOpacity
           style={[styles.shareAllBtn, { backgroundColor: colors.primary }]}
           onPress={handleShareAllGroups}
@@ -436,15 +443,22 @@ export default function WorkoutPlansScreen() {
                     style={{ marginRight: 8, marginLeft: isArabic ? 8 : 0 }}
                   />
                   <Text style={[styles.groupTitle, { color: colors.text, textAlign: isArabic ? 'right' : 'left', writingDirection: isArabic ? 'rtl' : 'ltr' }]}>{group.name}</Text>
+                  {group.authorId && group.authorId !== group.userId && (
+                    <View style={{ backgroundColor: 'rgba(59,130,246,0.15)', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6, marginLeft: 8 }}>
+                       <Text style={{ color: '#3b82f6', fontSize: 10, fontWeight: 'bold' }}>{isArabic ? 'صُمم بواسطة المدرب' : 'Trainer Designed'}</Text>
+                    </View>
+                  )}
                 </View>
                 <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                  <TouchableOpacity onPress={() => handleShareGroup(group.id, group.name)} style={{ padding: 4, marginRight: 12 }}>
-                    {isSharing === group.id ? (
-                      <ActivityIndicator size="small" color={colors.primary} />
-                    ) : (
-                      <Ionicons name="share-social-outline" size={20} color={colors.primary} />
-                    )}
-                  </TouchableOpacity>
+                  {!(group.authorId && group.authorId !== group.userId) && (
+                    <TouchableOpacity onPress={() => handleShareGroup(group.id, group.name)} style={{ padding: 4, marginRight: 12 }}>
+                      {isSharing === group.id ? (
+                        <ActivityIndicator size="small" color={colors.primary} />
+                      ) : (
+                        <Ionicons name="share-social-outline" size={20} color={colors.primary} />
+                      )}
+                    </TouchableOpacity>
+                  )}
                   <TouchableOpacity onPress={() => handleDeleteGroup(group.id)} style={{ padding: 4 }}>
                     <Ionicons name="trash" size={20} color="#ef4444" />
                   </TouchableOpacity>

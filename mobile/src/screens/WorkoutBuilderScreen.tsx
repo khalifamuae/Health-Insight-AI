@@ -10,7 +10,8 @@ import { GlobalExercise, EXERCISE_REGISTRY } from '../lib/WorkoutRegistry';
 import { WorkoutStore, WorkoutGroup } from '../lib/WorkoutStore';
 import AppTextInput from '../components/AppTextInput';
 
-export default function WorkoutBuilderScreen({ navigation }: any) {
+export default function WorkoutBuilderScreen({ navigation, route }: any) {
+    const { clientId } = route.params || {};
     const { t } = useTranslation();
     const { colors, isDark } = useAppTheme();
     const isArabic = isArabicLanguage();
@@ -36,7 +37,7 @@ export default function WorkoutBuilderScreen({ navigation }: any) {
     }, {} as Record<string, GlobalExercise[]>);
 
     const loadUserGroups = async () => {
-        const groups = await WorkoutStore.getGroups();
+        const groups = await WorkoutStore.getGroups(clientId);
         setUserGroups(groups);
         // We INTENTIONALLY do not auto-select the first group so the user is FORCED to explicitly select or create one
     };
@@ -68,7 +69,7 @@ export default function WorkoutBuilderScreen({ navigation }: any) {
                 Alert.alert(isArabic ? 'خطأ' : 'Error', isArabic ? 'يرجى إدخال اسم المجموعة' : 'Please enter a group name');
                 return;
             }
-            const createdGroup = await WorkoutStore.createGroup(newGroupName.trim());
+            const createdGroup = await WorkoutStore.createGroup(newGroupName.trim(), clientId);
             targetGroupId = createdGroup.id;
         }
 
@@ -77,7 +78,7 @@ export default function WorkoutBuilderScreen({ navigation }: any) {
             return;
         }
 
-        await WorkoutStore.addExerciseToGroup(targetGroupId, selectedExercise.id, sets, reps);
+        await WorkoutStore.addExerciseToGroup(targetGroupId, selectedExercise.id, sets, reps, clientId);
         setModalVisible(false);
         Alert.alert(
             isArabic ? 'تمت الإضافة!' : 'Added!',
@@ -88,10 +89,20 @@ export default function WorkoutBuilderScreen({ navigation }: any) {
 
     return (
         <View style={[styles.container, { backgroundColor: colors.background }]}>
-            <ScrollView contentContainerStyle={styles.content}>
-                <Text style={[styles.headerTitle, { color: colors.text, textAlign: isArabic ? 'right' : 'left', writingDirection: isArabic ? 'rtl' : 'ltr' }]}>
+            {/* Custom Header with Back Button */}
+            <View style={[styles.header, { backgroundColor: colors.card, borderBottomColor: colors.border }]}>
+                <TouchableOpacity 
+                    style={styles.backButton} 
+                    onPress={() => navigation.goBack()}
+                >
+                    <Ionicons name={isArabic ? "chevron-forward" : "chevron-back"} size={28} color={colors.text} />
+                </TouchableOpacity>
+                <Text style={[styles.headerText, { color: colors.text }]}>
                     {isArabic ? 'تصميم جدول التمارين' : 'Workout Builder'}
                 </Text>
+            </View>
+
+            <ScrollView contentContainerStyle={styles.content}>
                 <Text style={[styles.headerSubtitle, { color: colors.mutedText, textAlign: isArabic ? 'right' : 'left', writingDirection: isArabic ? 'rtl' : 'ltr' }]}>
                     {isArabic ? 'اختر العضلة لترى التمارين الخاصة بها وأضفها لجدولك.' : 'Select a muscle to view exercises and add them to your plan.'}
                 </Text>
@@ -233,6 +244,25 @@ export default function WorkoutBuilderScreen({ navigation }: any) {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
+    },
+    header: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingTop: 50,
+        paddingBottom: 16,
+        borderBottomWidth: 1,
+    },
+    backButton: {
+        paddingHorizontal: 16,
+        position: 'absolute',
+        bottom: 12,
+        zIndex: 10,
+    },
+    headerText: {
+        flex: 1,
+        textAlign: 'center',
+        fontSize: 18,
+        fontWeight: '700',
     },
     content: {
         padding: 16,

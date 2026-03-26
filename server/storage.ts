@@ -36,6 +36,10 @@ import {
   type AffiliateCommission,
   type WithdrawalRequest,
   type WithdrawalStatus,
+  savedWorkouts,
+  inbodyResults,
+  type SavedWorkout,
+  type InbodyResult,
 } from "@shared/schema";
 
 export interface IStorage {
@@ -66,8 +70,17 @@ export interface IStorage {
   getSavedDietPlans(userId: string): Promise<SavedDietPlan[]>;
   getSavedDietPlan(id: string): Promise<SavedDietPlan | undefined>;
   saveDietPlan(userId: string, planData: string): Promise<SavedDietPlan>;
-  updateSavedDietPlan(id: string, updates: Partial<SavedDietPlan>): Promise<SavedDietPlan | null>;
+  updateSavedDietPlan(id: string, userId: string, planData: string): Promise<SavedDietPlan | null>;
   deleteSavedDietPlan(id: string, userId: string): Promise<void>;
+
+  getSavedWorkouts(userId: string): Promise<SavedWorkout[]>;
+  saveWorkout(userId: string, planData: string): Promise<SavedWorkout>;
+  updateSavedWorkout(id: string, userId: string, planData: string): Promise<SavedWorkout | null>;
+  deleteSavedWorkout(id: string, userId: string): Promise<void>;
+
+  getInbodyResults(userId: string): Promise<InbodyResult[]>;
+  createInbodyResult(userId: string, result: Partial<InbodyResult>): Promise<InbodyResult>;
+  deleteInbodyResult(id: string, userId: string): Promise<void>;
 
   updateSubscription(userId: string, data: {
     subscription: string;
@@ -355,19 +368,72 @@ export class DatabaseStorage implements IStorage {
     return created;
   }
 
-  async updateSavedDietPlan(id: string, updates: Partial<SavedDietPlan>): Promise<SavedDietPlan | null> {
+  async updateSavedDietPlan(id: string, userId: string, planData: string): Promise<SavedDietPlan | null> {
     const [updated] = await db
       .update(savedDietPlans)
-      .set({ ...updates })
-      .where(eq(savedDietPlans.id, id))
+      .set({ planData })
+      .where(and(eq(savedDietPlans.id, id), eq(savedDietPlans.userId, userId)))
       .returning();
     return updated || null;
   }
 
   async deleteSavedDietPlan(id: string, userId: string): Promise<void> {
-    await db
-      .delete(savedDietPlans)
-      .where(and(eq(savedDietPlans.id, id), eq(savedDietPlans.userId, userId)));
+    await db.delete(savedDietPlans).where(and(eq(savedDietPlans.id, id), eq(savedDietPlans.userId, userId)));
+  }
+
+  // Workouts
+  async getSavedWorkouts(userId: string): Promise<SavedWorkout[]> {
+    return db
+      .select()
+      .from(savedWorkouts)
+      .where(eq(savedWorkouts.userId, userId))
+      .orderBy(desc(savedWorkouts.createdAt));
+  }
+
+  async saveWorkout(userId: string, planData: string): Promise<SavedWorkout> {
+    const [saved] = await db
+      .insert(savedWorkouts)
+      .values({
+        userId,
+        planData,
+      })
+      .returning();
+    return saved;
+  }
+
+  async updateSavedWorkout(id: string, userId: string, planData: string): Promise<SavedWorkout | null> {
+    const [updated] = await db
+      .update(savedWorkouts)
+      .set({ planData })
+      .where(and(eq(savedWorkouts.id, id), eq(savedWorkouts.userId, userId)))
+      .returning();
+    return updated || null;
+  }
+
+  async deleteSavedWorkout(id: string, userId: string): Promise<void> {
+    await db.delete(savedWorkouts).where(and(eq(savedWorkouts.id, id), eq(savedWorkouts.userId, userId)));
+  }
+
+  // InBody
+  async getInbodyResults(userId: string): Promise<InbodyResult[]> {
+    return db
+      .select()
+      .from(inbodyResults)
+      .where(eq(inbodyResults.userId, userId))
+      .orderBy(desc(inbodyResults.testDate))
+      .limit(12);
+  }
+
+  async createInbodyResult(userId: string, result: Partial<InbodyResult>): Promise<InbodyResult> {
+    const [created] = await db
+      .insert(inbodyResults)
+      .values({ ...result, userId, testDate: result.testDate || new Date() } as any)
+      .returning();
+    return created;
+  }
+
+  async deleteInbodyResult(id: string, userId: string): Promise<void> {
+    await db.delete(inbodyResults).where(and(eq(inbodyResults.id, id), eq(inbodyResults.userId, userId)));
   }
 
   async createDietPlanJob(userId: string, language: string): Promise<DietPlanJob> {

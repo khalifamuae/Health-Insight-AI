@@ -30,6 +30,8 @@ export const pdfStatusEnum = pgEnum("pdf_status", ["pending", "processing", "suc
 export const nutritionConfidenceEnum = pgEnum("nutrition_confidence", ["high", "medium", "low"]);
 export const nutritionBasisEnum = pgEnum("nutrition_basis", ["per_100g", "per_serving"]);
 export const ingredientStateEnum = pgEnum("ingredient_state", ["raw", "cooked", "any"]);
+export const subscriberConnectionStatusEnum = pgEnum("subscriber_connection_status", ["active", "pending", "unlinked"]);
+export const subscriberLinkCodeRoleEnum = pgEnum("subscriber_link_code_role", ["owner", "client"]);
 
 // User profiles - extends auth users with health data
 export const userProfiles = pgTable("user_profiles", {
@@ -68,6 +70,10 @@ export const userProfiles = pgTable("user_profiles", {
   dietPlansGenerated: integer("diet_plans_generated").default(0),
   isAdmin: boolean("is_admin").default(false),
   dietPlansResetAt: timestamp("diet_plans_reset_at"),
+  subscriberManagementActive: boolean("subscriber_management_active").default(false),
+  subscriberManagementLimit: integer("subscriber_management_limit").default(0),
+  isShadowAccount: boolean("is_shadow_account").default(false),
+  shadowOwnerId: varchar("shadow_owner_id"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -152,7 +158,38 @@ export const dietPlanJobs = pgTable("diet_plan_jobs", {
 export const savedDietPlans = pgTable("saved_diet_plans", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   userId: varchar("user_id").notNull(),
+  authorId: varchar("author_id"), // Who created this plan (Trainer or self)
   planData: text("plan_data").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Saved personal workouts (Cloud sync replacement for AsyncStorage)
+export const savedWorkouts = pgTable("saved_workouts", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull(),
+  authorId: varchar("author_id"), // Who created this workout
+  planData: text("plan_data").notNull(), 
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// InBody / Body Composition Results
+export const inbodyResults = pgTable("inbody_results", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull(),
+  testDate: timestamp("test_date").notNull(),
+  
+  weight: real("weight"),
+  skeletalMuscleMass: real("skeletal_muscle_mass"),
+  bodyFatMass: real("body_fat_mass"),
+  totalBodyWater: real("total_body_water"),
+  fatFreeMass: real("fat_free_mass"),
+  bmi: real("bmi"),
+  percentBodyFat: real("percent_body_fat"),
+  waistHipRatio: real("waist_hip_ratio"),
+  visceralFatLevel: real("visceral_fat_level"),
+  basalMetabolicRate: real("basal_metabolic_rate"),
+  inbodyScore: real("inbody_score"),
+  
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -269,6 +306,51 @@ export const withdrawalRequests = pgTable("withdrawal_requests", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+// Subscriber Management
+export const subscriberConnections = pgTable("subscriber_connections", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  ownerId: varchar("owner_id").notNull(),
+  clientId: varchar("client_id").notNull(),
+  status: subscriberConnectionStatusEnum("status").notNull().default("active"),
+  subscriptionStartDate: timestamp("subscription_start_date"),
+  subscriptionEndDate: timestamp("subscription_end_date"),
+  traineeGoal: varchar("trainee_goal"),
+  permissions: jsonb("permissions").notNull().default('{}'),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const subscriberLinkCodes = pgTable("subscriber_link_codes", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  code: varchar("code", { length: 6 }).notNull().unique(),
+  creatorId: varchar("creator_id").notNull(),
+  role: subscriberLinkCodeRoleEnum("role").notNull(),
+  targetConnectionId: varchar("target_connection_id"),
+  expiresAt: timestamp("expires_at").notNull(),
+  isUsed: boolean("is_used").default(false),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const subscriberChatMessages = pgTable("subscriber_chat_messages", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  connectionId: varchar("connection_id").notNull(),
+  senderId: varchar("sender_id").notNull(),
+  content: text("content"),
+  attachmentUrl: text("attachment_url"),
+  attachmentType: varchar("attachment_type"),
+  isRead: boolean("is_read").default(false),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const subscriberActivityLogs = pgTable("subscriber_activity_logs", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  connectionId: varchar("connection_id"),
+  userId: varchar("user_id").notNull(),
+  action: varchar("action").notNull(),
+  details: jsonb("details"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 // Relations
 export const userProfilesRelations = relations(userProfiles, ({ many }) => ({
   testResults: many(testResults),
@@ -276,6 +358,8 @@ export const userProfilesRelations = relations(userProfiles, ({ many }) => ({
   uploadedPdfs: many(uploadedPdfs),
   savedDietPlans: many(savedDietPlans),
   sharedWorkouts: many(sharedWorkouts),
+  inbodyResults: many(inbodyResults),
+  savedWorkouts: many(savedWorkouts),
 }));
 
 export const testDefinitionsRelations = relations(testDefinitions, ({ many }) => ({
@@ -326,6 +410,31 @@ export const sharedWorkoutsRelations = relations(sharedWorkouts, ({ one }) => ({
   }),
 }));
 
+export const subscriberConnectionsRelations = relations(subscriberConnections, ({ one, many }) => ({
+  owner: one(userProfiles, {
+    fields: [subscriberConnections.ownerId],
+    references: [userProfiles.id],
+    relationName: "owner_connections"
+  }),
+  client: one(userProfiles, {
+    fields: [subscriberConnections.clientId],
+    references: [userProfiles.id],
+    relationName: "client_connections"
+  }),
+  messages: many(subscriberChatMessages),
+}));
+
+export const subscriberChatMessagesRelations = relations(subscriberChatMessages, ({ one }) => ({
+  connection: one(subscriberConnections, {
+    fields: [subscriberChatMessages.connectionId],
+    references: [subscriberConnections.id],
+  }),
+  sender: one(userProfiles, {
+    fields: [subscriberChatMessages.senderId],
+    references: [userProfiles.id],
+  }),
+}));
+
 export const insertKnowledgeBaseSchema = createInsertSchema(knowledgeBase).omit({
   id: true,
   createdAt: true,
@@ -362,6 +471,22 @@ export const insertSavedDietPlanSchema = createInsertSchema(savedDietPlans).omit
 export const insertSharedWorkoutSchema = createInsertSchema(sharedWorkouts).omit({
   id: true,
   downloads: true,
+  createdAt: true,
+});
+
+export const insertSubscriberConnectionSchema = createInsertSchema(subscriberConnections).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertSubscriberLinkCodeSchema = createInsertSchema(subscriberLinkCodes).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertSubscriberChatMessageSchema = createInsertSchema(subscriberChatMessages).omit({
+  id: true,
   createdAt: true,
 });
 
@@ -437,9 +562,26 @@ export type WithdrawalStatus = "pending" | "approved" | "rejected" | "paid";
 export type SharedWorkout = typeof sharedWorkouts.$inferSelect;
 export type InsertSharedWorkout = z.infer<typeof insertSharedWorkoutSchema>;
 
+export type SavedWorkout = typeof savedWorkouts.$inferSelect;
+export type InbodyResult = typeof inbodyResults.$inferSelect;
+
 export const insertNutritionIngredientSchema = createInsertSchema(nutritionIngredients);
 export type NutritionIngredient = typeof nutritionIngredients.$inferSelect;
 export type InsertNutritionIngredient = z.infer<typeof insertNutritionIngredientSchema>;
 export type NutritionConfidence = "high" | "medium" | "low";
 export type NutritionBasis = "per_100g" | "per_serving";
 export type IngredientState = "raw" | "cooked" | "any";
+
+export type SubscriberConnectionStatus = "active" | "pending" | "unlinked";
+export type SubscriberLinkCodeRole = "owner" | "client";
+
+export type SubscriberConnection = typeof subscriberConnections.$inferSelect;
+export type InsertSubscriberConnection = z.infer<typeof insertSubscriberConnectionSchema>;
+
+export type SubscriberLinkCode = typeof subscriberLinkCodes.$inferSelect;
+export type InsertSubscriberLinkCode = z.infer<typeof insertSubscriberLinkCodeSchema>;
+
+export type SubscriberChatMessage = typeof subscriberChatMessages.$inferSelect;
+export type InsertSubscriberChatMessage = z.infer<typeof insertSubscriberChatMessageSchema>;
+
+export type SubscriberActivityLog = typeof subscriberActivityLogs.$inferSelect;

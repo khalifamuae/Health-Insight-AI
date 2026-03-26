@@ -103,10 +103,15 @@ export default function DietScreen({ navigation, route }: any) {
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const [streamingData, setStreamingData] = useState<{ completedSections: string[]; mealPlan: Record<string, any[]> } | null>(null);
 
-  const { data: profile } = useQuery({ queryKey: ['profile'], queryFn: queries.profile });
+  const clientId = route.params?.clientId;
+
+  const { data: profile } = useQuery({ 
+      queryKey: ['profile', clientId], 
+      queryFn: () => queries.profile(clientId) 
+  });
   const { data: savedPlans } = useQuery<SavedPlan[]>({
-    queryKey: ['savedDietPlans'],
-    queryFn: async () => (await queries.savedDietPlans()) as SavedPlan[],
+    queryKey: ['savedDietPlans', clientId],
+    queryFn: async () => (await queries.savedDietPlans(clientId)) as SavedPlan[],
   });
   const savedPlansList: SavedPlan[] = Array.isArray(savedPlans) ? savedPlans : [];
 
@@ -121,7 +126,7 @@ export default function DietScreen({ navigation, route }: any) {
         .catch(() => setDateCalendar('gregorian'));
 
       if (step === 'intro' && !jobId) {
-        api.get<any>('/api/diet-plan/pending').then((res) => {
+        api.get<any>(clientId ? `/api/diet-plan/pending?targetClientId=${clientId}` : '/api/diet-plan/pending').then((res) => {
           if (res?.hasPending && res.jobId) {
             setJobId(res.jobId);
             setStep('generating');
@@ -167,7 +172,7 @@ export default function DietScreen({ navigation, route }: any) {
     if (jobId && (step === 'generating' || step === 'streaming')) {
       pollingRef.current = setInterval(async () => {
         try {
-          const result = await api.get<any>(`/api/diet-plan/job/${jobId}`);
+          const result = await api.get<any>(clientId ? `/api/diet-plan/job/${jobId}?targetClientId=${clientId}` : `/api/diet-plan/job/${jobId}`);
           if (result.status === 'completed' && result.planData) {
             const parsed = typeof result.planData === 'string' ? JSON.parse(result.planData) : result.planData;
             setPlan(parsed);
@@ -207,7 +212,8 @@ export default function DietScreen({ navigation, route }: any) {
         proteinPreferences: mealPreference === 'vegetarian' ? [] : selectedProteins,
         carbPreferences: mealPreference === 'keto' ? [] : selectedCarbs,
       });
-      const result = await api.post<any>('/api/diet-plan', {
+      const endpoint = clientId ? `/api/diet-plan?targetClientId=${clientId}` : '/api/diet-plan';
+      const result = await api.post<any>(endpoint, {
         language: i18n.language,
         customTargetCalories: Number.isFinite(customCaloriesNumber as number) ? customCaloriesNumber : null,
       });
@@ -234,7 +240,10 @@ export default function DietScreen({ navigation, route }: any) {
     },
   });
 
-  const persistPlan = async () => api.post('/api/saved-diet-plans', { planData: JSON.stringify(plan) });
+  const persistPlan = async () => {
+    const endpoint = clientId ? `/api/saved-diet-plans?targetClientId=${clientId}` : '/api/saved-diet-plans';
+    return api.post(endpoint, { planData: JSON.stringify(plan) });
+  };
 
   const saveMutation = useMutation({
     mutationFn: persistPlan,

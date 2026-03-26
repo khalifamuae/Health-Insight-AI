@@ -148,7 +148,7 @@ export default function ManualDietBuilderScreen({ navigation, route }: any) {
     const { colors, isDark } = useAppTheme();
     const queryClient = useQueryClient();
 
-    const { editPlanId } = route.params || {};
+    const { editPlanId, clientId } = route.params || {};
 
     const [searchText, setSearchText] = useState('');
     const [searchResults, setSearchResults] = useState<FoodResult[]>([]);
@@ -247,8 +247,8 @@ export default function ManualDietBuilderScreen({ navigation, route }: any) {
     }, [searchLocal]);
 
     const { data: savedPlans } = useQuery<any[]>({
-        queryKey: ['savedDietPlans'],
-        queryFn: async () => (await queries.savedDietPlans()) as any[],
+        queryKey: ['savedDietPlans', clientId],
+        queryFn: async () => (await queries.savedDietPlans(clientId)) as any[],
     });
 
     const suggestedGroupNames = useMemo(() => {
@@ -518,9 +518,9 @@ export default function ManualDietBuilderScreen({ navigation, route }: any) {
     };
 
     const saveMutation = useMutation({
-        mutationFn: (planData: any) => api.post('/api/saved-diet-plans', { planData }),
+        mutationFn: (planData: any) => api.post(clientId ? `/api/saved-diet-plans?targetClientId=${clientId}` : '/api/saved-diet-plans', { planData }),
         onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['savedDietPlans'] });
+            queryClient.invalidateQueries({ queryKey: ['savedDietPlans', clientId] });
             Alert.alert(
                 isArabic ? 'تم الحفظ ✅' : 'Saved ✅',
                 isArabic ? 'تم حفظ الجدول الغذائي بنجاح في جدولي الغذائي' : 'Diet plan saved successfully to My Diet Plans',
@@ -540,9 +540,9 @@ export default function ManualDietBuilderScreen({ navigation, route }: any) {
     });
 
     const updateMutation = useMutation({
-        mutationFn: ({ id, planData }: { id: string, planData: any }) => api.put(`/api/saved-diet-plans/${id}`, { planData }),
+        mutationFn: ({ id, planData }: { id: string, planData: any }) => api.put(clientId ? `/api/saved-diet-plans/${id}?targetClientId=${clientId}` : `/api/saved-diet-plans/${id}`, { planData }),
         onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['savedDietPlans'] });
+            queryClient.invalidateQueries({ queryKey: ['savedDietPlans', clientId] });
             Alert.alert(
                 isArabic ? 'تم التعديل ✅' : 'Updated ✅',
                 isArabic ? 'تم تعديل الجدول الغذائي بنجاح' : 'Diet plan updated successfully',

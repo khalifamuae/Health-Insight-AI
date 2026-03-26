@@ -31,11 +31,13 @@ import AdminPdfs from "@/pages/admin/pdfs";
 import AdminKnowledgeBase from "@/pages/admin/knowledge";
 import AdminAffiliates from "@/pages/admin/affiliates";
 import AdminJobs from "@/pages/admin/jobs";
+import SubscriberManagement from "@/pages/subscriber-management";
+import ClientProfile from "@/pages/subscriber-management/ClientProfile";
 import Profile from "@/pages/Profile";
 import "./lib/i18n";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "@/hooks/use-auth";
-import { Menu, FlaskConical, GitCompareArrows, CalendarDays } from "lucide-react";
+import { Menu, FlaskConical, GitCompareArrows, CalendarDays, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -49,6 +51,7 @@ function HamburgerMenu() {
     { path: "/tests", icon: FlaskConical, labelKey: "menuMyTests" },
     { path: "/compare", icon: GitCompareArrows, labelKey: "menuCompare" },
     { path: "/my-diet-schedule", icon: CalendarDays, labelKey: "menuMyDietSchedule" },
+    { path: "/subscriber-management", icon: Users, labelKey: "menuSubscriberManagement" },
   ];
 
   const handleNav = (path: string) => {
@@ -169,6 +172,8 @@ function AppContent() {
           <Route path="/upload" component={Upload} />
           <Route path="/diet" component={DietPlan} />
           <Route path="/my-diet-schedule" component={MyDietSchedule} />
+          <Route path="/subscriber-management" component={SubscriberManagement} />
+          <Route path="/subscriber-management/:clientId" component={ClientProfile} />
           <Route path="/profile" component={Profile} />
           <Route path="/reminders" component={Dashboard} />
           <Route component={NotFound} />

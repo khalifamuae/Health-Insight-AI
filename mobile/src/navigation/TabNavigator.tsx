@@ -17,6 +17,7 @@ import MyDietPlansScreen from '../screens/MyDietPlansScreen';
 import WorkoutPlansScreen from '../screens/WorkoutPlansScreen';
 import WorkoutBuilderScreen from '../screens/WorkoutBuilderScreen';
 import ManualDietBuilderScreen from '../screens/ManualDietBuilderScreen';
+import SubscriberManagementScreen from '../screens/SubscriberManagementScreen';
 
 const Tab = createBottomTabNavigator();
 
@@ -272,6 +273,15 @@ export default function TabNavigator({ navigation }: any) {
             tabBarItemStyle: { display: 'none' },
           }}
         />
+        <Tab.Screen
+          name="SubscriberManagement"
+          component={SubscriberManagementScreen}
+          options={{
+            title: isArabic ? 'إدارة المشتركين' : 'Subscriber Management',
+            tabBarButton: () => null,
+            tabBarItemStyle: { display: 'none' },
+          }}
+        />
       </Tab.Navigator>
 
       <Modal
@@ -492,6 +502,42 @@ export default function TabNavigator({ navigation }: any) {
                   >
                     {t('profileTab')}
                   </Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[
+                    styles.menuItem,
+                    {
+                      borderBottomColor: menuDividerColor,
+                      flexDirection: 'row',
+                    },
+                  ]}
+                  onPress={() => {
+                    setIsMenuVisible(false);
+                    navigation.navigate({
+                      name: 'Main',
+                      params: { screen: 'SubscriberManagement' },
+                      merge: true,
+                    } as any);
+                  }}
+                  testID="button-menu-subscribers"
+                >
+                  <Ionicons name="people" size={18} color={colors.primary} />
+                  <Text
+                    numberOfLines={1}
+                    style={[
+                      styles.menuItemText,
+                      {
+                        color: colors.text,
+                        textAlign: 'left',
+                      },
+                    ]}
+                  >
+                     {isArabic ? 'إدارة المشتركين' : 'Subscriber Management'}
+                  </Text>
+                  <View style={{ backgroundColor: 'rgba(245,158,11,0.15)', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6 }}>
+                    <Text style={{ color: '#f59e0b', fontSize: 10, fontWeight: '700' }}>{isArabic ? 'مدفوع' : 'PRO'}</Text>
+                  </View>
                 </TouchableOpacity>
 
                 <TouchableOpacity

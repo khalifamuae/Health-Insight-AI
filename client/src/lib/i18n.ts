@@ -292,6 +292,7 @@ const resources = {
       menuCompare: "Compare Results",
       menuMyDietSchedule: "My Diet Schedule",
       menuKnowledge: "Knowledge Base",
+      menuSubscriberManagement: "Client Management",
 
       // My Diet Schedule
       myDietSchedule: "My Diet Schedule",
@@ -666,6 +667,7 @@ const resources = {
       menuCompare: "مقارنة النتائج",
       menuMyDietSchedule: "جدولي الغذائي",
       menuKnowledge: "قاعدة المعرفة",
+      menuSubscriberManagement: "إدارة المشتركين",
 
       // My Diet Schedule
       myDietSchedule: "جدولي الغذائي",
