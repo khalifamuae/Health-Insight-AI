@@ -1779,6 +1779,41 @@ export async function registerRoutes(
     }
   });
 
+  app.put("/api/saved-diet-plans/:id", isAuthenticated, async (req: any, res: Response) => {
+    try {
+      const currentUserId = req.user.claims.sub;
+      const targetClientId = (req.query.clientId || req.query.targetClientId) as string | undefined;
+      const targetId = targetClientId || currentUserId;
+
+      if (targetClientId && targetClientId !== currentUserId) {
+        if (!(await verifyTrainerAccess(currentUserId, targetClientId))) {
+          return res.status(403).json({ error: "Access denied" });
+        }
+      }
+
+      const { id } = req.params;
+      const { planData } = req.body;
+      if (!planData) {
+        return res.status(400).json({ error: "Plan data is required" });
+      }
+
+      const updated = await storage.updateSavedDietPlan(id, targetId, typeof planData === "string" ? planData : JSON.stringify(planData));
+
+      if (!updated) {
+        return res.status(404).json({ error: "Diet plan not found or not owned by user" });
+      }
+
+      if (targetClientId && targetClientId !== currentUserId) {
+         await db.update(savedDietPlans).set({ authorId: currentUserId }).where(eq(savedDietPlans.id, updated.id));
+      }
+
+      res.json(updated);
+    } catch (error) {
+      console.error("Error updating saved diet plan:", error);
+      res.status(500).json({ error: "Failed to update saved diet plan" });
+    }
+  });
+
   app.delete("/api/saved-diet-plans/:id", isAuthenticated, async (req: any, res: Response) => {
     try {
       const currentUserId = req.user.claims.sub;

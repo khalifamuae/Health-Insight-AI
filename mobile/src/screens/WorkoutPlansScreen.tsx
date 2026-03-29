@@ -1,4 +1,4 @@
-import React, { useCallback, useState, useEffect } from 'react';
+import React, { useCallback, useState, useEffect, useLayoutEffect } from 'react';
 import { Alert, StyleSheet, Text, TouchableOpacity, View, ScrollView, Share, ActivityIndicator } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
@@ -267,6 +267,25 @@ export default function WorkoutPlansScreen({ route, navigation }: any) {
     }, [loadGroups])
   );
 
+  useLayoutEffect(() => {
+    if (clientId || navigation.canGoBack()) {
+      navigation.setOptions({
+        headerLeft: () => (
+          <TouchableOpacity 
+            style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16 }}
+            onPress={() => navigation.goBack()}
+          >
+            <Ionicons name={isArabic ? 'chevron-forward' : 'chevron-back'} size={28} color={colors.primary} />
+            <Text style={{ color: colors.primary, fontSize: 17, marginHorizontal: 4 }}>
+               {clientId ? (isArabic ? 'ملف المشترك' : 'Client Profile') : (isArabic ? 'رجوع' : 'Back')}
+            </Text>
+          </TouchableOpacity>
+        ),
+        headerRight: undefined
+      });
+    }
+  }, [navigation, clientId, isArabic, colors.primary]);
+
   const toggleGroup = (groupId: string) => {
     setExpandedGroupIds(prev =>
       prev.includes(groupId) ? prev.filter(id => id !== groupId) : [...prev, groupId]
@@ -368,11 +387,6 @@ export default function WorkoutPlansScreen({ route, navigation }: any) {
 
   return (
     <ScrollView style={[styles.container, { backgroundColor: colors.background }]} contentContainerStyle={styles.content}>
-      {navigation.canGoBack() && (
-        <TouchableOpacity style={{ alignSelf: isArabic ? 'flex-end' : 'flex-start', marginBottom: 16 }} onPress={() => navigation.goBack()}>
-          <Ionicons name={isArabic ? 'arrow-forward' : 'arrow-back'} size={24} color={colors.text} />
-        </TouchableOpacity>
-      )}
 
       {(!groups.some(g => g.authorId && g.authorId !== g.userId) && groups.length > 0) && (
         <TouchableOpacity

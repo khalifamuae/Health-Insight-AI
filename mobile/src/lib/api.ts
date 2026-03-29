@@ -3,7 +3,7 @@ import Constants from 'expo-constants';
 
 const getDevApiUrl = () => {
   // Explicitly hardcoded to the local Mac IP since Expo Constants fail to resolve dynamically over the Wi-Fi.
-  return `http://192.168.1.103:5001`;
+  return `http://172.20.10.7:5001`;
 };
 
 export const API_BASE_URL = __DEV__ ? getDevApiUrl() : 'https://health-insight-ai.replit.app';

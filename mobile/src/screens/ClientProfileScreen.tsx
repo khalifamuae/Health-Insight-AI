@@ -4,11 +4,12 @@ import { useTranslation } from 'react-i18next';
 import { Ionicons } from '@expo/vector-icons';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAppTheme } from '../context/ThemeContext';
+import { WorkoutStore } from '../lib/WorkoutStore';
 import { isArabicLanguage } from '../lib/isArabic';
 import { api, queries } from '../lib/api';
 
 export default function ClientProfileScreen({ route, navigation }: any) {
-  const { clientId, connectionId, subscriptionStartDate, subscriptionEndDate, traineeGoal, clientFirstName, clientLastName, clientProfileImage } = route.params;
+  const { clientId, connectionId, subscriptionStartDate, subscriptionEndDate, traineeGoal, clientFirstName, clientLastName, clientProfileImage } = route.params || {};
   const { colors, isDark } = useAppTheme();
   const { t } = useTranslation();
   const isArabic = isArabicLanguage();
@@ -27,6 +28,7 @@ export default function ClientProfileScreen({ route, navigation }: any) {
   const muscleMassTest = tests?.find((t: any) => t.testId === 'inbody-skeletal-muscle-mass');
 
   const queryClient = useQueryClient();
+  const lastNavTime = React.useRef(0);
   const [subStart, setSubStart] = React.useState(subscriptionStartDate ? new Date(subscriptionStartDate).toISOString().split('T')[0] : '');
   const [subEnd, setSubEnd] = React.useState(subscriptionEndDate ? new Date(subscriptionEndDate).toISOString().split('T')[0] : '');
   const [goal, setGoal] = React.useState(traineeGoal || 'maintain');
@@ -65,10 +67,18 @@ export default function ClientProfileScreen({ route, navigation }: any) {
   }
 
   const navigateToFeature = (screenName: string, additionalParams?: any) => {
-    navigation.navigate('Main', {
-      screen: screenName,
-      params: { clientId, ...additionalParams },
-    });
+    const now = Date.now();
+    if (now - lastNavTime.current < 1000) return; // Prevent double taps within 1 second
+    lastNavTime.current = now;
+
+    let targetScreen = screenName;
+    if (screenName === 'DietTable') targetScreen = 'SharedDietTable';
+    if (screenName === 'WorkoutTable') targetScreen = 'SharedWorkoutTable';
+    if (screenName === 'ManualDietBuilder') targetScreen = 'SharedDietBuilder';
+    if (screenName === 'WorkoutBuilder') targetScreen = 'SharedWorkoutBuilder';
+
+    // Since these are now in the Root Stack directly, navigate to them without nesting in 'Main'
+    navigation.navigate(targetScreen, { clientId, connectionId, ...additionalParams });
   };
 
   return (
@@ -244,7 +254,18 @@ export default function ClientProfileScreen({ route, navigation }: any) {
           {/* 3. استعراض جدول التدريب (Placing related components together) */}
           <TouchableOpacity 
             style={[styles.actionCard, { backgroundColor: colors.card, borderColor: colors.border, flexDirection: isArabic ? 'row-reverse' : 'row' }]}
-            onPress={() => navigateToFeature('AssignedWorkouts')}
+            onPress={async () => {
+              try {
+                const groups = await WorkoutStore.getGroups(clientId);
+                if (groups && groups.length > 0) {
+                  navigateToFeature('WorkoutTable');
+                } else {
+                  navigateToFeature('WorkoutBuilder');
+                }
+              } catch (e) {
+                navigateToFeature('WorkoutBuilder');
+              }
+            }}
           >
             <View style={[styles.iconWrapper, { backgroundColor: 'rgba(249, 115, 22, 0.15)', marginLeft: isArabic ? 16 : 0, marginRight: isArabic ? 0 : 16 }]}>
               <Ionicons name="list" size={28} color="#f97316" />
@@ -282,7 +303,19 @@ export default function ClientProfileScreen({ route, navigation }: any) {
           {/* 4. استعراض الجدول الغذائي */}
           <TouchableOpacity 
             style={[styles.actionCard, { backgroundColor: colors.card, borderColor: colors.border, flexDirection: isArabic ? 'row-reverse' : 'row' }]}
-            onPress={() => navigateToFeature('MyDietPlans')}
+            onPress={async () => {
+              try {
+                const res = await queries.savedDietPlans(clientId);
+                const plans = (res as any).data || res;
+                if (Array.isArray(plans) && plans.length > 0) {
+                  navigateToFeature('DietTable');
+                } else {
+                  navigateToFeature('ManualDietBuilder');
+                }
+              } catch (e) {
+                navigateToFeature('ManualDietBuilder');
+              }
+            }}
           >
             <View style={[styles.iconWrapper, { backgroundColor: 'rgba(59, 130, 246, 0.15)', marginLeft: isArabic ? 16 : 0, marginRight: isArabic ? 0 : 16 }]}>
               <Ionicons name="nutrition" size={28} color="#3b82f6" />
@@ -301,7 +334,7 @@ export default function ClientProfileScreen({ route, navigation }: any) {
           {/* 5. تحاليل الدم */}
           <TouchableOpacity 
             style={[styles.actionCard, { backgroundColor: colors.card, borderColor: colors.border, flexDirection: isArabic ? 'row-reverse' : 'row', marginTop: 12 }]}
-            onPress={() => navigateToFeature('Compare', { initialTab: 'lab' })}
+            onPress={() => navigation.navigate('Compare', { clientId, initialTab: 'lab' })}
           >
             <View style={[styles.iconWrapper, { backgroundColor: 'rgba(168, 85, 247, 0.15)', marginLeft: isArabic ? 16 : 0, marginRight: isArabic ? 0 : 16 }]}>
               <Ionicons name="medical" size={28} color="#a855f7" />
@@ -320,7 +353,7 @@ export default function ClientProfileScreen({ route, navigation }: any) {
           {/* 6. فحوصات InBody */}
           <TouchableOpacity 
             style={[styles.actionCard, { backgroundColor: colors.card, borderColor: colors.border, flexDirection: isArabic ? 'row-reverse' : 'row' }]}
-            onPress={() => navigateToFeature('Compare', { initialTab: 'inbody' })}
+            onPress={() => navigation.navigate('Compare', { clientId, initialTab: 'inbody' })}
           >
             <View style={[styles.iconWrapper, { backgroundColor: 'rgba(16, 185, 129, 0.15)', marginLeft: isArabic ? 16 : 0, marginRight: isArabic ? 0 : 16 }]}>
               <Ionicons name="body" size={28} color="#10b981" />

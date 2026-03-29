@@ -211,7 +211,6 @@ export default function TabNavigator({ navigation }: any) {
           component={ManualDietBuilderScreen}
           options={{
             title: isArabic ? 'تصميم جدول غذائي بنفسي' : 'Manual Diet Builder',
-            headerShown: false,
             tabBarButton: () => null,
             tabBarItemStyle: { display: 'none' },
           }}
@@ -376,6 +375,64 @@ export default function TabNavigator({ navigation }: any) {
                       flexDirection: 'row',
                     },
                   ]}
+                  onPress={navigateToManualDietBuilder}
+                  testID="button-menu-manual-diet"
+                >
+                  <Ionicons name="restaurant" size={18} color={colors.primary} />
+                  <Text
+                    numberOfLines={1}
+                    style={[
+                      styles.menuItemText,
+                      {
+                        color: colors.text,
+                        textAlign: 'left',
+                      },
+                    ]}
+                  >
+                    {isArabic ? 'تصميم جدول غذائي بنفسي' : 'Manual Diet Builder'}
+                  </Text>
+                  <View style={{ backgroundColor: 'rgba(34,197,94,0.15)', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6 }}>
+                    <Text style={{ color: '#22c55e', fontSize: 10, fontWeight: '700' }}>{isArabic ? 'مجاني' : 'FREE'}</Text>
+                  </View>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[
+                    styles.menuItem,
+                    {
+                      borderBottomColor: menuDividerColor,
+                      flexDirection: 'row',
+                    },
+                  ]}
+                  onPress={navigateToExercisesDesigner}
+                  testID="button-menu-exercises-designer"
+                >
+                  <Ionicons name="barbell" size={18} color={colors.primary} />
+                  <Text
+                    numberOfLines={1}
+                    style={[
+                      styles.menuItemText,
+                      {
+                        color: colors.text,
+                        textAlign: 'left',
+                      },
+                    ]}
+                  >
+                    {isArabic ? 'تصميم جدول تمارين' : 'Workout Designer'}
+                  </Text>
+                  <View style={{ backgroundColor: 'rgba(34,197,94,0.15)', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6 }}>
+                    <Text style={{ color: '#22c55e', fontSize: 10, fontWeight: '700' }}>{isArabic ? 'مجاني' : 'FREE'}</Text>
+                  </View>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[
+                    styles.menuItem,
+                    {
+                      borderBottomColor: menuDividerColor,
+                      flexDirection: 'row',
+                    },
+                  ]}
                   onPress={navigateToCompare}
                   testID="button-menu-compare"
                 >
@@ -392,6 +449,9 @@ export default function TabNavigator({ navigation }: any) {
                   >
                     {isArabic ? 'المقارنات' : 'Comparisons'}
                   </Text>
+                  <View style={{ backgroundColor: 'rgba(34,197,94,0.15)', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6 }}>
+                    <Text style={{ color: '#22c55e', fontSize: 10, fontWeight: '700' }}>{isArabic ? 'مجاني' : 'FREE'}</Text>
+                  </View>
                 </TouchableOpacity>
 
                 <TouchableOpacity
@@ -402,10 +462,10 @@ export default function TabNavigator({ navigation }: any) {
                       flexDirection: 'row',
                     },
                   ]}
-                  onPress={navigateToManualDietBuilder}
-                  testID="button-menu-manual-diet"
+                  onPress={navigateToProfile}
+                  testID="button-menu-profile"
                 >
-                  <Ionicons name="restaurant" size={18} color={colors.primary} />
+                  <Ionicons name="person" size={18} color={colors.primary} />
                   <Text
                     numberOfLines={1}
                     style={[
@@ -416,7 +476,7 @@ export default function TabNavigator({ navigation }: any) {
                       },
                     ]}
                   >
-                    {isArabic ? 'تصميم جدول غذائي بنفسي' : 'Manual Diet Builder'}
+                    {t('profileTab')}
                   </Text>
                   <View style={{ backgroundColor: 'rgba(34,197,94,0.15)', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6 }}>
                     <Text style={{ color: '#22c55e', fontSize: 10, fontWeight: '700' }}>{isArabic ? 'مجاني' : 'FREE'}</Text>
@@ -450,58 +510,6 @@ export default function TabNavigator({ navigation }: any) {
                   <View style={{ backgroundColor: 'rgba(245,158,11,0.15)', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6 }}>
                     <Text style={{ color: '#f59e0b', fontSize: 10, fontWeight: '700' }}>{isArabic ? 'مدفوع' : 'PRO'}</Text>
                   </View>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  style={[
-                    styles.menuItem,
-                    {
-                      borderBottomColor: menuDividerColor,
-                      flexDirection: 'row',
-                    },
-                  ]}
-                  onPress={navigateToExercisesDesigner}
-                  testID="button-menu-exercises-designer"
-                >
-                  <Ionicons name="barbell" size={18} color={colors.primary} />
-                  <Text
-                    numberOfLines={1}
-                    style={[
-                      styles.menuItemText,
-                      {
-                        color: colors.text,
-                        textAlign: 'left',
-                      },
-                    ]}
-                  >
-                    {isArabic ? 'تصميم جدول تمارين' : 'Workout Designer'}
-                  </Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  style={[
-                    styles.menuItem,
-                    {
-                      borderBottomColor: menuDividerColor,
-                      flexDirection: 'row',
-                    },
-                  ]}
-                  onPress={navigateToProfile}
-                  testID="button-menu-profile"
-                >
-                  <Ionicons name="person" size={18} color={colors.primary} />
-                  <Text
-                    numberOfLines={1}
-                    style={[
-                      styles.menuItemText,
-                      {
-                        color: colors.text,
-                        textAlign: 'left',
-                      },
-                    ]}
-                  >
-                    {t('profileTab')}
-                  </Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity

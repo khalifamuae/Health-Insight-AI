@@ -32,7 +32,7 @@ export default function RemindersScreen() {
 
   const { data: reminders, isLoading } = useQuery({
     queryKey: ['reminders'],
-    queryFn: queries.reminders
+    queryFn: () => queries.reminders()
   });
 
   const completeMutation = useMutation({

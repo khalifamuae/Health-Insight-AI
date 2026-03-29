@@ -11,6 +11,10 @@ import SubscriptionScreen from '../screens/SubscriptionScreen';
 import CompareScreen from '../screens/CompareScreen';
 import ClientProfileScreen from '../screens/ClientProfileScreen';
 import ClientChatScreen from '../screens/ClientChatScreen';
+import MyDietPlansScreen from '../screens/MyDietPlansScreen';
+import WorkoutPlansScreen from '../screens/WorkoutPlansScreen';
+import ManualDietBuilderScreen from '../screens/ManualDietBuilderScreen';
+import WorkoutBuilderScreen from '../screens/WorkoutBuilderScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -80,6 +84,54 @@ export default function RootNavigator() {
             options={{
               headerShown: true,
               headerTitle: isArabic ? 'محادثة خاصة' : 'Private Chat',
+              headerTitleAlign: 'center',
+              headerTintColor: colors.text,
+              headerStyle: { backgroundColor: colors.card },
+              headerTitleStyle: { color: colors.text, fontWeight: '700' },
+            }}
+          />
+          <Stack.Screen
+            name="SharedDietTable"
+            component={MyDietPlansScreen}
+            options={{
+              headerShown: true,
+              headerTitle: isArabic ? 'جدول المتدرب الغذائي' : "Trainee's Diet",
+              headerTitleAlign: 'center',
+              headerTintColor: colors.text,
+              headerStyle: { backgroundColor: colors.card },
+              headerTitleStyle: { color: colors.text, fontWeight: '700' },
+            }}
+          />
+          <Stack.Screen
+            name="SharedWorkoutTable"
+            component={WorkoutPlansScreen}
+            options={{
+              headerShown: true,
+              headerTitle: isArabic ? 'جدول المتدرب التدريبي' : "Trainee's Workout",
+              headerTitleAlign: 'center',
+              headerTintColor: colors.text,
+              headerStyle: { backgroundColor: colors.card },
+              headerTitleStyle: { color: colors.text, fontWeight: '700' },
+            }}
+          />
+          <Stack.Screen
+            name="SharedDietBuilder"
+            component={ManualDietBuilderScreen}
+            options={{
+              headerShown: true,
+              headerTitle: isArabic ? 'تصميم جدول غذائي للمتدرب' : 'Trainee Diet Builder',
+              headerTitleAlign: 'center',
+              headerTintColor: colors.text,
+              headerStyle: { backgroundColor: colors.card },
+              headerTitleStyle: { color: colors.text, fontWeight: '700' },
+            }}
+          />
+          <Stack.Screen
+            name="SharedWorkoutBuilder"
+            component={WorkoutBuilderScreen}
+            options={{
+              headerShown: true,
+              headerTitle: isArabic ? 'تصميم جدول تدريبي للمتدرب' : 'Trainee Workout Builder',
               headerTitleAlign: 'center',
               headerTintColor: colors.text,
               headerStyle: { backgroundColor: colors.card },

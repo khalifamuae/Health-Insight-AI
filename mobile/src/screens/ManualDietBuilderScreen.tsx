@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState, useLayoutEffect } from 'react';
 import {
     View, Text, StyleSheet, TextInput, TouchableOpacity, FlatList,
     ScrollView, ActivityIndicator, I18nManager, Alert, KeyboardAvoidingView, Platform,
@@ -146,9 +146,33 @@ const LOCAL_FOODS: FoodResult[] = [
 
 export default function ManualDietBuilderScreen({ navigation, route }: any) {
     const { colors, isDark } = useAppTheme();
+    const isArabic = I18nManager.isRTL;
     const queryClient = useQueryClient();
 
     const { editPlanId, clientId } = route.params || {};
+
+    useLayoutEffect(() => {
+        const dynamicTitle = editPlanId ? (isArabic ? 'تعديل الجدول الغذائي' : 'Edit Diet Plan') : (isArabic ? 'تصميم جدول غذائي' : 'Diet Builder');
+        if (clientId || navigation.canGoBack()) {
+            navigation.setOptions({
+                title: dynamicTitle,
+                headerLeft: () => (
+                    <TouchableOpacity 
+                        style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16 }}
+                        onPress={() => navigation.goBack()}
+                    >
+                        <Ionicons name={isArabic ? 'chevron-forward' : 'chevron-back'} size={28} color={colors.primary} />
+                        <Text style={{ color: colors.primary, fontSize: 17, marginHorizontal: 4 }}>
+                           {clientId ? (isArabic ? 'ملف المشترك' : 'Client Profile') : (isArabic ? 'رجوع' : 'Back')}
+                        </Text>
+                    </TouchableOpacity>
+                ),
+                headerRight: undefined
+            });
+        } else {
+            navigation.setOptions({ title: dynamicTitle });
+        }
+    }, [navigation, clientId, isArabic, colors.primary, editPlanId]);
 
     const [searchText, setSearchText] = useState('');
     const [searchResults, setSearchResults] = useState<FoodResult[]>([]);
@@ -523,12 +547,12 @@ export default function ManualDietBuilderScreen({ navigation, route }: any) {
             queryClient.invalidateQueries({ queryKey: ['savedDietPlans', clientId] });
             Alert.alert(
                 isArabic ? 'تم الحفظ ✅' : 'Saved ✅',
-                isArabic ? 'تم حفظ الجدول الغذائي بنجاح في جدولي الغذائي' : 'Diet plan saved successfully to My Diet Plans',
+                clientId ? (isArabic ? 'تم حفظ الجدول في سجل المتدرب بنجاح' : "Diet plan saved successfully to Trainee's Plans") : (isArabic ? 'تم حفظ الجدول الغذائي بنجاح في جدولي الغذائي' : 'Diet plan saved successfully to My Diet Plans'),
                 [{
                     text: isArabic ? 'عرض الجداول' : 'View Plans',
                     onPress: () => {
                         setGroups([]);
-                        navigation.navigate('DietTable');
+                        navigation.navigate(clientId ? 'SharedDietTable' : 'DietTable', clientId ? { clientId } : undefined);
                     },
                 }, {
                     text: isArabic ? 'إضافة جدول آخر' : 'Add Another',
@@ -551,7 +575,7 @@ export default function ManualDietBuilderScreen({ navigation, route }: any) {
                     style: 'cancel',
                 }, {
                     text: isArabic ? 'عرض الجداول' : 'View Plans',
-                    onPress: () => navigation.navigate('DietTable'),
+                    onPress: () => navigation.navigate(clientId ? 'SharedDietTable' : 'DietTable', clientId ? { clientId } : undefined),
                 }]
             );
         },
@@ -662,18 +686,7 @@ export default function ManualDietBuilderScreen({ navigation, route }: any) {
 
     return (
         <View style={[styles.container, { backgroundColor: colors.background }]}>
-            {/* ── Back button + Title bar ── */}
-            <SafeAreaView style={{ backgroundColor: colors.card }}>
-                <View style={[styles.headerBar, { backgroundColor: colors.card, borderBottomColor: colors.border }]}>
-                    <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton} testID="button-back">
-                        <Ionicons name={isArabic ? 'chevron-forward' : 'chevron-back'} size={24} color={colors.text} />
-                    </TouchableOpacity>
-                    <Text style={[styles.headerTitle, { color: colors.text }]}>
-                        {editPlanId ? (isArabic ? 'تعديل الجدول الغذائي' : 'Edit Diet Plan') : (isArabic ? 'تصميم جدول غذائي' : 'Diet Builder')}
-                    </Text>
-                    <View style={{ width: 40 }} />
-                </View>
-            </SafeAreaView>
+            {/* Header omitted since it is now entirely handled natively by TabNavigator */}
 
             <KeyboardAvoidingView
                 style={{ flex: 1 }}
@@ -781,7 +794,7 @@ export default function ManualDietBuilderScreen({ navigation, route }: any) {
                         <View style={styles.emptyState}>
                             <Ionicons name="restaurant-outline" size={52} color={colors.mutedText} />
                             <Text style={{ fontSize: 16, color: colors.mutedText, textAlign: 'center', fontWeight: '600' }}>
-                                {isArabic ? 'جدولك فارغ حالياً' : 'Your plan is currently empty'}
+                                {clientId ? (isArabic ? 'جدول المتدرب فارغ حالياً' : "Trainee's plan is currently empty") : (isArabic ? 'جدولك فارغ حالياً' : 'Your plan is currently empty')}
                             </Text>
                             <Text style={{ fontSize: 13, color: colors.mutedText, textAlign: 'center', marginTop: 4, lineHeight: 20 }}>
                                 {isArabic
@@ -906,7 +919,7 @@ export default function ManualDietBuilderScreen({ navigation, route }: any) {
                                 <>
                                     <Ionicons name="bookmark" size={20} color="#ffffff" style={{ marginHorizontal: 8 }} />
                                     <Text style={styles.saveButtonText}>
-                                        {editPlanId ? (isArabic ? 'حفظ التعديلات' : 'Save Changes') : (isArabic ? 'حفظ في جدولي الغذائي' : 'Save to My Diet Plans')}
+                                        {editPlanId ? (isArabic ? 'حفظ التعديلات' : 'Save Changes') : (clientId ? (isArabic ? 'حفظ كجدول للمتدرب' : 'Save as Trainee Plan') : (isArabic ? 'حفظ في جدولي الغذائي' : 'Save to My Diet Plans'))}
                                     </Text>
                                 </>
                             )}

@@ -154,9 +154,13 @@ export default function ProfileScreen({ navigation }: { navigation: any }) {
 
   const handleSave = () => {
     const cleanedDisplayName = displayName.trim();
+    const parts = cleanedDisplayName.split(' ');
+    const newFirstName = parts[0] || '';
+    const newLastName = parts.length > 1 ? parts.slice(1).join(' ') : '';
+    
     updateMutation.mutate({
-      firstName: cleanedDisplayName || undefined,
-      lastName: undefined,
+      firstName: newFirstName,
+      lastName: newLastName,
       profileImagePath: profileImagePath || undefined,
       dateOfBirth: dateOfBirth || undefined,
       age: age ? parseInt(age) : undefined,
@@ -618,24 +622,27 @@ export default function ProfileScreen({ navigation }: { navigation: any }) {
 
       {activeTrainers && activeTrainers.length > 0 && (
         <View style={[styles.section, { backgroundColor: cardBg }]}>
-          <Text style={[styles.sectionTitle, { color: colors.primary, marginBottom: 12, textAlign: isArabic ? 'right' : 'left' }]}>
-             <Ionicons name="people-outline" size={18} /> {isArabic ? 'المدربون المتصلون' : 'Active Trainers'}
-          </Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12, gap: 8 }}>
+             <Ionicons name="people-outline" size={18} color={colors.primary} />
+             <Text style={[styles.sectionTitle, { color: colors.primary, marginBottom: 0, textAlign: isArabic ? 'right' : 'left' }]}>
+               {isArabic ? 'المدربون المتصلون' : 'Active Trainers'}
+             </Text>
+          </View>
           <Text style={{ fontSize: 13, color: secondaryText, marginBottom: 16, textAlign: isArabic ? 'right' : 'left' }}>
             {isArabic ? 'توضيح: هؤلاء المدربون لديهم حق الوصول وإدارة برامجك الغذائية والرياضية. يمكنك إيقاف الوصول في أي وقت عبر زر الفصل.' : 'Note: These trainers have access to manage your diet and workout plans. You can revoke access at any time by unlinking.'}
           </Text>
           
           {activeTrainers.map((req) => (
-            <View key={req.id} style={{ flexDirection: isArabic ? 'row-reverse' : 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 12, borderTopWidth: 1, borderTopColor: colors.border }}>
-               <View style={{ flexDirection: isArabic ? 'row-reverse' : 'row', alignItems: 'center', flex: 1 }}>
+            <View key={req.id} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 12, borderTopWidth: 1, borderTopColor: colors.border }}>
+               <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
                   {req.owner.profileImagePath ? (
-                    <Image source={{ uri: req.owner.profileImagePath }} style={{ width: 44, height: 44, borderRadius: 22, marginRight: isArabic ? 0 : 12, marginLeft: isArabic ? 12 : 0 }} />
+                    <Image source={{ uri: req.owner.profileImagePath }} style={{ width: 44, height: 44, borderRadius: 22, marginEnd: 12 }} />
                   ) : (
-                    <View style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: colors.border, justifyContent: 'center', alignItems: 'center', marginRight: isArabic ? 0 : 12, marginLeft: isArabic ? 12 : 0 }}>
+                    <View style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: colors.border, justifyContent: 'center', alignItems: 'center', marginEnd: 12 }}>
                        <Ionicons name="person" size={24} color={secondaryText} />
                     </View>
                   )}
-                  <View style={{ alignItems: isArabic ? 'flex-end' : 'flex-start' }}>
+                  <View>
                      <Text style={{ color: primaryText, fontWeight: 'bold', fontSize: 15 }}>{req.owner.firstName} {req.owner.lastName}</Text>
                      <Text style={{ color: '#22c55e', fontSize: 12, marginTop: 2 }}>{isArabic ? 'حسابك مربوط بالمدرب' : 'Linked to Trainer'}</Text>
                      {(req.subscriptionStartDate || req.subscriptionEndDate) && (
@@ -647,7 +654,7 @@ export default function ProfileScreen({ navigation }: { navigation: any }) {
                </View>
                <TouchableOpacity 
                  onPress={() => handleDisconnect(req.id, `${req.owner.firstName} ${req.owner.lastName}`)}
-                 style={{ paddingHorizontal: 12, paddingVertical: 8, borderRadius: 8, backgroundColor: '#fee2e2', flexDirection: isArabic ? 'row-reverse' : 'row', alignItems: 'center', gap: 6 }}
+                 style={{ paddingHorizontal: 12, paddingVertical: 8, borderRadius: 8, backgroundColor: '#fee2e2', flexDirection: 'row', alignItems: 'center', gap: 6 }}
                >
                  <Ionicons name="trash-outline" size={16} color="#ef4444" />
                  <Text style={{ color: '#ef4444', fontSize: 13, fontWeight: 'bold' }}>{isArabic ? 'فصل الحساب' : 'Unlink'}</Text>

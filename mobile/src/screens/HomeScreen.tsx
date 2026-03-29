@@ -61,17 +61,17 @@ export default function HomeScreen({ navigation }: any) {
 
   const { data: userTests } = useQuery({
     queryKey: ['userTests'],
-    queryFn: queries.allTests,
+    queryFn: () => queries.allTests(),
   });
 
   const { data: reminders } = useQuery({
     queryKey: ['reminders'],
-    queryFn: queries.reminders,
+    queryFn: () => queries.reminders(),
   });
 
   const { data: uploadedPdfs } = useQuery({
     queryKey: ['uploadedPdfs'],
-    queryFn: queries.uploadedPdfs,
+    queryFn: () => queries.uploadedPdfs(),
   });
 
   const tests = (userTests as any[]) || [];

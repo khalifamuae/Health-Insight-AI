@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useState, useLayoutEffect } from 'react';
 import { Alert, I18nManager, ScrollView, StyleSheet, Text, TouchableOpacity, View, TextInput, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -50,6 +50,25 @@ export default function MyDietPlansScreen({ route, navigation }: any) {
       refetch();
     }, [refetch])
   );
+
+  useLayoutEffect(() => {
+    if (clientId || navigation.canGoBack()) {
+      navigation.setOptions({
+        headerLeft: () => (
+          <TouchableOpacity 
+            style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16 }}
+            onPress={() => navigation.goBack()}
+          >
+            <Ionicons name={isArabic ? 'chevron-forward' : 'chevron-back'} size={28} color={colors.primary} />
+            <Text style={{ color: colors.primary, fontSize: 17, marginHorizontal: 4 }}>
+               {clientId ? (isArabic ? 'ملف المشترك' : 'Client Profile') : (isArabic ? 'رجوع' : 'Back')}
+            </Text>
+          </TouchableOpacity>
+        ),
+        headerRight: undefined
+      });
+    }
+  }, [navigation, clientId, isArabic, colors.primary]);
   const globalTotals = useMemo(() => {
     let calories = 0, protein = 0, carbs = 0, fat = 0;
     savedPlansList.forEach(plan => {
@@ -458,7 +477,7 @@ export default function MyDietPlansScreen({ route, navigation }: any) {
                     {isManual && (
                       <TouchableOpacity
                         style={[styles.deleteButton, { backgroundColor: isDark ? 'rgba(59, 130, 246, 0.15)' : '#eff6ff' }]}
-                        onPress={() => navigation.navigate('ManualDietBuilder', { editPlanId: plan.id, clientId })}
+                        onPress={() => navigation.navigate(clientId ? 'SharedDietBuilder' : 'ManualDietBuilder', { editPlanId: plan.id, clientId })}
                       >
                         <Ionicons name="pencil" size={20} color="#3b82f6" />
                       </TouchableOpacity>

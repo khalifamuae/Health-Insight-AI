@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useState, useLayoutEffect } from 'react';
 import {
   View,
   Text,
@@ -532,7 +532,7 @@ function getStatusScore(test: AllTestData): number {
 }
 
 
-export default function TestsScreen({ route }: any) {
+export default function TestsScreen({ route, navigation }: any) {
   const { clientId } = route?.params || {};
   const { t, i18n } = useTranslation();
   const { colors, isDark } = useAppTheme();
@@ -571,6 +571,25 @@ export default function TestsScreen({ route }: any) {
         .catch(() => setDateCalendar('gregorian'));
     }, [])
   );
+
+  useLayoutEffect(() => {
+    if (clientId || navigation.canGoBack()) {
+      navigation.setOptions({
+        headerLeft: () => (
+          <TouchableOpacity 
+            style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16 }}
+            onPress={() => clientId ? navigation.getParent()?.goBack() : navigation.goBack()}
+          >
+            <Ionicons name={isArabic ? 'chevron-forward' : 'chevron-back'} size={28} color={colors.primary} />
+            <Text style={{ color: colors.primary, fontSize: 17, marginHorizontal: 4 }}>
+               {clientId ? (isArabic ? 'ملف المشترك' : 'Client Profile') : (isArabic ? 'رجوع' : 'Back')}
+            </Text>
+          </TouchableOpacity>
+        ),
+        headerRight: undefined
+      });
+    }
+  }, [navigation, clientId, isArabic, colors.primary]);
 
   const categories = ['all', 'inbody', 'vitamins', 'minerals', 'hormones', 'organ_functions', 'lipids', 'immunity', 'blood', 'coagulation', 'special'];
 

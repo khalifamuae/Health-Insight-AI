@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useLayoutEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Modal, Alert } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { Ionicons } from '@expo/vector-icons';
@@ -18,6 +18,25 @@ export default function WorkoutBuilderScreen({ navigation, route }: any) {
 
     const [expandedGroup, setExpandedGroup] = useState<string | null>(null);
     const [selectedExercise, setSelectedExercise] = useState<GlobalExercise | null>(null);
+
+    useLayoutEffect(() => {
+        if (clientId || navigation.canGoBack()) {
+            navigation.setOptions({
+                headerLeft: () => (
+                    <TouchableOpacity 
+                        style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16 }}
+                        onPress={() => navigation.goBack()}
+                    >
+                        <Ionicons name={isArabic ? 'chevron-forward' : 'chevron-back'} size={28} color={colors.primary} />
+                        <Text style={{ color: colors.primary, fontSize: 17, marginHorizontal: 4 }}>
+                           {clientId ? (isArabic ? 'ملف المشترك' : 'Client Profile') : (isArabic ? 'رجوع' : 'Back')}
+                        </Text>
+                    </TouchableOpacity>
+                ),
+                headerRight: undefined
+            });
+        }
+    }, [navigation, clientId, isArabic, colors.primary]);
 
     // Modal State
     const [isModalVisible, setModalVisible] = useState(false);
@@ -82,29 +101,27 @@ export default function WorkoutBuilderScreen({ navigation, route }: any) {
         setModalVisible(false);
         Alert.alert(
             isArabic ? 'تمت الإضافة!' : 'Added!',
-            isArabic ? 'تم تصدير التمرين إلى جدولك بنجاح.' : 'Exercise exported to your plan successfully.'
+            clientId 
+                ? (isArabic ? 'تم تصدير التمرين إلى جدول المتدرب بنجاح.' : "Exercise exported to trainee's plan successfully.")
+                : (isArabic ? 'تم تصدير التمرين إلى جدولك بنجاح.' : 'Exercise exported to your plan successfully.'),
+            [
+                { text: isArabic ? 'إضافة المزيد' : 'Add More', style: 'cancel' },
+                {
+                    text: isArabic ? 'عرض الجدول' : 'View Plan',
+                    onPress: () => {
+                        navigation.navigate(clientId ? 'SharedWorkoutTable' : 'WorkoutTable', clientId ? { clientId } : undefined);
+                    }
+                }
+            ]
         );
     };
 
 
     return (
         <View style={[styles.container, { backgroundColor: colors.background }]}>
-            {/* Custom Header with Back Button */}
-            <View style={[styles.header, { backgroundColor: colors.card, borderBottomColor: colors.border }]}>
-                <TouchableOpacity 
-                    style={styles.backButton} 
-                    onPress={() => navigation.goBack()}
-                >
-                    <Ionicons name={isArabic ? "chevron-forward" : "chevron-back"} size={28} color={colors.text} />
-                </TouchableOpacity>
-                <Text style={[styles.headerText, { color: colors.text }]}>
-                    {isArabic ? 'تصميم جدول التمارين' : 'Workout Builder'}
-                </Text>
-            </View>
-
             <ScrollView contentContainerStyle={styles.content}>
                 <Text style={[styles.headerSubtitle, { color: colors.mutedText, textAlign: isArabic ? 'right' : 'left', writingDirection: isArabic ? 'rtl' : 'ltr' }]}>
-                    {isArabic ? 'اختر العضلة لترى التمارين الخاصة بها وأضفها لجدولك.' : 'Select a muscle to view exercises and add them to your plan.'}
+                    {clientId ? (isArabic ? 'اختر العضلة لترى التمارين الخاصة بها وأضفها لجدول المتدرب.' : "Select a muscle to view exercises and add them to trainee's plan.") : (isArabic ? 'اختر العضلة لترى التمارين الخاصة بها وأضفها لجدولك.' : 'Select a muscle to view exercises and add them to your plan.')}
                 </Text>
 
                 {Object.keys(groupedExercises).map((muscleGroupName) => (
@@ -231,7 +248,7 @@ export default function WorkoutBuilderScreen({ navigation, route }: any) {
                         )}
 
                         <TouchableOpacity style={styles.saveBtn} onPress={handleSaveExercise}>
-                            <Text style={[styles.saveBtnText, { textAlign: isArabic ? 'right' : 'left' }]}>{isArabic ? 'إضافة إلى جدولي' : 'Add to My Plan'}</Text>
+                            <Text style={[styles.saveBtnText, { textAlign: isArabic ? 'right' : 'left' }]}>{clientId ? (isArabic ? 'إضافة إلى جدول المتدرب' : "Add to Trainee's Plan") : (isArabic ? 'إضافة إلى جدولي' : 'Add to My Plan')}</Text>
                         </TouchableOpacity>
 
                     </BlurView>
