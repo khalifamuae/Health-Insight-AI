@@ -351,6 +351,26 @@ export const subscriberActivityLogs = pgTable("subscriber_activity_logs", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+// Trainer reviews — only current/past trainees can review their trainer
+export const trainerReviews = pgTable("trainer_reviews", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  trainerId: varchar("trainer_id").notNull(),
+  reviewerId: varchar("reviewer_id").notNull(),
+  rating: integer("rating").notNull(), // 1-5
+  reviewText: text("review_text"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Standalone chats — messaging between any user and a trainer (no connection required)
+export const standaloneChatMessages = pgTable("standalone_chat_messages", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  senderId: varchar("sender_id").notNull(),
+  receiverId: varchar("receiver_id").notNull(),
+  content: text("content"),
+  isRead: boolean("is_read").default(false),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 // Relations
 export const userProfilesRelations = relations(userProfiles, ({ many }) => ({
   testResults: many(testResults),

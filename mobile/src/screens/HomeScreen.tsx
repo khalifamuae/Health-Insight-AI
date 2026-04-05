@@ -152,6 +152,7 @@ export default function HomeScreen({ navigation }: any) {
           <Text style={[styles.viewTestsButtonText, { color: '#60a5fa' }]}>{t('myTests')}</Text>
         </BlurView>
       </TouchableOpacity>
+
     </ScrollView>
   );
 }

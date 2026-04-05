@@ -98,9 +98,11 @@ export default function AffiliateScreen() {
   const handleShareCode = async () => {
     if (dashboard?.referralCode) {
       try {
-        await Share.share({
-          message: `${t('affiliate.shareMessage')}${dashboard.referralCode}`,
-        });
+        const appLink = 'https://apps.apple.com/ae/app/biotrack-ai/id6759469048?l=ar';
+        const message = isArabic
+          ? `🌟 جرّب تطبيق *BioTrack AI* لتحليل فحوصاتك الطبية بالذكاء الاصطناعي وتصميم جداولك الغذائية والتدريبية!\n\nاستخدم كود الإحالة الخاص بي:\n🏷️ *${dashboard.referralCode}*\n\n📲 حمّل التطبيق: ${appLink}`
+          : `🌟 Try *BioTrack AI* for AI-powered lab analysis and custom diet & workout plans!\n\nUse my referral code:\n🏷️ *${dashboard.referralCode}*\n\n📲 Download the app: ${appLink}`;
+        await Share.share({ message });
       } catch (error) {}
     }
   };

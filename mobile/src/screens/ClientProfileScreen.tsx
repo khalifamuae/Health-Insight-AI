@@ -93,22 +93,22 @@ export default function ClientProfileScreen({ route, navigation }: any) {
       <ScrollView contentContainerStyle={styles.content}>
         {/* Personal Metrics Dashboard Area */}
         <View style={[styles.statsHero, { backgroundColor: colors.card, borderColor: colors.border }]}>
-          <View style={{ flexDirection: isArabic ? 'row-reverse' : 'row', alignItems: 'center', marginBottom: 12 }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12 }}>
             {clientProfileImage || profile?.profileImagePath ? (
-              <View style={{ width: 64, height: 64, borderRadius: 32, overflow: 'hidden', marginRight: isArabic ? 0 : 16, marginLeft: isArabic ? 16 : 0 }}>
+              <View style={{ width: 64, height: 64, borderRadius: 32, overflow: 'hidden', marginRight: 16 }}>
                 {/* We use Image from react-native */}
                 <Image source={{ uri: clientProfileImage || profile?.profileImagePath }} style={{ width: '100%', height: '100%' }} />
               </View>
             ) : (
-              <View style={{ width: 64, height: 64, borderRadius: 32, backgroundColor: colors.border, justifyContent: 'center', alignItems: 'center', marginRight: isArabic ? 0 : 16, marginLeft: isArabic ? 16 : 0 }}>
+              <View style={{ width: 64, height: 64, borderRadius: 32, backgroundColor: colors.border, justifyContent: 'center', alignItems: 'center', marginRight: 16 }}>
                 <Ionicons name="person" size={32} color={colors.text} />
               </View>
             )}
-            <View style={{ alignItems: isArabic ? 'flex-end' : 'flex-start' }}>
-              <Text style={[styles.statsHeroTitle, { color: colors.text, marginBottom: 0 }]}>
+            <View style={{ flex: 1, alignItems: 'flex-start' }}>
+              <Text style={[styles.statsHeroTitle, { color: colors.text, marginBottom: 0, textAlign: 'left' }]}>
                  {clientFirstName || profile?.firstName} {clientLastName || profile?.lastName}
               </Text>
-              <Text style={[styles.statsHeroSubtitle, { color: '#22c55e', marginTop: 4 }]}>
+              <Text style={[styles.statsHeroSubtitle, { color: '#22c55e', marginTop: 4, textAlign: 'left' }]}>
                 {isArabic ? 'حساب نشط ومربوط' : 'Active Connected Client'}
               </Text>
             </View>
@@ -162,16 +162,16 @@ export default function ClientProfileScreen({ route, navigation }: any) {
 
         {connectionId && (
           <View style={{ backgroundColor: colors.card, padding: 16, borderRadius: 12, marginBottom: 16, borderWidth: 1, borderColor: colors.border }}>
-            <Text style={{ fontSize: 16, fontWeight: '600', color: colors.text, marginBottom: 12, textAlign: isArabic ? 'right' : 'left' }}>
+            <Text style={{ fontSize: 16, fontWeight: '600', color: colors.text, marginBottom: 12, textAlign: 'left' }}>
               {isArabic ? 'صلاحية الاشتراك' : 'Subscription Validity'}
             </Text>
             <View style={{ flexDirection: 'row', gap: 12, justifyContent: 'space-between' }}>
               <View style={{ flex: 1 }}>
-                <Text style={{ fontSize: 12, color: colors.mutedText, marginBottom: 6, textAlign: isArabic ? 'right' : 'left' }}>
+                <Text style={{ fontSize: 12, color: colors.mutedText, marginBottom: 6, textAlign: 'left' }}>
                   {isArabic ? 'تاريخ البدء (YYYY-MM-DD)' : 'Start Date (YYYY-MM-DD)'}
                 </Text>
                 <TextInput
-                  style={{ backgroundColor: isDark ? '#1e293b' : '#f8fafc', borderColor: colors.border, borderWidth: 1, borderRadius: 8, padding: 10, color: colors.text, textAlign: isArabic ? 'right' : 'left' }}
+                  style={{ backgroundColor: isDark ? '#1e293b' : '#f8fafc', borderColor: colors.border, borderWidth: 1, borderRadius: 8, padding: 10, color: colors.text, textAlign: 'left' }}
                   value={subStart}
                   onChangeText={setSubStart}
                   placeholder="2024-01-01"
@@ -179,11 +179,11 @@ export default function ClientProfileScreen({ route, navigation }: any) {
                 />
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={{ fontSize: 12, color: colors.mutedText, marginBottom: 6, textAlign: isArabic ? 'right' : 'left' }}>
+                <Text style={{ fontSize: 12, color: colors.mutedText, marginBottom: 6, textAlign: 'left' }}>
                    {isArabic ? 'تاريخ الانتهاء (YYYY-MM-DD)' : 'End Date (YYYY-MM-DD)'}
                 </Text>
                 <TextInput
-                  style={{ backgroundColor: isDark ? '#1e293b' : '#f8fafc', borderColor: colors.border, borderWidth: 1, borderRadius: 8, padding: 10, color: colors.text, textAlign: isArabic ? 'right' : 'left' }}
+                  style={{ backgroundColor: isDark ? '#1e293b' : '#f8fafc', borderColor: colors.border, borderWidth: 1, borderRadius: 8, padding: 10, color: colors.text, textAlign: 'left' }}
                   value={subEnd}
                   onChangeText={setSubEnd}
                   placeholder="2024-12-31"
@@ -192,10 +192,10 @@ export default function ClientProfileScreen({ route, navigation }: any) {
               </View>
             </View>
 
-            <Text style={{ fontSize: 16, fontWeight: '600', color: colors.text, marginTop: 16, marginBottom: 12, textAlign: isArabic ? 'right' : 'left' }}>
+            <Text style={{ fontSize: 16, fontWeight: '600', color: colors.text, marginTop: 16, marginBottom: 12, textAlign: 'left' }}>
               {isArabic ? 'هدف المتدرب' : 'Trainee Goal'}
             </Text>
-            <View style={{ flexDirection: isArabic ? 'row-reverse' : 'row', gap: 8 }}>
+            <View style={{ flexDirection: 'row', gap: 8 }}>
               {[
                 { id: 'build', labelAr: 'بناء العضلات', labelEn: 'Build Muscle' },
                 { id: 'maintain', labelAr: 'الحفاظ على الوزن', labelEn: 'Maintain Weight' },
@@ -227,33 +227,33 @@ export default function ClientProfileScreen({ route, navigation }: any) {
           </View>
         )}
 
-        <Text style={[styles.sectionTitle, { color: colors.text, textAlign: isArabic ? 'right' : 'left' }]}>
+        <Text style={[styles.sectionTitle, { color: colors.text, textAlign: 'left' }]}>
           {isArabic ? 'إدارة خطط المشترك' : 'Manage Client Plans'}
         </Text>
 
         <View style={styles.grid}>
           {/* 1. تصميم جدول تدريبي */}
           <TouchableOpacity 
-            style={[styles.actionCard, { backgroundColor: colors.card, borderColor: colors.border, flexDirection: isArabic ? 'row-reverse' : 'row' }]}
+            style={[styles.actionCard, { backgroundColor: colors.card, borderColor: colors.border, flexDirection: 'row' }]}
             onPress={() => navigateToFeature('WorkoutBuilder')}
           >
-            <View style={[styles.iconWrapper, { backgroundColor: 'rgba(239, 68, 68, 0.15)', marginLeft: isArabic ? 16 : 0, marginRight: isArabic ? 0 : 16 }]}>
+            <View style={[styles.iconWrapper, { backgroundColor: 'rgba(239, 68, 68, 0.15)', marginRight: 16 }]}>
               <Ionicons name="barbell" size={28} color="#ef4444" />
             </View>
-            <View style={{ flex: 1, alignItems: isArabic ? 'flex-end' : 'flex-start' }}>
-              <Text style={[styles.actionTitle, { color: colors.text, textAlign: isArabic ? 'right' : 'left' }]}>
+            <View style={{ flex: 1, alignItems: 'flex-start' }}>
+              <Text style={[styles.actionTitle, { color: colors.text, textAlign: 'left' }]}>
                 {isArabic ? 'تصميم جدول تدريبي' : 'Create Workout Plan'}
               </Text>
-              <Text style={[styles.actionDesc, { color: colors.mutedText, textAlign: isArabic ? 'right' : 'left' }]}>
+              <Text style={[styles.actionDesc, { color: colors.mutedText, textAlign: 'left' }]}>
                 {isArabic ? 'إنشاء خطة تمرين جديدة للمتدرب' : 'Build a new workout schedule'}
               </Text>
             </View>
-            <Ionicons name={isArabic ? 'chevron-back' : 'chevron-forward'} size={20} color={colors.mutedText} />
+            <Ionicons name="chevron-forward" size={20} color={colors.mutedText} />
           </TouchableOpacity>
 
-          {/* 3. استعراض جدول التدريب (Placing related components together) */}
+          {/* 3. استعراض جدول التدريب */}
           <TouchableOpacity 
-            style={[styles.actionCard, { backgroundColor: colors.card, borderColor: colors.border, flexDirection: isArabic ? 'row-reverse' : 'row' }]}
+            style={[styles.actionCard, { backgroundColor: colors.card, borderColor: colors.border, flexDirection: 'row' }]}
             onPress={async () => {
               try {
                 const groups = await WorkoutStore.getGroups(clientId);
@@ -267,42 +267,42 @@ export default function ClientProfileScreen({ route, navigation }: any) {
               }
             }}
           >
-            <View style={[styles.iconWrapper, { backgroundColor: 'rgba(249, 115, 22, 0.15)', marginLeft: isArabic ? 16 : 0, marginRight: isArabic ? 0 : 16 }]}>
+            <View style={[styles.iconWrapper, { backgroundColor: 'rgba(249, 115, 22, 0.15)', marginRight: 16 }]}>
               <Ionicons name="list" size={28} color="#f97316" />
             </View>
-            <View style={{ flex: 1, alignItems: isArabic ? 'flex-end' : 'flex-start' }}>
-              <Text style={[styles.actionTitle, { color: colors.text, textAlign: isArabic ? 'right' : 'left' }]}>
+            <View style={{ flex: 1, alignItems: 'flex-start' }}>
+              <Text style={[styles.actionTitle, { color: colors.text, textAlign: 'left' }]}>
                 {isArabic ? 'استعراض وتعديل جدول التدريب' : 'Review & Edit Workouts'}
               </Text>
-              <Text style={[styles.actionDesc, { color: colors.mutedText, textAlign: isArabic ? 'right' : 'left' }]}>
+              <Text style={[styles.actionDesc, { color: colors.mutedText, textAlign: 'left' }]}>
                 {isArabic ? 'إدارة الجداول الرياضية المُصممة' : 'Manage assigned workout plans'}
               </Text>
             </View>
-            <Ionicons name={isArabic ? 'chevron-back' : 'chevron-forward'} size={20} color={colors.mutedText} />
+            <Ionicons name="chevron-forward" size={20} color={colors.mutedText} />
           </TouchableOpacity>
 
           {/* 2. تصميم جدول غذائي */}
           <TouchableOpacity 
-            style={[styles.actionCard, { backgroundColor: colors.card, borderColor: colors.border, flexDirection: isArabic ? 'row-reverse' : 'row', marginTop: 12 }]}
+            style={[styles.actionCard, { backgroundColor: colors.card, borderColor: colors.border, flexDirection: 'row', marginTop: 12 }]}
             onPress={() => navigateToFeature('ManualDietBuilder')}
           >
-            <View style={[styles.iconWrapper, { backgroundColor: 'rgba(234, 179, 8, 0.15)', marginLeft: isArabic ? 16 : 0, marginRight: isArabic ? 0 : 16 }]}>
+            <View style={[styles.iconWrapper, { backgroundColor: 'rgba(234, 179, 8, 0.15)', marginRight: 16 }]}>
               <Ionicons name="restaurant" size={28} color="#eab308" />
             </View>
-            <View style={{ flex: 1, alignItems: isArabic ? 'flex-end' : 'flex-start' }}>
-              <Text style={[styles.actionTitle, { color: colors.text, textAlign: isArabic ? 'right' : 'left' }]}>
+            <View style={{ flex: 1, alignItems: 'flex-start' }}>
+              <Text style={[styles.actionTitle, { color: colors.text, textAlign: 'left' }]}>
                 {isArabic ? 'تصميم جدول غذائي' : 'Create Diet Plan'}
               </Text>
-              <Text style={[styles.actionDesc, { color: colors.mutedText, textAlign: isArabic ? 'right' : 'left' }]}>
+              <Text style={[styles.actionDesc, { color: colors.mutedText, textAlign: 'left' }]}>
                 {isArabic ? 'إنشاء نظام غذائي مخصص' : 'Build a custom diet plan'}
               </Text>
             </View>
-            <Ionicons name={isArabic ? 'chevron-back' : 'chevron-forward'} size={20} color={colors.mutedText} />
+            <Ionicons name="chevron-forward" size={20} color={colors.mutedText} />
           </TouchableOpacity>
 
           {/* 4. استعراض الجدول الغذائي */}
           <TouchableOpacity 
-            style={[styles.actionCard, { backgroundColor: colors.card, borderColor: colors.border, flexDirection: isArabic ? 'row-reverse' : 'row' }]}
+            style={[styles.actionCard, { backgroundColor: colors.card, borderColor: colors.border, flexDirection: 'row' }]}
             onPress={async () => {
               try {
                 const res = await queries.savedDietPlans(clientId);
@@ -317,75 +317,94 @@ export default function ClientProfileScreen({ route, navigation }: any) {
               }
             }}
           >
-            <View style={[styles.iconWrapper, { backgroundColor: 'rgba(59, 130, 246, 0.15)', marginLeft: isArabic ? 16 : 0, marginRight: isArabic ? 0 : 16 }]}>
+            <View style={[styles.iconWrapper, { backgroundColor: 'rgba(59, 130, 246, 0.15)', marginRight: 16 }]}>
               <Ionicons name="nutrition" size={28} color="#3b82f6" />
             </View>
-            <View style={{ flex: 1, alignItems: isArabic ? 'flex-end' : 'flex-start' }}>
-              <Text style={[styles.actionTitle, { color: colors.text, textAlign: isArabic ? 'right' : 'left' }]}>
+            <View style={{ flex: 1, alignItems: 'flex-start' }}>
+              <Text style={[styles.actionTitle, { color: colors.text, textAlign: 'left' }]}>
                 {isArabic ? 'استعراض وتعديل الجدول الغذائي' : 'Review & Edit Diets'}
               </Text>
-              <Text style={[styles.actionDesc, { color: colors.mutedText, textAlign: isArabic ? 'right' : 'left' }]}>
+              <Text style={[styles.actionDesc, { color: colors.mutedText, textAlign: 'left' }]}>
                 {isArabic ? 'إدارة الجداول الغذائية المُصممة' : 'Manage assigned diet plans'}
               </Text>
             </View>
-            <Ionicons name={isArabic ? 'chevron-back' : 'chevron-forward'} size={20} color={colors.mutedText} />
+            <Ionicons name="chevron-forward" size={20} color={colors.mutedText} />
           </TouchableOpacity>
 
           {/* 5. تحاليل الدم */}
           <TouchableOpacity 
-            style={[styles.actionCard, { backgroundColor: colors.card, borderColor: colors.border, flexDirection: isArabic ? 'row-reverse' : 'row', marginTop: 12 }]}
+            style={[styles.actionCard, { backgroundColor: colors.card, borderColor: colors.border, flexDirection: 'row', marginTop: 12 }]}
             onPress={() => navigation.navigate('Compare', { clientId, initialTab: 'lab' })}
           >
-            <View style={[styles.iconWrapper, { backgroundColor: 'rgba(168, 85, 247, 0.15)', marginLeft: isArabic ? 16 : 0, marginRight: isArabic ? 0 : 16 }]}>
+            <View style={[styles.iconWrapper, { backgroundColor: 'rgba(168, 85, 247, 0.15)', marginRight: 16 }]}>
               <Ionicons name="medical" size={28} color="#a855f7" />
             </View>
-            <View style={{ flex: 1, alignItems: isArabic ? 'flex-end' : 'flex-start' }}>
-              <Text style={[styles.actionTitle, { color: colors.text, textAlign: isArabic ? 'right' : 'left' }]}>
+            <View style={{ flex: 1, alignItems: 'flex-start' }}>
+              <Text style={[styles.actionTitle, { color: colors.text, textAlign: 'left' }]}>
                 {isArabic ? 'التحاليل الخاصة بالمتدرب' : 'Blood Tests'}
               </Text>
-              <Text style={[styles.actionDesc, { color: colors.mutedText, textAlign: isArabic ? 'right' : 'left' }]}>
+              <Text style={[styles.actionDesc, { color: colors.mutedText, textAlign: 'left' }]}>
                 {isArabic ? 'استعراض ومقارنة فحوصات الدم المرفوعة' : 'Review and compare blood work'}
               </Text>
             </View>
-            <Ionicons name={isArabic ? 'chevron-back' : 'chevron-forward'} size={20} color={colors.mutedText} />
+            <Ionicons name="chevron-forward" size={20} color={colors.mutedText} />
           </TouchableOpacity>
 
           {/* 6. فحوصات InBody */}
           <TouchableOpacity 
-            style={[styles.actionCard, { backgroundColor: colors.card, borderColor: colors.border, flexDirection: isArabic ? 'row-reverse' : 'row' }]}
+            style={[styles.actionCard, { backgroundColor: colors.card, borderColor: colors.border, flexDirection: 'row' }]}
             onPress={() => navigation.navigate('Compare', { clientId, initialTab: 'inbody' })}
           >
-            <View style={[styles.iconWrapper, { backgroundColor: 'rgba(16, 185, 129, 0.15)', marginLeft: isArabic ? 16 : 0, marginRight: isArabic ? 0 : 16 }]}>
+            <View style={[styles.iconWrapper, { backgroundColor: 'rgba(16, 185, 129, 0.15)', marginRight: 16 }]}>
               <Ionicons name="body" size={28} color="#10b981" />
             </View>
-            <View style={{ flex: 1, alignItems: isArabic ? 'flex-end' : 'flex-start' }}>
-              <Text style={[styles.actionTitle, { color: colors.text, textAlign: isArabic ? 'right' : 'left' }]}>
+            <View style={{ flex: 1, alignItems: 'flex-start' }}>
+              <Text style={[styles.actionTitle, { color: colors.text, textAlign: 'left' }]}>
                 {isArabic ? 'فحوصات InBody الخاصة بالمتدرب' : 'InBody Scans'}
               </Text>
-              <Text style={[styles.actionDesc, { color: colors.mutedText, textAlign: isArabic ? 'right' : 'left' }]}>
+              <Text style={[styles.actionDesc, { color: colors.mutedText, textAlign: 'left' }]}>
                 {isArabic ? 'استعراض نتائج فحوصات تكوين الجسم' : 'Body composition records'}
               </Text>
             </View>
-            <Ionicons name={isArabic ? 'chevron-back' : 'chevron-forward'} size={20} color={colors.mutedText} />
+            <Ionicons name="chevron-forward" size={20} color={colors.mutedText} />
           </TouchableOpacity>
 
-          {/* 7. الدردشة الخاصة */}
+          {/* 7. ملفات المتدرب */}
           <TouchableOpacity 
-            style={[styles.actionCard, { backgroundColor: colors.card, borderColor: colors.border, flexDirection: isArabic ? 'row-reverse' : 'row', marginTop: 12 }]}
+            style={[styles.actionCard, { backgroundColor: colors.card, borderColor: colors.border, flexDirection: 'row' }]}
+            onPress={() => navigation.navigate('ClientFiles', { clientId })}
+          >
+            <View style={[styles.iconWrapper, { backgroundColor: 'rgba(99, 102, 241, 0.15)', marginRight: 16 }]}>
+              <Ionicons name="folder-open" size={28} color="#6366f1" />
+            </View>
+            <View style={{ flex: 1, alignItems: 'flex-start' }}>
+              <Text style={[styles.actionTitle, { color: colors.text, textAlign: 'left' }]}>
+                {isArabic ? 'الملفات الخاصة بالمتدرب' : "Trainee's Files"}
+              </Text>
+              <Text style={[styles.actionDesc, { color: colors.mutedText, textAlign: 'left' }]}>
+                {isArabic ? 'استعراض التحاليل والملفات المرفوعة' : 'View uploaded files & lab reports'}
+              </Text>
+            </View>
+            <Ionicons name="chevron-forward" size={20} color={colors.mutedText} />
+          </TouchableOpacity>
+
+          {/* 8. الدردشة الخاصة */}
+          <TouchableOpacity 
+            style={[styles.actionCard, { backgroundColor: colors.card, borderColor: colors.border, flexDirection: 'row', marginTop: 12 }]}
             onPress={() => navigation.navigate('ClientChat', { connectionId, clientName: `${profile?.firstName || ''} ${profile?.lastName || ''}`.trim() })}
           >
-            <View style={[styles.iconWrapper, { backgroundColor: 'rgba(236, 72, 153, 0.15)', marginLeft: isArabic ? 16 : 0, marginRight: isArabic ? 0 : 16 }]}>
+            <View style={[styles.iconWrapper, { backgroundColor: 'rgba(236, 72, 153, 0.15)', marginRight: 16 }]}>
               <Ionicons name="chatbubbles" size={28} color="#ec4899" />
             </View>
-            <View style={{ flex: 1, alignItems: isArabic ? 'flex-end' : 'flex-start' }}>
-              <Text style={[styles.actionTitle, { color: colors.text, textAlign: isArabic ? 'right' : 'left' }]}>
+            <View style={{ flex: 1, alignItems: 'flex-start' }}>
+              <Text style={[styles.actionTitle, { color: colors.text, textAlign: 'left' }]}>
                 {isArabic ? 'الدردشة الخاصة' : 'Private Chat'}
               </Text>
-              <Text style={[styles.actionDesc, { color: colors.mutedText, textAlign: isArabic ? 'right' : 'left' }]}>
+              <Text style={[styles.actionDesc, { color: colors.mutedText, textAlign: 'left' }]}>
                 {isArabic ? 'مشاركة الصور ومتابعة التطورات' : 'Share progress photos & chat'}
               </Text>
             </View>
-            <Ionicons name={isArabic ? 'chevron-back' : 'chevron-forward'} size={20} color={colors.mutedText} />
+            <Ionicons name="chevron-forward" size={20} color={colors.mutedText} />
           </TouchableOpacity>
 
         </View>

@@ -17,6 +17,8 @@ import { useFocusEffect } from '@react-navigation/native';
 import { api, queries } from '../lib/api';
 import { useAIConsent } from '../context/AIConsentContext';
 import { useAppTheme } from '../context/ThemeContext';
+
+import { useSubscription } from '../context/SubscriptionContext';
 import { formatAppDate, getDateCalendarPreference, type CalendarType } from '../lib/dateFormat';
 import DietPlanDisplay from '../components/DietPlanDisplay';
 import AppTextInput from '../components/AppTextInput';
@@ -84,6 +86,7 @@ const isArabic = I18nManager.isRTL;
 export default function DietScreen({ navigation, route }: any) {
   const { t, i18n } = useTranslation();
   const { colors, isDark } = useAppTheme();
+  const { canUseAIDiet } = useSubscription();
   const { isAccepted, accept } = useAIConsent();
   const isArabic = isArabicLanguage();
   const queryClient = useQueryClient();
@@ -276,6 +279,24 @@ export default function DietScreen({ navigation, route }: any) {
   const startQuestionnaire = () => setStep('disclaimer');
 
   const handleFinish = () => {
+    // Check subscription access for AI diet generation
+    if (!canUseAIDiet()) {
+      Alert.alert(
+        isArabic ? 'اشتراك مطلوب' : 'Subscription Required',
+        isArabic
+          ? 'توليد الجدول الغذائي بالذكاء الاصطناعي متاح للحسابات المدفوعة فقط. يمكنك تصميم جدول غذائي يدوي مجاناً.'
+          : 'AI diet plan generation is available for paid accounts only. You can create a manual diet plan for free.',
+        [
+          { text: isArabic ? 'إلغاء' : 'Cancel', style: 'cancel' },
+          {
+            text: isArabic ? 'اشترك الآن' : 'Subscribe Now',
+            onPress: () => navigation.navigate('Subscription'),
+          },
+        ]
+      );
+      return;
+    }
+
     if (!isAccepted) {
       Alert.alert(
         isArabic ? 'موافقة الذكاء الاصطناعي مطلوبة' : 'AI Consent Required',

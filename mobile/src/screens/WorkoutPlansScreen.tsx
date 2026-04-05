@@ -7,6 +7,7 @@ import { Video, ResizeMode } from 'expo-av';
 import { BlurView } from 'expo-blur';
 import { isArabicLanguage } from '../lib/isArabic';
 import { useAppTheme } from '../context/ThemeContext';
+
 import { WorkoutStore, WorkoutGroup, SavedExercise } from '../lib/WorkoutStore';
 import { EXERCISE_REGISTRY, GlobalExercise } from '../lib/WorkoutRegistry';
 import { VideoCacheManager } from '../lib/VideoCacheManager';
@@ -387,6 +388,7 @@ export default function WorkoutPlansScreen({ route, navigation }: any) {
 
   return (
     <ScrollView style={[styles.container, { backgroundColor: colors.background }]} contentContainerStyle={styles.content}>
+
 
       {(!groups.some(g => g.authorId && g.authorId !== g.userId) && groups.length > 0) && (
         <TouchableOpacity

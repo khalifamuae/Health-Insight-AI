@@ -8,6 +8,7 @@ import { useAuth } from '../context/AuthContext';
 import { Alert } from 'react-native';
 
 import { useAppTheme } from '../context/ThemeContext';
+import { useSubscription } from '../context/SubscriptionContext';
 import HomeScreen from '../screens/HomeScreen';
 import TestsScreen from '../screens/TestsScreen';
 import UploadScreen from '../screens/UploadScreen';
@@ -33,6 +34,8 @@ export default function TabNavigator({ navigation }: any) {
   const glassTint = isDark ? 'dark' : 'light';
   const glassOverlayColor = isDark ? 'rgba(8, 15, 30, 0.34)' : 'rgba(255, 255, 255, 0.28)';
   const menuDividerColor = isDark ? 'rgba(148,163,184,0.2)' : 'rgba(100,116,139,0.24)';
+  const { shouldShowAds } = useSubscription();
+  const adsVisible = shouldShowAds();
 
   const navigateToCompare = () => {
     setIsMenuVisible(false);
@@ -170,6 +173,9 @@ export default function TabNavigator({ navigation }: any) {
           headerStyle: {
             backgroundColor: colors.card
           },
+          // When top ad banner is visible, it already handles safe area.
+          // Set headerStatusBarHeight to 0 to prevent double spacing.
+          ...(adsVisible ? { headerStatusBarHeight: 0 } : {}),
           headerTitleStyle: {
             color: colors.text,
             fontWeight: '600',
@@ -366,6 +372,38 @@ export default function TabNavigator({ navigation }: any) {
                     <Ionicons name="close" size={18} color={colors.text} />
                   </TouchableOpacity>
                 </View>
+
+                <TouchableOpacity
+                  style={[
+                    styles.menuItem,
+                    {
+                      borderBottomColor: menuDividerColor,
+                      flexDirection: 'row',
+                    },
+                  ]}
+                  onPress={() => {
+                    setIsMenuVisible(false);
+                    navigation.navigate('TrainerList');
+                  }}
+                  testID="button-menu-trainer-reviews"
+                >
+                  <Ionicons name="star" size={18} color="#f59e0b" />
+                  <Text
+                    numberOfLines={1}
+                    style={[
+                      styles.menuItemText,
+                      {
+                        color: colors.text,
+                        textAlign: 'left',
+                      },
+                    ]}
+                  >
+                    {isArabic ? 'تقييم المدربين' : 'Trainer Reviews'}
+                  </Text>
+                  <View style={{ backgroundColor: 'rgba(34,197,94,0.15)', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6 }}>
+                    <Text style={{ color: '#22c55e', fontSize: 10, fontWeight: '700' }}>{isArabic ? 'مجاني' : 'FREE'}</Text>
+                  </View>
+                </TouchableOpacity>
 
                 <TouchableOpacity
                   style={[

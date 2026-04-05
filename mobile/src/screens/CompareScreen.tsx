@@ -15,6 +15,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import { queries } from '../lib/api';
 import { useAppTheme } from '../context/ThemeContext';
+
 import { formatAppDate, getDateCalendarPreference, type CalendarType } from '../lib/dateFormat';
 
 interface TestDefinition {
@@ -334,6 +335,7 @@ export default function CompareScreen({ route, navigation }: any) {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
+
       <View style={styles.disclaimerSmall}>
         <Ionicons name="information-circle-outline" size={16} color={colors.mutedText} />
         <Text style={[styles.disclaimerSmallText, { color: colors.mutedText }]}>{t('disclaimer.text')}</Text>

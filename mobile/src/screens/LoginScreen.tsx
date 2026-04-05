@@ -831,7 +831,7 @@ export default function LoginScreen({ onLogin }: LoginScreenProps) {
           </View>
 
           <Text style={styles.trialText}>
-            {isArabic ? '15 يوم تجربة مجانية' : '15-day free trial'}
+            {isArabic ? '3 أيام تجربة مجانية' : '3-day free trial'}
           </Text>
 
           <TouchableOpacity

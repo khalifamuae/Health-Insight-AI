@@ -16,6 +16,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { api } from '../lib/api';
 import { useAIConsent } from '../context/AIConsentContext';
 import { useAppTheme } from '../context/ThemeContext';
+import { useSubscription } from '../context/SubscriptionContext';
+
 import { pickImageFromAlbum, takePhotoWithCamera } from '../lib/photoPicker';
 
 type SelectedUploadFile = {
@@ -29,6 +31,7 @@ export default function UploadScreen({ navigation }: any) {
   const { t, i18n } = useTranslation();
   const { colors, isDark } = useAppTheme();
   const { isAccepted, accept } = useAIConsent();
+  const { canUpload } = useSubscription();
   const isArabic = isArabicLanguage();
   const styles = getStyles(isArabic);
   const queryClient = useQueryClient();
@@ -175,6 +178,24 @@ export default function UploadScreen({ navigation }: any) {
       return;
     }
 
+    // Check subscription access
+    if (!canUpload()) {
+      Alert.alert(
+        isArabic ? 'اشتراك مطلوب' : 'Subscription Required',
+        isArabic
+          ? 'رفع التحاليل والفحوصات متاح للحسابات المدفوعة فقط. يمكنك تصميم جداول يدوية مجاناً.'
+          : 'Uploading lab reports is available for paid accounts only. You can create manual plans for free.',
+        [
+          { text: isArabic ? 'إلغاء' : 'Cancel', style: 'cancel' },
+          {
+            text: isArabic ? 'اشترك الآن' : 'Subscribe Now',
+            onPress: () => navigation.navigate('Subscription'),
+          },
+        ]
+      );
+      return;
+    }
+
     if (!isAccepted) {
       Alert.alert(
         isArabic ? 'موافقة الذكاء الاصطناعي مطلوبة' : 'AI Consent Required',
@@ -200,6 +221,7 @@ export default function UploadScreen({ navigation }: any) {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
+
       <View style={styles.content}>
         <View style={[styles.iconContainer, { backgroundColor: isDark ? '#1e3a8a' : '#eff6ff' }]}>
           <Ionicons name="document-text" size={80} color={colors.primary} />

@@ -15,6 +15,10 @@ import MyDietPlansScreen from '../screens/MyDietPlansScreen';
 import WorkoutPlansScreen from '../screens/WorkoutPlansScreen';
 import ManualDietBuilderScreen from '../screens/ManualDietBuilderScreen';
 import WorkoutBuilderScreen from '../screens/WorkoutBuilderScreen';
+import ClientFilesScreen from '../screens/ClientFilesScreen';
+import TrainerListScreen from '../screens/TrainerListScreen';
+import TrainerReviewsScreen from '../screens/TrainerReviewsScreen';
+import StandaloneChatScreen from '../screens/StandaloneChatScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -137,6 +141,33 @@ export default function RootNavigator() {
               headerStyle: { backgroundColor: colors.card },
               headerTitleStyle: { color: colors.text, fontWeight: '700' },
             }}
+          />
+          <Stack.Screen
+            name="ClientFiles"
+            component={ClientFilesScreen}
+            options={{
+              headerShown: true,
+              headerTitle: isArabic ? 'ملفات المتدرب' : "Trainee's Files",
+              headerTitleAlign: 'center',
+              headerTintColor: colors.text,
+              headerStyle: { backgroundColor: colors.card },
+              headerTitleStyle: { color: colors.text, fontWeight: '700' },
+            }}
+          />
+          <Stack.Screen
+            name="TrainerList"
+            component={TrainerListScreen}
+            options={{ headerShown: false }}
+          />
+          <Stack.Screen
+            name="TrainerReviews"
+            component={TrainerReviewsScreen}
+            options={{ headerShown: false }}
+          />
+          <Stack.Screen
+            name="StandaloneChat"
+            component={StandaloneChatScreen}
+            options={{ headerShown: false }}
           />
         </>
       ) : (

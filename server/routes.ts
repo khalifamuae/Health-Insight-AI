@@ -10,9 +10,9 @@ import { analyzeLabPdf, analyzeLabImage } from "./pdfAnalyzer";
 import { analyzeInBodyPdf, analyzeInBodyImage } from "./inbodyAnalyzer";
 import { generateDietPlan, translateDietPlan } from "./dietPlanGenerator";
 import { getPrivacyPolicyHTML, getPrivacyPolicyArabicHTML, getTermsOfServiceHTML, getTermsOfServiceArabicHTML, getSupportPageHTML, getAccountDeletionHTML } from "./legalPages";
-import { desc, eq, and, gte, sql } from "drizzle-orm";
+import { desc, eq, and, gte, sql, or } from "drizzle-orm";
 import { db } from "./db";
-import { userProfiles, testDefinitions, type TestDefinition, sharedWorkouts, sharedDietPlans, subscriberConnections, inbodyResults, savedWorkouts, savedDietPlans } from "@shared/schema";
+import { userProfiles, testDefinitions, type TestDefinition, sharedWorkouts, sharedDietPlans, subscriberConnections, inbodyResults, savedWorkouts, savedDietPlans, trainerReviews, standaloneChatMessages } from "@shared/schema";
 import crypto from "crypto";
 import { emailVerificationCodes } from "@shared/schema";
 import { getResendClient } from "./resendClient";
@@ -488,7 +488,7 @@ export async function registerRoutes(
       const userId = crypto.randomUUID();
       const passwordHash = await bcrypt.hash(password, 10);
       const trialEnd = new Date();
-      trialEnd.setDate(trialEnd.getDate() + 15);
+      trialEnd.setDate(trialEnd.getDate() + 3);
 
       await authStorage.upsertUser({
         id: userId,
@@ -632,7 +632,7 @@ export async function registerRoutes(
 
       if (!profile) {
         const trialEnd = new Date();
-        trialEnd.setDate(trialEnd.getDate() + 15);
+        trialEnd.setDate(trialEnd.getDate() + 3);
         profile = await storage.upsertUserProfile({
           id: currentUserId,
           subscriptionPlan: "free",
@@ -723,7 +723,7 @@ export async function registerRoutes(
       let profile = await storage.getUserProfile(userId);
       if (!profile) {
         const trialEnd = new Date();
-        trialEnd.setDate(trialEnd.getDate() + 15);
+        trialEnd.setDate(trialEnd.getDate() + 3);
         profile = await storage.upsertUserProfile({
           id: userId,
           subscriptionPlan: "free",
@@ -790,8 +790,8 @@ export async function registerRoutes(
 
     return {
       hasAccess: false,
-      reason: "Your free trial has expired. Please subscribe to view your data.",
-      reasonAr: "انتهت الفترة التجريبية المجانية. يرجى الاشتراك لعرض بياناتك."
+      reason: "Please subscribe to access this feature. Free accounts can create manual workout and diet plans.",
+      reasonAr: "يرجى الاشتراك للوصول إلى هذه الميزة. الحسابات المجانية يمكنها تصميم جداول تدريبية وغذائية يدوية فقط."
     };
   }
 
@@ -1252,13 +1252,26 @@ export async function registerRoutes(
         return res.status(400).json({ error: "Invalid PDF file format" });
       }
 
-      // Check subscription limits
+      // Check subscription limits — free accounts cannot upload
       const profile = await storage.getUserProfile(userId);
       const plan = profile?.subscriptionPlan || "free";
       const filesUploaded = profile?.filesUploaded || 0;
 
+      // Check if trial is active for free users
+      const trialEndsAt = profile?.trialEndsAt;
+      const isTrialActive = plan === 'free' && trialEndsAt && new Date(trialEndsAt) > new Date();
+
+      // Free users without trial cannot upload at all
+      if (plan === 'free' && !isTrialActive) {
+        return res.status(403).json({
+          error: "SUBSCRIPTION_REQUIRED",
+          message: "Please subscribe to upload lab reports. Free accounts can create manual plans only.",
+          messageAr: "\u064a\u0631\u062c\u0649 \u0627\u0644\u0627\u0634\u062a\u0631\u0627\u0643 \u0644\u0631\u0641\u0639 \u0627\u0644\u062a\u062d\u0627\u0644\u064a\u0644. \u0627\u0644\u062d\u0633\u0627\u0628\u0627\u062a \u0627\u0644\u0645\u062c\u0627\u0646\u064a\u0629 \u064a\u0645\u0643\u0646\u0647\u0627 \u062a\u0635\u0645\u064a\u0645 \u062c\u062f\u0627\u0648\u0644 \u064a\u062f\u0648\u064a\u0629 \u0641\u0642\u0637."
+        });
+      }
+
       const limits: Record<string, number> = { free: 3, basic: 20, premium: Infinity, pro: Infinity };
-      if (filesUploaded >= limits[plan]) {
+      if (filesUploaded >= (limits[plan] || 0)) {
         return res.status(403).json({
           error: "Upload limit reached",
           message: "Please upgrade your subscription to upload more files"
@@ -1316,8 +1329,21 @@ export async function registerRoutes(
       const profile = await storage.getUserProfile(userId);
       const plan = profile?.subscriptionPlan || "free";
       const filesUploaded = profile?.filesUploaded || 0;
+
+      // Check trial for free users
+      const trialEndsAt = profile?.trialEndsAt;
+      const isTrialActive = plan === 'free' && trialEndsAt && new Date(trialEndsAt) > new Date();
+
+      if (plan === 'free' && !isTrialActive) {
+        return res.status(403).json({
+          error: "SUBSCRIPTION_REQUIRED",
+          message: "Please subscribe to upload InBody scans. Free accounts can create manual plans only.",
+          messageAr: "\u064a\u0631\u062c\u0649 \u0627\u0644\u0627\u0634\u062a\u0631\u0627\u0643 \u0644\u0631\u0641\u0639 \u0641\u062d\u0648\u0635\u0627\u062a InBody. \u0627\u0644\u062d\u0633\u0627\u0628\u0627\u062a \u0627\u0644\u0645\u062c\u0627\u0646\u064a\u0629 \u064a\u0645\u0643\u0646\u0647\u0627 \u062a\u0635\u0645\u064a\u0645 \u062c\u062f\u0627\u0648\u0644 \u064a\u062f\u0648\u064a\u0629 \u0641\u0642\u0637."
+        });
+      }
+
       const limits: Record<string, number> = { free: 3, basic: 20, premium: Infinity, pro: Infinity };
-      if (filesUploaded >= limits[plan]) {
+      if (filesUploaded >= (limits[plan] || 0)) {
         return res.status(403).json({
           error: "Upload limit reached",
           message: "Please upgrade your subscription to upload more files"
@@ -1604,9 +1630,11 @@ export async function registerRoutes(
             });
 
             const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
+            // Mark plan as AI-generated
+            const planWithFlag = { ...dietPlan, isAIGenerated: true, generatedAt: new Date().toISOString() };
             await storage.updateDietPlanJob(job.id, {
               status: "completed",
-              planData: JSON.stringify(dietPlan),
+              planData: JSON.stringify(planWithFlag),
             });
 
             console.log(`Diet plan job ${job.id} completed in ${elapsed}s (attempt ${attempt})`);
@@ -2028,11 +2056,13 @@ export async function registerRoutes(
       const isTrialActive = plan === 'free' && trialEndsAt && new Date(trialEndsAt) > new Date();
 
       res.json({
-        plan,
+        plan: userProfile?.subscriberManagementActive ? 'trainer' : plan,
         expiresAt: expiresAt ? new Date(expiresAt).toISOString() : null,
-        isActive,
+        isActive: isActive || !!isTrialActive,
         trialEndsAt: trialEndsAt ? new Date(trialEndsAt).toISOString() : null,
         isTrialActive: !!isTrialActive,
+        subscriberManagementActive: userProfile?.subscriberManagementActive || false,
+        subscriberManagementLimit: userProfile?.subscriberManagementLimit || 0,
         dietPlansGenerated: userProfile?.dietPlansGenerated || 0,
         dietPlansResetAt: userProfile?.dietPlansResetAt ? new Date(userProfile.dietPlansResetAt).toISOString() : null,
       });
@@ -2047,7 +2077,7 @@ export async function registerRoutes(
       const userId = req.user?.claims?.sub;
       if (!userId) return res.status(401).json({ error: "Not authenticated" });
 
-      const { productId, plan, platform, receiptData } = req.body;
+      const { productId, plan, platform, receiptData, traineeLimit } = req.body;
 
       if (!productId || !plan || !platform) {
         return res.status(400).json({ error: "Missing required fields" });
@@ -2056,7 +2086,7 @@ export async function registerRoutes(
         return res.status(400).json({ error: "Invalid platform" });
       }
 
-      if (plan !== 'pro') {
+      if (plan !== 'trainee' && plan !== 'trainer' && plan !== 'pro') {
         return res.status(400).json({ error: "Invalid plan" });
       }
 
@@ -2068,7 +2098,7 @@ export async function registerRoutes(
         return res.status(400).json({ error: "Receipt data is required" });
       }
 
-      console.log(`[IAP] Purchase request: user=${userId}, product=${productId}, plan=${plan}, period=${period}, platform=${platform}`);
+      console.log(`[IAP] Purchase request: user=${userId}, product=${productId}, plan=${plan}, period=${period}, platform=${platform}, traineeLimit=${traineeLimit || 0}`);
       if (process.env.NODE_ENV === "production") {
         return res.status(503).json({
           error: "RECEIPT_VALIDATION_REQUIRED",
@@ -2089,25 +2119,28 @@ export async function registerRoutes(
         expiresAt.setMonth(expiresAt.getMonth() + 1);
       }
 
+      // Map plan to DB value: trainee/pro → 'pro', trainer → 'pro' + management flags
+      const dbPlan = 'pro';
+      const isTrainerPlan = plan === 'trainer';
+
       await storage.updateSubscription(userId, {
-        subscription: plan,
+        subscription: dbPlan,
         subscriptionExpiresAt: expiresAt.toISOString(),
         subscriptionProductId: productId,
         subscriptionPlatform: platform,
       });
 
-      // [DISABLED] Affiliate commission tracking - will be re-enabled with automatic payouts
-      // try {
-      //   const profile = await storage.getUserProfile(userId);
-      //   if (profile?.referredBy) {
-      //     const subscriptionAmount = period === 'yearly' ? 139.00 : 14.99;
-      //     await storage.createCommission(profile.referredBy, userId, subscriptionAmount, productId);
-      //   }
-      // } catch (affErr) {
-      //   console.error("[Affiliate] Error creating commission:", affErr);
-      // }
+      // If trainer plan, also activate subscriber management
+      if (isTrainerPlan && traineeLimit) {
+        await db.update(userProfiles)
+          .set({
+            subscriberManagementActive: true,
+            subscriberManagementLimit: traineeLimit,
+          })
+          .where(eq(userProfiles.id, userId));
+      }
 
-      res.json({ success: true, plan, expiresAt: expiresAt.toISOString() });
+      res.json({ success: true, plan, expiresAt: expiresAt.toISOString(), traineeLimit: isTrainerPlan ? traineeLimit : 0 });
     } catch (error) {
       console.error("Error processing purchase:", error);
       res.status(500).json({ error: "Failed to process purchase" });
@@ -2326,6 +2359,24 @@ export async function registerRoutes(
     }
   });
 
+  // Get trainee uploaded files (trainer read-only access)
+  app.get("/api/client-files/:clientId", isAuthenticated, async (req: any, res: Response) => {
+    try {
+      const trainerId = req.user.claims.sub;
+      const { clientId } = req.params;
+
+      if (!(await verifyTrainerAccess(trainerId, clientId))) {
+        return res.status(403).json({ error: "Access denied" });
+      }
+
+      const pdfs = await storage.getUploadedPdfsByUser(clientId);
+      res.json(pdfs);
+    } catch (error) {
+      console.error("Error fetching client files:", error);
+      res.status(500).json({ error: "Failed to fetch client files" });
+    }
+  });
+
   app.get("/api/health", async (_req: Request, res: Response) => {
     try {
       const dbCheck = await db.execute(sql`SELECT 1`);
@@ -2339,6 +2390,186 @@ export async function registerRoutes(
         status: "error",
         timestamp: new Date().toISOString(),
       });
+    }
+  });
+
+  // ============================================================
+  // Trainer Reviews & Ratings
+  // ============================================================
+
+  // GET /api/trainers/public — List all trainers with subscription + avg rating
+  app.get("/api/trainers/public", isAuthenticated as RequestHandler, async (req: Request, res: Response) => {
+    try {
+      // Get all users who have a trainer subscription (plan contains 'trainer')
+      const trainers = await db.select().from(userProfiles).where(
+        sql`${userProfiles.subscriptionPlan}::text LIKE '%trainer%' OR ${userProfiles.subscriptionPlan}::text = 'premium' OR ${userProfiles.subscriptionPlan}::text = 'pro'`
+      );
+
+      const result = await Promise.all(
+        trainers.map(async (trainer) => {
+          const reviews = await db.select().from(trainerReviews).where(eq(trainerReviews.trainerId, trainer.id));
+          const totalRatings = reviews.length;
+          const avgRating = totalRatings > 0
+            ? reviews.reduce((sum, r) => sum + r.rating, 0) / totalRatings
+            : 0;
+          return {
+            id: trainer.id,
+            name: [trainer.firstName, trainer.lastName].filter(Boolean).join(' ') || 'Unknown',
+            avatarUrl: trainer.profileImagePath || null,
+            avgRating: Math.round(avgRating * 10) / 10,
+            totalReviews: totalRatings,
+          };
+        })
+      );
+
+      res.json(result);
+    } catch (error: any) {
+      console.error("[trainers/public] Error:", error);
+      res.status(500).json({ error: "Failed to fetch trainers" });
+    }
+  });
+
+  // GET /api/trainers/:trainerId/reviews — Get reviews for a trainer
+  app.get("/api/trainers/:trainerId/reviews", isAuthenticated as RequestHandler, async (req: Request, res: Response) => {
+    try {
+      const { trainerId } = req.params;
+      const tId = String(trainerId);
+      const reviews = await db.select().from(trainerReviews)
+        .where(eq(trainerReviews.trainerId, tId))
+        .orderBy(desc(trainerReviews.createdAt));
+
+      // Attach reviewer names
+      const enriched = await Promise.all(
+        reviews.map(async (review) => {
+          const [reviewer] = await db.select({ firstName: userProfiles.firstName, lastName: userProfiles.lastName, profileImagePath: userProfiles.profileImagePath })
+            .from(userProfiles)
+            .where(eq(userProfiles.id, review.reviewerId))
+            .limit(1);
+          return {
+            ...review,
+            reviewerName: reviewer ? [reviewer.firstName, reviewer.lastName].filter(Boolean).join(' ') || 'Anonymous' : 'Anonymous',
+            reviewerAvatar: reviewer?.profileImagePath || null,
+          };
+        })
+      );
+
+      res.json(enriched);
+    } catch (error: any) {
+      console.error("[trainers/reviews] Error:", error);
+      res.status(500).json({ error: "Failed to fetch reviews" });
+    }
+  });
+
+  // POST /api/trainers/:trainerId/reviews — Submit a review (only current/past trainees)
+  app.post("/api/trainers/:trainerId/reviews", isAuthenticated as RequestHandler, async (req: Request, res: Response) => {
+    try {
+      const user = (req as any).user;
+      const trainerId = String(req.params.trainerId);
+      const { rating, reviewText } = req.body;
+
+      if (!rating || rating < 1 || rating > 5) {
+        return res.status(400).json({ error: "Rating must be between 1 and 5" });
+      }
+
+      // Check if reviewer has a connection (current or past) with this trainer
+      const connections = await db.select().from(subscriberConnections).where(
+        and(
+          eq(subscriberConnections.ownerId, trainerId),
+          eq(subscriberConnections.clientId, user.id)
+        )
+      );
+
+      if (connections.length === 0) {
+        return res.status(403).json({
+          error: "MUST_BE_TRAINEE",
+          message: "You can only review trainers you are or were subscribed to"
+        });
+      }
+
+      // Check if user already reviewed this trainer
+      const existingReview = await db.select().from(trainerReviews).where(
+        and(
+          eq(trainerReviews.trainerId, trainerId),
+          eq(trainerReviews.reviewerId, user.id)
+        )
+      );
+
+      if (existingReview.length > 0) {
+        return res.status(409).json({ error: "ALREADY_REVIEWED", message: "You have already reviewed this trainer" });
+      }
+
+      const [review] = await db.insert(trainerReviews).values({
+        trainerId,
+        reviewerId: user.id,
+        rating: Math.round(rating),
+        reviewText: reviewText?.trim() || null,
+      }).returning();
+
+      res.json(review);
+    } catch (error: any) {
+      console.error("[trainers/reviews/post] Error:", error);
+      res.status(500).json({ error: "Failed to submit review" });
+    }
+  });
+
+  // GET /api/standalone-chat/:otherUserId — Get chat messages between current user and another user
+  app.get("/api/standalone-chat/:otherUserId", isAuthenticated as RequestHandler, async (req: Request, res: Response) => {
+    try {
+      const user = (req as any).user;
+      const otherUserId = String(req.params.otherUserId);
+
+      const messages = await db.select().from(standaloneChatMessages).where(
+        or(
+          and(
+            eq(standaloneChatMessages.senderId, user.id),
+            eq(standaloneChatMessages.receiverId, otherUserId)
+          ),
+          and(
+            eq(standaloneChatMessages.senderId, otherUserId),
+            eq(standaloneChatMessages.receiverId, user.id)
+          )
+        )
+      ).orderBy(standaloneChatMessages.createdAt);
+
+      // Mark messages as read
+      await db.update(standaloneChatMessages)
+        .set({ isRead: true })
+        .where(
+          and(
+            eq(standaloneChatMessages.senderId, otherUserId),
+            eq(standaloneChatMessages.receiverId, user.id),
+            eq(standaloneChatMessages.isRead, false)
+          )
+        );
+
+      res.json(messages);
+    } catch (error: any) {
+      console.error("[standalone-chat/get] Error:", error);
+      res.status(500).json({ error: "Failed to fetch messages" });
+    }
+  });
+
+  // POST /api/standalone-chat/:otherUserId — Send a message to another user
+  app.post("/api/standalone-chat/:otherUserId", isAuthenticated as RequestHandler, async (req: Request, res: Response) => {
+    try {
+      const user = (req as any).user;
+      const otherUserId = String(req.params.otherUserId);
+      const { content } = req.body;
+
+      if (!content?.trim()) {
+        return res.status(400).json({ error: "Message content is required" });
+      }
+
+      const [message] = await db.insert(standaloneChatMessages).values({
+        senderId: user.id,
+        receiverId: otherUserId,
+        content: content.trim(),
+      }).returning();
+
+      res.json(message);
+    } catch (error: any) {
+      console.error("[standalone-chat/post] Error:", error);
+      res.status(500).json({ error: "Failed to send message" });
     }
   });
 

@@ -20,6 +20,7 @@ import { queries, api } from '../lib/api';
 import { pickImageFromAlbum } from '../lib/photoPicker';
 import { useAuth } from '../context/AuthContext';
 import { useAppTheme } from '../context/ThemeContext';
+
 import { getDateCalendarPreference, setDateCalendarPreference, type CalendarType } from '../lib/dateFormat';
 import AppTextInput from '../components/AppTextInput';
 
@@ -220,9 +221,10 @@ export default function ProfileScreen({ navigation }: { navigation: any }) {
   const handleShareLinkCode = async () => {
     if (!linkCode) return;
     try {
+      const appLink = 'https://apps.apple.com/ae/app/biotrack-ai/id6759469048?l=ar';
       const msg = isArabic 
-        ? `مرحباً كابتن،\nرمز الربط الخاص بي لتطبيق Health Insight AI هو: *${linkCode}*\n⚠️ (تذكير: الكود صالح للاستخدام لمدة ساعة واحدة فقط)`
-        : `Hi Trainer,\nMy Health Insight AI link code is: *${linkCode}*\n⚠️ (Note: Code is valid for 1 hour only)`;
+        ? `مرحباً كابتن 👋\n\nهذا رمز الربط الخاص بي على تطبيق *BioTrack AI*:\n\n🔑 *${linkCode}*\n\nيمكنك إضافتي في قائمة متدربيك من خلال التطبيق.\n⚠️ الرمز صالح لمدة ساعة واحدة فقط.\n\n📲 حمّل التطبيق: ${appLink}`
+        : `Hi Coach 👋\n\nHere is my link code on *BioTrack AI*:\n\n🔑 *${linkCode}*\n\nYou can add me to your trainees list through the app.\n⚠️ This code is valid for 1 hour only.\n\n📲 Download the app: ${appLink}`;
       await Share.share({
         message: msg,
       });
@@ -277,6 +279,7 @@ export default function ProfileScreen({ navigation }: { navigation: any }) {
 
   return (
     <ScrollView style={[styles.container, { backgroundColor: themeBg }]} contentContainerStyle={styles.content}>
+
       <View style={styles.disclaimerSmall}>
         <Ionicons name="information-circle-outline" size={16} color="#94a3b8" />
         <Text style={styles.disclaimerSmallText}>{t('disclaimer.text')}</Text>

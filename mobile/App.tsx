@@ -10,7 +10,9 @@ import './src/lib/i18n';
 import { AuthProvider } from './src/context/AuthContext';
 import { AIConsentProvider, useAIConsent } from './src/context/AIConsentContext';
 import { ThemeProvider, useAppTheme } from './src/context/ThemeContext';
+import { SubscriptionProvider } from './src/context/SubscriptionContext';
 import RootNavigator from './src/navigation/RootNavigator';
+import AdBanner from './src/components/AdBanner';
 import { initIAP, endIAP } from './src/services/IAPService';
 import { initializeReminderNotifications } from './src/services/ReminderNotificationService';
 
@@ -42,7 +44,9 @@ export default function App() {
         <AIConsentProvider>
           <ThemeProvider>
             <AuthProvider>
-              <AppNavigator />
+              <SubscriptionProvider>
+                <AppNavigator />
+              </SubscriptionProvider>
             </AuthProvider>
           </ThemeProvider>
         </AIConsentProvider>
@@ -78,11 +82,22 @@ function AppNavigator() {
     };
 
   return (
-    <NavigationContainer theme={navTheme}>
-      <StatusBar style={isDark ? 'light' : 'dark'} />
-      <RootNavigator />
-      <AIConsentModal />
-    </NavigationContainer>
+    <View style={{ flex: 1, backgroundColor: colors.background }}>
+      {/* Fixed top ad banner — always visible for free accounts */}
+      <AdBanner position="top" />
+
+      {/* Main app content */}
+      <View style={{ flex: 1 }}>
+        <NavigationContainer theme={navTheme}>
+          <StatusBar style={isDark ? 'light' : 'dark'} />
+          <RootNavigator />
+          <AIConsentModal />
+        </NavigationContainer>
+      </View>
+
+      {/* Fixed bottom ad banner — always visible for free accounts */}
+      <AdBanner position="bottom" />
+    </View>
   );
 }
 

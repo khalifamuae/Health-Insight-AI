@@ -14,6 +14,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { queries, api } from '../lib/api';
 import { useAppTheme } from '../context/ThemeContext';
 
+
 interface Reminder {
   id: number;
   testName: string;
@@ -107,6 +108,7 @@ export default function RemindersScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
+
       <View style={styles.disclaimerSmall}>
         <Ionicons name="information-circle-outline" size={16} color={colors.mutedText} />
         <Text style={[styles.disclaimerSmallText, { color: colors.mutedText }]}>{t('disclaimer.text')}</Text>

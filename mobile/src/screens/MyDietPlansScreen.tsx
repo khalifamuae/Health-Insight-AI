@@ -1,5 +1,5 @@
 import React, { useCallback, useMemo, useState, useLayoutEffect } from 'react';
-import { Alert, I18nManager, ScrollView, StyleSheet, Text, TouchableOpacity, View, TextInput, ActivityIndicator } from 'react-native';
+import { Alert, I18nManager, ScrollView, StyleSheet, Text, TouchableOpacity, View, TextInput, ActivityIndicator, Share } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
@@ -8,6 +8,7 @@ import { useFocusEffect } from '@react-navigation/native';
 
 import { api, queries } from '../lib/api';
 import { useAppTheme } from '../context/ThemeContext';
+
 import { formatAppDate, getDateCalendarPreference, type CalendarType } from '../lib/dateFormat';
 import DietPlanDisplay from '../components/DietPlanDisplay';
 
@@ -217,10 +218,11 @@ export default function MyDietPlansScreen({ route, navigation }: any) {
         groups: allGroups
       };
       const res = await api.post<{ shareCode: string }>('/api/diet-plans/share', { planData });
-      Alert.alert(
-        isArabic ? 'تم النسخ ✅' : 'Copied ✅',
-        isArabic ? `رمز المشاركة لجميع المجموعات:\n\n${res.shareCode}` : `Share Code for All Plans:\n\n${res.shareCode}`
-      );
+      const appLink = 'https://apps.apple.com/ae/app/biotrack-ai/id6759469048?l=ar';
+      const message = isArabic
+        ? `🥗 قمت بمشاركة جميع جداولي الغذائية على تطبيق *BioTrack AI*!\n\nلتحميل الجداول، افتح التطبيق وأدخل هذا الرمز:\n📋 *${res.shareCode}*\n\n📲 حمّل التطبيق: ${appLink}`
+        : `🥗 I've shared all my diet plans on *BioTrack AI*!\n\nTo download them, open the app and enter this code:\n📋 *${res.shareCode}*\n\n📲 Download the app: ${appLink}`;
+      await Share.share({ message });
     } catch (e) {
       Alert.alert(isArabic ? 'خطأ' : 'Error', isArabic ? 'فشل في مشاركة الجداول' : 'Failed to share plans');
     } finally {
@@ -283,10 +285,12 @@ export default function MyDietPlansScreen({ route, navigation }: any) {
     setIsSharing(true);
     try {
       const res = await api.post<{ shareCode: string }>('/api/diet-plans/share', { planData: parsedPlan });
-      Alert.alert(
-        isArabic ? 'تم النسخ ✅' : 'Copied ✅',
-        isArabic ? `رمز المشاركة: ${res.shareCode}\nتم نسخ الرمز للحافظة.` : `Share Code: ${res.shareCode}\nCopied to clipboard.`
-      );
+      const appLink = 'https://apps.apple.com/ae/app/biotrack-ai/id6759469048?l=ar';
+      const planTitle = parsedPlan?.title || (isArabic ? 'جدول غذائي' : 'Diet Plan');
+      const message = isArabic
+        ? `🥗 يمكنك متابعة جدولي الغذائي (${planTitle}) على تطبيق *BioTrack AI*!\n\nلتحميل الجدول، افتح التطبيق وأدخل هذا الرمز:\n📋 *${res.shareCode}*\n\n📲 حمّل التطبيق: ${appLink}`
+        : `🥗 You can follow my diet plan (${planTitle}) on *BioTrack AI*!\n\nTo download it, open the app and enter this code:\n📋 *${res.shareCode}*\n\n📲 Download the app: ${appLink}`;
+      await Share.share({ message });
     } catch (e) {
       Alert.alert(isArabic ? 'خطأ' : 'Error', isArabic ? 'فشل في مشاركة الجدول' : 'Failed to share plan');
     } finally {
@@ -316,10 +320,11 @@ export default function MyDietPlansScreen({ route, navigation }: any) {
         groups: [group]
       };
       const res = await api.post<{ shareCode: string }>('/api/diet-plans/share', { planData });
-      Alert.alert(
-        isArabic ? 'تم النسخ ✅' : 'Copied ✅',
-        isArabic ? `رمز مشاركة ${group.name}:\n\n${res.shareCode}` : `Share Code for ${group.name}:\n\n${res.shareCode}`
-      );
+      const appLink = 'https://apps.apple.com/ae/app/biotrack-ai/id6759469048?l=ar';
+      const message = isArabic
+        ? `🥗 يمكنك متابعة جدولي الغذائي (${group.name}) على تطبيق *BioTrack AI*!\n\nلتحميل الجدول، افتح التطبيق وأدخل هذا الرمز:\n📋 *${res.shareCode}*\n\n📲 حمّل التطبيق: ${appLink}`
+        : `🥗 You can follow my diet plan (${group.name}) on *BioTrack AI*!\n\nTo download it, open the app and enter this code:\n📋 *${res.shareCode}*\n\n📲 Download the app: ${appLink}`;
+      await Share.share({ message });
     } catch (e) {
       Alert.alert(isArabic ? 'خطأ' : 'Error', isArabic ? 'فشل في مشاركة المجموعة' : 'Failed to share group');
     } finally {
@@ -371,6 +376,7 @@ export default function MyDietPlansScreen({ route, navigation }: any) {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
+
       <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.content}>
         <View style={[styles.noteCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
           <Ionicons name="information-circle" size={18} color={colors.primary} />
