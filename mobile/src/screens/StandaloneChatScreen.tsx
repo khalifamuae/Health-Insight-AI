@@ -7,12 +7,15 @@ import {
   TouchableOpacity,
   TextInput,
   ActivityIndicator,
-  KeyboardAvoidingView,
   Platform,
+  I18nManager,
+  Keyboard,
+  Animated,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useFocusEffect } from '@react-navigation/native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { isArabicLanguage } from '../lib/isArabic';
 import { useAppTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
@@ -30,16 +33,46 @@ interface ChatMessage {
 export default function StandaloneChatScreen({ route, navigation }: any) {
   const { otherUserId, otherUserName } = route.params;
   const { colors, isDark } = useAppTheme();
-  const isArabic = isArabicLanguage();
+  const isArabic = I18nManager.isRTL;
   const { user } = useAuth();
+  const insets = useSafeAreaInsets();
   const queryClient = useQueryClient();
   const flatListRef = useRef<FlatList>(null);
   const [message, setMessage] = useState('');
+  const keyboardOffset = useRef(new Animated.Value(0)).current;
+
+  // Keyboard listeners for reliable input positioning above keyboard
+  useEffect(() => {
+    const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
+    const hideEvent = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
+
+    const showSub = Keyboard.addListener(showEvent, (e) => {
+      Animated.timing(keyboardOffset, {
+        toValue: e.endCoordinates.height - insets.bottom,
+        duration: Platform.OS === 'ios' ? (e.duration || 250) : 0,
+        useNativeDriver: false,
+      }).start();
+      setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 100);
+    });
+
+    const hideSub = Keyboard.addListener(hideEvent, (e) => {
+      Animated.timing(keyboardOffset, {
+        toValue: 0,
+        duration: Platform.OS === 'ios' ? (e.duration || 250) : 0,
+        useNativeDriver: false,
+      }).start();
+    });
+
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
+  }, [insets.bottom]);
 
   const { data: messages, isLoading, refetch } = useQuery<ChatMessage[]>({
     queryKey: ['standalone-chat', otherUserId],
     queryFn: () => api.get<ChatMessage[]>(`/api/standalone-chat/${otherUserId}`),
-    refetchInterval: 5000, // Poll every 5 seconds
+    refetchInterval: 5000,
   });
 
   useFocusEffect(useCallback(() => { refetch(); }, [refetch]));
@@ -50,7 +83,7 @@ export default function StandaloneChatScreen({ route, navigation }: any) {
     }
   }, [messages?.length]);
 
-  const sendMessage = useMutation({
+  const sendMutation = useMutation({
     mutationFn: (content: string) => api.post<ChatMessage>(`/api/standalone-chat/${otherUserId}`, { content }),
     onSuccess: () => {
       setMessage('');
@@ -59,8 +92,8 @@ export default function StandaloneChatScreen({ route, navigation }: any) {
   });
 
   const handleSend = () => {
-    if (!message.trim() || sendMessage.isPending) return;
-    sendMessage.mutate(message.trim());
+    if (!message.trim() || sendMutation.isPending) return;
+    sendMutation.mutate(message.trim());
   };
 
   const formatTime = (dateStr: string) => {
@@ -73,7 +106,6 @@ export default function StandaloneChatScreen({ route, navigation }: any) {
     const today = new Date();
     const yesterday = new Date(today);
     yesterday.setDate(yesterday.getDate() - 1);
-
     if (d.toDateString() === today.toDateString()) return isArabic ? 'اليوم' : 'Today';
     if (d.toDateString() === yesterday.toDateString()) return isArabic ? 'أمس' : 'Yesterday';
     return d.toLocaleDateString(isArabic ? 'ar-SA' : 'en-US', { month: 'short', day: 'numeric' });
@@ -117,28 +149,7 @@ export default function StandaloneChatScreen({ route, navigation }: any) {
   };
 
   return (
-    <KeyboardAvoidingView
-      style={[styles.container, { backgroundColor: colors.background }]}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      keyboardVerticalOffset={90}
-    >
-      {/* Header */}
-      <View style={[styles.header, { backgroundColor: colors.card, borderBottomColor: colors.border }]}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn} testID="button-back">
-          <Ionicons name={isArabic ? 'arrow-forward' : 'arrow-back'} size={24} color={colors.text} />
-        </TouchableOpacity>
-        <View style={styles.headerInfo}>
-          <View style={[styles.headerAvatar, { backgroundColor: isDark ? '#334155' : '#e2e8f0' }]}>
-            <Ionicons name="person" size={18} color={isDark ? '#94a3b8' : '#64748b'} />
-          </View>
-          <Text style={[styles.headerName, { color: colors.text }]} numberOfLines={1}>
-            {otherUserName}
-          </Text>
-        </View>
-        <View style={{ width: 40 }} />
-      </View>
-
-      {/* Messages */}
+    <View style={{ flex: 1, backgroundColor: colors.background }}>
       {isLoading ? (
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={colors.primary} />
@@ -150,73 +161,52 @@ export default function StandaloneChatScreen({ route, navigation }: any) {
           keyExtractor={(item) => item.id}
           renderItem={renderMessage}
           contentContainerStyle={styles.messageList}
-          onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: false })}
-          ListEmptyComponent={
-            <View style={styles.emptyChat}>
-              <Ionicons name="chatbubbles-outline" size={56} color={colors.mutedText} />
-              <Text style={[styles.emptyTitle, { color: colors.mutedText }]}>
-                {isArabic ? 'ابدأ المحادثة' : 'Start the conversation'}
-              </Text>
-              <Text style={[styles.emptySubtitle, { color: colors.mutedText }]}>
-                {isArabic
-                  ? 'أرسل رسالة للمدرب للاستفسار عن الخدمات والأسعار'
-                  : 'Send a message to ask about services and pricing'}
-              </Text>
-            </View>
-          }
+          onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: true })}
+          onLayout={() => flatListRef.current?.scrollToEnd({ animated: true })}
+          keyboardDismissMode="interactive"
         />
       )}
 
-      {/* Input */}
-      <View style={[styles.inputContainer, { backgroundColor: colors.card, borderTopColor: colors.border }]}>
-        <TextInput
-          style={[styles.textInput, { color: colors.text, backgroundColor: isDark ? '#1e293b' : '#f1f5f9' }]}
-          placeholder={isArabic ? 'اكتب رسالتك...' : 'Type a message...'}
-          placeholderTextColor={colors.mutedText}
-          value={message}
-          onChangeText={setMessage}
-          multiline
-          maxLength={1000}
-          testID="input-chat-message"
-        />
+      {/* Input Bar - uses Animated marginBottom to stay above keyboard */}
+      <Animated.View style={[styles.inputContainer, {
+        backgroundColor: colors.card,
+        borderTopColor: colors.border,
+        flexDirection: isArabic ? 'row-reverse' : 'row',
+        paddingBottom: 8,
+        marginBottom: keyboardOffset,
+      }]}>
+        <View style={[styles.inputWrapper, { backgroundColor: isDark ? '#1e293b' : '#f1f5f9', flexDirection: isArabic ? 'row-reverse' : 'row' }]}>
+          <TextInput
+            style={[styles.input, { color: colors.text, textAlign: isArabic ? 'right' : 'left' }]}
+            placeholder={isArabic ? 'اكتب رسالتك...' : 'Type a message...'}
+            placeholderTextColor={colors.mutedText}
+            value={message}
+            onChangeText={setMessage}
+            multiline
+            maxLength={1000}
+            testID="input-chat-message"
+          />
+        </View>
         <TouchableOpacity
-          style={[styles.sendButton, { opacity: message.trim() ? 1 : 0.4 }]}
+          style={[styles.sendButton, { backgroundColor: (!message.trim() || sendMutation.isPending) ? colors.border : '#3b82f6' }]}
           onPress={handleSend}
-          disabled={!message.trim() || sendMessage.isPending}
+          disabled={!message.trim() || sendMutation.isPending}
           testID="button-send-message"
         >
-          {sendMessage.isPending ? (
-            <ActivityIndicator color="#fff" size="small" />
+          {sendMutation.isPending ? (
+            <ActivityIndicator size="small" color="#fff" />
           ) : (
-            <Ionicons name="send" size={20} color="#fff" />
+            <Ionicons name="send" size={20} color={!message.trim() ? colors.mutedText : '#fff'} style={{ marginLeft: isArabic ? 0 : 4, marginRight: isArabic ? 4 : 0, transform: [{ scaleX: isArabic ? -1 : 1 }] }} />
           )}
         </TouchableOpacity>
-      </View>
-    </KeyboardAvoidingView>
+      </Animated.View>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1 },
   loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 8,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-  },
-  backBtn: { width: 40, height: 40, justifyContent: 'center', alignItems: 'center' },
-  headerInfo: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 8 },
-  headerAvatar: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  headerName: { fontSize: 16, fontWeight: '700' },
-  messageList: { padding: 16, paddingBottom: 8 },
+  messageList: { padding: 16, paddingBottom: 24 },
   dateSeparator: { alignItems: 'center', marginVertical: 12 },
   dateText: { fontSize: 12, fontWeight: '600', backgroundColor: 'rgba(0,0,0,0.05)', paddingHorizontal: 12, paddingVertical: 4, borderRadius: 10 },
   messageBubble: {
@@ -231,30 +221,31 @@ const styles = StyleSheet.create({
   messageText: { fontSize: 15, lineHeight: 22 },
   messageFooter: { flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', gap: 4, marginTop: 4 },
   timeText: { fontSize: 10 },
-  emptyChat: { alignItems: 'center', paddingTop: 100 },
-  emptyTitle: { fontSize: 18, fontWeight: '600', marginTop: 12 },
-  emptySubtitle: { fontSize: 13, marginTop: 4, textAlign: 'center', paddingHorizontal: 40 },
   inputContainer: {
-    flexDirection: 'row',
-    alignItems: 'flex-end',
-    padding: 10,
-    paddingHorizontal: 12,
-    borderTopWidth: 1,
-    gap: 8,
-  },
-  textInput: {
-    flex: 1,
-    borderRadius: 20,
-    paddingHorizontal: 16,
+    paddingHorizontal: 8,
     paddingVertical: 10,
+    borderTopWidth: 1,
+    alignItems: 'flex-end',
+  },
+  inputWrapper: {
+    flex: 1,
+    borderRadius: 22,
+    marginHorizontal: 8,
+    minHeight: 44,
+    maxHeight: 120,
+    justifyContent: 'center',
+    paddingHorizontal: 18,
+    paddingVertical: 10,
+  },
+  input: {
+    flex: 1,
     fontSize: 15,
-    maxHeight: 100,
+    lineHeight: 20,
   },
   sendButton: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
-    backgroundColor: '#3b82f6',
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     justifyContent: 'center',
     alignItems: 'center',
   },

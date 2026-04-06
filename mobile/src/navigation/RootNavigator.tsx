@@ -19,6 +19,7 @@ import ClientFilesScreen from '../screens/ClientFilesScreen';
 import TrainerListScreen from '../screens/TrainerListScreen';
 import TrainerReviewsScreen from '../screens/TrainerReviewsScreen';
 import StandaloneChatScreen from '../screens/StandaloneChatScreen';
+import ChatsListScreen from '../screens/ChatsListScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -157,17 +158,50 @@ export default function RootNavigator() {
           <Stack.Screen
             name="TrainerList"
             component={TrainerListScreen}
-            options={{ headerShown: false }}
+            options={{
+              headerShown: true,
+              headerTitle: isArabic ? 'المدربين المعتمدين' : 'Certified Trainers',
+              headerTitleAlign: 'center',
+              headerTintColor: colors.text,
+              headerStyle: { backgroundColor: colors.card },
+              headerTitleStyle: { color: colors.text, fontWeight: '700' },
+            }}
           />
           <Stack.Screen
             name="TrainerReviews"
             component={TrainerReviewsScreen}
-            options={{ headerShown: false }}
+            options={({ route }: any) => ({
+              headerShown: true,
+              headerTitle: route.params?.trainerName || (isArabic ? 'صفحة المدرب' : 'Trainer Profile'),
+              headerTitleAlign: 'center',
+              headerTintColor: colors.text,
+              headerStyle: { backgroundColor: colors.card },
+              headerTitleStyle: { color: colors.text, fontWeight: '700' },
+            })}
           />
           <Stack.Screen
             name="StandaloneChat"
             component={StandaloneChatScreen}
-            options={{ headerShown: false }}
+            options={({ route }: any) => ({
+              headerShown: true,
+              headerTitle: route.params?.otherUserName || (isArabic ? 'محادثة' : 'Chat'),
+              headerTitleAlign: 'center',
+              headerTintColor: colors.text,
+              headerStyle: { backgroundColor: colors.card },
+              headerTitleStyle: { color: colors.text, fontWeight: '700' },
+            })}
+          />
+          <Stack.Screen
+            name="ChatsList"
+            component={ChatsListScreen}
+            options={{
+              headerShown: true,
+              headerTitle: isArabic ? 'الدردشات' : 'Chats',
+              headerTitleAlign: 'center',
+              headerTintColor: colors.text,
+              headerStyle: { backgroundColor: colors.card },
+              headerTitleStyle: { color: colors.text, fontWeight: '700' },
+            }}
           />
         </>
       ) : (

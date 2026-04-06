@@ -48,6 +48,8 @@ export default function TrainerReviewsScreen({ route, navigation }: any) {
   const [reviewRating, setReviewRating] = useState(5);
   const [reviewText, setReviewText] = useState('');
 
+  const styles = getStyles(isArabic);
+
   // Fetch single trainer info
   const { data: trainers } = useQuery<Trainer[]>({
     queryKey: ['trainers-public'],
@@ -136,7 +138,7 @@ export default function TrainerReviewsScreen({ route, navigation }: any) {
             {item.reviewerName.charAt(0).toUpperCase()}
           </Text>
         </View>
-        <View style={{ flex: 1 }}>
+        <View style={{ flex: 1, alignItems: 'flex-start' }}>
           <Text style={[styles.reviewerName, { color: colors.text }]}>{item.reviewerName}</Text>
           <Text style={[styles.reviewDate, { color: colors.mutedText }]}>{formatDate(item.createdAt)}</Text>
         </View>
@@ -209,16 +211,6 @@ export default function TrainerReviewsScreen({ route, navigation }: any) {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      {/* Header */}
-      <View style={[styles.header, { backgroundColor: colors.card, borderBottomColor: colors.border }]}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn} testID="button-back">
-          <Ionicons name={isArabic ? 'arrow-forward' : 'arrow-back'} size={24} color={colors.text} />
-        </TouchableOpacity>
-        <Text style={[styles.headerTitle, { color: colors.text }]} numberOfLines={1}>
-          {trainerName}
-        </Text>
-        <View style={{ width: 40 }} />
-      </View>
 
       <FlatList
         data={reviews || []}
@@ -275,6 +267,7 @@ export default function TrainerReviewsScreen({ route, navigation }: any) {
               multiline
               numberOfLines={4}
               textAlignVertical="top"
+              textAlign={isArabic ? 'right' : 'left'}
               testID="input-review-text"
             />
 
@@ -308,7 +301,7 @@ export default function TrainerReviewsScreen({ route, navigation }: any) {
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (isArabic: boolean) => StyleSheet.create({
   container: { flex: 1 },
   loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   header: {
@@ -398,10 +391,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   reviewerInitial: { fontSize: 15, fontWeight: '700' },
-  reviewerName: { fontSize: 14, fontWeight: '600' },
-  reviewDate: { fontSize: 11 },
+  reviewerName: { fontSize: 14, fontWeight: '600', textAlign: 'left' },
+  reviewDate: { fontSize: 11, textAlign: 'left' },
   reviewStars: { flexDirection: 'row', gap: 1 },
-  reviewContent: { fontSize: 14, lineHeight: 22 },
+  reviewContent: { fontSize: 14, lineHeight: 22, textAlign: 'left' },
   emptyReviews: { alignItems: 'center', paddingVertical: 40 },
   emptyText: { fontSize: 16, fontWeight: '600', marginTop: 12 },
   emptySubtext: { fontSize: 13, marginTop: 4 },
@@ -453,3 +446,4 @@ const styles = StyleSheet.create({
   submitText: { color: '#fff', fontSize: 16, fontWeight: '700' },
   noteText: { fontSize: 11, lineHeight: 16, textAlign: 'center' },
 });
+

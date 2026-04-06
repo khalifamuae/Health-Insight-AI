@@ -12,7 +12,7 @@ import { generateDietPlan, translateDietPlan } from "./dietPlanGenerator";
 import { getPrivacyPolicyHTML, getPrivacyPolicyArabicHTML, getTermsOfServiceHTML, getTermsOfServiceArabicHTML, getSupportPageHTML, getAccountDeletionHTML } from "./legalPages";
 import { desc, eq, and, gte, sql, or } from "drizzle-orm";
 import { db } from "./db";
-import { userProfiles, testDefinitions, type TestDefinition, sharedWorkouts, sharedDietPlans, subscriberConnections, inbodyResults, savedWorkouts, savedDietPlans, trainerReviews, standaloneChatMessages } from "@shared/schema";
+import { userProfiles, testDefinitions, type TestDefinition, sharedWorkouts, sharedDietPlans, subscriberConnections, inbodyResults, savedWorkouts, savedDietPlans, trainerReviews, standaloneChatMessages, subscriberChatMessages } from "@shared/schema";
 import crypto from "crypto";
 import { emailVerificationCodes } from "@shared/schema";
 import { getResendClient } from "./resendClient";
@@ -571,6 +571,20 @@ export async function registerRoutes(
     } catch (err) {
       console.error("Login error:", err);
       res.status(500).json({ error: "Login failed" });
+    }
+  });
+
+  app.post("/api/auth/logout", (req: any, res: Response) => {
+    req.logout && req.logout((err: any) => {
+      if (err) {
+        console.error("Logout error:", err);
+      }
+      res.clearCookie('connect.sid');
+      res.json({ success: true });
+    });
+    if (!req.logout) {
+       res.clearCookie('connect.sid');
+       res.json({ success: true });
     }
   });
 
@@ -2509,6 +2523,106 @@ export async function registerRoutes(
     } catch (error: any) {
       console.error("[trainers/reviews/post] Error:", error);
       res.status(500).json({ error: "Failed to submit review" });
+    }
+  });
+
+  // GET /api/chats — List all chat conversations for the current user (standalone + subscriber)
+  app.get("/api/chats", isAuthenticated as RequestHandler, async (req: Request, res: Response) => {
+    try {
+      const user = (req as any).user;
+      const userId = user.id;
+      const conversations: any[] = [];
+
+      // 1. Standalone chats — find all unique users this person has chatted with
+      const allStandaloneMessages = await db.select().from(standaloneChatMessages).where(
+        or(
+          eq(standaloneChatMessages.senderId, userId),
+          eq(standaloneChatMessages.receiverId, userId)
+        )
+      ).orderBy(desc(standaloneChatMessages.createdAt));
+
+      // Group by other user
+      const standaloneMap = new Map<string, { lastMessage: any; unreadCount: number }>();
+      for (const msg of allStandaloneMessages) {
+        const otherUserId = msg.senderId === userId ? msg.receiverId : msg.senderId;
+        if (!standaloneMap.has(otherUserId)) {
+          standaloneMap.set(otherUserId, { lastMessage: msg, unreadCount: 0 });
+        }
+        // Count unread messages sent TO me
+        if (msg.receiverId === userId && !msg.isRead) {
+          const entry = standaloneMap.get(otherUserId)!;
+          entry.unreadCount++;
+        }
+      }
+
+      // Fetch user names for standalone chats
+      for (const [otherUserId, data] of Array.from(standaloneMap.entries())) {
+        const [otherUser] = await db.select({ firstName: userProfiles.firstName, lastName: userProfiles.lastName })
+          .from(userProfiles).where(eq(userProfiles.id, otherUserId)).limit(1);
+        const otherUserName = otherUser ? [otherUser.firstName, otherUser.lastName].filter(Boolean).join(' ') || 'Unknown' : 'Unknown';
+        conversations.push({
+          id: `standalone-${otherUserId}`,
+          chatType: 'standalone',
+          otherUserId,
+          otherUserName,
+          lastMessage: data.lastMessage.content || '',
+          lastMessageTime: data.lastMessage.createdAt,
+          unreadCount: data.unreadCount,
+        });
+      }
+
+      // 2. Subscriber chats — find all connections where the user is owner or client
+      const connections = await db.select().from(subscriberConnections).where(
+        or(
+          eq(subscriberConnections.ownerId, userId),
+          eq(subscriberConnections.clientId, userId)
+        )
+      );
+
+      for (const conn of connections) {
+        const otherUserId = conn.ownerId === userId ? conn.clientId : conn.ownerId;
+
+        // Get the latest message for this connection
+        const msgs = await db.select().from(subscriberChatMessages)
+          .where(eq(subscriberChatMessages.connectionId, conn.id))
+          .orderBy(desc(subscriberChatMessages.createdAt))
+          .limit(1);
+
+        // Count unread messages sent TO me
+        const unreadResult = await db.select({ count: sql<number>`count(*)::int` })
+          .from(subscriberChatMessages)
+          .where(
+            and(
+              eq(subscriberChatMessages.connectionId, conn.id),
+              sql`${subscriberChatMessages.senderId} != ${userId}`,
+              eq(subscriberChatMessages.isRead, false)
+            )
+          );
+
+        const [otherUser] = await db.select({ firstName: userProfiles.firstName, lastName: userProfiles.lastName })
+          .from(userProfiles).where(eq(userProfiles.id, otherUserId)).limit(1);
+        const otherUserName = otherUser ? [otherUser.firstName, otherUser.lastName].filter(Boolean).join(' ') || 'Unknown' : 'Unknown';
+
+        const lastMsg = msgs[0];
+        conversations.push({
+          id: `subscriber-${conn.id}`,
+          chatType: 'subscriber',
+          otherUserId,
+          otherUserName,
+          connectionId: conn.id,
+          lastMessage: lastMsg?.content || lastMsg?.attachmentUrl ? (lastMsg?.content || '📷 صورة') : '',
+          lastMessageTime: lastMsg?.createdAt || conn.createdAt,
+          unreadCount: unreadResult[0]?.count || 0,
+        });
+      }
+
+      // Sort by last message time (newest first)
+      conversations.sort((a, b) => new Date(b.lastMessageTime).getTime() - new Date(a.lastMessageTime).getTime());
+
+      res.json(conversations);
+    } catch (error: any) {
+      console.error("[chats/list] Error:", error);
+      res.status(500).json({ error: "Failed to fetch chats" });
     }
   });
 

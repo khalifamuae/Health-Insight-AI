@@ -23,6 +23,16 @@ export const getSessionCookie = async () => {
 };
 
 export const clearSessionCookie = async () => {
+  try {
+    const headers = await getHeaders();
+    await fetch(`${API_BASE_URL}/api/auth/logout`, {
+      method: 'POST',
+      headers,
+      credentials: 'include',
+    });
+  } catch (error) {
+    console.error('Logout error:', error);
+  }
   sessionCookie = null;
   await SecureStore.deleteItemAsync('sessionCookie');
 };

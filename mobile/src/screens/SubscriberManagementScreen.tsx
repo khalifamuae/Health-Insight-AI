@@ -6,11 +6,13 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAppTheme } from '../context/ThemeContext';
 import { isArabicLanguage } from '../lib/isArabic';
 import { api } from '../lib/api';
+import { useSubscription } from '../context/SubscriptionContext';
 
 export default function SubscriberManagementScreen({ navigation }: any) {
   const { t } = useTranslation();
   const { colors, isDark } = useAppTheme();
   const isArabic = isArabicLanguage();
+  const { isTrainer } = useSubscription();
   const queryClient = useQueryClient();
 
   const [linkModalVisible, setLinkModalVisible] = useState(false);
@@ -19,6 +21,7 @@ export default function SubscriberManagementScreen({ navigation }: any) {
   const { data: clients, isLoading } = useQuery<any[]>({
     queryKey: ['/api/subscriber-management/clients'],
     queryFn: () => api.get('/api/subscriber-management/clients'),
+    enabled: isTrainer(),
   });
 
   const consumeCodeMutation = useMutation({
@@ -39,6 +42,31 @@ export default function SubscriberManagementScreen({ navigation }: any) {
       Alert.alert(isArabic ? 'خطأ' : 'Error', err.message || (isArabic ? 'فشل الربط، تأكد من الرقم' : 'Linking failed, check the code'));
     }
   });
+
+  if (!isTrainer()) {
+    return (
+      <View style={[styles.container, { backgroundColor: colors.background, padding: 24, justifyContent: 'center', alignItems: 'center' }]}>
+        <Ionicons name="lock-closed" size={64} color={colors.primary} style={{ marginBottom: 24 }} />
+        <Text style={{ color: colors.text, fontSize: 20, fontWeight: '700', textAlign: 'center', marginBottom: 12 }}>
+          {isArabic ? 'صلاحية محدودة' : 'Access Restricted'}
+        </Text>
+        <Text style={{ color: colors.mutedText, fontSize: 16, textAlign: 'center', lineHeight: 24, marginBottom: 32 }}>
+          {isArabic 
+            ? 'يرجى الاشتراك في خدمة المدربين للتمكن من الدخول الي هذه الصفحه.' 
+            : 'Please subscribe to the Trainer service to access this page.'}
+        </Text>
+        
+        <TouchableOpacity 
+          style={{ backgroundColor: colors.primary, paddingHorizontal: 32, paddingVertical: 14, borderRadius: 12 }}
+          onPress={() => navigation.navigate('Subscription')}
+        >
+          <Text style={{ color: '#fff', fontSize: 16, fontWeight: '600' }}>
+            {isArabic ? 'ترقية الحساب' : 'Upgrade Account'}
+          </Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>

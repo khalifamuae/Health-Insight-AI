@@ -8,6 +8,7 @@ import {
   ActivityIndicator,
   Alert,
   Linking,
+  I18nManager,
 } from 'react-native';
 import { isArabicLanguage } from '../lib/isArabic';
 import { useQueryClient } from '@tanstack/react-query';
@@ -164,9 +165,10 @@ const FEATURES: Feature[] = [
 
 export default function SubscriptionScreen({ navigation, route }: Props) {
   const queryClient = useQueryClient();
-  const isArabic = isArabicLanguage();
+  const isArabic = I18nManager.isRTL;
   const { colors, isDark } = useAppTheme();
   const { plan: currentPlan, isActive, isTrialActive, trialEndsAt, refreshStatus } = useSubscription();
+  const styles = getStyles(isArabic);
 
   const [activeTab, setActiveTab] = useState<'trainee' | 'trainer'>('trainee');
   const [selectedPeriod, setSelectedPeriod] = useState<'monthly' | 'yearly'>('yearly');
@@ -307,7 +309,7 @@ export default function SubscriptionScreen({ navigation, route }: Props) {
               {
                 backgroundColor: isDark ? '#1e293b' : '#fff',
                 borderColor: isExclusive ? '#8b5cf620' : colors.border,
-                borderLeftColor: isExclusive ? '#8b5cf6' : feature.color,
+                borderStartColor: isExclusive ? '#8b5cf6' : feature.color,
               },
             ]}
           >
@@ -537,7 +539,7 @@ export default function SubscriptionScreen({ navigation, route }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (isArabic: boolean) => StyleSheet.create({
   container: { flex: 1 },
   content: { padding: 16, paddingTop: 60, paddingBottom: 40 },
   header: {
@@ -556,8 +558,8 @@ const styles = StyleSheet.create({
     padding: 14,
     marginBottom: 16,
   },
-  trialTitle: { fontSize: 15, fontWeight: '700', marginBottom: 2 },
-  trialSubtitle: { fontSize: 13 },
+  trialTitle: { fontSize: 15, fontWeight: '700', marginBottom: 2, textAlign: 'left' },
+  trialSubtitle: { fontSize: 13, textAlign: 'left' },
   tabContainer: {
     flexDirection: 'row',
     borderRadius: 12,
@@ -587,19 +589,19 @@ const styles = StyleSheet.create({
   sectionHeader: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'flex-start',
     gap: 8,
     paddingBottom: 10,
     marginBottom: 12,
     borderBottomWidth: 1,
   },
-  sectionTitle: { fontSize: 17, fontWeight: '700' },
+  sectionTitle: { fontSize: 17, fontWeight: '700', textAlign: 'left' },
 
-  // Feature cards
   featureCard: {
     flexDirection: 'row',
     alignItems: 'flex-start',
     borderWidth: 1,
-    borderLeftWidth: 4,
+    borderStartWidth: 4,
     borderRadius: 12,
     padding: 12,
     marginBottom: 8,
@@ -620,8 +622,8 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     marginBottom: 4,
   },
-  featureTitle: { fontSize: 14, fontWeight: '700' },
-  featureDesc: { fontSize: 12, lineHeight: 18 },
+  featureTitle: { fontSize: 14, fontWeight: '700', textAlign: 'left' },
+  featureDesc: { fontSize: 12, lineHeight: 18, textAlign: 'left' },
   freeTag: {
     paddingHorizontal: 6,
     paddingVertical: 2,
@@ -658,7 +660,7 @@ const styles = StyleSheet.create({
   periodText: { fontSize: 15, fontWeight: '600' },
   periodPrice: { fontSize: 18, fontWeight: '800', marginTop: 2 },
   periodSub: { fontSize: 12, marginTop: 2 },
-  savingsBadge: { position: 'absolute', top: -6, right: 8, backgroundColor: '#22c55e', paddingHorizontal: 8, paddingVertical: 2, borderRadius: 8 },
+  savingsBadge: { position: 'absolute', top: -6, end: 8, backgroundColor: '#22c55e', paddingHorizontal: 8, paddingVertical: 2, borderRadius: 8 },
   savingsText: { color: '#fff', fontSize: 10, fontWeight: '800' },
 
   // Trainer
@@ -671,7 +673,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     marginBottom: 12,
   },
-  trainerInfoText: { flex: 1, fontSize: 13, lineHeight: 20, fontWeight: '500' },
+  trainerInfoText: { flex: 1, fontSize: 13, lineHeight: 20, fontWeight: '500', textAlign: 'left' },
   trainerCard: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -693,8 +695,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   trainerLimitText: { fontSize: 16, fontWeight: '800' },
-  trainerCardTitle: { fontSize: 15, fontWeight: '600' },
-  trainerCardPrice: { fontSize: 14, fontWeight: '700', marginTop: 2 },
+  trainerCardTitle: { fontSize: 15, fontWeight: '600', textAlign: 'left' },
+  trainerCardPrice: { fontSize: 14, fontWeight: '700', marginTop: 2, textAlign: 'left' },
 
   // Comparison table
   compareRow: {
@@ -709,7 +711,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: 0,
     marginBottom: 2,
   },
-  compareLabel: { flex: 2, fontSize: 11, lineHeight: 16 },
+  compareLabel: { flex: 2, fontSize: 11, lineHeight: 16, textAlign: 'left' },
   compareCell: { flex: 1, fontSize: 11, fontWeight: '600', textAlign: 'center' },
   compareCellContainer: { flex: 1, alignItems: 'center' },
 
@@ -745,3 +747,4 @@ const styles = StyleSheet.create({
   footerLink: { fontSize: 12, color: '#3b82f6', fontWeight: '500' },
   footerDivider: { fontSize: 12 },
 });
+

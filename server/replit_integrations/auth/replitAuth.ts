@@ -199,26 +199,7 @@ export async function setupAuth(app: Express) {
 }
 
 export const isAuthenticated: RequestHandler = async (req, res, next) => {
-  const user = req.user as any;
-
-  if (req.isAuthenticated() && user?.expires_at) {
-    const now = Math.floor(Date.now() / 1000);
-    if (now <= user.expires_at) {
-      return next();
-    }
-
-    const refreshToken = user.refresh_token;
-    if (refreshToken) {
-      try {
-        const config = await getOidcConfig();
-        const tokenResponse = await client.refreshTokenGrant(config, refreshToken);
-        updateUserSession(user, tokenResponse);
-        return next();
-      } catch (error) {
-      }
-    }
-  }
-
+  // 1. Prioritize API Token (Bearer Token)
   const authHeader = req.headers.authorization;
   if (authHeader && authHeader.startsWith("Bearer ")) {
     const token = authHeader.slice("Bearer ".length).trim();
@@ -239,5 +220,26 @@ export const isAuthenticated: RequestHandler = async (req, res, next) => {
       }
     }
   }
+
+  // 2. Fallback to Session Cookie logic
+  const user = req.user as any;
+  if (req.isAuthenticated() && user?.expires_at) {
+    const now = Math.floor(Date.now() / 1000);
+    if (now <= user.expires_at) {
+      return next();
+    }
+
+    const refreshToken = user.refresh_token;
+    if (refreshToken) {
+      try {
+        const config = await getOidcConfig();
+        const tokenResponse = await client.refreshTokenGrant(config, refreshToken);
+        updateUserSession(user, tokenResponse);
+        return next();
+      } catch (error) {
+      }
+    }
+  }
+
   return res.status(401).json({ message: "Unauthorized" });
 };

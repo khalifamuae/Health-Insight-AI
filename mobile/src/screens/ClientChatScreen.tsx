@@ -1,9 +1,11 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { View, Text, TextInput, TouchableOpacity, FlatList, KeyboardAvoidingView, Platform, StyleSheet, ActivityIndicator, Image, Alert } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, FlatList, KeyboardAvoidingView, Platform, StyleSheet, ActivityIndicator, Image, Alert, I18nManager } from 'react-native';
 // Wait, react-native needs correct import
 import { useTranslation } from 'react-i18next';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useHeaderHeight } from '@react-navigation/elements';
 import { Ionicons } from '@expo/vector-icons';
 
 import { useAppTheme } from '../context/ThemeContext';
@@ -18,10 +20,12 @@ export default function ClientChatScreen() {
   const { colors, isDark } = useAppTheme();
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const insets = useSafeAreaInsets();
+  const headerHeight = useHeaderHeight();
   const flatListRef = useRef<FlatList>(null);
 
   const { connectionId, clientName } = route.params;
-  const isArabic = (i18n.resolvedLanguage || i18n.language || '').toLowerCase().startsWith('ar');
+  const isArabic = I18nManager.isRTL;
 
   const [messageText, setMessageText] = useState('');
   const [isUploading, setIsUploading] = useState(false);
@@ -117,7 +121,7 @@ export default function ClientChatScreen() {
     <KeyboardAvoidingView 
       style={{ flex: 1, backgroundColor: colors.background }} 
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? headerHeight + 10 : 0}
     >
       {isLoading ? (
         <View style={styles.center}>
@@ -136,7 +140,12 @@ export default function ClientChatScreen() {
       )}
 
       {/* Input Bar */}
-      <View style={[styles.inputContainer, { backgroundColor: colors.card, borderTopColor: colors.border, flexDirection: isArabic ? 'row-reverse' : 'row' }]}>
+      <View style={[styles.inputContainer, { 
+        backgroundColor: colors.card, 
+        borderTopColor: colors.border, 
+        flexDirection: isArabic ? 'row-reverse' : 'row',
+        paddingBottom: 8,
+      }]}>
         <TouchableOpacity style={styles.iconButton} onPress={() => handleAttachImage(true)} disabled={isUploading || sendMessageMutation.isPending}>
           <Ionicons name="camera-outline" size={24} color={colors.primary} />
         </TouchableOpacity>

@@ -27,6 +27,7 @@ export default function TrainerListScreen({ navigation }: any) {
   const { colors, isDark } = useAppTheme();
   const isArabic = isArabicLanguage();
   const [search, setSearch] = useState('');
+  const styles = getStyles(isArabic);
 
   const { data: trainers, isLoading, refetch } = useQuery<Trainer[]>({
     queryKey: ['trainers-public'],
@@ -86,7 +87,7 @@ export default function TrainerListScreen({ navigation }: any) {
       </View>
 
       {/* Arrow */}
-      <Ionicons name={isArabic ? 'chevron-back' : 'chevron-forward'} size={20} color={colors.mutedText} />
+      <Ionicons name="chevron-forward" size={20} color={colors.mutedText} />
     </TouchableOpacity>
   );
 
@@ -100,19 +101,6 @@ export default function TrainerListScreen({ navigation }: any) {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      {/* Header */}
-      <View style={[styles.header, { backgroundColor: colors.card, borderBottomColor: colors.border }]}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn} testID="button-back">
-          <Ionicons name={isArabic ? 'arrow-forward' : 'arrow-back'} size={24} color={colors.text} />
-        </TouchableOpacity>
-        <View style={styles.headerCenter}>
-          <Ionicons name="star" size={20} color="#f59e0b" />
-          <Text style={[styles.headerTitle, { color: colors.text }]}>
-            {isArabic ? 'تقييم المدربين' : 'Trainer Reviews'}
-          </Text>
-        </View>
-        <View style={{ width: 40 }} />
-      </View>
 
       {/* Search */}
       <View style={[styles.searchContainer, { backgroundColor: colors.card, borderBottomColor: colors.border }]}>
@@ -124,6 +112,7 @@ export default function TrainerListScreen({ navigation }: any) {
             placeholderTextColor={colors.mutedText}
             value={search}
             onChangeText={setSearch}
+            textAlign={isArabic ? 'right' : 'left'}
             testID="input-search-trainer"
           />
           {search.length > 0 && (
@@ -168,7 +157,7 @@ export default function TrainerListScreen({ navigation }: any) {
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (isArabic: boolean) => StyleSheet.create({
   container: { flex: 1 },
   loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   header: {
@@ -203,7 +192,7 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     borderWidth: 1,
   },
-  infoText: { flex: 1, fontSize: 12, lineHeight: 18, fontWeight: '500' },
+  infoText: { flex: 1, fontSize: 12, lineHeight: 18, fontWeight: '500', textAlign: 'left' },
   listContent: { padding: 16, paddingTop: 8 },
   trainerCard: {
     flexDirection: 'row',
@@ -222,12 +211,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   avatarText: { fontSize: 20, fontWeight: '700', color: '#64748b' },
-  trainerInfo: { flex: 1 },
-  trainerName: { fontSize: 16, fontWeight: '700', marginBottom: 4 },
+  trainerInfo: { flex: 1, alignItems: 'flex-start' },
+  trainerName: { fontSize: 16, fontWeight: '700', marginBottom: 4, textAlign: 'left' },
   ratingRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   starsRow: { flexDirection: 'row', gap: 1 },
-  ratingText: { fontSize: 14, fontWeight: '700', marginLeft: 4 },
-  reviewCount: { fontSize: 12, marginLeft: 2 },
+  ratingText: { fontSize: 14, fontWeight: '700' },
+  reviewCount: { fontSize: 12 },
   emptyContainer: { alignItems: 'center', paddingTop: 80 },
   emptyTitle: { fontSize: 18, fontWeight: '600', marginTop: 16 },
   emptySubtitle: { fontSize: 14, marginTop: 4, textAlign: 'center', paddingHorizontal: 40 },

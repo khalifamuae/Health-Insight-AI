@@ -6,6 +6,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { BlurView } from 'expo-blur';
 import { useAuth } from '../context/AuthContext';
 import { Alert } from 'react-native';
+import { useQuery } from '@tanstack/react-query';
 
 import { useAppTheme } from '../context/ThemeContext';
 import { useSubscription } from '../context/SubscriptionContext';
@@ -19,6 +20,7 @@ import WorkoutPlansScreen from '../screens/WorkoutPlansScreen';
 import WorkoutBuilderScreen from '../screens/WorkoutBuilderScreen';
 import ManualDietBuilderScreen from '../screens/ManualDietBuilderScreen';
 import SubscriberManagementScreen from '../screens/SubscriberManagementScreen';
+import { api } from '../lib/api';
 
 const Tab = createBottomTabNavigator();
 
@@ -34,8 +36,16 @@ export default function TabNavigator({ navigation }: any) {
   const glassTint = isDark ? 'dark' : 'light';
   const glassOverlayColor = isDark ? 'rgba(8, 15, 30, 0.34)' : 'rgba(255, 255, 255, 0.28)';
   const menuDividerColor = isDark ? 'rgba(148,163,184,0.2)' : 'rgba(100,116,139,0.24)';
-  const { shouldShowAds } = useSubscription();
+  const { shouldShowAds, isTrainer } = useSubscription();
   const adsVisible = shouldShowAds();
+
+  // Fetch unread chat count for badge
+  const { data: chatsList } = useQuery<any[]>({
+    queryKey: ['chats-list-badge'],
+    queryFn: () => api.get<any[]>('/api/chats'),
+    refetchInterval: 15000,
+  });
+  const totalUnread = (chatsList || []).reduce((sum: number, c: any) => sum + (c.unreadCount || 0), 0);
 
   const navigateToCompare = () => {
     setIsMenuVisible(false);
@@ -398,11 +408,59 @@ export default function TabNavigator({ navigation }: any) {
                       },
                     ]}
                   >
-                    {isArabic ? 'تقييم المدربين' : 'Trainer Reviews'}
+                    {isArabic ? 'المدربين المعتمدين' : 'Certified Trainers'}
                   </Text>
-                  <View style={{ backgroundColor: 'rgba(34,197,94,0.15)', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6 }}>
-                    <Text style={{ color: '#22c55e', fontSize: 10, fontWeight: '700' }}>{isArabic ? 'مجاني' : 'FREE'}</Text>
+
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[
+                    styles.menuItem,
+                    {
+                      borderBottomColor: menuDividerColor,
+                      flexDirection: 'row',
+                    },
+                  ]}
+                  onPress={() => {
+                    setIsMenuVisible(false);
+                    navigation.navigate('ChatsList');
+                  }}
+                  testID="button-menu-chats"
+                >
+                  <View style={{ position: 'relative' }}>
+                    <Ionicons name="chatbubbles" size={18} color="#14b8a6" />
+                    {totalUnread > 0 && (
+                      <View style={{
+                        position: 'absolute',
+                        top: -5,
+                        right: -7,
+                        backgroundColor: '#ef4444',
+                        minWidth: 16,
+                        height: 16,
+                        borderRadius: 8,
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                        paddingHorizontal: 3,
+                      }}>
+                        <Text style={{ color: '#fff', fontSize: 9, fontWeight: '800' }}>
+                          {totalUnread > 99 ? '99+' : totalUnread}
+                        </Text>
+                      </View>
+                    )}
                   </View>
+                  <Text
+                    numberOfLines={1}
+                    style={[
+                      styles.menuItemText,
+                      {
+                        color: colors.text,
+                        textAlign: 'left',
+                      },
+                    ]}
+                  >
+                    {isArabic ? 'الدردشات' : 'Chats'}
+                  </Text>
+
                 </TouchableOpacity>
 
                 <TouchableOpacity
@@ -429,9 +487,7 @@ export default function TabNavigator({ navigation }: any) {
                   >
                     {isArabic ? 'تصميم جدول غذائي بنفسي' : 'Manual Diet Builder'}
                   </Text>
-                  <View style={{ backgroundColor: 'rgba(34,197,94,0.15)', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6 }}>
-                    <Text style={{ color: '#22c55e', fontSize: 10, fontWeight: '700' }}>{isArabic ? 'مجاني' : 'FREE'}</Text>
-                  </View>
+
                 </TouchableOpacity>
 
                 <TouchableOpacity
@@ -458,9 +514,7 @@ export default function TabNavigator({ navigation }: any) {
                   >
                     {isArabic ? 'تصميم جدول تمارين' : 'Workout Designer'}
                   </Text>
-                  <View style={{ backgroundColor: 'rgba(34,197,94,0.15)', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6 }}>
-                    <Text style={{ color: '#22c55e', fontSize: 10, fontWeight: '700' }}>{isArabic ? 'مجاني' : 'FREE'}</Text>
-                  </View>
+
                 </TouchableOpacity>
 
                 <TouchableOpacity
@@ -487,9 +541,7 @@ export default function TabNavigator({ navigation }: any) {
                   >
                     {isArabic ? 'المقارنات' : 'Comparisons'}
                   </Text>
-                  <View style={{ backgroundColor: 'rgba(34,197,94,0.15)', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6 }}>
-                    <Text style={{ color: '#22c55e', fontSize: 10, fontWeight: '700' }}>{isArabic ? 'مجاني' : 'FREE'}</Text>
-                  </View>
+
                 </TouchableOpacity>
 
                 <TouchableOpacity
@@ -516,9 +568,7 @@ export default function TabNavigator({ navigation }: any) {
                   >
                     {t('profileTab')}
                   </Text>
-                  <View style={{ backgroundColor: 'rgba(34,197,94,0.15)', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6 }}>
-                    <Text style={{ color: '#22c55e', fontSize: 10, fontWeight: '700' }}>{isArabic ? 'مجاني' : 'FREE'}</Text>
-                  </View>
+
                 </TouchableOpacity>
 
                 <TouchableOpacity
@@ -545,9 +595,7 @@ export default function TabNavigator({ navigation }: any) {
                   >
                     {isArabic ? 'تصميم جدول غذائي AI' : 'AI Diet Designer'}
                   </Text>
-                  <View style={{ backgroundColor: 'rgba(245,158,11,0.15)', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6 }}>
-                    <Text style={{ color: '#f59e0b', fontSize: 10, fontWeight: '700' }}>{isArabic ? 'مدفوع' : 'PRO'}</Text>
-                  </View>
+
                 </TouchableOpacity>
 
                 <TouchableOpacity
@@ -581,9 +629,7 @@ export default function TabNavigator({ navigation }: any) {
                   >
                      {isArabic ? 'إدارة المشتركين' : 'Subscriber Management'}
                   </Text>
-                  <View style={{ backgroundColor: 'rgba(245,158,11,0.15)', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6 }}>
-                    <Text style={{ color: '#f59e0b', fontSize: 10, fontWeight: '700' }}>{isArabic ? 'مدفوع' : 'PRO'}</Text>
-                  </View>
+
                 </TouchableOpacity>
 
                 <TouchableOpacity

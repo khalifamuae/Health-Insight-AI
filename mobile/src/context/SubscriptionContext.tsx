@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { getSubscriptionStatus } from '../services/IAPService';
+import { useAuth } from './AuthContext';
 
 interface SubscriptionState {
   plan: 'free' | 'pro' | 'trainer';
@@ -37,6 +38,7 @@ const SubscriptionContext = createContext<SubscriptionState>({
 });
 
 export function SubscriptionProvider({ children }: { children: React.ReactNode }) {
+  const { user } = useAuth();
   const [state, setState] = useState({
     plan: 'free' as 'free' | 'pro' | 'trainer',
     isActive: false,
@@ -68,7 +70,7 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
 
   useEffect(() => {
     refreshStatus();
-  }, []);
+  }, [user]);
 
   const isPaid = () => state.plan !== 'free' && state.isActive;
   const isTrainer = () => state.subscriberManagementActive && state.isActive;

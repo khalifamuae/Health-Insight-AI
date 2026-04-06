@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet, Platform } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useSubscription } from '../context/SubscriptionContext';
+import { useAuth } from '../context/AuthContext';
 import { useAppTheme } from '../context/ThemeContext';
 import { isArabicLanguage } from '../lib/isArabic';
 import { Ionicons } from '@expo/vector-icons';
@@ -11,21 +12,21 @@ interface AdBannerProps {
 }
 
 /**
- * AdBanner — Shows a placeholder ad banner for free accounts.
- * Placed globally in App.tsx (outside NavigationContainer) so it
- * stays fixed at the very top/bottom of the screen across all pages.
+ * AdBanner — Shows a placeholder ad banner for free accounts only.
+ * Hidden for: paid/trial users AND unauthenticated users (login screen).
  * 
  * When AdMob is configured, replace the placeholder View with:
  * <BannerAd unitId={AD_UNIT_ID} size={BannerAdSize.ANCHORED_ADAPTIVE_BANNER} />
  */
 export default function AdBanner({ position = 'bottom' }: AdBannerProps) {
   const { shouldShowAds } = useSubscription();
+  const { isAuthenticated } = useAuth();
   const { isDark } = useAppTheme();
   const insets = useSafeAreaInsets();
   const isArabic = isArabicLanguage();
 
-  // Don't show ads for paid users
-  if (!shouldShowAds()) return null;
+  // Don't show ads on login screen or for paid/trial users
+  if (!isAuthenticated || !shouldShowAds()) return null;
 
   const isTop = position === 'top';
 
