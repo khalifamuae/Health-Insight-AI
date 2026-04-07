@@ -1,22 +1,23 @@
-import React from 'react';
-import { View, Text, StyleSheet, Platform } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, StyleSheet, Platform, Dimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useSubscription } from '../context/SubscriptionContext';
 import { useAuth } from '../context/AuthContext';
 import { useAppTheme } from '../context/ThemeContext';
 import { isArabicLanguage } from '../lib/isArabic';
 import { Ionicons } from '@expo/vector-icons';
+import { BannerAd, BannerAdSize, TestIds } from 'react-native-google-mobile-ads';
 
 interface AdBannerProps {
   position?: 'top' | 'bottom';
 }
 
+const PRODUCTION_AD_UNIT_ID = 'ca-app-pub-1897992442343412/1743840045';
+const AD_UNIT_ID = __DEV__ ? TestIds.BANNER : PRODUCTION_AD_UNIT_ID;
+
 /**
- * AdBanner — Shows a placeholder ad banner for free accounts only.
+ * AdBanner — Shows a real AdMob banner for free accounts only.
  * Hidden for: paid/trial users AND unauthenticated users (login screen).
- * 
- * When AdMob is configured, replace the placeholder View with:
- * <BannerAd unitId={AD_UNIT_ID} size={BannerAdSize.ANCHORED_ADAPTIVE_BANNER} />
  */
 export default function AdBanner({ position = 'bottom' }: AdBannerProps) {
   const { shouldShowAds } = useSubscription();
@@ -24,13 +25,12 @@ export default function AdBanner({ position = 'bottom' }: AdBannerProps) {
   const { isDark } = useAppTheme();
   const insets = useSafeAreaInsets();
   const isArabic = isArabicLanguage();
+  const [adFailedToLoad, setAdFailedToLoad] = useState(false);
 
   // Don't show ads on login screen or for paid/trial users
   if (!isAuthenticated || !shouldShowAds()) return null;
 
   const isTop = position === 'top';
-
-  // Extra padding after safe area to push content below Dynamic Island
   const extraTopPadding = Platform.OS === 'ios' ? 4 : 0;
 
   return (
@@ -39,27 +39,32 @@ export default function AdBanner({ position = 'bottom' }: AdBannerProps) {
       {
         backgroundColor: isDark ? '#0f172a' : '#e8edf3',
         borderColor: isDark ? '#334155' : '#cbd5e1',
-        // Safe area + extra padding for Dynamic Island / notch
         paddingTop: isTop ? insets.top + extraTopPadding : 0,
         paddingBottom: !isTop ? insets.bottom : 0,
         borderBottomWidth: isTop ? 1 : 0,
         borderTopWidth: !isTop ? 1 : 0,
+        minHeight: isTop ? insets.top + 50 : insets.bottom + 50,
       }
     ]}>
-      {/* 
-        TODO: Replace with real AdMob banner:
-        <BannerAd
-          unitId={position === 'top' ? TOP_AD_UNIT_ID : BOTTOM_AD_UNIT_ID}
-          size={BannerAdSize.BANNER}
-          requestOptions={{ requestNonPersonalizedAdsOnly: true }}
-        />
-      */}
-      <View style={[styles.placeholder, { backgroundColor: isDark ? '#1e293b' : '#dfe6ee' }]}>
-        <Ionicons name="megaphone-outline" size={18} color={isDark ? '#64748b' : '#94a3b8'} />
-        <Text style={[styles.placeholderText, { color: isDark ? '#64748b' : '#94a3b8' }]}>
-          {isArabic ? 'مساحة إعلانية — اشترك لإزالة الإعلانات' : 'Ad Space — Subscribe to remove ads'}
-        </Text>
-      </View>
+      {!adFailedToLoad ? (
+        <View style={styles.adWrapper}>
+          <BannerAd
+            unitId={AD_UNIT_ID}
+            size={BannerAdSize.ANCHORED_ADAPTIVE_BANNER}
+            requestOptions={{
+              requestNonPersonalizedAdsOnly: true,
+            }}
+            onAdFailedToLoad={() => setAdFailedToLoad(true)}
+          />
+        </View>
+      ) : (
+        <View style={[styles.placeholder, { backgroundColor: isDark ? '#1e293b' : '#dfe6ee' }]}>
+          <Ionicons name="megaphone-outline" size={18} color={isDark ? '#64748b' : '#94a3b8'} />
+          <Text style={[styles.placeholderText, { color: isDark ? '#64748b' : '#94a3b8' }]}>
+            {isArabic ? 'مساحة إعلانية — اشترك لإزالة الإعلانات' : 'Ad Space — Subscribe to remove ads'}
+          </Text>
+        </View>
+      )}
     </View>
   );
 }
@@ -67,6 +72,14 @@ export default function AdBanner({ position = 'bottom' }: AdBannerProps) {
 const styles = StyleSheet.create({
   container: {
     overflow: 'hidden',
+    width: '100%',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  adWrapper: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: Dimensions.get('window').width,
   },
   placeholder: {
     height: 60,
