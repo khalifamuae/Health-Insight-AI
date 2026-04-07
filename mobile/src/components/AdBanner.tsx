@@ -83,13 +83,12 @@ const styles = StyleSheet.create({
   },
   placeholder: {
     height: 60,
+    width: '100%',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
     paddingHorizontal: 16,
-    marginHorizontal: 6,
-    borderRadius: 8,
   },
   placeholderText: {
     fontSize: 13,
