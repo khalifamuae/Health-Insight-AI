@@ -20,7 +20,7 @@ export default function WorkoutBuilderScreen({ navigation, route }: any) {
     const [selectedExercise, setSelectedExercise] = useState<GlobalExercise | null>(null);
 
     useLayoutEffect(() => {
-        if (clientId || navigation.canGoBack()) {
+        if (clientId) {
             navigation.setOptions({
                 headerLeft: () => (
                     <TouchableOpacity 
@@ -29,7 +29,7 @@ export default function WorkoutBuilderScreen({ navigation, route }: any) {
                     >
                         <Ionicons name={isArabic ? 'chevron-forward' : 'chevron-back'} size={28} color={colors.primary} />
                         <Text style={{ color: colors.primary, fontSize: 17, marginHorizontal: 4 }}>
-                           {clientId ? (isArabic ? 'ملف المشترك' : 'Client Profile') : (isArabic ? 'رجوع' : 'Back')}
+                           {isArabic ? 'ملف المشترك' : 'Client Profile'}
                         </Text>
                     </TouchableOpacity>
                 ),

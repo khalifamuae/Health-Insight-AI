@@ -10,12 +10,13 @@ import {
   Platform,
   I18nManager,
   Keyboard,
-  Animated,
+  KeyboardAvoidingView,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useFocusEffect } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useHeaderHeight } from '@react-navigation/elements';
 import { isArabicLanguage } from '../lib/isArabic';
 import { useAppTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
@@ -36,38 +37,10 @@ export default function StandaloneChatScreen({ route, navigation }: any) {
   const isArabic = I18nManager.isRTL;
   const { user } = useAuth();
   const insets = useSafeAreaInsets();
+  const headerHeight = useHeaderHeight();
   const queryClient = useQueryClient();
   const flatListRef = useRef<FlatList>(null);
   const [message, setMessage] = useState('');
-  const keyboardOffset = useRef(new Animated.Value(0)).current;
-
-  // Keyboard listeners for reliable input positioning above keyboard
-  useEffect(() => {
-    const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
-    const hideEvent = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
-
-    const showSub = Keyboard.addListener(showEvent, (e) => {
-      Animated.timing(keyboardOffset, {
-        toValue: e.endCoordinates.height - insets.bottom,
-        duration: Platform.OS === 'ios' ? (e.duration || 250) : 0,
-        useNativeDriver: false,
-      }).start();
-      setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 100);
-    });
-
-    const hideSub = Keyboard.addListener(hideEvent, (e) => {
-      Animated.timing(keyboardOffset, {
-        toValue: 0,
-        duration: Platform.OS === 'ios' ? (e.duration || 250) : 0,
-        useNativeDriver: false,
-      }).start();
-    });
-
-    return () => {
-      showSub.remove();
-      hideSub.remove();
-    };
-  }, [insets.bottom]);
 
   const { data: messages, isLoading, refetch } = useQuery<ChatMessage[]>({
     queryKey: ['standalone-chat', otherUserId],
@@ -149,7 +122,11 @@ export default function StandaloneChatScreen({ route, navigation }: any) {
   };
 
   return (
-    <View style={{ flex: 1, backgroundColor: colors.background }}>
+    <KeyboardAvoidingView 
+      style={{ flex: 1, backgroundColor: colors.background }}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? headerHeight + 10 : 0}
+    >
       {isLoading ? (
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={colors.primary} />
@@ -167,13 +144,12 @@ export default function StandaloneChatScreen({ route, navigation }: any) {
         />
       )}
 
-      {/* Input Bar - uses Animated marginBottom to stay above keyboard */}
-      <Animated.View style={[styles.inputContainer, {
+      {/* Input Bar */}
+      <View style={[styles.inputContainer, {
         backgroundColor: colors.card,
         borderTopColor: colors.border,
         flexDirection: isArabic ? 'row-reverse' : 'row',
         paddingBottom: 8,
-        marginBottom: keyboardOffset,
       }]}>
         <View style={[styles.inputWrapper, { backgroundColor: isDark ? '#1e293b' : '#f1f5f9', flexDirection: isArabic ? 'row-reverse' : 'row' }]}>
           <TextInput
@@ -199,8 +175,8 @@ export default function StandaloneChatScreen({ route, navigation }: any) {
             <Ionicons name="send" size={20} color={!message.trim() ? colors.mutedText : '#fff'} style={{ marginLeft: isArabic ? 0 : 4, marginRight: isArabic ? 4 : 0, transform: [{ scaleX: isArabic ? -1 : 1 }] }} />
           )}
         </TouchableOpacity>
-      </Animated.View>
-    </View>
+      </View>
+    </KeyboardAvoidingView>
   );
 }
 

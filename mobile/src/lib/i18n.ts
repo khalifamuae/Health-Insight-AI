@@ -4,14 +4,7 @@ import { DevSettings, I18nManager } from 'react-native';
 import * as Updates from 'expo-updates';
 import * as SecureStore from 'expo-secure-store';
 
-// Synchronously enforce RTL for the default Arabic experience
-// to prevent layout flipping on first load before async storage is read.
-try {
-  I18nManager.allowRTL(true);
-  if (!I18nManager.isRTL) {
-    I18nManager.forceRTL(true);
-  }
-} catch (e) {}
+// The synchronous RTL force was removed to prevent layout ping-ponging.
 
 const resources = {
   ar: {

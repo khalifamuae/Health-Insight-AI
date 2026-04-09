@@ -140,6 +140,14 @@ const LOCAL_FOODS: FoodResult[] = [
 
     // ── Sweeteners ──
     { id: 'honey', nameEn: 'Honey', nameAr: 'عسل', calories: 304, protein: 0.3, carbs: 82.4, fat: 0, fiber: 0.2, servingUnits: withUnits(VOLUME_UNITS, []) },
+
+    // ── Supplements ──
+    { id: 'whey-protein', nameEn: 'Whey Protein', nameAr: 'مسحوق بروتين (وي بروتين)', calories: 120, protein: 24, carbs: 3, fat: 1.5, fiber: 0, servingUnits: withUnits(WEIGHT_UNITS, [{ unit: 'scoop', grams: 30, labelEn: 'scoop', labelAr: 'سكوب' }]) },
+    { id: 'creatine', nameEn: 'Creatine', nameAr: 'كرياتين', calories: 0, protein: 0, carbs: 0, fat: 0, fiber: 0, servingUnits: withUnits(WEIGHT_UNITS, [{ unit: 'scoop', grams: 5, labelEn: 'scoop (5g)', labelAr: 'سكوب (5غ)' }]) },
+    { id: 'pre-workout', nameEn: 'Pre-Workout', nameAr: 'بري وورك أوت', calories: 5, protein: 0, carbs: 1, fat: 0, fiber: 0, servingUnits: withUnits(WEIGHT_UNITS, [{ unit: 'scoop', grams: 10, labelEn: 'scoop', labelAr: 'سكوب' }]) },
+    { id: 'bcaa', nameEn: 'BCAA / EAA', nameAr: 'أحماض أمينية BCAA', calories: 5, protein: 0, carbs: 1, fat: 0, fiber: 0, servingUnits: withUnits(WEIGHT_UNITS, [{ unit: 'scoop', grams: 7, labelEn: 'scoop', labelAr: 'سكوب' }]) },
+    { id: 'omega3', nameEn: 'Omega 3', nameAr: 'أوميغا 3', calories: 10, protein: 0, carbs: 0, fat: 1, fiber: 0, servingUnits: withUnits(WEIGHT_UNITS, [{ unit: 'pill', grams: 1, labelEn: 'pill', labelAr: 'حبة' }]) },
+    { id: 'multivitamin', nameEn: 'Multivitamin', nameAr: 'فيتامينات متعددة', calories: 0, protein: 0, carbs: 0, fat: 0, fiber: 0, servingUnits: withUnits(WEIGHT_UNITS, [{ unit: 'pill', grams: 1, labelEn: 'pill', labelAr: 'حبة' }]) },
 ];
 
 // ── Component ─────────────────────────────────────────────────────────────────
@@ -153,7 +161,7 @@ export default function ManualDietBuilderScreen({ navigation, route }: any) {
 
     useLayoutEffect(() => {
         const dynamicTitle = editPlanId ? (isArabic ? 'تعديل الجدول الغذائي' : 'Edit Diet Plan') : (isArabic ? 'تصميم جدول غذائي' : 'Diet Builder');
-        if (clientId || navigation.canGoBack()) {
+        if (clientId) {
             navigation.setOptions({
                 title: dynamicTitle,
                 headerLeft: () => (
@@ -163,7 +171,7 @@ export default function ManualDietBuilderScreen({ navigation, route }: any) {
                     >
                         <Ionicons name={isArabic ? 'chevron-forward' : 'chevron-back'} size={28} color={colors.primary} />
                         <Text style={{ color: colors.primary, fontSize: 17, marginHorizontal: 4 }}>
-                           {clientId ? (isArabic ? 'ملف المشترك' : 'Client Profile') : (isArabic ? 'رجوع' : 'Back')}
+                           {isArabic ? 'ملف المشترك' : 'Client Profile'}
                         </Text>
                     </TouchableOpacity>
                 ),
@@ -184,6 +192,22 @@ export default function ManualDietBuilderScreen({ navigation, route }: any) {
     const [isGroupModalVisible, setGroupModalVisible] = useState(false);
     const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null);
     const [newGroupName, setNewGroupName] = useState('');
+
+    const [isCustomFoodModalVisible, setCustomFoodModalVisible] = useState(false);
+    const [customFoodForm, setCustomFoodForm] = useState({
+        nameEn: '', nameAr: '', calories: '', protein: '', carbs: '', fat: '', quantity: '1'
+    });
+    const SUPPLEMENT_UNITS = [
+        { key: 'scoop', labelEn: 'Scoop', labelAr: 'سكوب', grams: 30 },
+        { key: 'pill', labelEn: 'Pill', labelAr: 'حبة', grams: 1 },
+        { key: 'capsule', labelEn: 'Capsule', labelAr: 'كبسولة', grams: 1 },
+        { key: 'tablet', labelEn: 'Tablet', labelAr: 'قرص', grams: 1 },
+        { key: 'serving', labelEn: 'Serving', labelAr: 'حصة', grams: 30 },
+        { key: 'sachet', labelEn: 'Sachet', labelAr: 'كيس', grams: 10 },
+        { key: 'ml', labelEn: 'ml', labelAr: 'مل', grams: 1 },
+        { key: 'g', labelEn: 'Gram', labelAr: 'غرام', grams: 1 },
+    ];
+    const [selectedCustomUnit, setSelectedCustomUnit] = useState(SUPPLEMENT_UNITS[0]);
 
     // Barcode Scanner State
     const [showScanner, setShowScanner] = useState(false);
@@ -382,7 +406,7 @@ export default function ManualDietBuilderScreen({ navigation, route }: any) {
 
         if (groupIdToUse === 'NEW') {
             if (!newGroupName.trim()) {
-                Alert.alert(isArabic ? 'خطأ' : 'Error', isArabic ? 'يرجى إدخال اسم المجموعة' : 'Please enter a group name');
+                Alert.alert(isArabic ? '\u200Fخطأ' : 'Error', isArabic ? '\u200Fيرجى إدخال اسم المجموعة' : 'Please enter a group name');
                 return;
             }
             const existingGroup = groups.find(g => g.name.trim().toLowerCase() === newGroupName.trim().toLowerCase());
@@ -418,8 +442,8 @@ export default function ManualDietBuilderScreen({ navigation, route }: any) {
         setGroupModalVisible(false);
         setTargetFoodToAdd(null);
         Alert.alert(
-            isArabic ? 'تمت الإضافة ✅' : 'Added ✅',
-            isArabic ? `تم إضافته للمجموعة بنجاح` : `Added to group successfully`
+            isArabic ? '\u200F✅ تمت الإضافة' : 'Added ✅',
+            isArabic ? '\u200Fتم إضافته للمجموعة بنجاح' : `Added to group successfully`
         );
     };
 
@@ -469,7 +493,45 @@ export default function ManualDietBuilderScreen({ navigation, route }: any) {
         );
     }, [isArabic]);
 
+    const handleAddCustomFood = () => {
+        if (!customFoodForm.nameAr.trim() && !customFoodForm.nameEn.trim()) {
+            Alert.alert(isArabic ? 'خطأ' : 'Error', isArabic ? 'يرجى إدخال اسم الصنف/المكمل' : 'Please enter the item/supplement name');
+            return;
+        }
 
+        const qty = Number(customFoodForm.quantity) || 1;
+        const food: FoodResult = {
+            id: `custom_${Date.now()}`,
+            nameEn: customFoodForm.nameEn.trim() || customFoodForm.nameAr.trim(),
+            nameAr: customFoodForm.nameAr.trim() || customFoodForm.nameEn.trim(),
+            calories: Number(customFoodForm.calories) || 0,
+            protein: Number(customFoodForm.protein) || 0,
+            carbs: Number(customFoodForm.carbs) || 0,
+            fat: Number(customFoodForm.fat) || 0,
+            fiber: 0,
+            servingUnits: [
+                {
+                    unit: selectedCustomUnit.key,
+                    grams: selectedCustomUnit.grams,
+                    labelEn: selectedCustomUnit.labelEn,
+                    labelAr: selectedCustomUnit.labelAr
+                },
+                ...WEIGHT_UNITS
+            ]
+        };
+        
+        setCustomFoodModalVisible(false);
+        setCustomFoodForm({ nameEn: '', nameAr: '', calories: '', protein: '', carbs: '', fat: '', quantity: '1' });
+        setSelectedCustomUnit(SUPPLEMENT_UNITS[0]);
+        // Directly add to group modal with pre-set quantity
+        setTargetFoodToAdd(food);
+        setNewGroupName('');
+        setSelectedGroupId(null);
+        setGroupModalVisible(true);
+        setSearchText('');
+        setShowResults(false);
+        setSearchResults([]);
+    };
 
     // ── Calculate macros ────────────────────────────────────────────────────────
 
@@ -546,21 +608,34 @@ export default function ManualDietBuilderScreen({ navigation, route }: any) {
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['savedDietPlans', clientId] });
             Alert.alert(
-                isArabic ? 'تم الحفظ ✅' : 'Saved ✅',
-                clientId ? (isArabic ? 'تم حفظ الجدول في سجل المتدرب بنجاح' : "Diet plan saved successfully to Trainee's Plans") : (isArabic ? 'تم حفظ الجدول الغذائي بنجاح في جدولي الغذائي' : 'Diet plan saved successfully to My Diet Plans'),
-                [{
-                    text: isArabic ? 'عرض الجداول' : 'View Plans',
-                    onPress: () => {
-                        setGroups([]);
-                        navigation.navigate(clientId ? 'SharedDietTable' : 'DietTable', clientId ? { clientId } : undefined);
-                    },
-                }, {
-                    text: isArabic ? 'إضافة جدول آخر' : 'Add Another',
-                    onPress: () => setGroups([]),
-                }]
+                isArabic ? '\u200F✅ تم الحفظ' : 'Saved ✅',
+                clientId ? (isArabic ? '\u200Fتم حفظ الجدول في سجل المتدرب بنجاح' : "Diet plan saved successfully to Trainee's Plans") : (isArabic ? '\u200Fتم حفظ الجدول الغذائي بنجاح في جدولي الغذائي' : 'Diet plan saved successfully to My Diet Plans'),
+                isArabic ? [
+                    {
+                        text: 'إضافة جدول آخر',
+                        onPress: () => setGroups([]),
+                    }, {
+                        text: 'عرض الجداول',
+                        onPress: () => {
+                            setGroups([]);
+                            navigation.navigate(clientId ? 'SharedDietTable' : 'DietTable', clientId ? { clientId } : undefined);
+                        },
+                    }
+                ] : [
+                    {
+                        text: 'View Plans',
+                        onPress: () => {
+                            setGroups([]);
+                            navigation.navigate(clientId ? 'SharedDietTable' : 'DietTable', clientId ? { clientId } : undefined);
+                        },
+                    }, {
+                        text: 'Add Another',
+                        onPress: () => setGroups([]),
+                    }
+                ]
             );
         },
-        onError: (err: any) => Alert.alert(isArabic ? 'خطأ' : 'Error', err.message || 'Failed to save'),
+        onError: (err: any) => Alert.alert(isArabic ? '\u200Fخطأ' : 'Error', isArabic ? `\u200F${err.message || 'فشل الحفظ'}` : (err.message || 'Failed to save')),
     });
 
     const updateMutation = useMutation({
@@ -568,23 +643,33 @@ export default function ManualDietBuilderScreen({ navigation, route }: any) {
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['savedDietPlans', clientId] });
             Alert.alert(
-                isArabic ? 'تم التعديل ✅' : 'Updated ✅',
-                isArabic ? 'تم تعديل الجدول الغذائي بنجاح' : 'Diet plan updated successfully',
-                [{
-                    text: isArabic ? 'استمرار التعديل' : 'Keep Editing',
-                    style: 'cancel',
-                }, {
-                    text: isArabic ? 'عرض الجداول' : 'View Plans',
-                    onPress: () => navigation.navigate(clientId ? 'SharedDietTable' : 'DietTable', clientId ? { clientId } : undefined),
-                }]
+                isArabic ? '\u200F✅ تم التعديل' : 'Updated ✅',
+                isArabic ? '\u200Fتم تعديل الجدول الغذائي بنجاح' : 'Diet plan updated successfully',
+                isArabic ? [
+                    {
+                        text: 'عرض الجداول',
+                        onPress: () => navigation.navigate(clientId ? 'SharedDietTable' : 'DietTable', clientId ? { clientId } : undefined),
+                    }, {
+                        text: 'استمرار التعديل',
+                        onPress: () => {},
+                    }
+                ] : [
+                    {
+                        text: 'Keep Editing',
+                        onPress: () => {},
+                    }, {
+                        text: 'View Plans',
+                        onPress: () => navigation.navigate(clientId ? 'SharedDietTable' : 'DietTable', clientId ? { clientId } : undefined),
+                    }
+                ]
             );
         },
-        onError: (err: any) => Alert.alert(isArabic ? 'خطأ' : 'Error', err.message || 'Failed to update'),
+        onError: (err: any) => Alert.alert(isArabic ? '\u200Fخطأ' : 'Error', isArabic ? `\u200F${err.message || 'فشل التعديل'}` : (err.message || 'Failed to update')),
     });
 
     const handleSave = () => {
         if (groups.every(g => g.items.length === 0)) {
-            Alert.alert(isArabic ? 'لا توجد أصناف' : 'No items', isArabic ? 'أضف بعض الأصناف أولاً' : 'Add some food items first');
+            Alert.alert(isArabic ? '\u200Fلا توجد أصناف' : 'No items', isArabic ? '\u200Fأضف بعض الأصناف أولاً' : 'Add some food items first');
             return;
         }
 
@@ -724,6 +809,21 @@ export default function ManualDietBuilderScreen({ navigation, route }: any) {
                     </TouchableOpacity>
                 </View>
 
+                {/* ── Quick Actions ── */}
+                {!showResults && (
+                    <View style={{ paddingHorizontal: 16, paddingBottom: 8, flexDirection: 'row', justifyContent: 'flex-start' }}>
+                        <TouchableOpacity 
+                            style={{ flexDirection: isArabic ? 'row-reverse' : 'row', alignItems: 'center', backgroundColor: isDark ? 'rgba(16, 185, 129, 0.15)' : '#dcfce7', paddingHorizontal: 12, paddingVertical: 8, borderRadius: 20, borderWidth: 1, borderColor: '#10b981' }}
+                            onPress={() => setCustomFoodModalVisible(true)}
+                        >
+                            <Ionicons name="add-circle" size={18} color="#10b981" style={{ marginEnd: 6 }} />
+                            <Text style={{ color: '#10b981', fontWeight: '600', fontSize: 13 }}>
+                                {isArabic ? 'إضافة صنف مخصص / مكمل' : 'Add Custom / Supplement'}
+                            </Text>
+                        </TouchableOpacity>
+                    </View>
+                )}
+
                 {/* ── Search Results Dropdown ── */}
                 {showResults && searchResults.length > 0 && (
                     <View style={[styles.resultsDropdown, { backgroundColor: isDark ? '#1e293b' : '#ffffff', borderColor: colors.border }]}>
@@ -749,16 +849,28 @@ export default function ManualDietBuilderScreen({ navigation, route }: any) {
                                 </TouchableOpacity>
                             )}
                             ListFooterComponent={() => (
-                                <TouchableOpacity
-                                    style={[styles.resultItem, { borderBottomColor: colors.border, justifyContent: 'center', backgroundColor: isDark ? 'rgba(56, 189, 248, 0.1)' : 'rgba(56, 189, 248, 0.05)' }]}
-                                    onPress={() => performSearch(searchText, true)}
-                                    disabled={isSearching}
-                                >
-                                    <Ionicons name="cloud-download-outline" size={20} color={colors.primary} style={{ marginEnd: 8 }} />
-                                    <Text style={[styles.resultName, { color: colors.primary }]}>
-                                        {isSearching ? (isArabic ? 'جاري البحث في القاعدة العالمية...' : 'Searching global database...') : (isArabic ? 'لم تجد الصنف؟ ابحث في القاعدة العالمية' : "Can't find it? Search global database")}
-                                    </Text>
-                                </TouchableOpacity>
+                                <View>
+                                    <TouchableOpacity
+                                        style={[styles.resultItem, { borderBottomColor: colors.border, justifyContent: 'center', backgroundColor: isDark ? 'rgba(56, 189, 248, 0.1)' : 'rgba(56, 189, 248, 0.05)' }]}
+                                        onPress={() => performSearch(searchText, true)}
+                                        disabled={isSearching}
+                                    >
+                                        <Ionicons name="cloud-download-outline" size={20} color={colors.primary} style={{ marginEnd: 8 }} />
+                                        <Text style={[styles.resultName, { color: colors.primary }]}>
+                                            {isSearching ? (isArabic ? 'جاري البحث في القاعدة العالمية...' : 'Searching global database...') : (isArabic ? 'لم تجد الصنف؟ ابحث في القاعدة العالمية' : "Can't find it? Search global database")}
+                                        </Text>
+                                    </TouchableOpacity>
+                                    
+                                    <TouchableOpacity
+                                        style={[styles.resultItem, { borderBottomColor: 'transparent', justifyContent: 'center', backgroundColor: isDark ? 'rgba(16, 185, 129, 0.1)' : 'rgba(16, 185, 129, 0.05)' }]}
+                                        onPress={() => { setCustomFoodModalVisible(true); setShowResults(false); }}
+                                    >
+                                        <Ionicons name="add-circle-outline" size={20} color="#10b981" style={{ marginEnd: 8 }} />
+                                        <Text style={[styles.resultName, { color: '#10b981' }]}>
+                                            {isArabic ? 'إضافة صنف مخصص / مكمل غذائي' : 'Add Custom Item / Supplement'}
+                                        </Text>
+                                    </TouchableOpacity>
+                                </View>
                             )}
                         />
                     </View>
@@ -770,7 +882,7 @@ export default function ManualDietBuilderScreen({ navigation, route }: any) {
                             {isArabic ? 'لم يتم العثور على نتائج محلية' : 'No local results found'}
                         </Text>
                         <TouchableOpacity
-                            style={[styles.saveButton, { paddingVertical: 10, backgroundColor: isSearching ? colors.mutedText : '#3b82f6' }]}
+                            style={[styles.saveButton, { paddingVertical: 10, backgroundColor: isSearching ? colors.mutedText : '#3b82f6', marginBottom: 12 }]}
                             onPress={() => performSearch(searchText, true)}
                             disabled={isSearching}
                         >
@@ -779,6 +891,13 @@ export default function ManualDietBuilderScreen({ navigation, route }: any) {
                             ) : (
                                 <Text style={styles.saveButtonText}>{isArabic ? 'ابحث في القاعدة العالمية (USDA)' : 'Search Global Database (USDA)'}</Text>
                             )}
+                        </TouchableOpacity>
+
+                        <TouchableOpacity
+                            style={[styles.saveButton, { paddingVertical: 10, backgroundColor: '#10b981' }]}
+                            onPress={() => { setCustomFoodModalVisible(true); setShowResults(false); }}
+                        >
+                            <Text style={styles.saveButtonText}>{isArabic ? 'إضافة صنف مخصص / مكمل غذائي' : 'Add Custom Item / Supplement'}</Text>
                         </TouchableOpacity>
                     </View>
                 )}
@@ -819,7 +938,9 @@ export default function ManualDietBuilderScreen({ navigation, route }: any) {
                             <View key={group.id} style={{ marginBottom: 16 }}>
                                 {/* Group Header */}
                                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8, paddingHorizontal: 4 }}>
-                                    <Text style={{ fontSize: 18, fontWeight: 'bold', color: colors.text, flex: 1, textAlign: isArabic ? 'right' : 'left' }}>{group.name}</Text>
+                                    <View style={{ flex: 1, alignItems: 'flex-start' }}>
+                                        <Text style={{ fontSize: 18, fontWeight: 'bold', color: colors.text }}>{group.name}</Text>
+                                    </View>
                                     <TouchableOpacity onPress={() => removeGroup(group.id)} style={{ padding: 4 }}>
                                         <Ionicons name="trash-outline" size={20} color={colors.danger} />
                                     </TouchableOpacity>
@@ -837,9 +958,11 @@ export default function ManualDietBuilderScreen({ navigation, route }: any) {
                                         return (
                                             <View key={item.key} style={[styles.foodCard, { backgroundColor: cardBg, borderColor: colors.border }]}>
                                                 <View style={styles.foodCardHeader}>
-                                                    <Text style={[styles.foodName, { color: colors.text, textAlign: isArabic ? 'right' : 'left' }]} numberOfLines={1}>
-                                                        {isArabic ? item.food.nameAr : item.food.nameEn}
-                                                    </Text>
+                                                    <View style={{ flex: 1, alignItems: 'flex-start', marginEnd: 8 }}>
+                                                        <Text style={{ fontSize: 15, fontWeight: '700', color: colors.text }} numberOfLines={1}>
+                                                            {isArabic ? item.food.nameAr : item.food.nameEn}
+                                                        </Text>
+                                                    </View>
                                                     <TouchableOpacity onPress={() => removeFood(item.key)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
                                                         <Ionicons name="trash-outline" size={18} color={colors.danger} />
                                                     </TouchableOpacity>
@@ -985,6 +1108,116 @@ export default function ManualDietBuilderScreen({ navigation, route }: any) {
                 </TouchableOpacity>
             </Modal>
 
+            {/* ── Custom Food / Supplement Modal ── */}
+            <Modal visible={isCustomFoodModalVisible} transparent animationType="slide">
+                <View style={[styles.modalOverlay, { backgroundColor: 'rgba(0,0,0,0.6)' }]}>
+                    <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={[styles.modalContent, { backgroundColor: isDark ? '#1e293b' : '#ffffff', borderColor: colors.border, padding: 16, maxWidth: 380 }]}>
+                        {/* Header */}
+                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingBottom: 12, borderBottomWidth: 1, borderBottomColor: colors.border, marginBottom: 16 }}>
+                            <Text style={{ fontSize: 18, fontWeight: '700', color: colors.text }}>
+                                {isArabic ? 'إضافة صنف / مكمل غذائي' : 'Add Custom / Supplement'}
+                            </Text>
+                            <TouchableOpacity onPress={() => setCustomFoodModalVisible(false)}>
+                                <Ionicons name="close" size={24} color={colors.text} />
+                            </TouchableOpacity>
+                        </View>
+
+                        <ScrollView style={{ maxHeight: 420 }} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+                            <View style={{ gap: 16 }}>
+                                {/* ── Name ── */}
+                                <View>
+                                    <Text style={{ color: colors.text, fontWeight: '600', marginBottom: 8, textAlign: isArabic ? 'right' : 'left' }}>
+                                        {isArabic ? 'اسم الصنف / المكمل' : 'Item / Supplement Name'}
+                                    </Text>
+                                    <TextInput
+                                        style={[styles.quantityInput, { width: '100%', height: 44, backgroundColor: inputBg, color: colors.text, borderColor: colors.border, textAlign: isArabic ? 'right' : 'left', paddingHorizontal: 14 }]}
+                                        placeholder={isArabic ? 'مثال: واي بروتين، كرياتين...' : 'e.g., Whey Protein, Creatine...'}
+                                        placeholderTextColor={colors.mutedText}
+                                        value={isArabic ? customFoodForm.nameAr : customFoodForm.nameEn}
+                                        onChangeText={t => {
+                                            if (isArabic) setCustomFoodForm({...customFoodForm, nameAr: t, nameEn: customFoodForm.nameEn || t});
+                                            else setCustomFoodForm({...customFoodForm, nameEn: t, nameAr: customFoodForm.nameAr || t});
+                                        }}
+                                    />
+                                </View>
+
+                                {/* ── Unit Selection as List ── */}
+                                <View>
+                                    <Text style={{ color: colors.text, fontWeight: '600', marginBottom: 8, textAlign: isArabic ? 'right' : 'left' }}>
+                                        {isArabic ? 'وحدة القياس' : 'Serving Unit'}
+                                    </Text>
+                                    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, flexDirection: 'row', paddingHorizontal: 2 }}>
+                                        {SUPPLEMENT_UNITS.map(u => (
+                                            <TouchableOpacity 
+                                                key={u.key}
+                                                onPress={() => setSelectedCustomUnit(u)}
+                                                style={{ paddingHorizontal: 14, paddingVertical: 10, borderRadius: 12, borderWidth: 1.5, borderColor: selectedCustomUnit.key === u.key ? '#10b981' : colors.border, backgroundColor: selectedCustomUnit.key === u.key ? (isDark ? 'rgba(16,185,129,0.15)' : '#dcfce7') : 'transparent' }}
+                                            >
+                                                <Text style={{ fontSize: 13, fontWeight: selectedCustomUnit.key === u.key ? '700' : '500', color: selectedCustomUnit.key === u.key ? '#10b981' : colors.text }}>
+                                                    {isArabic ? u.labelAr : u.labelEn}
+                                                </Text>
+                                            </TouchableOpacity>
+                                        ))}
+                                    </ScrollView>
+                                </View>
+
+                                {/* ── Quantity ── */}
+                                <View>
+                                    <Text style={{ color: colors.text, fontWeight: '600', marginBottom: 8, textAlign: isArabic ? 'right' : 'left' }}>
+                                        {isArabic ? 'الكمية' : 'Quantity'}
+                                    </Text>
+                                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                                        <TextInput
+                                            style={[styles.quantityInput, { width: 80, height: 44, backgroundColor: inputBg, color: colors.text, borderColor: colors.border, fontSize: 18, fontWeight: '700' }]}
+                                            keyboardType="numeric"
+                                            value={customFoodForm.quantity}
+                                            onChangeText={t => setCustomFoodForm({...customFoodForm, quantity: t})}
+                                            textAlign="center"
+                                        />
+                                        <Text style={{ fontSize: 15, color: colors.text, fontWeight: '600' }}>
+                                            {isArabic ? selectedCustomUnit.labelAr : selectedCustomUnit.labelEn}
+                                        </Text>
+                                    </View>
+                                </View>
+
+                                {/* ── Optional Macros ── */}
+                                <View>
+                                    <Text style={{ color: colors.text, fontWeight: '600', marginBottom: 4, textAlign: isArabic ? 'right' : 'left' }}>
+                                        {isArabic ? 'القيم الغذائية (اختياري)' : 'Macros (Optional)'}
+                                    </Text>
+                                    <Text style={{ fontSize: 11, color: colors.mutedText, marginBottom: 8, textAlign: isArabic ? 'right' : 'left' }}>
+                                        {isArabic ? 'لن تُحتسب إذا لم تُدخلها' : 'Will not count if left empty'}
+                                    </Text>
+                                    <View style={{ flexDirection: 'row', gap: 6, flexWrap: 'wrap' }}>
+                                        <View style={{ flex: 1, minWidth: 70 }}>
+                                            <Text style={{ fontSize: 11, color: colors.mutedText, marginBottom: 4, textAlign: 'center' }}>{isArabic ? 'سعرات' : 'Cal'}</Text>
+                                            <TextInput style={[styles.quantityInput, { width: '100%', backgroundColor: inputBg, color: colors.text, borderColor: colors.border }]} keyboardType="numeric" placeholder="-" placeholderTextColor={colors.mutedText} value={customFoodForm.calories} onChangeText={t => setCustomFoodForm({...customFoodForm, calories: t})} textAlign="center" />
+                                        </View>
+                                        <View style={{ flex: 1, minWidth: 70 }}>
+                                            <Text style={{ fontSize: 11, color: '#3b82f6', marginBottom: 4, textAlign: 'center' }}>{isArabic ? 'بروتين' : 'Protein'}</Text>
+                                            <TextInput style={[styles.quantityInput, { width: '100%', backgroundColor: inputBg, color: colors.text, borderColor: colors.border }]} keyboardType="numeric" placeholder="-" placeholderTextColor={colors.mutedText} value={customFoodForm.protein} onChangeText={t => setCustomFoodForm({...customFoodForm, protein: t})} textAlign="center" />
+                                        </View>
+                                        <View style={{ flex: 1, minWidth: 70 }}>
+                                            <Text style={{ fontSize: 11, color: '#f59e0b', marginBottom: 4, textAlign: 'center' }}>{isArabic ? 'كارب' : 'Carbs'}</Text>
+                                            <TextInput style={[styles.quantityInput, { width: '100%', backgroundColor: inputBg, color: colors.text, borderColor: colors.border }]} keyboardType="numeric" placeholder="-" placeholderTextColor={colors.mutedText} value={customFoodForm.carbs} onChangeText={t => setCustomFoodForm({...customFoodForm, carbs: t})} textAlign="center" />
+                                        </View>
+                                        <View style={{ flex: 1, minWidth: 70 }}>
+                                            <Text style={{ fontSize: 11, color: '#ef4444', marginBottom: 4, textAlign: 'center' }}>{isArabic ? 'دهون' : 'Fat'}</Text>
+                                            <TextInput style={[styles.quantityInput, { width: '100%', backgroundColor: inputBg, color: colors.text, borderColor: colors.border }]} keyboardType="numeric" placeholder="-" placeholderTextColor={colors.mutedText} value={customFoodForm.fat} onChangeText={t => setCustomFoodForm({...customFoodForm, fat: t})} textAlign="center" />
+                                        </View>
+                                    </View>
+                                </View>
+                            </View>
+                        </ScrollView>
+
+                        <TouchableOpacity style={[styles.saveButton, { marginTop: 20 }]} onPress={handleAddCustomFood}>
+                            <Ionicons name="add-circle" size={20} color="#fff" style={{ marginEnd: 8 }} />
+                            <Text style={styles.saveButtonText}>{isArabic ? 'إضافة للجدول' : 'Add to Plan'}</Text>
+                        </TouchableOpacity>
+                    </KeyboardAvoidingView>
+                </View>
+            </Modal>
+
             {/* ── Barcode Scanner Modal ── */}
             <Modal visible={showScanner} animationType="slide" onRequestClose={() => setShowScanner(false)}>
                 <View style={{ flex: 1, backgroundColor: '#000' }}>
@@ -1021,7 +1254,7 @@ export default function ManualDietBuilderScreen({ navigation, route }: any) {
                 <View style={[styles.modalOverlay, { backgroundColor: 'rgba(0,0,0,0.6)' }]}>
                     <View style={[styles.modalContent, { backgroundColor: isDark ? '#1e293b' : '#ffffff', borderColor: colors.border }]}>
                         <View style={styles.modalHeader}>
-                            <Text style={[styles.modalTitle, { color: colors.text, flex: 1, textAlign: isArabic ? 'right' : 'left' }]}>
+                            <Text style={{ fontSize: 18, fontWeight: '700', color: colors.text }}>
                                 {isArabic ? targetFoodToAdd?.nameAr : targetFoodToAdd?.nameEn}
                             </Text>
                             <TouchableOpacity onPress={() => setGroupModalVisible(false)} style={{ marginStart: 12 }}>
@@ -1029,7 +1262,7 @@ export default function ManualDietBuilderScreen({ navigation, route }: any) {
                             </TouchableOpacity>
                         </View>
 
-                        <Text style={[{ color: colors.mutedText, marginBottom: 12, textAlign: isArabic ? 'right' : 'left', paddingHorizontal: 16 }]}>
+                        <Text style={{ color: colors.mutedText, marginBottom: 12, textAlign: 'left', paddingHorizontal: 16 }}>
                             {isArabic ? 'اختر مجموعة أو أضف مجموعة جديدة:' : 'Select a group or add a new one:'}
                         </Text>
 
@@ -1040,7 +1273,9 @@ export default function ManualDietBuilderScreen({ navigation, route }: any) {
                                     style={[styles.groupSelector, { borderColor: selectedGroupId === g.id ? colors.primary : colors.border }]}
                                     onPress={() => setSelectedGroupId(g.id)}
                                 >
-                                    <Text style={{ flex: 1, color: selectedGroupId === g.id ? colors.primary : colors.text, textAlign: isArabic ? 'right' : 'left' }}>{g.name}</Text>
+                                    <View style={{ flex: 1, alignItems: 'flex-start' }}>
+                                        <Text style={{ color: selectedGroupId === g.id ? colors.primary : colors.text }}>{g.name}</Text>
+                                    </View>
                                     {selectedGroupId === g.id && <Ionicons name="checkmark-circle" size={20} color={colors.primary} style={{ marginStart: 8 }} />}
                                 </TouchableOpacity>
                             ))}
@@ -1048,9 +1283,11 @@ export default function ManualDietBuilderScreen({ navigation, route }: any) {
                                 style={[styles.groupSelector, { borderColor: selectedGroupId === 'NEW' ? colors.primary : colors.border }]}
                                 onPress={() => setSelectedGroupId('NEW')}
                             >
-                                <Text style={{ flex: 1, color: selectedGroupId === 'NEW' ? colors.primary : colors.text, textAlign: isArabic ? 'right' : 'left' }}>
-                                    {isArabic ? '+ مجموعة جديدة (وجبة جديدة)' : '+ New Group (Meal)'}
-                                </Text>
+                                <View style={{ flex: 1, alignItems: 'flex-start' }}>
+                                    <Text style={{ color: selectedGroupId === 'NEW' ? colors.primary : colors.text }}>
+                                        {isArabic ? 'مجموعة جديدة (وجبة جديدة) +' : '+ New Group (Meal)'}
+                                    </Text>
+                                </View>
                             </TouchableOpacity>
                         </ScrollView>
 

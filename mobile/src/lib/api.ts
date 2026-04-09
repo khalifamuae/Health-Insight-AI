@@ -2,11 +2,10 @@ import * as SecureStore from 'expo-secure-store';
 import Constants from 'expo-constants';
 
 const getDevApiUrl = () => {
-  // Explicitly hardcoded to the local Mac IP since Expo Constants fail to resolve dynamically over the Wi-Fi.
-  return `http://172.20.10.7:5001`;
+  return `https://health-insight-ai.replit.app`;
 };
 
-export const API_BASE_URL = __DEV__ ? getDevApiUrl() : 'https://health-insight-ai.replit.app';
+export const API_BASE_URL = 'https://health-insight-ai.replit.app';
 
 let sessionCookie: string | null = null;
 
