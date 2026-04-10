@@ -110,13 +110,6 @@
         {
           "cameraPermission": "The app needs camera access to scan product barcodes for nutritional data. / يحتاج التطبيق إلى الكاميرا لمسح باركود المنتجات لمعرفة قيمها الغذائية."
         }
-      ],
-      [
-        "react-native-google-mobile-ads",
-        {
-          "androidAppId": "ca-app-pub-1897992442343412~8773755007",
-          "iosAppId": "ca-app-pub-1897992442343412~8773755007"
-        }
       ]
     ],
     "owner": "khalifamuae"

@@ -29,9 +29,15 @@ export default function ClientProfileScreen({ route, navigation }: any) {
 
   const queryClient = useQueryClient();
   const lastNavTime = React.useRef(0);
-  const [subStart, setSubStart] = React.useState(subscriptionStartDate ? new Date(subscriptionStartDate).toISOString().split('T')[0] : '');
-  const [subEnd, setSubEnd] = React.useState(subscriptionEndDate ? new Date(subscriptionEndDate).toISOString().split('T')[0] : '');
-  const [goal, setGoal] = React.useState(traineeGoal || 'maintain');
+  const initialSubStart = subscriptionStartDate ? new Date(subscriptionStartDate).toISOString().split('T')[0] : '';
+  const initialSubEnd = subscriptionEndDate ? new Date(subscriptionEndDate).toISOString().split('T')[0] : '';
+  const initialGoal = traineeGoal || 'maintain';
+
+  const [subStart, setSubStart] = React.useState(initialSubStart);
+  const [subEnd, setSubEnd] = React.useState(initialSubEnd);
+  const [goal, setGoal] = React.useState(initialGoal);
+
+  const isFormEdited = subStart !== initialSubStart || subEnd !== initialSubEnd || goal !== initialGoal;
 
   const updateSubMutation = useMutation({
     mutationFn: () => api.patch(`/api/subscriber-management/subscription-dates/${connectionId}`, {
@@ -40,10 +46,21 @@ export default function ClientProfileScreen({ route, navigation }: any) {
       traineeGoal: goal || null
     }),
     onSuccess: () => {
-      Alert.alert(isArabic ? 'تم الحفظ' : 'Saved', isArabic ? 'تم تحديث تواريخ الاشتراك بنجاح' : 'Subscription dates updated successfully');
+      Alert.alert(isArabic ? '\u200Fتم الحفظ' : 'Saved', isArabic ? '\u200Fتم تحديث البيانات بنجاح' : 'Data updated successfully');
       queryClient.invalidateQueries({ queryKey: ['profile'] });
     }
   });
+
+  const handleSave = () => {
+    Alert.alert(
+      isArabic ? '\u200Fتأكيد التغيير' : 'Confirm Change',
+      isArabic ? '\u200Fهل تريد تغيير البيانات الخاصة بالمتدرب؟' : 'Do you want to change the trainee data?',
+      [
+        { text: isArabic ? '\u200Fإلغاء' : 'Cancel', style: 'cancel' },
+        { text: isArabic ? '\u200Fنعم' : 'Yes', onPress: () => updateSubMutation.mutate() }
+      ]
+    );
+  };
 
   if (isLoading) {
     return (
@@ -155,7 +172,7 @@ export default function ClientProfileScreen({ route, navigation }: any) {
         </View>
 
         {connectionId && (
-          <View style={{ backgroundColor: colors.card, padding: 16, borderRadius: 12, marginBottom: 16, borderWidth: 1, borderColor: colors.border }}>
+          <View style={{ backgroundColor: colors.card, padding: 16, borderRadius: 12, marginBottom: 16, borderWidth: 1.5, borderColor: isFormEdited ? '#0ea5e9' : '#a855f7' }}>
             <Text style={{ fontSize: 16, fontWeight: '600', color: colors.text, marginBottom: 12, textAlign: 'left' }}>
               {isArabic ? 'صلاحية الاشتراك' : 'Subscription Validity'}
             </Text>
@@ -209,13 +226,13 @@ export default function ClientProfileScreen({ route, navigation }: any) {
 
             <TouchableOpacity 
               style={{ backgroundColor: colors.primary, padding: 12, borderRadius: 8, marginTop: 16, alignItems: 'center', opacity: updateSubMutation.isPending ? 0.7 : 1 }}
-              onPress={() => updateSubMutation.mutate()}
+              onPress={handleSave}
               disabled={updateSubMutation.isPending}
             >
               {updateSubMutation.isPending ? (
                  <ActivityIndicator color="#fff" size="small" />
               ) : (
-                 <Text style={{ color: '#fff', fontWeight: 'bold' }}>{isArabic ? 'حفظ التواريخ' : 'Save Dates'}</Text>
+                 <Text style={{ color: '#fff', fontWeight: 'bold' }}>{isArabic ? 'حفظ' : 'Save'}</Text>
               )}
             </TouchableOpacity>
           </View>
