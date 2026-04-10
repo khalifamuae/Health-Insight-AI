@@ -2,7 +2,7 @@
   "expo": {
     "name": "BioTrack AI",
     "slug": "biotrack-ai",
-    "version": "1.0.7",
+    "version": "1.0.9",
     "orientation": "portrait",
     "icon": "./assets/brand-icon.png",
     "userInterfaceStyle": "automatic",
@@ -77,7 +77,8 @@
       "permissions": [
         "INTERNET",
         "CAMERA",
-        "POST_NOTIFICATIONS"
+        "POST_NOTIFICATIONS",
+        "com.google.android.gms.permission.AD_ID"
       ]
     },
     "web": {
