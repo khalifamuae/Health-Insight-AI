@@ -1,11 +1,10 @@
 import React, { useState } from 'react';
-import { Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View, useWindowDimensions } from 'react-native';
+import { Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View, useWindowDimensions, Alert, Linking } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { useTranslation } from 'react-i18next';
 import { Ionicons } from '@expo/vector-icons';
 import { BlurView } from 'expo-blur';
 import { useAuth } from '../context/AuthContext';
-import { Alert } from 'react-native';
 import { useQuery } from '@tanstack/react-query';
 
 import { useAppTheme } from '../context/ThemeContext';
@@ -630,6 +629,37 @@ export default function TabNavigator({ navigation }: any) {
                      {isArabic ? 'إدارة المشتركين' : 'Subscriber Management'}
                   </Text>
 
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[
+                    styles.menuItem,
+                    {
+                      borderBottomColor: menuDividerColor,
+                      flexDirection: 'row',
+                    },
+                  ]}
+                  onPress={() => {
+                    setIsMenuVisible(false);
+                    Linking.openURL('https://wa.me/971521900930').catch(() => {
+                      Alert.alert(isArabic ? 'خطأ' : 'Error', isArabic ? 'تعذر فتح تطبيق واتساب. تأكد من تثبيته.' : 'Could not open WhatsApp. Make sure it is installed.');
+                    });
+                  }}
+                  testID="button-menu-support"
+                >
+                  <Ionicons name="logo-whatsapp" size={18} color="#25D366" />
+                  <Text
+                    numberOfLines={1}
+                    style={[
+                      styles.menuItemText,
+                      {
+                        color: colors.text,
+                        textAlign: 'left',
+                      },
+                    ]}
+                  >
+                     {isArabic ? 'تواصل معنا' : 'Support / Contact Us'}
+                  </Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity
