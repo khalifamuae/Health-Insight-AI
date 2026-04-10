@@ -53,17 +53,11 @@ export default function ClientProfileScreen({ route, navigation }: any) {
     );
   }
 
-  if (!profile) {
-    return (
-      <View style={[styles.loader, { backgroundColor: colors.background }]}>
-        <Text style={{ color: colors.text }}>{isArabic ? 'لم يتم العثور على بيانات هذا المشترك' : 'Client data not found'}</Text>
-      </View>
-    );
-  }
+  const safeProfile = profile || {};
 
   // Debug: Force a manual alert dialog to trace the parameter execution
   if (__DEV__) {
-    console.log("CLIENT ID:", clientId, "PROFILE NAME:", profile.firstName);
+    console.log("CLIENT ID:", clientId, "PROFILE NAME:", safeProfile.firstName);
   }
 
   const navigateToFeature = (screenName: string, additionalParams?: any) => {
@@ -94,10 +88,10 @@ export default function ClientProfileScreen({ route, navigation }: any) {
         {/* Personal Metrics Dashboard Area */}
         <View style={[styles.statsHero, { backgroundColor: colors.card, borderColor: colors.border }]}>
           <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12 }}>
-            {clientProfileImage || profile?.profileImagePath ? (
+            {clientProfileImage || safeProfile.profileImagePath ? (
               <View style={{ width: 64, height: 64, borderRadius: 32, overflow: 'hidden', marginRight: 16 }}>
                 {/* We use Image from react-native */}
-                <Image source={{ uri: clientProfileImage || profile?.profileImagePath }} style={{ width: '100%', height: '100%' }} />
+                <Image source={{ uri: clientProfileImage || safeProfile.profileImagePath }} style={{ width: '100%', height: '100%' }} />
               </View>
             ) : (
               <View style={{ width: 64, height: 64, borderRadius: 32, backgroundColor: colors.border, justifyContent: 'center', alignItems: 'center', marginRight: 16 }}>
@@ -106,7 +100,7 @@ export default function ClientProfileScreen({ route, navigation }: any) {
             )}
             <View style={{ flex: 1, alignItems: 'flex-start' }}>
               <Text style={[styles.statsHeroTitle, { color: colors.text, marginBottom: 0, textAlign: 'left' }]}>
-                 {clientFirstName || profile?.firstName} {clientLastName || profile?.lastName}
+                 {clientFirstName || safeProfile.firstName || (isArabic ? 'متدرب' : 'Trainee')} {clientLastName || safeProfile.lastName || ''}
               </Text>
               <Text style={[styles.statsHeroSubtitle, { color: '#22c55e', marginTop: 4, textAlign: 'left' }]}>
                 {isArabic ? 'حساب نشط ومربوط' : 'Active Connected Client'}
@@ -119,22 +113,22 @@ export default function ClientProfileScreen({ route, navigation }: any) {
               <View style={styles.statBox}>
                 <Text style={styles.statLabel}>{isArabic ? 'تاريخ الربط' : 'Linked On'}</Text>
                 <Text style={[styles.statValue, { color: colors.text }]}>
-                  {profile.linkedAt ? new Date(profile.linkedAt).toLocaleDateString(isArabic ? 'ar' : 'en-US') : '--'}
+                  {safeProfile.linkedAt ? new Date(safeProfile.linkedAt).toLocaleDateString(isArabic ? 'ar' : 'en-US') : '--'}
                 </Text>
               </View>
               <View style={styles.statBox}>
                 <Text style={styles.statLabel}>{isArabic ? 'فصيلة الدم' : 'Blood'}</Text>
-                <Text style={[styles.statValue, { color: colors.text }]}>{profile.bloodType || '--'}</Text>
+                <Text style={[styles.statValue, { color: colors.text }]}>{safeProfile.bloodType || '--'}</Text>
               </View>
               <View style={styles.statBox}>
                 <Text style={styles.statLabel}>{isArabic ? 'العمر' : 'Age'}</Text>
-                <Text style={[styles.statValue, { color: colors.text }]}>{profile.age ? `${profile.age}` : '--'}</Text>
+                <Text style={[styles.statValue, { color: colors.text }]}>{safeProfile.age ? `${safeProfile.age}` : '--'}</Text>
               </View>
             </View>
             <View style={styles.statRow}>
               <View style={styles.statBox}>
                 <Text style={styles.statLabel}>{isArabic ? 'الوزن' : 'Weight'}</Text>
-                <Text style={[styles.statValue, { color: colors.text }]}>{profile.weight ? `${profile.weight} kg` : '--'}</Text>
+                <Text style={[styles.statValue, { color: colors.text }]}>{safeProfile.weight ? `${safeProfile.weight} kg` : '--'}</Text>
               </View>
               <View style={styles.statBox}>
                 <Text style={styles.statLabel}>{isArabic ? 'دهون الجسم' : 'Body Fat'}</Text>
@@ -148,12 +142,12 @@ export default function ClientProfileScreen({ route, navigation }: any) {
             <View style={styles.statRow}>
               <View style={styles.statBox}>
                 <Text style={styles.statLabel}>{isArabic ? 'الطول' : 'Height'}</Text>
-                <Text style={[styles.statValue, { color: colors.text }]}>{profile.height ? `${profile.height} cm` : '--'}</Text>
+                <Text style={[styles.statValue, { color: colors.text }]}>{safeProfile.height ? `${safeProfile.height} cm` : '--'}</Text>
               </View>
               <View style={styles.statBox}>
                 <Text style={styles.statLabel}>{isArabic ? 'الجنس' : 'Sex'}</Text>
                 <Text style={[styles.statValue, { color: colors.text }]}>
-                  {profile.gender ? (profile.gender === 'male' ? (isArabic ? 'ذكر' : 'Male') : (isArabic ? 'أنثى' : 'Female')) : '--'}
+                  {safeProfile.gender ? (safeProfile.gender === 'male' ? (isArabic ? 'ذكر' : 'Male') : (isArabic ? 'أنثى' : 'Female')) : '--'}
                 </Text>
               </View>
             </View>
@@ -391,7 +385,7 @@ export default function ClientProfileScreen({ route, navigation }: any) {
           {/* 8. الدردشة الخاصة */}
           <TouchableOpacity 
             style={[styles.actionCard, { backgroundColor: colors.card, borderColor: colors.border, flexDirection: 'row', marginTop: 12 }]}
-            onPress={() => navigation.navigate('ClientChat', { connectionId, clientName: `${profile?.firstName || ''} ${profile?.lastName || ''}`.trim() })}
+            onPress={() => navigation.navigate('ClientChat', { connectionId, clientName: `${safeProfile.firstName || clientFirstName || ''} ${safeProfile.lastName || clientLastName || ''}`.trim() || (isArabic ? 'المتدرب' : 'Trainee') })}
           >
             <View style={[styles.iconWrapper, { backgroundColor: 'rgba(236, 72, 153, 0.15)', marginRight: 16 }]}>
               <Ionicons name="chatbubbles" size={28} color="#ec4899" />
