@@ -6,17 +6,17 @@ import { useAuth } from '../context/AuthContext';
 import { useAppTheme } from '../context/ThemeContext';
 import { isArabicLanguage } from '../lib/isArabic';
 import { Ionicons } from '@expo/vector-icons';
-// import { BannerAd, BannerAdSize, TestIds } from 'react-native-google-mobile-ads';
+import { BannerAd, BannerAdSize, TestIds } from 'react-native-google-mobile-ads';
 
 interface AdBannerProps {
   position?: 'top' | 'bottom';
 }
 
-// const PRODUCTION_AD_UNIT_ID = 'ca-app-pub-1897992442343412/1743840045';
-// const AD_UNIT_ID = __DEV__ ? TestIds.BANNER : PRODUCTION_AD_UNIT_ID;
+const PRODUCTION_AD_UNIT_ID = 'ca-app-pub-1897992442343412/1743840045';
+const AD_UNIT_ID = __DEV__ ? TestIds.BANNER : PRODUCTION_AD_UNIT_ID;
 
 /**
- * AdBanner — Temporarily disabled for Expo Go compatibility
+ * AdBanner — Enabled for Production/Standalone
  */
 export default function AdBanner({ position = 'bottom' }: AdBannerProps) {
   const { shouldShowAds } = useSubscription();
@@ -24,6 +24,8 @@ export default function AdBanner({ position = 'bottom' }: AdBannerProps) {
   const { isDark } = useAppTheme();
   const insets = useSafeAreaInsets();
   const isArabic = isArabicLanguage();
+  const [adLoaded, setAdLoaded] = useState(false);
+  const [adFailed, setAdFailed] = useState(false);
 
   // Don't show ads on login screen or for paid/trial users
   if (!isAuthenticated || !shouldShowAds()) return null;
@@ -44,11 +46,37 @@ export default function AdBanner({ position = 'bottom' }: AdBannerProps) {
         minHeight: isTop ? insets.top + 50 : insets.bottom + 50,
       }
     ]}>
-      <View style={[styles.placeholder, { backgroundColor: isDark ? '#1e293b' : '#dfe6ee' }]}>
-        <Ionicons name="megaphone-outline" size={18} color={isDark ? '#64748b' : '#94a3b8'} />
-        <Text style={[styles.placeholderText, { color: isDark ? '#64748b' : '#94a3b8' }]}>
-          {isArabic ? 'مساحة إعلانية — اشترك لإزالة الإعلانات' : 'Ad Space — Subscribe to remove ads'}
-        </Text>
+      {!adLoaded && !adFailed && (
+        <View style={[styles.placeholder, { backgroundColor: isDark ? '#1e293b' : '#dfe6ee', position: 'absolute', width: '100%', height: 50, top: isTop ? insets.top + extraTopPadding : 0 }]}>
+          <Ionicons name="megaphone-outline" size={18} color={isDark ? '#64748b' : '#94a3b8'} />
+          <Text style={[styles.placeholderText, { color: isDark ? '#64748b' : '#94a3b8' }]}>
+            {isArabic ? 'جاري تحميل الإعلان...' : 'Loading Ad...'}
+          </Text>
+        </View>
+      )}
+
+      {adFailed && (
+        <View style={[styles.placeholder, { backgroundColor: isDark ? '#1e293b' : '#dfe6ee' }]}>
+          <Ionicons name="megaphone-outline" size={18} color={isDark ? '#64748b' : '#94a3b8'} />
+          <Text style={[styles.placeholderText, { color: isDark ? '#64748b' : '#94a3b8' }]}>
+            {isArabic ? 'مساحة إعلانية — اشترك لإزالة الإعلانات' : 'Ad Space — Subscribe to remove ads'}
+          </Text>
+        </View>
+      )}
+
+      <View style={[styles.adWrapper, { opacity: adLoaded ? 1 : 0 }]}>
+        <BannerAd
+          unitId={AD_UNIT_ID}
+          size={BannerAdSize.ANCHORED_ADAPTIVE_BANNER}
+          requestOptions={{
+            requestNonPersonalizedAdsOnly: true,
+          }}
+          onAdLoaded={() => setAdLoaded(true)}
+          onAdFailedToLoad={(error) => {
+            console.error('Ad failed to load: ', error);
+            setAdFailed(true);
+          }}
+        />
       </View>
     </View>
   );
