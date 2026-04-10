@@ -48,6 +48,14 @@ export default function ClientProfileScreen({ route, navigation }: any) {
     onSuccess: () => {
       Alert.alert(isArabic ? '\u200Fتم الحفظ' : 'Saved', isArabic ? '\u200Fتم تحديث البيانات بنجاح' : 'Data updated successfully');
       queryClient.invalidateQueries({ queryKey: ['profile'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/subscriber-management/clients'] });
+      
+      // Update route params to reset the "isFormEdited" derived state
+      navigation.setParams({
+        subscriptionStartDate: subStart,
+        subscriptionEndDate: subEnd,
+        traineeGoal: goal,
+      });
     }
   });
 
