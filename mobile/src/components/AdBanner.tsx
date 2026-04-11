@@ -12,7 +12,9 @@ interface AdBannerProps {
   position?: 'top' | 'bottom';
 }
 
-const PRODUCTION_AD_UNIT_ID = 'ca-app-pub-1897992442343412/1743840045';
+const ANDROID_AD_UNIT_ID = 'ca-app-pub-1897992442343412/9368711441';
+const IOS_AD_UNIT_ID = 'ca-app-pub-1897992442343412/1743840045';
+const PRODUCTION_AD_UNIT_ID = Platform.OS === 'android' ? ANDROID_AD_UNIT_ID : IOS_AD_UNIT_ID;
 const AD_UNIT_ID = __DEV__ ? TestIds.BANNER : PRODUCTION_AD_UNIT_ID;
 
 /**
