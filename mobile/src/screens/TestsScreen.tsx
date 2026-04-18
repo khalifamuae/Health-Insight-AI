@@ -795,6 +795,7 @@ export default function TestsScreen({ route, navigation }: any) {
               <Text style={[styles.valueLabel, { color: colors.mutedText }]}>{t('yourValue')}</Text>
               <Text style={[
                 styles.valueText,
+                { color: colors.text },
                 !item.hasResult && styles.valueTextPending,
                 (item.status === 'high' || item.status === 'low') && styles.valueTextAbnormal
               ]}>

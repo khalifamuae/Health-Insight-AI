@@ -178,7 +178,19 @@ export default function CompareScreen({ route, navigation }: any) {
               change = 'worsened';
             }
           } else {
-            change = 'same';
+            if (testId.startsWith('inbody-')) {
+              if (
+                testId === 'inbody-skeletal-muscle-mass' ||
+                testId === 'inbody-total-body-water' ||
+                testId === 'inbody-bmr'
+              ) {
+                change = changePercent > 0 ? 'improved' : 'worsened';
+              } else {
+                change = changePercent < 0 ? 'improved' : 'worsened';
+              }
+            } else {
+              change = 'same';
+            }
           }
         }
       }
