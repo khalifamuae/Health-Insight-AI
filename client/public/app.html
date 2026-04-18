@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MindMeetup.ai — AI Meeting Room</title>
+  <meta name="description" content="Configure your AI agents and start a collaborative meeting session.">
+  <meta name="theme-color" content="#0F0E17">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Tajawal:wght@300;400;500;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/variables.css">
+  <link rel="stylesheet" href="css/components.css">
+  <link rel="stylesheet" href="css/app.css">
+</head>
+<body>
+  <div class="app-container">
+
+    <!-- ======== APP HEADER ======== -->
+    <header class="app-header">
+      <div class="app-header-left">
+        <div class="app-logo" onclick="app.newMeeting()">
+          <svg width="28" height="28" viewBox="0 0 36 36" fill="none">
+            <defs>
+              <linearGradient id="logoG" x1="0" y1="0" x2="36" y2="36">
+                <stop offset="0%" stop-color="#6C5CE7"/>
+                <stop offset="50%" stop-color="#00CEC9"/>
+                <stop offset="100%" stop-color="#FD79A8"/>
+              </linearGradient>
+            </defs>
+            <circle cx="18" cy="18" r="16" stroke="url(#logoG)" stroke-width="2" fill="none"/>
+            <circle cx="12" cy="14" r="3" fill="#6C5CE7"/>
+            <circle cx="24" cy="14" r="3" fill="#00CEC9"/>
+            <circle cx="18" cy="24" r="3" fill="#FD79A8"/>
+            <line x1="12" y1="14" x2="24" y2="14" stroke="url(#logoG)" stroke-width="1" opacity="0.5"/>
+            <line x1="12" y1="14" x2="18" y2="24" stroke="url(#logoG)" stroke-width="1" opacity="0.5"/>
+            <line x1="24" y1="14" x2="18" y2="24" stroke="url(#logoG)" stroke-width="1" opacity="0.5"/>
+          </svg>
+          <span>MindMeetup<span style="color:var(--text-tertiary)">.ai</span></span>
+        </div>
+      </div>
+
+      <div class="app-header-center" id="header-center">
+        <!-- Timer shows here during meeting -->
+      </div>
+
+      <div class="app-header-right">
+        <button class="btn btn-ghost btn-icon" onclick="app.showOpenClawModal()" data-tooltip="OpenClaw">🖥</button>
+        <button class="btn btn-ghost btn-icon" id="lang-btn" onclick="toggleAppLang()">🌐</button>
+        <a href="index.html" class="btn btn-ghost btn-icon" data-tooltip="Home">🏠</a>
+      </div>
+    </header>
+
+    <!-- ======== TIMER BAR ======== -->
+    <div class="timer-bar" id="timer-bar" style="display:none;">
+      <div class="timer-bar-fill" id="timer-bar-fill" style="width:0%"></div>
+    </div>
+
+    <!-- ======== SETUP SCREEN ======== -->
+    <div class="screen active" id="screen-setup">
+      <div class="setup-screen">
+        <div class="setup-container">
+          <div class="setup-header">
+            <h1 class="setup-title" data-i18n="setupTitle">Configure Your AI Agents</h1>
+            <p class="setup-subtitle" data-i18n="setupSubtitle">Add API keys and assign roles to each agent</p>
+          </div>
+
+          <!-- Template Button -->
+          <div style="display:flex;justify-content:center;margin-bottom:var(--space-6);">
+            <button class="btn btn-secondary" onclick="app.showTemplateModal()">
+              📋 <span data-i18n="useTemplate">Use Template</span>
+            </button>
+          </div>
+
+          <!-- Agents Grid -->
+          <div class="agents-grid" id="agents-grid">
+            <!-- Dynamically rendered -->
+          </div>
+
+          <!-- Continue Button -->
+          <div style="display:flex;justify-content:center;margin-top:var(--space-6);">
+            <button class="btn btn-primary btn-lg" onclick="app.goToSettings()" style="min-width:280px;">
+              <span data-i18n="continueToSettings">Continue to Settings</span> →
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ======== SETTINGS SCREEN ======== -->
+    <div class="screen" id="screen-settings">
+      <div class="settings-screen">
+        <div class="settings-container">
+          <div class="settings-card" id="settings-content">
+            <!-- Dynamically rendered -->
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ======== MEETING SCREEN ======== -->
+    <div class="screen" id="screen-meeting">
+      <div class="meeting-room">
+        <!-- Sidebar -->
+        <aside class="meeting-sidebar">
+          <div class="sidebar-header">
+            <div class="sidebar-title">
+              <span data-i18n="participants">Participants</span>
+              <span class="sidebar-count" id="sidebar-count">0</span>
+            </div>
+          </div>
+          <div class="sidebar-agents" id="sidebar-agents">
+            <!-- Dynamically rendered -->
+          </div>
+          <div class="sidebar-actions">
+            <button class="btn btn-sm btn-secondary btn-full" onclick="app.showOpenClawModal()">
+              🖥 OpenClaw
+            </button>
+          </div>
+        </aside>
+
+        <!-- Chat Area -->
+        <main class="chat-area">
+          <!-- Topic Bar -->
+          <div class="chat-topic-bar">
+            <span class="chat-topic-icon">💬</span>
+            <span class="chat-topic-text" id="chat-topic-text"></span>
+          </div>
+
+          <!-- Messages -->
+          <div class="chat-messages" id="chat-messages">
+            <!-- Messages rendered here -->
+          </div>
+
+          <!-- Input Area -->
+          <div class="chat-input-area" id="chat-input-area">
+            <div class="chat-input-wrapper">
+              <div class="chat-input-box">
+                <textarea class="chat-input" id="chat-input" rows="1" 
+                  data-i18n-placeholder="typeMessage"
+                  placeholder="Type your message..."></textarea>
+              </div>
+              <button class="chat-send-btn" id="chat-send-btn" onclick="app.sendUserMessage()">
+                ▶
+              </button>
+            </div>
+          </div>
+
+          <!-- Toolbar -->
+          <div class="meeting-toolbar">
+            <button class="toolbar-btn" onclick="app.showVoteModal()">
+              🗳 <span data-i18n="vote">Vote</span>
+            </button>
+            <button class="toolbar-btn" onclick="app.showTemplateModal()">
+              📋 <span data-i18n="template">Template</span>
+            </button>
+            <div class="toolbar-divider"></div>
+            <button class="toolbar-btn" onclick="exportSystem.downloadMarkdown(app.getMeetingData())">
+              📝 <span data-i18n="exportMarkdown">Markdown</span>
+            </button>
+            <button class="toolbar-btn" onclick="exportSystem.downloadPDF(app.getMeetingData())">
+              📄 <span>PDF</span>
+            </button>
+            <div class="toolbar-divider"></div>
+            <button class="toolbar-btn" id="pause-btn" onclick="app.togglePause()">
+              ⏸ <span data-i18n="pause">Pause</span>
+            </button>
+            <button class="toolbar-btn danger" onclick="app.confirmEndMeeting()">
+              ⏹ <span data-i18n="endMeeting">End Meeting</span>
+            </button>
+          </div>
+        </main>
+      </div>
+    </div>
+
+    <!-- ======== SUMMARY SCREEN ======== -->
+    <div class="screen" id="screen-summary">
+      <div class="summary-screen">
+        <div class="summary-container" id="summary-content">
+          <!-- Dynamically rendered -->
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Scripts -->
+  <script src="js/i18n.js"></script>
+  <script src="js/providers.js"></script>
+  <script src="js/storage.js"></script>
+  <script src="js/templates.js"></script>
+  <script src="js/voting.js"></script>
+  <script src="js/export.js"></script>
+  <script src="js/openclw.js"></script>
+  <script src="js/app.js"></script>
+
+  <script>
+    // Timer in header
+    function updateHeaderTimer() {
+      const center = document.getElementById('header-center');
+      if (!center) return;
+      
+      if (app.meeting.active) {
+        document.getElementById('timer-bar').style.display = 'block';
+        center.innerHTML = `
+          <div class="timer-display">
+            <span class="timer-icon">⏱</span>
+            <span class="timer-time" id="timer-time">00:00</span>
+            <span class="timer-phase" id="timer-phase">${i18n.t('discussionPhaseLabel')}</span>
+          </div>
+        `;
+      } else {
+        document.getElementById('timer-bar').style.display = 'none';
+        center.innerHTML = '';
+      }
+    }
+
+    // Override showScreen to update header
+    const originalShowScreen = app.showScreen.bind(app);
+    app.showScreen = function(screenId) {
+      originalShowScreen(screenId);
+      updateHeaderTimer();
+    };
+
+    // Override startMeeting to set up timer display
+    const originalStartMeeting = app.startMeeting.bind(app);
+    app.startMeeting = function() {
+      originalStartMeeting();
+      updateHeaderTimer();
+    };
+
+    // Language toggle for app page
+    function toggleAppLang() {
+      i18n.toggleLanguage();
+      const btn = document.getElementById('lang-btn');
+      if (btn) btn.textContent = i18n.lang === 'ar' ? 'EN' : 'ع';
+    }
+
+    // Set initial lang button
+    document.addEventListener('DOMContentLoaded', () => {
+      const btn = document.getElementById('lang-btn');
+      if (btn) btn.textContent = i18n.lang === 'ar' ? 'EN' : 'ع';
+    });
+  </script>
+</body>
+</html>
