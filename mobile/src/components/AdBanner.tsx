@@ -6,21 +6,27 @@ import { useAuth } from '../context/AuthContext';
 import { useAppTheme } from '../context/ThemeContext';
 import { isArabicLanguage } from '../lib/isArabic';
 import { Ionicons } from '@expo/vector-icons';
-import { BannerAd, BannerAdSize, TestIds } from 'react-native-google-mobile-ads';
+// DISABLED for Expo dev — uncomment when re-enabling ads
+// import { BannerAd, BannerAdSize, TestIds } from 'react-native-google-mobile-ads';
 
 interface AdBannerProps {
   position?: 'top' | 'bottom';
 }
 
-const ANDROID_AD_UNIT_ID = 'ca-app-pub-1897992442343412/9368711441';
-const IOS_AD_UNIT_ID = 'ca-app-pub-1897992442343412/1743840045';
-const PRODUCTION_AD_UNIT_ID = Platform.OS === 'android' ? ANDROID_AD_UNIT_ID : IOS_AD_UNIT_ID;
-const AD_UNIT_ID = __DEV__ ? TestIds.BANNER : PRODUCTION_AD_UNIT_ID;
+// DISABLED for Expo dev
+// const ANDROID_AD_UNIT_ID = 'ca-app-pub-1897992442343412/9368711441';
+// const IOS_AD_UNIT_ID = 'ca-app-pub-1897992442343412/1743840045';
+// const PRODUCTION_AD_UNIT_ID = Platform.OS === 'android' ? ANDROID_AD_UNIT_ID : IOS_AD_UNIT_ID;
+// const AD_UNIT_ID = __DEV__ ? TestIds.BANNER : PRODUCTION_AD_UNIT_ID;
 
 /**
- * AdBanner — Enabled for Production/Standalone
+ * AdBanner — TEMPORARILY DISABLED for Expo dev
+ * To re-enable: remove the early return below
  */
 export default function AdBanner({ position = 'bottom' }: AdBannerProps) {
+  // DISABLED: uncomment the line below to re-enable ads
+  return null;
+
   const { shouldShowAds } = useSubscription();
   const { isAuthenticated } = useAuth();
   const { isDark } = useAppTheme();

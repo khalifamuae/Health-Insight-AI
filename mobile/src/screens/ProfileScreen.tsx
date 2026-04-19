@@ -206,8 +206,8 @@ export default function ProfileScreen({ navigation }: { navigation: any }) {
   };
 
   const handleAddGalleryImage = async () => {
-    if (galleryImages.length >= 6) {
-      Alert.alert(isArabic ? 'الحد الأقصى' : 'Limit Reached', isArabic ? 'يمكنك إضافة 6 صور كحد أقصى' : 'You can add up to 6 images');
+    if (galleryImages.length >= 20) {
+      Alert.alert(isArabic ? 'الحد الأقصى' : 'Limit Reached', isArabic ? 'يمكنك إضافة 20 صورة كحد أقصى' : 'You can add up to 20 images');
       return;
     }
     try {
@@ -669,7 +669,7 @@ export default function ProfileScreen({ navigation }: { navigation: any }) {
 
           {/* Gallery Images */}
           <View style={styles.inputGroup}>
-            <Text style={[styles.label, { color: secondaryText }]}>{isArabic ? 'معرض الصور' : 'Photo Gallery'} ({galleryImages.length}/6)</Text>
+            <Text style={[styles.label, { color: secondaryText }]}>{isArabic ? 'معرض الصور' : 'Photo Gallery'} ({galleryImages.length}/20)</Text>
             <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
               {galleryImages.map((uri, idx) => (
                 <View key={idx} style={{ position: 'relative' }}>
@@ -684,7 +684,7 @@ export default function ProfileScreen({ navigation }: { navigation: any }) {
                   </TouchableOpacity>
                 </View>
               ))}
-              {galleryImages.length < 6 && (
+              {galleryImages.length < 20 && (
                 <TouchableOpacity
                   onPress={handleAddGalleryImage}
                   style={{ width: 90, height: 90, borderRadius: 12, borderWidth: 2, borderColor: colors.border, borderStyle: 'dashed', justifyContent: 'center', alignItems: 'center', backgroundColor: isDark ? '#0f172a' : '#f8fafc' }}
