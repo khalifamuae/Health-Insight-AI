@@ -583,19 +583,19 @@ export default function ProfileScreen({ navigation }: { navigation: any }) {
       {/* Trainer Profile Section - only for trainers */}
       {isTrainer() && (
         <View style={[styles.section, { backgroundColor: cardBg }]}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+          <View style={[styles.subscriptionHeader]}>
             <Ionicons name="ribbon-outline" size={20} color="#f59e0b" />
-            <Text style={[styles.sectionTitle, { color: '#f59e0b', marginBottom: 0 }]}>
+            <Text style={[styles.sectionTitle, { color: '#f59e0b', marginBottom: 0, marginHorizontal: 8 }]}>
               {isArabic ? 'الملف التعريفي للمدرب' : 'Trainer Profile'}
             </Text>
           </View>
-          <Text style={{ fontSize: 12, color: secondaryText, marginBottom: 16, textAlign: isArabic ? 'right' : 'left' }}>
+          <Text style={[styles.label, { color: secondaryText, marginBottom: 16, marginTop: 4 }]}>
             {isArabic ? 'هذه المعلومات ستظهر للمتدربين عند عرض ملفك الشخصي' : 'This info will be visible to trainees viewing your profile'}
           </Text>
 
           {/* Bio */}
           <View style={styles.inputGroup}>
-            <Text style={[styles.label, { color: secondaryText, textAlign: isArabic ? 'right' : 'left' }]}>{isArabic ? 'النبذة التعريفية' : 'Bio'}</Text>
+            <Text style={[styles.label, { color: secondaryText }]}>{isArabic ? 'النبذة التعريفية' : 'Bio'}</Text>
             <AppTextInput
               style={[styles.input, { backgroundColor: isDark ? '#0f172a' : '#f8fafc', borderColor: colors.border, color: primaryText, minHeight: 100, textAlignVertical: 'top' }]}
               value={bio}
@@ -610,7 +610,7 @@ export default function ProfileScreen({ navigation }: { navigation: any }) {
 
           {/* Specialty */}
           <View style={styles.inputGroup}>
-            <Text style={[styles.label, { color: secondaryText, textAlign: isArabic ? 'right' : 'left' }]}>{isArabic ? 'التخصص' : 'Specialty'}</Text>
+            <Text style={[styles.label, { color: secondaryText }]}>{isArabic ? 'التخصص' : 'Specialty'}</Text>
             <AppTextInput
               style={[styles.input, { backgroundColor: isDark ? '#0f172a' : '#f8fafc', borderColor: colors.border, color: primaryText }]}
               value={specialty}
@@ -623,7 +623,7 @@ export default function ProfileScreen({ navigation }: { navigation: any }) {
 
           {/* Years of Experience */}
           <View style={styles.inputGroup}>
-            <Text style={[styles.label, { color: secondaryText, textAlign: isArabic ? 'right' : 'left' }]}>{isArabic ? 'سنوات الخبرة' : 'Years of Experience'}</Text>
+            <Text style={[styles.label, { color: secondaryText }]}>{isArabic ? 'سنوات الخبرة' : 'Years of Experience'}</Text>
             <AppTextInput
               style={[styles.input, { backgroundColor: isDark ? '#0f172a' : '#f8fafc', borderColor: colors.border, color: primaryText }]}
               value={yearsOfExperience}
@@ -637,7 +637,7 @@ export default function ProfileScreen({ navigation }: { navigation: any }) {
 
           {/* Certifications (Image-based) */}
           <View style={styles.inputGroup}>
-            <Text style={[styles.label, { color: secondaryText, textAlign: isArabic ? 'right' : 'left' }]}>{isArabic ? 'الشهادات والتراخيص' : 'Certifications'}</Text>
+            <Text style={[styles.label, { color: secondaryText }]}>{isArabic ? 'الشهادات والتراخيص' : 'Certifications'}</Text>
             <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
               {certifications.map((uri, idx) => (
                 <View key={idx} style={{ position: 'relative' }}>
@@ -670,7 +670,7 @@ export default function ProfileScreen({ navigation }: { navigation: any }) {
 
           {/* Gallery & Transformation Photos (unified) */}
           <View style={styles.inputGroup}>
-            <Text style={[styles.label, { color: secondaryText, textAlign: isArabic ? 'right' : 'left' }]}>{isArabic ? 'معرض الصور والإنجازات' : 'Photos & Achievements'} ({galleryImages.length}/20)</Text>
+            <Text style={[styles.label, { color: secondaryText }]}>{isArabic ? 'معرض الصور والإنجازات' : 'Photos & Achievements'} ({galleryImages.length}/20)</Text>
             <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
               {galleryImages.map((uri, idx) => (
                 <View key={idx} style={{ position: 'relative' }}>
