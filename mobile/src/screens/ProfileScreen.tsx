@@ -172,7 +172,11 @@ export default function ProfileScreen({ navigation }: { navigation: any }) {
       api.patch('/api/profile', data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['profile'] });
-      Alert.alert(t('profile.save'), t('normal'));
+      queryClient.invalidateQueries({ queryKey: ['trainers-public'] });
+      Alert.alert(
+        isArabic ? 'تم الحفظ' : 'Saved',
+        isArabic ? 'تم حفظ بياناتك بنجاح' : 'Your profile has been saved successfully'
+      );
     },
     onError: () => {
       Alert.alert(t('errors.uploadFailed'));
@@ -585,13 +589,13 @@ export default function ProfileScreen({ navigation }: { navigation: any }) {
               {isArabic ? 'الملف التعريفي للمدرب' : 'Trainer Profile'}
             </Text>
           </View>
-          <Text style={{ fontSize: 12, color: secondaryText, marginBottom: 16, textAlign: 'left' }}>
+          <Text style={{ fontSize: 12, color: secondaryText, marginBottom: 16, textAlign: isArabic ? 'right' : 'left' }}>
             {isArabic ? 'هذه المعلومات ستظهر للمتدربين عند عرض ملفك الشخصي' : 'This info will be visible to trainees viewing your profile'}
           </Text>
 
           {/* Bio */}
           <View style={styles.inputGroup}>
-            <Text style={[styles.label, { color: secondaryText }]}>{isArabic ? 'النبذة التعريفية' : 'Bio'}</Text>
+            <Text style={[styles.label, { color: secondaryText, textAlign: isArabic ? 'right' : 'left' }]}>{isArabic ? 'النبذة التعريفية' : 'Bio'}</Text>
             <AppTextInput
               style={[styles.input, { backgroundColor: isDark ? '#0f172a' : '#f8fafc', borderColor: colors.border, color: primaryText, minHeight: 100, textAlignVertical: 'top' }]}
               value={bio}
@@ -606,7 +610,7 @@ export default function ProfileScreen({ navigation }: { navigation: any }) {
 
           {/* Specialty */}
           <View style={styles.inputGroup}>
-            <Text style={[styles.label, { color: secondaryText }]}>{isArabic ? 'التخصص' : 'Specialty'}</Text>
+            <Text style={[styles.label, { color: secondaryText, textAlign: isArabic ? 'right' : 'left' }]}>{isArabic ? 'التخصص' : 'Specialty'}</Text>
             <AppTextInput
               style={[styles.input, { backgroundColor: isDark ? '#0f172a' : '#f8fafc', borderColor: colors.border, color: primaryText }]}
               value={specialty}
@@ -619,7 +623,7 @@ export default function ProfileScreen({ navigation }: { navigation: any }) {
 
           {/* Years of Experience */}
           <View style={styles.inputGroup}>
-            <Text style={[styles.label, { color: secondaryText }]}>{isArabic ? 'سنوات الخبرة' : 'Years of Experience'}</Text>
+            <Text style={[styles.label, { color: secondaryText, textAlign: isArabic ? 'right' : 'left' }]}>{isArabic ? 'سنوات الخبرة' : 'Years of Experience'}</Text>
             <AppTextInput
               style={[styles.input, { backgroundColor: isDark ? '#0f172a' : '#f8fafc', borderColor: colors.border, color: primaryText }]}
               value={yearsOfExperience}
@@ -631,45 +635,42 @@ export default function ProfileScreen({ navigation }: { navigation: any }) {
             />
           </View>
 
-          {/* Certifications */}
+          {/* Certifications (Image-based) */}
           <View style={styles.inputGroup}>
-            <Text style={[styles.label, { color: secondaryText }]}>{isArabic ? 'الشهادات والتراخيص' : 'Certifications'}</Text>
-            {certifications.map((cert, idx) => (
-              <View key={idx} style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: isDark ? '#0f172a' : '#f0f9ff', borderRadius: 8, padding: 10, marginBottom: 6, gap: 8 }}>
-                <Ionicons name="checkmark-circle" size={18} color="#22c55e" />
-                <Text style={{ flex: 1, color: primaryText, fontSize: 14 }}>{cert}</Text>
-                <TouchableOpacity onPress={() => setCertifications(prev => prev.filter((_, i) => i !== idx))}>
-                  <Ionicons name="close-circle" size={20} color="#ef4444" />
-                </TouchableOpacity>
-              </View>
-            ))}
-            <View style={{ flexDirection: 'row', gap: 8 }}>
-              <AppTextInput
-                style={[styles.input, { flex: 1, backgroundColor: isDark ? '#0f172a' : '#f8fafc', borderColor: colors.border, color: primaryText }]}
-                value={newCertification}
-                onChangeText={setNewCertification}
-                placeholder={isArabic ? 'أضف شهادة...' : 'Add certification...'}
-                placeholderTextColor={secondaryText}
-                testID="input-new-certification"
-              />
+            <Text style={[styles.label, { color: secondaryText, textAlign: isArabic ? 'right' : 'left' }]}>{isArabic ? 'الشهادات والتراخيص' : 'Certifications'}</Text>
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+              {certifications.map((uri, idx) => (
+                <View key={idx} style={{ position: 'relative' }}>
+                  <TouchableOpacity onPress={() => { setSelectedGalleryImage(uri); setShowGalleryModal(true); }}>
+                    <Image source={{ uri }} style={{ width: 90, height: 90, borderRadius: 12 }} />
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    onPress={() => setCertifications(prev => prev.filter((_, i) => i !== idx))}
+                    style={{ position: 'absolute', top: -6, right: -6, backgroundColor: '#ef4444', borderRadius: 10, width: 20, height: 20, justifyContent: 'center', alignItems: 'center' }}
+                  >
+                    <Ionicons name="close" size={14} color="#fff" />
+                  </TouchableOpacity>
+                </View>
+              ))}
               <TouchableOpacity
-                style={{ backgroundColor: '#3b82f6', borderRadius: 10, paddingHorizontal: 14, justifyContent: 'center' }}
-                onPress={() => {
-                  if (newCertification.trim()) {
-                    setCertifications(prev => [...prev, newCertification.trim()]);
-                    setNewCertification('');
-                  }
+                onPress={async () => {
+                  try {
+                    const img = await pickImageFromAlbum();
+                    if (img?.uri) setCertifications(prev => [...prev, img.uri]);
+                  } catch {}
                 }}
+                style={{ width: 90, height: 90, borderRadius: 12, borderWidth: 2, borderColor: '#22c55e', borderStyle: 'dashed', justifyContent: 'center', alignItems: 'center', backgroundColor: isDark ? '#0f172a' : '#f0fdf4' }}
                 testID="button-add-certification"
               >
-                <Ionicons name="add" size={22} color="#fff" />
+                <Ionicons name="document-attach-outline" size={24} color="#22c55e" />
+                <Text style={{ fontSize: 9, color: '#22c55e', marginTop: 3, textAlign: 'center' }}>{isArabic ? 'إضافة شهادة' : 'Add Cert'}</Text>
               </TouchableOpacity>
             </View>
           </View>
 
-          {/* Gallery Images */}
+          {/* Gallery & Transformation Photos (unified) */}
           <View style={styles.inputGroup}>
-            <Text style={[styles.label, { color: secondaryText }]}>{isArabic ? 'معرض الصور' : 'Photo Gallery'} ({galleryImages.length}/20)</Text>
+            <Text style={[styles.label, { color: secondaryText, textAlign: isArabic ? 'right' : 'left' }]}>{isArabic ? 'معرض الصور والإنجازات' : 'Photos & Achievements'} ({galleryImages.length}/20)</Text>
             <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
               {galleryImages.map((uri, idx) => (
                 <View key={idx} style={{ position: 'relative' }}>
@@ -697,36 +698,6 @@ export default function ProfileScreen({ navigation }: { navigation: any }) {
             </View>
           </View>
 
-          {/* Transformation Photos */}
-          <View style={styles.inputGroup}>
-            <Text style={[styles.label, { color: secondaryText }]}>{isArabic ? 'إنجازات المتدربين (قبل / بعد)' : 'Trainee Transformations (Before / After)'}</Text>
-            {transformationPhotos.map((t, idx) => (
-              <View key={idx} style={{ backgroundColor: isDark ? '#0f172a' : '#f8fafc', borderRadius: 12, padding: 10, marginBottom: 8, borderWidth: 1, borderColor: colors.border }}>
-                <View style={{ flexDirection: 'row', gap: 8, marginBottom: t.description ? 6 : 0 }}>
-                  <Image source={{ uri: t.beforeImage }} style={{ width: 80, height: 80, borderRadius: 10 }} />
-                  <View style={{ justifyContent: 'center', alignItems: 'center' }}>
-                    <Ionicons name="arrow-forward" size={20} color="#f59e0b" />
-                  </View>
-                  <Image source={{ uri: t.afterImage }} style={{ width: 80, height: 80, borderRadius: 10 }} />
-                  <TouchableOpacity
-                    onPress={() => setTransformationPhotos(prev => prev.filter((_, i) => i !== idx))}
-                    style={{ position: 'absolute', top: -4, right: -4, backgroundColor: '#ef4444', borderRadius: 10, width: 20, height: 20, justifyContent: 'center', alignItems: 'center' }}
-                  >
-                    <Ionicons name="close" size={14} color="#fff" />
-                  </TouchableOpacity>
-                </View>
-                {t.description ? <Text style={{ color: secondaryText, fontSize: 12, marginTop: 4 }}>{t.description}</Text> : null}
-              </View>
-            ))}
-            <TouchableOpacity
-              onPress={handleAddTransformation}
-              style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: isDark ? '#1e3a5f' : '#eff6ff', borderRadius: 10, paddingVertical: 12, borderWidth: 1, borderColor: '#3b82f6', borderStyle: 'dashed' }}
-              testID="button-add-transformation"
-            >
-              <Ionicons name="images-outline" size={20} color="#3b82f6" />
-              <Text style={{ color: '#3b82f6', fontWeight: '600', fontSize: 14 }}>{isArabic ? 'إضافة صور قبل / بعد' : 'Add Before / After Photos'}</Text>
-            </TouchableOpacity>
-          </View>
 
           {/* Save Trainer Profile */}
           <TouchableOpacity

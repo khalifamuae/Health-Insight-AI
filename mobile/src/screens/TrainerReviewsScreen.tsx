@@ -202,15 +202,20 @@ export default function TrainerReviewsScreen({ route, navigation }: any) {
           </Text>
         )}
 
-        {/* Certifications */}
+        {/* Certifications (Images) */}
         {trainer?.certifications && trainer.certifications.length > 0 && (
           <View style={{ width: '100%', marginBottom: 12 }}>
-            {trainer.certifications.map((cert, idx) => (
-              <View key={idx} style={{ flexDirection: 'row', alignItems: 'center', gap: 6, paddingVertical: 4 }}>
-                <Ionicons name="checkmark-circle" size={16} color="#22c55e" />
-                <Text style={{ color: colors.text, fontSize: 13 }}>{cert}</Text>
-              </View>
-            ))}
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 8 }}>
+              <Ionicons name="ribbon" size={16} color="#22c55e" />
+              <Text style={{ color: colors.text, fontSize: 14, fontWeight: '600' }}>{isArabic ? 'الشهادات والتراخيص' : 'Certifications'}</Text>
+            </View>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
+              {trainer.certifications.map((uri, idx) => (
+                <TouchableOpacity key={idx} onPress={() => setPreviewImage(uri)}>
+                  <Image source={{ uri }} style={{ width: 120, height: 120, borderRadius: 12 }} />
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
           </View>
         )}
 
