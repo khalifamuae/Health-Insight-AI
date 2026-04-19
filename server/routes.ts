@@ -668,7 +668,7 @@ export async function registerRoutes(
   app.patch("/api/profile", isAuthenticated, async (req: any, res: Response) => {
     try {
       const userId = req.user.claims.sub;
-      const { phone, age: providedAge, dateOfBirth, weight, height, gender, fitnessGoal, activityLevel, mealPreference, hasAllergies, allergies, proteinPreference, proteinPreferences, carbPreferences, bloodType, firstName, lastName, profileImagePath } = req.body;
+      const { phone, age: providedAge, dateOfBirth, weight, height, gender, fitnessGoal, activityLevel, mealPreference, hasAllergies, allergies, proteinPreference, proteinPreferences, carbPreferences, bloodType, firstName, lastName, profileImagePath, bio, specialty, yearsOfExperience, certifications, galleryImages, transformationPhotos } = req.body;
 
       let computedAge = providedAge;
       let parsedDateOfBirth: Date | undefined = undefined;
@@ -722,6 +722,12 @@ export async function registerRoutes(
         proteinPreferences,
         carbPreferences,
         bloodType,
+        bio,
+        specialty,
+        yearsOfExperience,
+        certifications,
+        galleryImages,
+        transformationPhotos,
       });
 
       res.json(sanitizeProfile(profile));
@@ -2432,6 +2438,12 @@ export async function registerRoutes(
             avatarUrl: trainer.profileImagePath || null,
             avgRating: Math.round(avgRating * 10) / 10,
             totalReviews: totalRatings,
+            bio: trainer.bio || null,
+            specialty: trainer.specialty || null,
+            yearsOfExperience: trainer.yearsOfExperience || null,
+            certifications: trainer.certifications || [],
+            galleryImages: trainer.galleryImages || [],
+            transformationPhotos: trainer.transformationPhotos || [],
           };
         })
       );

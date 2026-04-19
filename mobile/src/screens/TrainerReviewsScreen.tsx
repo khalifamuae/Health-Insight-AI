@@ -11,6 +11,9 @@ import {
   Alert,
   KeyboardAvoidingView,
   Platform,
+  Image,
+  ScrollView,
+  Dimensions,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -36,6 +39,12 @@ interface Trainer {
   avatarUrl: string | null;
   avgRating: number;
   totalReviews: number;
+  bio: string | null;
+  specialty: string | null;
+  yearsOfExperience: number | null;
+  certifications: string[];
+  galleryImages: string[];
+  transformationPhotos: { beforeImage: string; afterImage: string; description: string }[];
 }
 
 export default function TrainerReviewsScreen({ route, navigation }: any) {
@@ -47,6 +56,7 @@ export default function TrainerReviewsScreen({ route, navigation }: any) {
   const [showReviewModal, setShowReviewModal] = useState(false);
   const [reviewRating, setReviewRating] = useState(5);
   const [reviewText, setReviewText] = useState('');
+  const [previewImage, setPreviewImage] = useState<string | null>(null);
 
   const styles = getStyles(isArabic);
 
@@ -150,14 +160,59 @@ export default function TrainerReviewsScreen({ route, navigation }: any) {
     </View>
   );
 
-  const ListHeader = () => (
+  const ListHeader = () => {
+    const screenWidth = Dimensions.get('window').width;
+    return (
     <>
       {/* Trainer Profile Card */}
       <View style={[styles.profileCard, { backgroundColor: isDark ? '#1e293b' : '#fff', borderColor: colors.border }]}>
         <View style={[styles.profileAvatar, { backgroundColor: isDark ? '#334155' : '#e2e8f0' }]}>
-          <Ionicons name="person" size={40} color={isDark ? '#94a3b8' : '#64748b'} />
+          {trainer?.avatarUrl ? (
+            <Image source={{ uri: trainer.avatarUrl }} style={{ width: 80, height: 80, borderRadius: 40 }} />
+          ) : (
+            <Ionicons name="person" size={40} color={isDark ? '#94a3b8' : '#64748b'} />
+          )}
         </View>
         <Text style={[styles.profileName, { color: colors.text }]}>{trainerName}</Text>
+
+        {/* Specialty & Experience Badges */}
+        {(trainer?.specialty || trainer?.yearsOfExperience) && (
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 6, marginBottom: 12 }}>
+            {trainer?.specialty && (
+              <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: isDark ? '#1e3a5f' : '#eff6ff', borderRadius: 20, paddingHorizontal: 10, paddingVertical: 4, gap: 4 }}>
+                <Ionicons name="fitness" size={14} color="#3b82f6" />
+                <Text style={{ color: '#3b82f6', fontSize: 12, fontWeight: '600' }}>{trainer.specialty}</Text>
+              </View>
+            )}
+            {trainer?.yearsOfExperience && (
+              <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: isDark ? '#2d1b0e' : '#fff7ed', borderRadius: 20, paddingHorizontal: 10, paddingVertical: 4, gap: 4 }}>
+                <Ionicons name="time" size={14} color="#f59e0b" />
+                <Text style={{ color: '#f59e0b', fontSize: 12, fontWeight: '600' }}>
+                  {trainer.yearsOfExperience} {isArabic ? 'سنوات خبرة' : 'yrs exp.'}
+                </Text>
+              </View>
+            )}
+          </View>
+        )}
+
+        {/* Bio */}
+        {trainer?.bio && (
+          <Text style={{ color: colors.mutedText, fontSize: 14, lineHeight: 22, textAlign: 'center', marginBottom: 12, paddingHorizontal: 8 }}>
+            {trainer.bio}
+          </Text>
+        )}
+
+        {/* Certifications */}
+        {trainer?.certifications && trainer.certifications.length > 0 && (
+          <View style={{ width: '100%', marginBottom: 12 }}>
+            {trainer.certifications.map((cert, idx) => (
+              <View key={idx} style={{ flexDirection: 'row', alignItems: 'center', gap: 6, paddingVertical: 4 }}>
+                <Ionicons name="checkmark-circle" size={16} color="#22c55e" />
+                <Text style={{ color: colors.text, fontSize: 13 }}>{cert}</Text>
+              </View>
+            ))}
+          </View>
+        )}
 
         {/* Rating */}
         <View style={styles.ratingSection}>
@@ -190,6 +245,59 @@ export default function TrainerReviewsScreen({ route, navigation }: any) {
         </View>
       </View>
 
+      {/* Gallery */}
+      {trainer?.galleryImages && trainer.galleryImages.length > 0 && (
+        <View style={{ marginBottom: 20 }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 10 }}>
+            <Ionicons name="images" size={18} color={colors.primary} />
+            <Text style={{ fontSize: 16, fontWeight: '700', color: colors.text }}>
+              {isArabic ? 'معرض الصور' : 'Photo Gallery'}
+            </Text>
+          </View>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
+            {trainer.galleryImages.map((uri, idx) => (
+              <TouchableOpacity key={idx} onPress={() => setPreviewImage(uri)}>
+                <Image source={{ uri }} style={{ width: 140, height: 140, borderRadius: 14 }} />
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        </View>
+      )}
+
+      {/* Transformation Photos */}
+      {trainer?.transformationPhotos && (trainer.transformationPhotos as any[]).length > 0 && (
+        <View style={{ marginBottom: 20 }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 10 }}>
+            <Ionicons name="trophy" size={18} color="#f59e0b" />
+            <Text style={{ fontSize: 16, fontWeight: '700', color: colors.text }}>
+              {isArabic ? 'إنجازات المتدربين' : 'Trainee Transformations'}
+            </Text>
+          </View>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 12 }}>
+            {(trainer.transformationPhotos as any[]).map((t: any, idx: number) => (
+              <View key={idx} style={{ backgroundColor: isDark ? '#1e293b' : '#fff', borderRadius: 14, padding: 8, borderWidth: 1, borderColor: colors.border, width: screenWidth * 0.65 }}>
+                <View style={{ flexDirection: 'row', gap: 6, alignItems: 'center' }}>
+                  <TouchableOpacity onPress={() => setPreviewImage(t.beforeImage)} style={{ flex: 1 }}>
+                    <Image source={{ uri: t.beforeImage }} style={{ width: '100%', height: 120, borderRadius: 10 }} />
+                    <View style={{ position: 'absolute', bottom: 4, left: 4, backgroundColor: 'rgba(0,0,0,0.6)', borderRadius: 6, paddingHorizontal: 6, paddingVertical: 2 }}>
+                      <Text style={{ color: '#fff', fontSize: 10, fontWeight: '700' }}>{isArabic ? 'قبل' : 'Before'}</Text>
+                    </View>
+                  </TouchableOpacity>
+                  <Ionicons name="arrow-forward" size={18} color="#f59e0b" />
+                  <TouchableOpacity onPress={() => setPreviewImage(t.afterImage)} style={{ flex: 1 }}>
+                    <Image source={{ uri: t.afterImage }} style={{ width: '100%', height: 120, borderRadius: 10 }} />
+                    <View style={{ position: 'absolute', bottom: 4, left: 4, backgroundColor: 'rgba(0,0,0,0.6)', borderRadius: 6, paddingHorizontal: 6, paddingVertical: 2 }}>
+                      <Text style={{ color: '#fff', fontSize: 10, fontWeight: '700' }}>{isArabic ? 'بعد' : 'After'}</Text>
+                    </View>
+                  </TouchableOpacity>
+                </View>
+                {t.description ? <Text style={{ color: colors.mutedText, fontSize: 12, marginTop: 6, textAlign: 'center' }}>{t.description}</Text> : null}
+              </View>
+            ))}
+          </ScrollView>
+        </View>
+      )}
+
       {/* Reviews Header */}
       <View style={styles.reviewsHeader}>
         <Ionicons name="chatbox-ellipses" size={18} color={colors.primary} />
@@ -200,6 +308,7 @@ export default function TrainerReviewsScreen({ route, navigation }: any) {
       </View>
     </>
   );
+  };
 
   if (isLoading) {
     return (
@@ -296,6 +405,13 @@ export default function TrainerReviewsScreen({ route, navigation }: any) {
             </Text>
           </View>
         </KeyboardAvoidingView>
+      </Modal>
+
+      {/* Image Preview Modal */}
+      <Modal visible={!!previewImage} transparent animationType="fade" onRequestClose={() => setPreviewImage(null)}>
+        <TouchableOpacity style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.9)', justifyContent: 'center', alignItems: 'center' }} activeOpacity={1} onPress={() => setPreviewImage(null)}>
+          {previewImage && <Image source={{ uri: previewImage }} style={{ width: '92%', height: '75%', borderRadius: 14 }} resizeMode="contain" />}
+        </TouchableOpacity>
       </Modal>
     </View>
   );

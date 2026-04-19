@@ -74,6 +74,13 @@ export const userProfiles = pgTable("user_profiles", {
   subscriberManagementLimit: integer("subscriber_management_limit").default(0),
   isShadowAccount: boolean("is_shadow_account").default(false),
   shadowOwnerId: varchar("shadow_owner_id"),
+  // Trainer profile fields
+  bio: text("bio"),
+  specialty: varchar("specialty"),
+  yearsOfExperience: integer("years_of_experience"),
+  certifications: text("certifications").array(),
+  galleryImages: text("gallery_images").array(),
+  transformationPhotos: jsonb("transformation_photos"), // Array of { beforeImage, afterImage, description }
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });

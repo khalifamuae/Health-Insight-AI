@@ -20,6 +20,7 @@ import { queries, api } from '../lib/api';
 import { pickImageFromAlbum } from '../lib/photoPicker';
 import { useAuth } from '../context/AuthContext';
 import { useAppTheme } from '../context/ThemeContext';
+import { useSubscription } from '../context/SubscriptionContext';
 
 import { getDateCalendarPreference, setDateCalendarPreference, type CalendarType } from '../lib/dateFormat';
 import AppTextInput from '../components/AppTextInput';
@@ -39,6 +40,13 @@ interface UserProfile {
   subscriptionPlan?: 'free' | 'basic' | 'premium' | 'pro';
   pdfCount: number;
   profileImagePath?: string;
+  bio?: string;
+  specialty?: string;
+  yearsOfExperience?: number;
+  certifications?: string[];
+  galleryImages?: string[];
+  transformationPhotos?: { beforeImage: string; afterImage: string; description: string }[];
+  subscriberManagementActive?: boolean;
 }
 
 const BASE_URL = 'https://health-insight-ai.replit.app';
@@ -64,6 +72,17 @@ export default function ProfileScreen({ navigation }: { navigation: any }) {
   const [showBloodTypeModal, setShowBloodTypeModal] = useState(false);
   const [fitnessGoal, setFitnessGoal] = useState<'weight_loss' | 'maintain' | 'muscle_gain' | null>(null);
   const [dateCalendar, setDateCalendar] = useState<CalendarType>('gregorian');
+  const { isTrainer } = useSubscription();
+  // Trainer profile fields
+  const [bio, setBio] = useState('');
+  const [specialty, setSpecialty] = useState('');
+  const [yearsOfExperience, setYearsOfExperience] = useState('');
+  const [certifications, setCertifications] = useState<string[]>([]);
+  const [newCertification, setNewCertification] = useState('');
+  const [galleryImages, setGalleryImages] = useState<string[]>([]);
+  const [transformationPhotos, setTransformationPhotos] = useState<{ beforeImage: string; afterImage: string; description: string }[]>([]);
+  const [showGalleryModal, setShowGalleryModal] = useState(false);
+  const [selectedGalleryImage, setSelectedGalleryImage] = useState<string | null>(null);
 
   const { data: user } = useQuery({
     queryKey: ['profile'],
@@ -132,6 +151,13 @@ export default function ProfileScreen({ navigation }: { navigation: any }) {
       if (profile.weight) setWeight(profile.weight.toString());
       if (profile.bloodType) setBloodType(profile.bloodType);
       if (profile.fitnessGoal) setFitnessGoal(profile.fitnessGoal);
+      // Trainer fields
+      if (profile.bio) setBio(profile.bio);
+      if (profile.specialty) setSpecialty(profile.specialty);
+      if (profile.yearsOfExperience) setYearsOfExperience(profile.yearsOfExperience.toString());
+      if (profile.certifications) setCertifications(profile.certifications);
+      if (profile.galleryImages) setGalleryImages(profile.galleryImages);
+      if (profile.transformationPhotos) setTransformationPhotos(profile.transformationPhotos as any);
     }
   }, [profile]);
 
@@ -169,8 +195,49 @@ export default function ProfileScreen({ navigation }: { navigation: any }) {
       height: height ? parseInt(height) : undefined,
       weight: weight ? parseInt(weight) : undefined,
       bloodType: bloodType || undefined,
-      fitnessGoal: fitnessGoal || undefined
-    });
+      fitnessGoal: fitnessGoal || undefined,
+      bio: bio || undefined,
+      specialty: specialty || undefined,
+      yearsOfExperience: yearsOfExperience ? parseInt(yearsOfExperience) : undefined,
+      certifications: certifications.length > 0 ? certifications : undefined,
+      galleryImages: galleryImages.length > 0 ? galleryImages : undefined,
+      transformationPhotos: transformationPhotos.length > 0 ? transformationPhotos : undefined,
+    } as any);
+  };
+
+  const handleAddGalleryImage = async () => {
+    if (galleryImages.length >= 6) {
+      Alert.alert(isArabic ? 'الحد الأقصى' : 'Limit Reached', isArabic ? 'يمكنك إضافة 6 صور كحد أقصى' : 'You can add up to 6 images');
+      return;
+    }
+    try {
+      const img = await pickImageFromAlbum();
+      if (img?.uri) setGalleryImages(prev => [...prev, img.uri]);
+    } catch {}
+  };
+
+  const handleAddTransformation = async () => {
+    try {
+      const beforeImg = await pickImageFromAlbum();
+      if (!beforeImg?.uri) return;
+      Alert.alert(
+        isArabic ? 'صورة بعد' : 'After Photo',
+        isArabic ? 'الآن اختر صورة "بعد" التحول' : 'Now pick the "after" transformation photo',
+        [{ text: isArabic ? 'اختيار' : 'Pick', onPress: async () => {
+          const afterImg = await pickImageFromAlbum();
+          if (!afterImg?.uri) return;
+          Alert.prompt
+            ? Alert.prompt(
+                isArabic ? 'وصف التحول' : 'Transformation Description',
+                isArabic ? 'اكتب وصفاً قصيراً (اختياري)' : 'Write a short description (optional)',
+                (desc) => {
+                  setTransformationPhotos(prev => [...prev, { beforeImage: beforeImg.uri, afterImage: afterImg.uri, description: desc || '' }]);
+                }
+              )
+            : setTransformationPhotos(prev => [...prev, { beforeImage: beforeImg.uri, afterImage: afterImg.uri, description: '' }]);
+        }}]
+      );
+    } catch {}
   };
 
   const handlePickProfileImage = async () => {
@@ -508,6 +575,178 @@ export default function ProfileScreen({ navigation }: { navigation: any }) {
           <Text style={styles.saveButtonText}>{t('profile.save')}</Text>
         </TouchableOpacity>
       </View>
+
+      {/* Trainer Profile Section - only for trainers */}
+      {isTrainer() && (
+        <View style={[styles.section, { backgroundColor: cardBg }]}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+            <Ionicons name="ribbon-outline" size={20} color="#f59e0b" />
+            <Text style={[styles.sectionTitle, { color: '#f59e0b', marginBottom: 0 }]}>
+              {isArabic ? 'الملف التعريفي للمدرب' : 'Trainer Profile'}
+            </Text>
+          </View>
+          <Text style={{ fontSize: 12, color: secondaryText, marginBottom: 16, textAlign: 'left' }}>
+            {isArabic ? 'هذه المعلومات ستظهر للمتدربين عند عرض ملفك الشخصي' : 'This info will be visible to trainees viewing your profile'}
+          </Text>
+
+          {/* Bio */}
+          <View style={styles.inputGroup}>
+            <Text style={[styles.label, { color: secondaryText }]}>{isArabic ? 'النبذة التعريفية' : 'Bio'}</Text>
+            <AppTextInput
+              style={[styles.input, { backgroundColor: isDark ? '#0f172a' : '#f8fafc', borderColor: colors.border, color: primaryText, minHeight: 100, textAlignVertical: 'top' }]}
+              value={bio}
+              onChangeText={setBio}
+              placeholder={isArabic ? 'اكتب نبذة عن نفسك وخبراتك...' : 'Tell trainees about yourself and your experience...'}
+              placeholderTextColor={secondaryText}
+              multiline
+              numberOfLines={4}
+              testID="input-trainer-bio"
+            />
+          </View>
+
+          {/* Specialty */}
+          <View style={styles.inputGroup}>
+            <Text style={[styles.label, { color: secondaryText }]}>{isArabic ? 'التخصص' : 'Specialty'}</Text>
+            <AppTextInput
+              style={[styles.input, { backgroundColor: isDark ? '#0f172a' : '#f8fafc', borderColor: colors.border, color: primaryText }]}
+              value={specialty}
+              onChangeText={setSpecialty}
+              placeholder={isArabic ? 'مثال: تغذية رياضية، كمال أجسام، تخسيس' : 'e.g. Sports Nutrition, Bodybuilding, Weight Loss'}
+              placeholderTextColor={secondaryText}
+              testID="input-trainer-specialty"
+            />
+          </View>
+
+          {/* Years of Experience */}
+          <View style={styles.inputGroup}>
+            <Text style={[styles.label, { color: secondaryText }]}>{isArabic ? 'سنوات الخبرة' : 'Years of Experience'}</Text>
+            <AppTextInput
+              style={[styles.input, { backgroundColor: isDark ? '#0f172a' : '#f8fafc', borderColor: colors.border, color: primaryText }]}
+              value={yearsOfExperience}
+              onChangeText={setYearsOfExperience}
+              placeholder={isArabic ? 'مثال: 5' : 'e.g. 5'}
+              placeholderTextColor={secondaryText}
+              keyboardType="number-pad"
+              testID="input-trainer-experience"
+            />
+          </View>
+
+          {/* Certifications */}
+          <View style={styles.inputGroup}>
+            <Text style={[styles.label, { color: secondaryText }]}>{isArabic ? 'الشهادات والتراخيص' : 'Certifications'}</Text>
+            {certifications.map((cert, idx) => (
+              <View key={idx} style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: isDark ? '#0f172a' : '#f0f9ff', borderRadius: 8, padding: 10, marginBottom: 6, gap: 8 }}>
+                <Ionicons name="checkmark-circle" size={18} color="#22c55e" />
+                <Text style={{ flex: 1, color: primaryText, fontSize: 14 }}>{cert}</Text>
+                <TouchableOpacity onPress={() => setCertifications(prev => prev.filter((_, i) => i !== idx))}>
+                  <Ionicons name="close-circle" size={20} color="#ef4444" />
+                </TouchableOpacity>
+              </View>
+            ))}
+            <View style={{ flexDirection: 'row', gap: 8 }}>
+              <AppTextInput
+                style={[styles.input, { flex: 1, backgroundColor: isDark ? '#0f172a' : '#f8fafc', borderColor: colors.border, color: primaryText }]}
+                value={newCertification}
+                onChangeText={setNewCertification}
+                placeholder={isArabic ? 'أضف شهادة...' : 'Add certification...'}
+                placeholderTextColor={secondaryText}
+                testID="input-new-certification"
+              />
+              <TouchableOpacity
+                style={{ backgroundColor: '#3b82f6', borderRadius: 10, paddingHorizontal: 14, justifyContent: 'center' }}
+                onPress={() => {
+                  if (newCertification.trim()) {
+                    setCertifications(prev => [...prev, newCertification.trim()]);
+                    setNewCertification('');
+                  }
+                }}
+                testID="button-add-certification"
+              >
+                <Ionicons name="add" size={22} color="#fff" />
+              </TouchableOpacity>
+            </View>
+          </View>
+
+          {/* Gallery Images */}
+          <View style={styles.inputGroup}>
+            <Text style={[styles.label, { color: secondaryText }]}>{isArabic ? 'معرض الصور' : 'Photo Gallery'} ({galleryImages.length}/6)</Text>
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+              {galleryImages.map((uri, idx) => (
+                <View key={idx} style={{ position: 'relative' }}>
+                  <TouchableOpacity onPress={() => { setSelectedGalleryImage(uri); setShowGalleryModal(true); }}>
+                    <Image source={{ uri }} style={{ width: 90, height: 90, borderRadius: 12 }} />
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    onPress={() => setGalleryImages(prev => prev.filter((_, i) => i !== idx))}
+                    style={{ position: 'absolute', top: -6, right: -6, backgroundColor: '#ef4444', borderRadius: 10, width: 20, height: 20, justifyContent: 'center', alignItems: 'center' }}
+                  >
+                    <Ionicons name="close" size={14} color="#fff" />
+                  </TouchableOpacity>
+                </View>
+              ))}
+              {galleryImages.length < 6 && (
+                <TouchableOpacity
+                  onPress={handleAddGalleryImage}
+                  style={{ width: 90, height: 90, borderRadius: 12, borderWidth: 2, borderColor: colors.border, borderStyle: 'dashed', justifyContent: 'center', alignItems: 'center', backgroundColor: isDark ? '#0f172a' : '#f8fafc' }}
+                  testID="button-add-gallery"
+                >
+                  <Ionicons name="add-circle-outline" size={28} color={secondaryText} />
+                  <Text style={{ fontSize: 10, color: secondaryText, marginTop: 4 }}>{isArabic ? 'إضافة' : 'Add'}</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+          </View>
+
+          {/* Transformation Photos */}
+          <View style={styles.inputGroup}>
+            <Text style={[styles.label, { color: secondaryText }]}>{isArabic ? 'إنجازات المتدربين (قبل / بعد)' : 'Trainee Transformations (Before / After)'}</Text>
+            {transformationPhotos.map((t, idx) => (
+              <View key={idx} style={{ backgroundColor: isDark ? '#0f172a' : '#f8fafc', borderRadius: 12, padding: 10, marginBottom: 8, borderWidth: 1, borderColor: colors.border }}>
+                <View style={{ flexDirection: 'row', gap: 8, marginBottom: t.description ? 6 : 0 }}>
+                  <Image source={{ uri: t.beforeImage }} style={{ width: 80, height: 80, borderRadius: 10 }} />
+                  <View style={{ justifyContent: 'center', alignItems: 'center' }}>
+                    <Ionicons name="arrow-forward" size={20} color="#f59e0b" />
+                  </View>
+                  <Image source={{ uri: t.afterImage }} style={{ width: 80, height: 80, borderRadius: 10 }} />
+                  <TouchableOpacity
+                    onPress={() => setTransformationPhotos(prev => prev.filter((_, i) => i !== idx))}
+                    style={{ position: 'absolute', top: -4, right: -4, backgroundColor: '#ef4444', borderRadius: 10, width: 20, height: 20, justifyContent: 'center', alignItems: 'center' }}
+                  >
+                    <Ionicons name="close" size={14} color="#fff" />
+                  </TouchableOpacity>
+                </View>
+                {t.description ? <Text style={{ color: secondaryText, fontSize: 12, marginTop: 4 }}>{t.description}</Text> : null}
+              </View>
+            ))}
+            <TouchableOpacity
+              onPress={handleAddTransformation}
+              style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: isDark ? '#1e3a5f' : '#eff6ff', borderRadius: 10, paddingVertical: 12, borderWidth: 1, borderColor: '#3b82f6', borderStyle: 'dashed' }}
+              testID="button-add-transformation"
+            >
+              <Ionicons name="images-outline" size={20} color="#3b82f6" />
+              <Text style={{ color: '#3b82f6', fontWeight: '600', fontSize: 14 }}>{isArabic ? 'إضافة صور قبل / بعد' : 'Add Before / After Photos'}</Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* Save Trainer Profile */}
+          <TouchableOpacity
+            style={styles.saveButton}
+            onPress={handleSave}
+            disabled={updateMutation.isPending}
+            testID="button-save-trainer-profile"
+          >
+            <Ionicons name="save" size={20} color="#fff" />
+            <Text style={styles.saveButtonText}>{isArabic ? 'حفظ الملف التعريفي' : 'Save Trainer Profile'}</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+
+      {/* Gallery Image Preview Modal */}
+      <Modal visible={showGalleryModal} transparent animationType="fade" onRequestClose={() => setShowGalleryModal(false)}>
+        <TouchableOpacity style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.85)', justifyContent: 'center', alignItems: 'center' }} activeOpacity={1} onPress={() => setShowGalleryModal(false)}>
+          {selectedGalleryImage && <Image source={{ uri: selectedGalleryImage }} style={{ width: '90%', height: '70%', borderRadius: 12 }} resizeMode="contain" />}
+        </TouchableOpacity>
+      </Modal>
 
       <View style={[styles.section, { backgroundColor: cardBg }]}>
         <Text style={[styles.sectionTitle, { color: primaryText }]}>{t('settings')}</Text>
