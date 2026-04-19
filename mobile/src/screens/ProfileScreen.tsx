@@ -597,7 +597,7 @@ export default function ProfileScreen({ navigation }: { navigation: any }) {
           <View style={styles.inputGroup}>
             <Text style={[styles.label, { color: secondaryText }]}>{isArabic ? 'النبذة التعريفية' : 'Bio'}</Text>
             <AppTextInput
-              style={[styles.input, { backgroundColor: isDark ? '#0f172a' : '#f8fafc', borderColor: colors.border, color: primaryText, minHeight: 100, textAlignVertical: 'top' }]}
+              style={[styles.input, { backgroundColor: isDark ? '#0f172a' : '#f8fafc', borderColor: colors.border, color: primaryText, minHeight: 100, textAlignVertical: 'top', textAlign: isArabic ? 'right' : 'left' }]}
               value={bio}
               onChangeText={setBio}
               placeholder={isArabic ? 'اكتب نبذة عن نفسك وخبراتك...' : 'Tell trainees about yourself and your experience...'}
@@ -612,7 +612,7 @@ export default function ProfileScreen({ navigation }: { navigation: any }) {
           <View style={styles.inputGroup}>
             <Text style={[styles.label, { color: secondaryText }]}>{isArabic ? 'التخصص' : 'Specialty'}</Text>
             <AppTextInput
-              style={[styles.input, { backgroundColor: isDark ? '#0f172a' : '#f8fafc', borderColor: colors.border, color: primaryText }]}
+              style={[styles.input, { backgroundColor: isDark ? '#0f172a' : '#f8fafc', borderColor: colors.border, color: primaryText, textAlign: isArabic ? 'right' : 'left' }]}
               value={specialty}
               onChangeText={setSpecialty}
               placeholder={isArabic ? 'مثال: تغذية رياضية، كمال أجسام، تخسيس' : 'e.g. Sports Nutrition, Bodybuilding, Weight Loss'}
@@ -625,7 +625,7 @@ export default function ProfileScreen({ navigation }: { navigation: any }) {
           <View style={styles.inputGroup}>
             <Text style={[styles.label, { color: secondaryText }]}>{isArabic ? 'سنوات الخبرة' : 'Years of Experience'}</Text>
             <AppTextInput
-              style={[styles.input, { backgroundColor: isDark ? '#0f172a' : '#f8fafc', borderColor: colors.border, color: primaryText }]}
+              style={[styles.input, { backgroundColor: isDark ? '#0f172a' : '#f8fafc', borderColor: colors.border, color: primaryText, textAlign: isArabic ? 'right' : 'left' }]}
               value={yearsOfExperience}
               onChangeText={setYearsOfExperience}
               placeholder={isArabic ? 'مثال: 5' : 'e.g. 5'}
