@@ -135,7 +135,7 @@ const uploadMultipart = async (
     type: file.type,
   } as any);
 
-  const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+  const response = await fetch(`${API_BASE_URL}${endpoint}`, { cache: 'no-store',
     method: 'POST',
     headers: {
       ...(cookie ? { Cookie: cookie } : {}),
@@ -152,7 +152,7 @@ const uploadMultipart = async (
 export const api = {
   async get<T>(endpoint: string): Promise<T> {
     const headers = await getHeaders();
-    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+    const response = await fetch(`${API_BASE_URL}${endpoint}`, { cache: 'no-store',
       headers,
       credentials: 'include',
     });
@@ -162,7 +162,7 @@ export const api = {
 
   async post<T>(endpoint: string, data?: any): Promise<T> {
     const headers = await getHeaders();
-    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+    const response = await fetch(`${API_BASE_URL}${endpoint}`, { cache: 'no-store',
       method: 'POST',
       headers,
       body: JSON.stringify(data),
@@ -174,7 +174,7 @@ export const api = {
 
   async put<T>(endpoint: string, data?: any): Promise<T> {
     const headers = await getHeaders();
-    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+    const response = await fetch(`${API_BASE_URL}${endpoint}`, { cache: 'no-store',
       method: 'PUT',
       headers,
       body: JSON.stringify(data),
@@ -186,7 +186,7 @@ export const api = {
 
   async patch<T>(endpoint: string, data?: any): Promise<T> {
     const headers = await getHeaders();
-    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+    const response = await fetch(`${API_BASE_URL}${endpoint}`, { cache: 'no-store',
       method: 'PATCH',
       headers,
       body: JSON.stringify(data),
@@ -198,7 +198,7 @@ export const api = {
 
   async delete(endpoint: string): Promise<void> {
     const headers = await getHeaders();
-    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+    const response = await fetch(`${API_BASE_URL}${endpoint}`, { cache: 'no-store',
       method: 'DELETE',
       headers,
       credentials: 'include',
