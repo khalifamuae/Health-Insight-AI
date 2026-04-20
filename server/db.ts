@@ -12,5 +12,16 @@ if (!databaseUrl) {
   );
 }
 
-export const pool = new Pool({ connectionString: databaseUrl });
+export const pool = new Pool({
+  connectionString: databaseUrl,
+  max: 5,
+  idleTimeoutMillis: 10000,
+  connectionTimeoutMillis: 10000,
+  allowExitOnIdle: false,
+});
+
+pool.on('error', (err) => {
+  console.error('PostgreSQL pool error:', err.message);
+});
+
 export const db = drizzle(pool as any, { schema });
