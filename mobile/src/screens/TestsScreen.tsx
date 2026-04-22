@@ -335,6 +335,158 @@ const TEST_KNOWLEDGE: Record<string, TestKnowledge> = {
       tip: 'Stay consistently hydrated and measure under similar conditions each time.',
     },
   },
+  'vitamin-c': {
+    ar: { role: 'يدعم المناعة وتصنيع الكولاجين.', what: 'فيتامين C (حمض الأسكوربيك).', sources: 'الحمضيات، الفلفل، الفراولة.', tip: 'تأكد من تناول الخضار والفواكه الطازجة.' },
+    en: { role: 'Supports immunity and collagen synthesis.', what: 'Vitamin C (Ascorbic Acid).', sources: 'Citrus, peppers, strawberries.', tip: 'Ensure fresh fruits and vegetables in your diet.' }
+  },
+  'vitamin-a': {
+    ar: { role: 'مهم للرؤية، المناعة، وصحة الجلد.', what: 'فيتامين A ضروري للخلايا.', sources: 'الكبد، الجزر، البطاطا الحلوة.', tip: 'زيادته قد تكون ضارة، تابعه مع طبيبك.' },
+    en: { role: 'Important for vision, immunity, and skin.', what: 'Vitamin A is essential for cellular health.', sources: 'Liver, carrots, sweet potatoes.', tip: 'Excess can be toxic, monitor with a doctor.' }
+  },
+  'vitamin-e': {
+    ar: { role: 'مضاد أكسدة قوي يحمي الخلايا من التلف.', what: 'فيتامين E.', sources: 'المكسرات، البذور، الزيوت النباتية.', tip: 'تناول المكسرات باعتدال لزيادة مستوياته.' },
+    en: { role: 'Strong antioxidant protecting cells from damage.', what: 'Vitamin E.', sources: 'Nuts, seeds, vegetable oils.', tip: 'Eat nuts in moderation to boost levels.' }
+  },
+  'folate': {
+    ar: { role: 'مهم لانقسام الخلايا وتكوين الدم.', what: 'حمض الفوليك (فيتامين ب9).', sources: 'الخضار الورقية، البقوليات.', tip: 'ضروري جداً قبل وخلال فترة الحمل.' },
+    en: { role: 'Important for cell division and blood formation.', what: 'Folic acid (Vitamin B9).', sources: 'Leafy greens, legumes.', tip: 'Crucial before and during pregnancy.' }
+  },
+  'calcium': {
+    ar: { role: 'بناء العظام والأسنان ووظائف العضلات.', what: 'الكالسيوم في الدم.', sources: 'الألبان، الخضار الورقية الداكنة.', tip: 'يحتاج فيتامين د ليتم امتصاصه بشكل جيد.' },
+    en: { role: 'Builds bones, teeth, and muscle functions.', what: 'Blood calcium.', sources: 'Dairy, dark leafy greens.', tip: 'Requires Vitamin D for good absorption.' }
+  },
+  'magnesium': {
+    ar: { role: 'يساعد في عمل العضلات والأعصاب وتوليد الطاقة.', what: 'المغنيسيوم.', sources: 'المكسرات، البذور، الحبوب الكاملة.', tip: 'نقصه قد يسبب شد عضلي أو إرهاق.' },
+    en: { role: 'Helps muscle/nerve function and energy production.', what: 'Magnesium.', sources: 'Nuts, seeds, whole grains.', tip: 'Deficiency can cause cramps or fatigue.' }
+  },
+  'zinc': {
+    ar: { role: 'مهم جداً للمناعة والتئام الجروح وتصنيع البروتين.', what: 'الزنك.', sources: 'اللحوم، المأكولات البحرية، البقوليات.', tip: 'تناوله مع مصادر بروتينية يحسن امتصاصه.' },
+    en: { role: 'Crucial for immunity, wound healing, and proteins.', what: 'Zinc.', sources: 'Meat, seafood, legumes.', tip: 'Eating with protein improves absorption.' }
+  },
+  'potassium': {
+    ar: { role: 'ينظم ضغط الدم ونبض القلب وتوازن السوائل.', what: 'البوتاسيوم.', sources: 'الموز، البطاطس، السبانخ.', tip: 'توازن البوتاسيوم مع الصوديوم مهم جداً للقلب.' },
+    en: { role: 'Regulates blood pressure, heartbeat, fluid balance.', what: 'Potassium.', sources: 'Bananas, potatoes, spinach.', tip: 'Balancing it with sodium is key for the heart.' }
+  },
+  'sodium': {
+    ar: { role: 'يحافظ على توازن السوائل وضغط الدم.', what: 'الصوديوم.', sources: 'ملح الطعام، الأطعمة المصنعة.', tip: 'ارتفاعه قد يسبب ارتفاع ضغط الدم، قلل من الملح.' },
+    en: { role: 'Maintains fluid balance and blood pressure.', what: 'Sodium.', sources: 'Table salt, processed foods.', tip: 'High levels raise blood pressure, reduce salt.' }
+  },
+  't3': {
+    ar: { role: 'الهرمون النشط للغدة الدرقية، ينظم الحرق.', what: 'هرمون T3 (ثلاثي يود الثيرونين).', sources: 'تنتجه الغدة الدرقية.', tip: 'قراءته مع TSH و T4 تعطي صورة أوضح لنشاط الغدة.' },
+    en: { role: 'Active thyroid hormone, regulates metabolism.', what: 'T3 (Triiodothyronine).', sources: 'Produced by thyroid gland.', tip: 'Read alongside TSH and T4 for a clearer picture.' }
+  },
+  't4': {
+    ar: { role: 'الهرمون الأساسي للغدة الدرقية.', what: 'هرمون T4 (الثيروكسين).', sources: 'تنتجه الغدة الدرقية.', tip: 'يتحول في الجسم إلى T3 ليصبح نشطاً.' },
+    en: { role: 'Main thyroid hormone.', what: 'T4 (Thyroxine).', sources: 'Produced by thyroid gland.', tip: 'Converts into T3 in the body to become active.' }
+  },
+  'free-t4': {
+    ar: { role: 'الجزء الحر غير المرتبط ببروتين من T4.', what: 'T4 الحر.', sources: 'تفرزه الغدة الدرقية.', tip: 'يعتبر مؤشر أدق من T4 الكلي في بعض الحالات.' },
+    en: { role: 'Unbound, active portion of T4.', what: 'Free T4.', sources: 'Secreted by thyroid gland.', tip: 'Often a more accurate marker than total T4.' }
+  },
+  'testosterone': {
+    ar: { role: 'الهرمون الذكري الأساسي، مهم للعضلات والطاقة.', what: 'التستوستيرون.', sources: 'ينتجه الجسم يتأثر بالرياضة والنوم.', tip: 'الرياضة ونزول الوزن يساعدان في تحسين مستواه.' },
+    en: { role: 'Primary male hormone, key for muscle and energy.', what: 'Testosterone.', sources: 'Produced by the body, affected by exercise/sleep.', tip: 'Exercise and weight loss help improve levels.' }
+  },
+  'estradiol': {
+    ar: { role: 'الهرمون الأنثوي الأساسي، مهم للعظام والصحة الإنجابية.', what: 'الإستراديول (E2).', sources: 'المبيضان (عند النساء).', tip: 'مستوياته تتغير خلال الشهر وفي مراحل العمر المختلفة.' },
+    en: { role: 'Primary female hormone, key for bones and reproductive health.', what: 'Estradiol (E2).', sources: 'Ovaries (in women).', tip: 'Levels fluctuate during the cycle and life stages.' }
+  },
+  'progesterone': {
+    ar: { role: 'ينظم الدورة الشهرية ويدعم الحمل.', what: 'البروجسترون.', sources: 'المبيضان بعد التبويض.', tip: 'يستخدم للتأكد من حدوث التبويض أو متابعة الحمل.' },
+    en: { role: 'Regulates menstrual cycle and supports pregnancy.', what: 'Progesterone.', sources: 'Ovaries after ovulation.', tip: 'Used to confirm ovulation or monitor pregnancy.' }
+  },
+  'prolactin': {
+    ar: { role: 'يحفز إنتاج الحليب ويتأثر بالتوتر.', what: 'البرولاكتين (هرمون الحليب).', sources: 'الغدة النخامية في الدماغ.', tip: 'ارتفاعه قد يؤثر على الدورة الشهرية والإنجاب.' },
+    en: { role: 'Stimulates milk production and is affected by stress.', what: 'Prolactin.', sources: 'Pituitary gland in the brain.', tip: 'High levels can affect menstruation and fertility.' }
+  },
+  'cortisol': {
+    ar: { role: 'هرمون التوتر، يساعد في تنظيم السكر والالتهاب.', what: 'الكورتيزول.', sources: 'الغدة الكظرية.', tip: 'أعلى مستوياته في الصباح، ويتأثر بالضغط النفسي.' },
+    en: { role: 'Stress hormone, helps regulate sugar and inflammation.', what: 'Cortisol.', sources: 'Adrenal gland.', tip: 'Peaks in the morning, strongly affected by stress.' }
+  },
+  'dhea': {
+    ar: { role: 'مقدمة لتصنيع هرمونات أخرى مثل التستوستيرون.', what: 'DHEA-S.', sources: 'الغدة الكظرية.', tip: 'مؤشر لنشاط الغدة الكظرية وإنتاج الهرمونات.' },
+    en: { role: 'Precursor to other hormones like testosterone.', what: 'DHEA-S.', sources: 'Adrenal gland.', tip: 'Marker for adrenal function and hormone production.' }
+  },
+  'pth': {
+    ar: { role: 'ينظم مستويات الكالسيوم والفوسفور في الدم.', what: 'هرمون الجار درقية (PTH).', sources: 'الغدد الجار درقية.', tip: 'يقيم عادة مع مستوى الكالسيوم وفيتامين د.' },
+    en: { role: 'Regulates blood calcium and phosphorus.', what: 'Parathyroid Hormone (PTH).', sources: 'Parathyroid glands.', tip: 'Usually evaluated alongside calcium and Vitamin D.' }
+  },
+  'insulin': {
+    ar: { role: 'ينظم دخول السكر للخلايا لإنتاج الطاقة.', what: 'الأنسولين الصائم.', sources: 'البنكرياس.', tip: 'ارتفاعه قد يدل على مقاومة الأنسولين، ركز على الحركة وتقليل السكر.' },
+    en: { role: 'Regulates sugar entry into cells for energy.', what: 'Fasting Insulin.', sources: 'Pancreas.', tip: 'High levels may indicate insulin resistance, focus on activity and low sugar.' }
+  },
+  'creatinine': {
+    ar: { role: 'ناتج فضلات العضلات، تصفيه الكلى.', what: 'الكرياتينين.', sources: 'الكتلة العضلية واللحوم.', tip: 'مؤشر مهم جداً لوظائف الكلى، شرب الماء مهم.' },
+    en: { role: 'Muscle waste product filtered by kidneys.', what: 'Creatinine.', sources: 'Muscle mass and meat intake.', tip: 'A crucial kidney function marker, hydration is key.' }
+  },
+  'bun': {
+    ar: { role: 'ناتج تكسير البروتينات، تصفيه الكلى.', what: 'نيتروجين يوريا الدم (BUN).', sources: 'البروتينات في الغذاء.', tip: 'يرتفع مع الجفاف أو مشاكل الكلى.' },
+    en: { role: 'Protein breakdown product filtered by kidneys.', what: 'Blood Urea Nitrogen (BUN).', sources: 'Dietary proteins.', tip: 'Elevated by dehydration or kidney issues.' }
+  },
+  'uric-acid': {
+    ar: { role: 'ناتج طبيعي لتكسير بعض المواد (البيورينات).', what: 'حمض اليوريك.', sources: 'اللحوم الحمراء، البقوليات، وبعض الأسماك.', tip: 'ارتفاعه قد يسبب النقرس، ينصح بشرب الماء وتقليل اللحوم.' },
+    en: { role: 'Natural byproduct of breaking down purines.', what: 'Uric Acid.', sources: 'Red meat, legumes, some fish.', tip: 'High levels can cause gout, hydrate well and limit meat.' }
+  },
+  'alt': {
+    ar: { role: 'إنزيم كبدي، يرتفع عند وجود ضرر في خلايا الكبد.', what: 'إنزيم الكبد ALT.', sources: 'الكبد بشكل أساسي.', tip: 'مؤشر دقيق لصحة الكبد، يتأثر بالوزن والأدوية.' },
+    en: { role: 'Liver enzyme, elevated when liver cells are damaged.', what: 'ALT.', sources: 'Primarily the liver.', tip: 'Accurate liver health marker, affected by weight and meds.' }
+  },
+  'ast': {
+    ar: { role: 'إنزيم موجود في الكبد والقلب والعضلات.', what: 'إنزيم الكبد AST.', sources: 'الكبد، القلب، العضلات.', tip: 'يقرأ عادة مع ALT لتقييم صحة الكبد.' },
+    en: { role: 'Enzyme in liver, heart, and muscles.', what: 'AST.', sources: 'Liver, heart, muscles.', tip: 'Usually read with ALT to assess liver health.' }
+  },
+  'bilirubin': {
+    ar: { role: 'ناتج تكسير خلايا الدم الحمراء، يعالجه الكبد.', what: 'البيليروبين الكلي.', sources: 'تكسر الدم الطبيعي.', tip: 'ارتفاعه يسبب اصفرار الجلد (اليرقان).' },
+    en: { role: 'Byproduct of red blood cell breakdown, processed by liver.', what: 'Total Bilirubin.', sources: 'Normal blood breakdown.', tip: 'High levels cause skin yellowing (jaundice).' }
+  },
+  'albumin': {
+    ar: { role: 'البروتين الرئيسي في الدم، يصنعه الكبد.', what: 'الألبومين.', sources: 'الكبد.', tip: 'يحافظ على السوائل في الأوعية ومؤشر للتغذية الجيدة.' },
+    en: { role: 'Main blood protein, made by the liver.', what: 'Albumin.', sources: 'Liver.', tip: 'Keeps fluid in vessels, marker of good nutrition.' }
+  },
+  'crp': {
+    ar: { role: 'بروتين يرتفع بسرعة عند وجود التهاب أو عدوى.', what: 'بروتين سي التفاعلي (CRP).', sources: 'الكبد استجابة للالتهاب.', tip: 'مؤشر عام للالتهاب، لا يحدد مكانه بالضبط.' },
+    en: { role: 'Protein that rises quickly during inflammation or infection.', what: 'C-Reactive Protein (CRP).', sources: 'Liver in response to inflammation.', tip: 'General inflammation marker, does not pinpoint location.' }
+  },
+  'hs-crp': {
+    ar: { role: 'يقيس مستويات منخفضة جداً من الالتهاب لتقييم صحة القلب.', what: 'CRP عالي الحساسية.', sources: 'التهابات الأوعية الدموية.', tip: 'يستخدم لتقييم خطر الإصابة بأمراض القلب مستقبلاً.' },
+    en: { role: 'Measures very low inflammation levels to assess heart health.', what: 'High-Sensitivity CRP.', sources: 'Blood vessel inflammation.', tip: 'Used to assess future cardiovascular risk.' }
+  },
+  'esr': {
+    ar: { role: 'يقيس سرعة ترسب خلايا الدم الحمراء كمؤشر للالتهاب.', what: 'سرعة الترسيب (ESR).', sources: 'التهابات مزمنة أو عدوى.', tip: 'مؤشر بطيء نسبياً للالتهاب مقارنة بـ CRP.' },
+    en: { role: 'Measures how quickly red blood cells settle, indicating inflammation.', what: 'Erythrocyte Sedimentation Rate (ESR).', sources: 'Chronic inflammation or infection.', tip: 'Relatively slow inflammation marker compared to CRP.' }
+  },
+  'wbc': {
+    ar: { role: 'خلايا المناعة التي تدافع عن الجسم ضد العدوى.', what: 'كريات الدم البيضاء.', sources: 'نخاع العظم.', tip: 'ترتفع في حالات العدوى والالتهابات.' },
+    en: { role: 'Immune cells defending against infections.', what: 'White Blood Cells (WBC).', sources: 'Bone marrow.', tip: 'Elevated during infections and inflammation.' }
+  },
+  'rbc': {
+    ar: { role: 'الخلايا التي تنقل الأكسجين لجميع أنحاء الجسم.', what: 'كريات الدم الحمراء.', sources: 'نخاع العظم.', tip: 'نقصها يشير إلى فقر الدم (الأنيميا).' },
+    en: { role: 'Cells that carry oxygen throughout the body.', what: 'Red Blood Cells (RBC).', sources: 'Bone marrow.', tip: 'Low count indicates anemia.' }
+  },
+  'platelets': {
+    ar: { role: 'تساعد في تجلط الدم لمنع النزيف.', what: 'الصفائح الدموية.', sources: 'نخاع العظم.', tip: 'مهمة جداً لوقف النزيف عند الجروح.' },
+    en: { role: 'Helps blood clot to stop bleeding.', what: 'Platelets.', sources: 'Bone marrow.', tip: 'Crucial for stopping bleeding from wounds.' }
+  },
+  'pt': {
+    ar: { role: 'يقيس سرعة تجلط الدم (المسار الخارجي).', what: 'زمن البروثرومبين (PT).', sources: 'عوامل التخثر من الكبد.', tip: 'يستخدم لمتابعة أدوية سيولة الدم مثل الوارفارين.' },
+    en: { role: 'Measures blood clotting speed (extrinsic pathway).', what: 'Prothrombin Time (PT).', sources: 'Clotting factors from liver.', tip: 'Used to monitor blood thinners like Warfarin.' }
+  },
+  'ptt': {
+    ar: { role: 'يقيس سرعة تجلط الدم (المسار الداخلي).', what: 'زمن الثرومبوبلاستين (PTT).', sources: 'عوامل التخثر.', tip: 'يستخدم لتقييم النزيف ومتابعة علاج الهيبارين.' },
+    en: { role: 'Measures blood clotting speed (intrinsic pathway).', what: 'Partial Thromboplastin Time (PTT).', sources: 'Clotting factors.', tip: 'Used to assess bleeding and monitor Heparin therapy.' }
+  },
+  'inr': {
+    ar: { role: 'معيار دولي لسرعة تجلط الدم مبني على PT.', what: 'معدل التخثر الدولي (INR).', sources: 'حساب رياضي لزمن التخثر.', tip: 'إذا كنت تأخذ أدوية سيولة، فالطبيب يحدد لك الرقم المستهدف.' },
+    en: { role: 'Standardized international clotting measure based on PT.', what: 'International Normalized Ratio (INR).', sources: 'Mathematical calculation of clotting time.', tip: 'If on blood thinners, your doctor sets a target range.' }
+  },
+  'd-dimer': {
+    ar: { role: 'ناتج تحلل الجلطات الدموية.', what: 'دي-دايمر.', sources: 'تكسر الفيبرين (الجلطة).', tip: 'ارتفاعه لا يعني بالضرورة وجود جلطة خطيرة، الطبيب يقيمه مع الأعراض.' },
+    en: { role: 'Byproduct of blood clot breakdown.', what: 'D-Dimer.', sources: 'Fibrin (clot) breakdown.', tip: 'Elevation does not always mean a dangerous clot; evaluated with symptoms.' }
+  },
+  'fibrinogen': {
+    ar: { role: 'بروتين يساعد في تكوين شبكة الجلطة الدموية.', what: 'الفيبرينوجين.', sources: 'الكبد.', tip: 'يرتفع كاستجابة للالتهابات ويساعد في وقف النزيف.' },
+    en: { role: 'Protein that helps form blood clot mesh.', what: 'Fibrinogen.', sources: 'Liver.', tip: 'Rises during inflammation and helps stop bleeding.' }
+  }
 };
 
 function getCategoryRoleDescription(category: string, isArabic: boolean): string {
