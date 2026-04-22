@@ -219,6 +219,73 @@ export async function registerRoutes(
   // Register Admin Routes
   app.use("/api/admin", adminRouter);
 
+  // ========== DEMO / SEED ACCOUNT FOR GOOGLE PLAY REVIEW ==========
+  // POST /api/seed-demo-trainer
+  // Creates a demo trainer account for Google Play testers
+  app.post("/api/seed-demo-trainer", async (req: any, res: Response) => {
+    try {
+      const demoEmail = "trainer@demo.healthinsight.app";
+      const demoPassword = "Trainer@2026";
+
+      // Check if already exists
+      const existing = await db.select().from(userProfiles).where(eq(userProfiles.email, demoEmail)).limit(1);
+      if (existing.length > 0) {
+        // Update subscription to ensure it's active
+        const futureDate = new Date();
+        futureDate.setFullYear(futureDate.getFullYear() + 1);
+        await db.update(userProfiles).set({
+          subscriptionPlan: "pro",
+          subscriptionExpiresAt: futureDate,
+          subscriberManagementActive: true,
+          subscriberManagementLimit: 50,
+        }).where(eq(userProfiles.email, demoEmail));
+        return res.json({
+          message: "Demo trainer account already exists — subscription renewed",
+          email: demoEmail,
+          password: demoPassword,
+        });
+      }
+
+      // Create new demo trainer
+      const userId = crypto.randomUUID();
+      const hashedPassword = await bcrypt.hash(demoPassword, 10);
+      const futureDate = new Date();
+      futureDate.setFullYear(futureDate.getFullYear() + 1);
+
+      await authStorage.upsertUser({
+        id: userId,
+        email: demoEmail,
+        firstName: "Demo",
+        lastName: "Trainer",
+      });
+
+      await storage.upsertUserProfile({
+        id: userId,
+        email: demoEmail,
+        passwordHash: hashedPassword,
+        firstName: "Demo",
+        lastName: "Trainer",
+        phone: "+971500000000",
+        subscriptionPlan: "pro",
+        subscriptionExpiresAt: futureDate,
+        subscriberManagementActive: true,
+        subscriberManagementLimit: 50,
+        bio: "Professional fitness trainer with 8+ years of experience in bodybuilding, weight loss, and sports nutrition.",
+        specialty: "Bodybuilding & Weight Loss",
+        yearsOfExperience: 8,
+      });
+
+      res.json({
+        message: "Demo trainer account created successfully",
+        email: demoEmail,
+        password: demoPassword,
+      });
+    } catch (error) {
+      console.error("Error creating demo trainer:", error);
+      res.status(500).json({ error: "Failed to create demo trainer account" });
+    }
+  });
+
   // Register Subscriber Management Routes
   app.use("/api/subscriber-management", subscriberManagementRouter);
 

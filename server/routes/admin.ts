@@ -348,4 +348,33 @@ router.put("/affiliates/withdrawals/:id", async (req, res) => {
     }
 });
 
+// PATCH /api/admin/users/:id/subscription
+// Admin: Update user subscription plan and trainer features
+router.patch("/users/:id/subscription", async (req, res) => {
+    try {
+        const { subscriptionPlan, subscriberManagementActive, subscriberManagementLimit, subscriptionExpiresAt } = req.body;
+
+        const updateData: any = {};
+        if (subscriptionPlan) updateData.subscriptionPlan = subscriptionPlan;
+        if (typeof subscriberManagementActive === 'boolean') updateData.subscriberManagementActive = subscriberManagementActive;
+        if (typeof subscriberManagementLimit === 'number') updateData.subscriberManagementLimit = subscriberManagementLimit;
+        if (subscriptionExpiresAt) updateData.subscriptionExpiresAt = new Date(subscriptionExpiresAt);
+
+        if (Object.keys(updateData).length === 0) {
+            return res.status(400).json({ message: "No fields to update" });
+        }
+
+        const [updated] = await db.update(userProfiles)
+            .set(updateData)
+            .where(eq(userProfiles.id, req.params.id))
+            .returning();
+
+        if (!updated) return res.status(404).json({ message: "User not found" });
+        res.json(updated);
+    } catch (error) {
+        console.error("Error updating user subscription:", error);
+        res.status(500).json({ message: "Failed to update user subscription" });
+    }
+});
+
 export default router;
