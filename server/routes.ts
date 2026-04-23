@@ -2609,7 +2609,7 @@ export async function registerRoutes(
   app.get("/api/chats", isAuthenticated as RequestHandler, async (req: Request, res: Response) => {
     try {
       const user = (req as any).user;
-      const userId = user.id;
+      const userId = user.claims?.sub || user.id;
       const conversations: any[] = [];
 
       // 1. Standalone chats — find all unique users this person has chatted with
@@ -2709,17 +2709,18 @@ export async function registerRoutes(
   app.get("/api/standalone-chat/:otherUserId", isAuthenticated as RequestHandler, async (req: Request, res: Response) => {
     try {
       const user = (req as any).user;
+      const userId = user.claims?.sub || user.id;
       const otherUserId = String(req.params.otherUserId);
 
       const messages = await db.select().from(standaloneChatMessages).where(
         or(
           and(
-            eq(standaloneChatMessages.senderId, user.id),
+            eq(standaloneChatMessages.senderId, userId),
             eq(standaloneChatMessages.receiverId, otherUserId)
           ),
           and(
             eq(standaloneChatMessages.senderId, otherUserId),
-            eq(standaloneChatMessages.receiverId, user.id)
+            eq(standaloneChatMessages.receiverId, userId)
           )
         )
       ).orderBy(standaloneChatMessages.createdAt);
@@ -2730,7 +2731,7 @@ export async function registerRoutes(
         .where(
           and(
             eq(standaloneChatMessages.senderId, otherUserId),
-            eq(standaloneChatMessages.receiverId, user.id),
+            eq(standaloneChatMessages.receiverId, userId),
             eq(standaloneChatMessages.isRead, false)
           )
         );
@@ -2746,6 +2747,7 @@ export async function registerRoutes(
   app.post("/api/standalone-chat/:otherUserId", isAuthenticated as RequestHandler, async (req: Request, res: Response) => {
     try {
       const user = (req as any).user;
+      const userId = user.claims?.sub || user.id;
       const otherUserId = String(req.params.otherUserId);
       const { content } = req.body;
 
@@ -2754,7 +2756,7 @@ export async function registerRoutes(
       }
 
       const [message] = await db.insert(standaloneChatMessages).values({
-        senderId: user.id,
+        senderId: userId,
         receiverId: otherUserId,
         content: content.trim(),
       }).returning();
