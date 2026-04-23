@@ -16,7 +16,7 @@ import { useTranslation } from 'react-i18next';
 import { isArabicLanguage } from '../lib/isArabic';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Ionicons } from '@expo/vector-icons';
-import { queries, api } from '../lib/api';
+import { queries, api, API_BASE_URL } from '../lib/api';
 import { pickImageFromAlbum } from '../lib/photoPicker';
 import { useAuth } from '../context/AuthContext';
 import { useAppTheme } from '../context/ThemeContext';
@@ -209,6 +209,29 @@ export default function ProfileScreen({ navigation }: { navigation: any }) {
     } as any);
   };
 
+  // Helper: upload a picked image to the server and return the full URL
+  const uploadImageToServer = async (file: { uri: string; name: string; type: string }): Promise<string | null> => {
+    try {
+      const result = await api.uploadImage(file);
+      if (result?.url) {
+        // Return absolute URL so it works across all devices
+        return result.url.startsWith('http') ? result.url : `${API_BASE_URL}${result.url}`;
+      }
+      return null;
+    } catch (err) {
+      console.error('Image upload failed:', err);
+      return null;
+    }
+  };
+
+  // Helper: resolve a stored image URI to a displayable URL
+  const resolveImageUri = (uri: string): string => {
+    if (!uri) return '';
+    if (uri.startsWith('http')) return uri;
+    if (uri.startsWith('/uploads')) return `${API_BASE_URL}${uri}`;
+    return uri; // local file:// URI for preview before upload
+  };
+
   const handleAddGalleryImage = async () => {
     if (galleryImages.length >= 20) {
       Alert.alert(isArabic ? 'الحد الأقصى' : 'Limit Reached', isArabic ? 'يمكنك إضافة 20 صورة كحد أقصى' : 'You can add up to 20 images');
@@ -216,7 +239,13 @@ export default function ProfileScreen({ navigation }: { navigation: any }) {
     }
     try {
       const img = await pickImageFromAlbum();
-      if (img?.uri) setGalleryImages(prev => [...prev, img.uri]);
+      if (!img?.uri) return;
+      const serverUrl = await uploadImageToServer(img);
+      if (serverUrl) {
+        setGalleryImages(prev => [...prev, serverUrl]);
+      } else {
+        Alert.alert(isArabic ? 'خطأ' : 'Error', isArabic ? 'فشل رفع الصورة' : 'Failed to upload image');
+      }
     } catch {}
   };
 
@@ -230,15 +259,22 @@ export default function ProfileScreen({ navigation }: { navigation: any }) {
         [{ text: isArabic ? 'اختيار' : 'Pick', onPress: async () => {
           const afterImg = await pickImageFromAlbum();
           if (!afterImg?.uri) return;
+          // Upload both images
+          const beforeUrl = await uploadImageToServer(beforeImg);
+          const afterUrl = await uploadImageToServer(afterImg);
+          if (!beforeUrl || !afterUrl) {
+            Alert.alert(isArabic ? 'خطأ' : 'Error', isArabic ? 'فشل رفع الصور' : 'Failed to upload images');
+            return;
+          }
           Alert.prompt
             ? Alert.prompt(
                 isArabic ? 'وصف التحول' : 'Transformation Description',
                 isArabic ? 'اكتب وصفاً قصيراً (اختياري)' : 'Write a short description (optional)',
                 (desc) => {
-                  setTransformationPhotos(prev => [...prev, { beforeImage: beforeImg.uri, afterImage: afterImg.uri, description: desc || '' }]);
+                  setTransformationPhotos(prev => [...prev, { beforeImage: beforeUrl, afterImage: afterUrl, description: desc || '' }]);
                 }
               )
-            : setTransformationPhotos(prev => [...prev, { beforeImage: beforeImg.uri, afterImage: afterImg.uri, description: '' }]);
+            : setTransformationPhotos(prev => [...prev, { beforeImage: beforeUrl, afterImage: afterUrl, description: '' }]);
         }}]
       );
     } catch {}
@@ -248,7 +284,12 @@ export default function ProfileScreen({ navigation }: { navigation: any }) {
     try {
       const albumImage = await pickImageFromAlbum();
       if (albumImage?.uri) {
-        setProfileImagePath(albumImage.uri);
+        const serverUrl = await uploadImageToServer(albumImage);
+        if (serverUrl) {
+          setProfileImagePath(serverUrl);
+        } else {
+          Alert.alert(isArabic ? 'خطأ' : 'Error', isArabic ? 'فشل رفع الصورة' : 'Failed to upload image');
+        }
         return;
       }
       Alert.alert(
@@ -656,7 +697,13 @@ export default function ProfileScreen({ navigation }: { navigation: any }) {
                 onPress={async () => {
                   try {
                     const img = await pickImageFromAlbum();
-                    if (img?.uri) setCertifications(prev => [...prev, img.uri]);
+                    if (!img?.uri) return;
+                    const serverUrl = await uploadImageToServer(img);
+                    if (serverUrl) {
+                      setCertifications(prev => [...prev, serverUrl]);
+                    } else {
+                      Alert.alert(isArabic ? 'خطأ' : 'Error', isArabic ? 'فشل رفع الصورة' : 'Failed to upload image');
+                    }
                   } catch {}
                 }}
                 style={{ width: 90, height: 90, borderRadius: 12, borderWidth: 2, borderColor: '#22c55e', borderStyle: 'dashed', justifyContent: 'center', alignItems: 'center', backgroundColor: isDark ? '#0f172a' : '#f0fdf4' }}

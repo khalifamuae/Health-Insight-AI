@@ -20,7 +20,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useFocusEffect } from '@react-navigation/native';
 import { isArabicLanguage } from '../lib/isArabic';
 import { useAppTheme } from '../context/ThemeContext';
-import { api } from '../lib/api';
+import { api, API_BASE_URL } from '../lib/api';
 
 interface Review {
   id: string;
@@ -66,6 +66,14 @@ export default function TrainerReviewsScreen({ route, navigation }: any) {
     queryFn: () => api.get<Trainer[]>('/api/trainers/public'),
   });
   const trainer = trainers?.find(t => t.id === trainerId);
+
+  // Helper to resolve image URLs (handles relative paths and full URLs)
+  const resolveUri = (uri: string | null | undefined): string => {
+    if (!uri) return '';
+    if (uri.startsWith('http')) return uri;
+    if (uri.startsWith('/uploads') || uri.startsWith('/')) return `${API_BASE_URL}${uri}`;
+    return uri;
+  };
 
   // Fetch reviews
   const { data: reviews, isLoading, refetch } = useQuery<Review[]>({
@@ -168,7 +176,7 @@ export default function TrainerReviewsScreen({ route, navigation }: any) {
       <View style={[styles.profileCard, { backgroundColor: isDark ? '#1e293b' : '#fff', borderColor: colors.border }]}>
         <View style={[styles.profileAvatar, { backgroundColor: isDark ? '#334155' : '#e2e8f0' }]}>
           {trainer?.avatarUrl ? (
-            <Image source={{ uri: trainer.avatarUrl }} style={{ width: 80, height: 80, borderRadius: 40 }} />
+            <Image source={{ uri: resolveUri(trainer.avatarUrl) }} style={{ width: 80, height: 80, borderRadius: 40 }} />
           ) : (
             <Ionicons name="person" size={40} color={isDark ? '#94a3b8' : '#64748b'} />
           )}
@@ -211,8 +219,8 @@ export default function TrainerReviewsScreen({ route, navigation }: any) {
             </View>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
               {trainer.certifications.map((uri, idx) => (
-                <TouchableOpacity key={idx} onPress={() => setPreviewImage(uri)}>
-                  <Image source={{ uri }} style={{ width: 120, height: 120, borderRadius: 12 }} />
+                <TouchableOpacity key={idx} onPress={() => setPreviewImage(resolveUri(uri))}>
+                  <Image source={{ uri: resolveUri(uri) }} style={{ width: 120, height: 120, borderRadius: 12 }} />
                 </TouchableOpacity>
               ))}
             </ScrollView>
@@ -261,8 +269,8 @@ export default function TrainerReviewsScreen({ route, navigation }: any) {
           </View>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
             {trainer.galleryImages.map((uri, idx) => (
-              <TouchableOpacity key={idx} onPress={() => setPreviewImage(uri)}>
-                <Image source={{ uri }} style={{ width: 140, height: 140, borderRadius: 14 }} />
+              <TouchableOpacity key={idx} onPress={() => setPreviewImage(resolveUri(uri))}>
+                <Image source={{ uri: resolveUri(uri) }} style={{ width: 140, height: 140, borderRadius: 14 }} />
               </TouchableOpacity>
             ))}
           </ScrollView>
@@ -282,15 +290,15 @@ export default function TrainerReviewsScreen({ route, navigation }: any) {
             {(trainer.transformationPhotos as any[]).map((t: any, idx: number) => (
               <View key={idx} style={{ backgroundColor: isDark ? '#1e293b' : '#fff', borderRadius: 14, padding: 8, borderWidth: 1, borderColor: colors.border, width: screenWidth * 0.65 }}>
                 <View style={{ flexDirection: 'row', gap: 6, alignItems: 'center' }}>
-                  <TouchableOpacity onPress={() => setPreviewImage(t.beforeImage)} style={{ flex: 1 }}>
-                    <Image source={{ uri: t.beforeImage }} style={{ width: '100%', height: 120, borderRadius: 10 }} />
+                  <TouchableOpacity onPress={() => setPreviewImage(resolveUri(t.beforeImage))} style={{ flex: 1 }}>
+                    <Image source={{ uri: resolveUri(t.beforeImage) }} style={{ width: '100%', height: 120, borderRadius: 10 }} />
                     <View style={{ position: 'absolute', bottom: 4, left: 4, backgroundColor: 'rgba(0,0,0,0.6)', borderRadius: 6, paddingHorizontal: 6, paddingVertical: 2 }}>
                       <Text style={{ color: '#fff', fontSize: 10, fontWeight: '700' }}>{isArabic ? 'قبل' : 'Before'}</Text>
                     </View>
                   </TouchableOpacity>
                   <Ionicons name="arrow-forward" size={18} color="#f59e0b" />
-                  <TouchableOpacity onPress={() => setPreviewImage(t.afterImage)} style={{ flex: 1 }}>
-                    <Image source={{ uri: t.afterImage }} style={{ width: '100%', height: 120, borderRadius: 10 }} />
+                  <TouchableOpacity onPress={() => setPreviewImage(resolveUri(t.afterImage))} style={{ flex: 1 }}>
+                    <Image source={{ uri: resolveUri(t.afterImage) }} style={{ width: '100%', height: 120, borderRadius: 10 }} />
                     <View style={{ position: 'absolute', bottom: 4, left: 4, backgroundColor: 'rgba(0,0,0,0.6)', borderRadius: 6, paddingHorizontal: 6, paddingVertical: 2 }}>
                       <Text style={{ color: '#fff', fontSize: 10, fontWeight: '700' }}>{isArabic ? 'بعد' : 'After'}</Text>
                     </View>

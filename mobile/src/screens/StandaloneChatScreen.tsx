@@ -11,6 +11,7 @@ import {
   I18nManager,
   Keyboard,
   KeyboardAvoidingView,
+  Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -58,9 +59,38 @@ export default function StandaloneChatScreen({ route, navigation }: any) {
 
   const sendMutation = useMutation({
     mutationFn: (content: string) => api.post<ChatMessage>(`/api/standalone-chat/${otherUserId}`, { content }),
-    onSuccess: () => {
+    onMutate: async (content: string) => {
+      // Cancel ongoing fetches so they don't overwrite the optimistic update
+      await queryClient.cancelQueries({ queryKey: ['standalone-chat', otherUserId] });
+      const previousMessages = queryClient.getQueryData<ChatMessage[]>(['standalone-chat', otherUserId]);
+      // Optimistically add the message so it appears immediately
+      const optimisticMessage: ChatMessage = {
+        id: `temp-${Date.now()}`,
+        senderId: user?.id || '',
+        receiverId: otherUserId,
+        content,
+        isRead: false,
+        createdAt: new Date().toISOString(),
+      };
+      queryClient.setQueryData<ChatMessage[]>(['standalone-chat', otherUserId], (old) => [...(old || []), optimisticMessage]);
       setMessage('');
+      return { previousMessages };
+    },
+    onError: (_err, _content, context) => {
+      // Roll back to the previous state
+      if (context?.previousMessages) {
+        queryClient.setQueryData(['standalone-chat', otherUserId], context.previousMessages);
+      }
+      const isArabicLocal = I18nManager.isRTL;
+      Alert.alert(
+        isArabicLocal ? 'خطأ' : 'Error',
+        isArabicLocal ? 'فشل إرسال الرسالة. حاول مرة أخرى.' : 'Failed to send message. Please try again.'
+      );
+    },
+    onSettled: () => {
+      // Refetch to get the real data from the server
       queryClient.invalidateQueries({ queryKey: ['standalone-chat', otherUserId] });
+      queryClient.invalidateQueries({ queryKey: ['chats-list'] });
     },
   });
 
