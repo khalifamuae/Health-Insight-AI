@@ -50,6 +50,7 @@ export default function ClientChatScreen() {
       api.post(`/api/subscriber-management/chat/${connectionId}`, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['chat', connectionId] });
+      queryClient.invalidateQueries({ queryKey: ['chats-list'] });
       setMessageText('');
     },
     onError: (err: any) => {

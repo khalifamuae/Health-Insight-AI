@@ -1,7 +1,10 @@
 
 import type { Express, Request, Response, RequestHandler } from "express";
+import express from "express";
 import { createServer, type Server } from "http";
 import multer from "multer";
+import fs from "fs";
+import path from "path";
 import bcrypt from "bcryptjs";
 import { storage } from "./storage";
 import { setupAuth, isAuthenticated, registerAuthRoutes, createApiToken } from "./replit_integrations/auth";
@@ -47,6 +50,27 @@ const uploadReport = multer({
     const isImageMime = file.mimetype.toLowerCase().startsWith("image/");
     if ((isPdfMime && isPdfName) || isImageMime) return cb(null, true);
     cb(new Error("Only PDF or image files are allowed"));
+  }
+});
+
+// Disk storage for profile/gallery images that need to persist and be served
+const uploadsDir = path.resolve(process.cwd(), "uploads");
+if (!fs.existsSync(uploadsDir)) {
+  fs.mkdirSync(uploadsDir, { recursive: true });
+}
+const imageUpload = multer({
+  storage: multer.diskStorage({
+    destination: uploadsDir,
+    filename: (_req, file, cb) => {
+      const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
+      const ext = path.extname(file.originalname) || '.jpg';
+      cb(null, `${uniqueSuffix}${ext}`);
+    },
+  }),
+  limits: { fileSize: 10 * 1024 * 1024 },
+  fileFilter: (_req, file, cb) => {
+    if (file.mimetype.toLowerCase().startsWith("image/")) return cb(null, true);
+    cb(new Error("Only image files are allowed"));
   }
 });
 
@@ -215,6 +239,9 @@ export async function registerRoutes(
   // Setup Replit Auth
   await setupAuth(app);
   registerAuthRoutes(app);
+
+  // Serve uploaded images statically
+  app.use("/uploads", express.static(uploadsDir));
 
   // Register Admin Routes
   app.use("/api/admin", adminRouter);
@@ -1479,12 +1506,14 @@ export async function registerRoutes(
   });
 
   // Generic Media Upload endpoint for Chat and profile images without invoking OCR
-  app.post("/api/upload", isAuthenticated, uploadReport.single("file"), async (req: any, res: Response) => {
+  app.post("/api/upload", isAuthenticated, imageUpload.single("file"), async (req: any, res: Response) => {
     try {
       if (!req.file) return res.status(400).json({ error: "No file uploaded" });
       const url = `/uploads/${req.file.filename}`;
+      console.log(`[upload] File saved: ${req.file.filename}, url=${url}`);
       res.json({ url });
     } catch (err) {
+      console.error("[upload] Error:", err);
       res.status(500).json({ error: "Upload failed" });
     }
   });
@@ -2712,6 +2741,8 @@ export async function registerRoutes(
       const userId = user.claims?.sub || user.id;
       const otherUserId = String(req.params.otherUserId);
 
+      console.log(`[standalone-chat/get] userId=${userId}, otherUserId=${otherUserId}`);
+
       const messages = await db.select().from(standaloneChatMessages).where(
         or(
           and(
@@ -2724,6 +2755,8 @@ export async function registerRoutes(
           )
         )
       ).orderBy(standaloneChatMessages.createdAt);
+
+      console.log(`[standalone-chat/get] Found ${messages.length} messages`);
 
       // Mark messages as read
       await db.update(standaloneChatMessages)
@@ -2751,6 +2784,8 @@ export async function registerRoutes(
       const otherUserId = String(req.params.otherUserId);
       const { content } = req.body;
 
+      console.log(`[standalone-chat/post] userId=${userId}, otherUserId=${otherUserId}, content="${content?.substring(0, 50)}"`);
+
       if (!content?.trim()) {
         return res.status(400).json({ error: "Message content is required" });
       }
@@ -2760,6 +2795,8 @@ export async function registerRoutes(
         receiverId: otherUserId,
         content: content.trim(),
       }).returning();
+
+      console.log(`[standalone-chat/post] Message created: id=${message.id}, senderId=${message.senderId}`);
 
       res.json(message);
     } catch (error: any) {
