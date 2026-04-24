@@ -18,9 +18,12 @@ const PRODUCTION_AD_UNIT_ID = Platform.OS === 'android' ? ANDROID_AD_UNIT_ID : I
 const AD_UNIT_ID = __DEV__ ? TestIds.BANNER : PRODUCTION_AD_UNIT_ID;
 
 /**
- * AdBanner — Enabled for Production/Standalone
+ * AdBanner — TEMPORARILY DISABLED for testing
  */
 export default function AdBanner({ position = 'bottom' }: AdBannerProps) {
+  // ⚠️ TEMPORARILY DISABLED — remove this line to re-enable ads
+  return null;
+
   const { shouldShowAds } = useSubscription();
   const { isAuthenticated } = useAuth();
   const { isDark } = useAppTheme();
