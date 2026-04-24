@@ -2652,9 +2652,33 @@ export async function registerRoutes(
     }
   });
 
+  // Helper: ensure the standalone_chat_messages table exists (creates it on-demand)
+  let standaloneTableVerified = false;
+  async function ensureStandaloneChatTable() {
+    if (standaloneTableVerified) return;
+    try {
+      await db.execute(sql`
+        CREATE TABLE IF NOT EXISTS standalone_chat_messages (
+          id VARCHAR PRIMARY KEY DEFAULT gen_random_uuid(),
+          sender_id VARCHAR NOT NULL,
+          receiver_id VARCHAR NOT NULL,
+          content TEXT,
+          is_read BOOLEAN DEFAULT false,
+          created_at TIMESTAMP DEFAULT NOW()
+        )
+      `);
+      standaloneTableVerified = true;
+      console.log("[standalone-chat] Table verified/created");
+    } catch (err: any) {
+      console.error("[standalone-chat] Table creation error:", err.message);
+    }
+  }
+
   // GET /api/chats — List all chat conversations for the current user (standalone + subscriber)
   app.get("/api/chats", isAuthenticated as RequestHandler, async (req: Request, res: Response) => {
     try {
+      await ensureStandaloneChatTable();
+
       const user = (req as any).user;
       const userId = user.claims?.sub || user.id;
       console.log(`[chats/list] userId=${userId}, user.claims?.sub=${user.claims?.sub}, user.id=${user.id}`);
@@ -2757,6 +2781,8 @@ export async function registerRoutes(
   // GET /api/standalone-chat/:otherUserId — Get chat messages between current user and another user
   app.get("/api/standalone-chat/:otherUserId", isAuthenticated as RequestHandler, async (req: Request, res: Response) => {
     try {
+      await ensureStandaloneChatTable();
+
       const user = (req as any).user;
       const userId = user.claims?.sub || user.id;
       const otherUserId = String(req.params.otherUserId);
@@ -2799,6 +2825,8 @@ export async function registerRoutes(
   // POST /api/standalone-chat/:otherUserId — Send a message to another user
   app.post("/api/standalone-chat/:otherUserId", isAuthenticated as RequestHandler, async (req: Request, res: Response) => {
     try {
+      await ensureStandaloneChatTable();
+
       const user = (req as any).user;
       const userId = user.claims?.sub || user.id;
       const otherUserId = String(req.params.otherUserId);
@@ -2821,7 +2849,50 @@ export async function registerRoutes(
       res.json(message);
     } catch (error: any) {
       console.error("[standalone-chat/post] Error:", error);
-      res.status(500).json({ error: "Failed to send message" });
+      res.status(500).json({ error: "Failed to send message", detail: error.message });
+    }
+  });
+
+  // GET /api/chat-debug — Diagnostic endpoint to verify chat table status
+  app.get("/api/chat-debug", async (_req: Request, res: Response) => {
+    try {
+      // Try to create table
+      await db.execute(sql`
+        CREATE TABLE IF NOT EXISTS standalone_chat_messages (
+          id VARCHAR PRIMARY KEY DEFAULT gen_random_uuid(),
+          sender_id VARCHAR NOT NULL,
+          receiver_id VARCHAR NOT NULL,
+          content TEXT,
+          is_read BOOLEAN DEFAULT false,
+          created_at TIMESTAMP DEFAULT NOW()
+        )
+      `);
+
+      // Count rows
+      const result = await db.execute(sql`SELECT count(*) as cnt FROM standalone_chat_messages`);
+      const count = (result as any).rows?.[0]?.cnt ?? 'unknown';
+
+      // Check table exists
+      const tableCheck = await db.execute(sql`
+        SELECT EXISTS (
+          SELECT FROM information_schema.tables 
+          WHERE table_name = 'standalone_chat_messages'
+        ) as table_exists
+      `);
+      const tableExists = (tableCheck as any).rows?.[0]?.table_exists ?? false;
+
+      res.json({
+        status: 'ok',
+        tableExists,
+        messageCount: count,
+        timestamp: new Date().toISOString(),
+      });
+    } catch (error: any) {
+      res.status(500).json({
+        status: 'error',
+        error: error.message,
+        timestamp: new Date().toISOString(),
+      });
     }
   });
 
