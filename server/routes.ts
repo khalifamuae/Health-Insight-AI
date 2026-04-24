@@ -243,6 +243,24 @@ export async function registerRoutes(
   // Serve uploaded images statically
   app.use("/uploads", express.static(uploadsDir));
 
+  // ========== AUTO-CREATE TABLES ==========
+  // Ensure standalone_chat_messages table exists (may not have been created by migration)
+  try {
+    await db.execute(sql`
+      CREATE TABLE IF NOT EXISTS standalone_chat_messages (
+        id VARCHAR PRIMARY KEY DEFAULT gen_random_uuid(),
+        sender_id VARCHAR NOT NULL,
+        receiver_id VARCHAR NOT NULL,
+        content TEXT,
+        is_read BOOLEAN DEFAULT false,
+        created_at TIMESTAMP DEFAULT NOW()
+      )
+    `);
+    console.log("[startup] standalone_chat_messages table ensured");
+  } catch (err: any) {
+    console.error("[startup] Failed to ensure standalone_chat_messages table:", err.message);
+  }
+
   // Register Admin Routes
   app.use("/api/admin", adminRouter);
 
