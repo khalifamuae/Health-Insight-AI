@@ -38,9 +38,9 @@ export default function TabNavigator({ navigation }: any) {
   const { shouldShowAds, isTrainer } = useSubscription();
   const adsVisible = shouldShowAds();
 
-  // Fetch unread chat count for badge
+  // Fetch unread chat count for badge (shares key with ChatsListScreen)
   const { data: chatsList } = useQuery<any[]>({
-    queryKey: ['chats-list-badge'],
+    queryKey: ['chats-list'],
     queryFn: () => api.get<any[]>('/api/chats'),
     refetchInterval: 15000,
   });

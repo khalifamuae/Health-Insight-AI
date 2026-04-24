@@ -2639,6 +2639,7 @@ export async function registerRoutes(
     try {
       const user = (req as any).user;
       const userId = user.claims?.sub || user.id;
+      console.log(`[chats/list] userId=${userId}, user.claims?.sub=${user.claims?.sub}, user.id=${user.id}`);
       const conversations: any[] = [];
 
       // 1. Standalone chats — find all unique users this person has chatted with
@@ -2727,6 +2728,7 @@ export async function registerRoutes(
       // Sort by last message time (newest first)
       conversations.sort((a, b) => new Date(b.lastMessageTime).getTime() - new Date(a.lastMessageTime).getTime());
 
+      console.log(`[chats/list] Returning ${conversations.length} conversations (standalone: ${conversations.filter(c => c.chatType === 'standalone').length}, subscriber: ${conversations.filter(c => c.chatType === 'subscriber').length})`);
       res.json(conversations);
     } catch (error: any) {
       console.error("[chats/list] Error:", error);

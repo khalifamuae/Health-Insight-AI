@@ -42,12 +42,32 @@ export default function StandaloneChatScreen({ route, navigation }: any) {
   const queryClient = useQueryClient();
   const flatListRef = useRef<FlatList>(null);
   const [message, setMessage] = useState('');
+  // Track pending messages that haven't been confirmed by the server yet
+  const [pendingMessages, setPendingMessages] = useState<ChatMessage[]>([]);
 
-  const { data: messages, isLoading, refetch } = useQuery<ChatMessage[]>({
+  const { data: serverMessages, isLoading, refetch } = useQuery<ChatMessage[]>({
     queryKey: ['standalone-chat', otherUserId],
     queryFn: () => api.get<ChatMessage[]>(`/api/standalone-chat/${otherUserId}`),
     refetchInterval: 5000,
   });
+
+  // Merge server messages with pending (unconfirmed) messages
+  const messages = React.useMemo(() => {
+    const server = serverMessages || [];
+    // Remove pending messages that already exist in server data
+    const serverIds = new Set(server.map(m => m.content + m.createdAt));
+    const stillPending = pendingMessages.filter(pm => {
+      // Check if this pending message has been confirmed by the server
+      const confirmed = server.some(sm => 
+        sm.senderId === pm.senderId && 
+        sm.content === pm.content &&
+        // Within 30 seconds means it's the same message
+        Math.abs(new Date(sm.createdAt).getTime() - new Date(pm.createdAt).getTime()) < 30000
+      );
+      return !confirmed;
+    });
+    return [...server, ...stillPending];
+  }, [serverMessages, pendingMessages]);
 
   useFocusEffect(useCallback(() => { refetch(); }, [refetch]));
 
@@ -60,37 +80,43 @@ export default function StandaloneChatScreen({ route, navigation }: any) {
   const sendMutation = useMutation({
     mutationFn: (content: string) => api.post<ChatMessage>(`/api/standalone-chat/${otherUserId}`, { content }),
     onMutate: async (content: string) => {
-      // Cancel ongoing fetches so they don't overwrite the optimistic update
-      await queryClient.cancelQueries({ queryKey: ['standalone-chat', otherUserId] });
-      const previousMessages = queryClient.getQueryData<ChatMessage[]>(['standalone-chat', otherUserId]);
-      // Optimistically add the message so it appears immediately
-      const optimisticMessage: ChatMessage = {
-        id: `temp-${Date.now()}`,
+      // Add to pending messages (these persist even when polling refreshes)
+      const pendingMsg: ChatMessage = {
+        id: `pending-${Date.now()}`,
         senderId: user?.id || '',
         receiverId: otherUserId,
         content,
         isRead: false,
         createdAt: new Date().toISOString(),
       };
-      queryClient.setQueryData<ChatMessage[]>(['standalone-chat', otherUserId], (old) => [...(old || []), optimisticMessage]);
+      setPendingMessages(prev => [...prev, pendingMsg]);
       setMessage('');
-      return { previousMessages };
+      return { pendingMsg };
+    },
+    onSuccess: (serverMessage, _content, context) => {
+      // Remove from pending since server confirmed it
+      if (context?.pendingMsg) {
+        setPendingMessages(prev => prev.filter(m => m.id !== context.pendingMsg.id));
+      }
+      // Update server cache directly with the confirmed message
+      queryClient.setQueryData<ChatMessage[]>(['standalone-chat', otherUserId], (old) => {
+        const existing = old || [];
+        // Avoid duplicates
+        if (existing.some(m => m.id === serverMessage.id)) return existing;
+        return [...existing, serverMessage];
+      });
+      // Update chats list
+      queryClient.invalidateQueries({ queryKey: ['chats-list'] });
     },
     onError: (_err, _content, context) => {
-      // Roll back to the previous state
-      if (context?.previousMessages) {
-        queryClient.setQueryData(['standalone-chat', otherUserId], context.previousMessages);
+      // Remove failed pending message
+      if (context?.pendingMsg) {
+        setPendingMessages(prev => prev.filter(m => m.id !== context.pendingMsg.id));
       }
-      const isArabicLocal = I18nManager.isRTL;
       Alert.alert(
-        isArabicLocal ? 'خطأ' : 'Error',
-        isArabicLocal ? 'فشل إرسال الرسالة. حاول مرة أخرى.' : 'Failed to send message. Please try again.'
+        isArabic ? 'خطأ' : 'Error',
+        isArabic ? 'فشل إرسال الرسالة. حاول مرة أخرى.' : 'Failed to send message. Please try again.'
       );
-    },
-    onSettled: () => {
-      // Refetch to get the real data from the server
-      queryClient.invalidateQueries({ queryKey: ['standalone-chat', otherUserId] });
-      queryClient.invalidateQueries({ queryKey: ['chats-list'] });
     },
   });
 
@@ -116,7 +142,8 @@ export default function StandaloneChatScreen({ route, navigation }: any) {
 
   const renderMessage = ({ item, index }: { item: ChatMessage; index: number }) => {
     const isMe = item.senderId === user?.id;
-    const prev = (messages || [])[index - 1];
+    const isPending = item.id.startsWith('pending-');
+    const prev = messages[index - 1];
     const showDate = !prev || new Date(prev.createdAt).toDateString() !== new Date(item.createdAt).toDateString();
 
     return (
@@ -129,7 +156,10 @@ export default function StandaloneChatScreen({ route, navigation }: any) {
           </View>
         )}
         <View style={[styles.messageBubble, isMe ? styles.myMessage : styles.otherMessage,
-          { backgroundColor: isMe ? '#3b82f6' : (isDark ? '#334155' : '#e2e8f0') }
+          { 
+            backgroundColor: isMe ? '#3b82f6' : (isDark ? '#334155' : '#e2e8f0'),
+            opacity: isPending ? 0.7 : 1,
+          }
         ]}>
           <Text style={[styles.messageText, { color: isMe ? '#fff' : colors.text }]}>
             {item.content}
@@ -140,7 +170,7 @@ export default function StandaloneChatScreen({ route, navigation }: any) {
             </Text>
             {isMe && (
               <Ionicons
-                name={item.isRead ? 'checkmark-done' : 'checkmark'}
+                name={isPending ? 'time-outline' : (item.isRead ? 'checkmark-done' : 'checkmark')}
                 size={14}
                 color="rgba(255,255,255,0.7)"
               />
