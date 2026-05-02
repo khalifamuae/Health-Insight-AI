@@ -31,6 +31,7 @@ interface FoodResult {
     fat: number;
     fiber: number;
     servingUnits: ServingUnit[];
+    defaultAddQuantity?: number;
 }
 
 
@@ -425,6 +426,14 @@ export default function ManualDietBuilderScreen({ navigation, route }: any) {
         }
 
         const defaultUnit = targetFoodToAdd.servingUnits[0] || { unit: 'g', grams: 1, labelEn: 'g', labelAr: 'غرام' };
+        
+        let defaultQty = 1;
+        if (targetFoodToAdd.defaultAddQuantity !== undefined) {
+            defaultQty = targetFoodToAdd.defaultAddQuantity;
+        } else if (defaultUnit.unit === 'g' || defaultUnit.unit === 'ml') {
+            defaultQty = 100;
+        }
+
         const newKey = `item_${targetFoodToAdd.id}_${Date.now()}_${nextKeyRef.current++}`;
 
         const updatedGroups = finalGroups.map(g => {
@@ -433,7 +442,7 @@ export default function ManualDietBuilderScreen({ navigation, route }: any) {
                 ...g,
                 items: [
                     ...g.items,
-                    { key: newKey, food: targetFoodToAdd, quantity: 100, selectedUnit: defaultUnit }
+                    { key: newKey, food: targetFoodToAdd, quantity: defaultQty, selectedUnit: defaultUnit }
                 ]
             };
         });
@@ -500,15 +509,19 @@ export default function ManualDietBuilderScreen({ navigation, route }: any) {
         }
 
         const qty = Number(customFoodForm.quantity) || 1;
+        const totalGrams = qty * selectedCustomUnit.grams;
+        const normalize = (val: number) => totalGrams > 0 ? (val / totalGrams) * 100 : 0;
+
         const food: FoodResult = {
             id: `custom_${Date.now()}`,
             nameEn: customFoodForm.nameEn.trim() || customFoodForm.nameAr.trim(),
             nameAr: customFoodForm.nameAr.trim() || customFoodForm.nameEn.trim(),
-            calories: Number(customFoodForm.calories) || 0,
-            protein: Number(customFoodForm.protein) || 0,
-            carbs: Number(customFoodForm.carbs) || 0,
-            fat: Number(customFoodForm.fat) || 0,
+            calories: normalize(Number(customFoodForm.calories) || 0),
+            protein: normalize(Number(customFoodForm.protein) || 0),
+            carbs: normalize(Number(customFoodForm.carbs) || 0),
+            fat: normalize(Number(customFoodForm.fat) || 0),
             fiber: 0,
+            defaultAddQuantity: qty,
             servingUnits: [
                 {
                     unit: selectedCustomUnit.key,
