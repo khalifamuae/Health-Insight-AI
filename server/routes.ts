@@ -261,6 +261,25 @@ export async function registerRoutes(
     console.error("[startup] Failed to ensure standalone_chat_messages table:", err.message);
   }
 
+  // Ensure shared_diet_plans table exists and share_code column is wide enough
+  try {
+    await db.execute(sql`
+      CREATE TABLE IF NOT EXISTS shared_diet_plans (
+        id VARCHAR PRIMARY KEY DEFAULT gen_random_uuid(),
+        share_code VARCHAR(10) NOT NULL UNIQUE,
+        author_id VARCHAR NOT NULL,
+        plan_data JSONB NOT NULL,
+        downloads INTEGER DEFAULT 0,
+        created_at TIMESTAMP DEFAULT NOW()
+      )
+    `);
+    // Widen share_code column if it was previously too narrow (varchar(6))
+    await db.execute(sql`ALTER TABLE shared_diet_plans ALTER COLUMN share_code TYPE VARCHAR(10)`);
+    console.log("[startup] shared_diet_plans table ensured");
+  } catch (err: any) {
+    console.error("[startup] shared_diet_plans table setup:", err.message);
+  }
+
   // Register Admin Routes
   app.use("/api/admin", adminRouter);
 
@@ -339,7 +358,7 @@ export async function registerRoutes(
   app.use("/api", async (req: any, res: Response, next: any) => {
     const targetClientId = req.query.targetClientId as string;
     if (targetClientId && req.user) {
-      if (req.user.subscriberManagementActive !== true && req.user.role !== 'admin') {
+      if (req.user.subscriberManagementActive !== true && req.user.isCertifiedTrainer !== true && req.user.role !== 'admin') {
          return res.status(403).json({ error: "Subscriber management feature not active" });
       }
       const conn = await db.query.subscriberConnections.findFirst({
@@ -356,7 +375,13 @@ export async function registerRoutes(
       }
 
       req.originalUser = req.user;
-      req.user = conn.client;
+      req.user = {
+        ...conn.client,
+        claims: {
+           ...(req.user?.claims || {}),
+           sub: targetClientId,
+        }
+      };
       // Also intercept any potential re-saves of user fields
       req.userOverrideActive = true; 
     }
@@ -2449,8 +2474,8 @@ export async function registerRoutes(
 
       // Generate a unique 6-character uppercase alphanumeric code
       const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-      let shareCode = 'D-';
-      for (let i = 0; i < 5; i++) {
+      let shareCode = '';
+      for (let i = 0; i < 6; i++) {
         shareCode += characters.charAt(Math.floor(Math.random() * characters.length));
       }
 

@@ -212,6 +212,7 @@ export const isAuthenticated: RequestHandler = async (req, res, next) => {
       if (users.length > 0) {
         const profile = users[0];
         (req as any).user = {
+          ...profile,
           claims: { sub: profile.id, email: profile.email, first_name: profile.firstName || "", last_name: profile.lastName || "", exp: Math.floor(Date.now() / 1000) + 86400 },
           expires_at: Math.floor(Date.now() / 1000) + 86400,
           access_token: crypto.randomUUID(),

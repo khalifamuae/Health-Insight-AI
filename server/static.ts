@@ -10,6 +10,19 @@ export function serveStatic(app: Express) {
     );
   }
 
+  // Serve app-ads.txt with correct content type for AdMob verification
+  app.get("/app-ads.txt", (_req, res) => {
+    const appAdsPath = path.resolve(distPath, "app-ads.txt");
+    if (fs.existsSync(appAdsPath)) {
+      res.type("text/plain").sendFile(appAdsPath);
+    } else {
+      // Hardcoded fallback to ensure AdMob verification always works
+      res.type("text/plain").send(
+        "google.com, pub-1897992442343412, DIRECT, f08c47fec0942fa0\n"
+      );
+    }
+  });
+
   app.use(express.static(distPath));
 
   // fall through to index.html if the file doesn't exist

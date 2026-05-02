@@ -52,7 +52,13 @@ export function useChat({ queryKey, fetchEndpoint, sendEndpoint, supportsAttachm
   // Fetch messages from server with polling
   const { data: serverMessages, isLoading, refetch } = useQuery<ChatMessage[]>({
     queryKey,
-    queryFn: () => api.get<ChatMessage[]>(fetchEndpoint),
+    queryFn: async () => {
+      const msgs = await api.get<ChatMessage[]>(fetchEndpoint);
+      // Server marks messages as read during GET — invalidate chats-list
+      // so unread badges update everywhere (side menu, chats list)
+      queryClient.invalidateQueries({ queryKey: ['chats-list'] });
+      return msgs;
+    },
     refetchInterval: 5000,
   });
 

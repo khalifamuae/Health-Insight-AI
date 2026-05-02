@@ -251,16 +251,18 @@ export default function WorkoutPlansScreen({ route, navigation }: any) {
   const [isImporting, setIsImporting] = useState(false);
   const [isSharing, setIsSharing] = useState<string | null>(null);
   const [isSharingAll, setIsSharingAll] = useState(false);
+  const hasInitiallyExpanded = React.useRef(false);
 
   const loadGroups = useCallback(async () => {
     const data = await WorkoutStore.getGroups(clientId);
     setGroups(data);
 
-    // Expand all by default initially
-    if (expandedGroupIds.length === 0 && data.length > 0) {
+    // Expand all by default only on the very first load
+    if (!hasInitiallyExpanded.current && data.length > 0) {
       setExpandedGroupIds(data.map(g => g.id));
+      hasInitiallyExpanded.current = true;
     }
-  }, [clientId, expandedGroupIds.length]);
+  }, [clientId]);
 
   useFocusEffect(
     useCallback(() => {

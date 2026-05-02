@@ -448,7 +448,15 @@ router.get("/chat/:connectionId", async (req: any, res: Response) => {
     // Mark as read if user is not sender
     const unreadIds = chats.filter(c => c.senderId !== userId && !c.isRead).map(c => c.id);
     if (unreadIds.length > 0) {
-      // In a real app we'd do a batch update, but skipping for brevity
+      await db.update(subscriberChatMessages)
+        .set({ isRead: true })
+        .where(
+          and(
+            eq(subscriberChatMessages.connectionId, connectionId),
+            sql`${subscriberChatMessages.senderId} != ${userId}`,
+            eq(subscriberChatMessages.isRead, false)
+          )
+        );
     }
 
     res.json(chats);

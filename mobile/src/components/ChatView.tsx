@@ -10,10 +10,10 @@ import {
   Platform,
   I18nManager,
   Image,
-  KeyboardAvoidingView,
+  Keyboard,
+  Animated,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useHeaderHeight } from '@react-navigation/elements';
 import { useAppTheme } from '../context/ThemeContext';
 import { API_BASE_URL } from '../lib/api';
 import type { ChatMessage } from '../hooks/useChat';
@@ -57,9 +57,36 @@ export default function ChatView({
 }: ChatViewProps) {
   const { colors, isDark } = useAppTheme();
   const isArabic = I18nManager.isRTL;
-  const headerHeight = useHeaderHeight();
   const flatListRef = useRef<FlatList>(null);
   const [message, setMessage] = useState('');
+  const keyboardHeight = useRef(new Animated.Value(0)).current;
+
+  // Track keyboard height directly — much more reliable than KeyboardAvoidingView
+  // which breaks with complex view hierarchies (ad banners, nested navigators)
+  useEffect(() => {
+    const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
+    const hideEvent = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
+
+    const showSub = Keyboard.addListener(showEvent, (e) => {
+      Animated.timing(keyboardHeight, {
+        toValue: e.endCoordinates.height,
+        duration: Platform.OS === 'ios' ? e.duration || 250 : 150,
+        useNativeDriver: false,
+      }).start();
+      // Scroll to bottom when keyboard appears
+      setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 100);
+    });
+
+    const hideSub = Keyboard.addListener(hideEvent, (e) => {
+      Animated.timing(keyboardHeight, {
+        toValue: 0,
+        duration: Platform.OS === 'ios' ? (e.duration || 250) : 150,
+        useNativeDriver: false,
+      }).start();
+    });
+
+    return () => { showSub.remove(); hideSub.remove(); };
+  }, []);
 
   // Auto-scroll on new messages
   useEffect(() => {
@@ -149,11 +176,7 @@ export default function ChatView({
   };
 
   return (
-    <KeyboardAvoidingView
-      style={{ flex: 1, backgroundColor: colors.background }}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      keyboardVerticalOffset={Platform.OS === 'ios' ? headerHeight + 10 : 0}
-    >
+    <View style={{ flex: 1, backgroundColor: colors.background }}>
       {isLoading ? (
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={colors.primary} />
@@ -168,6 +191,7 @@ export default function ChatView({
           onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: true })}
           onLayout={() => flatListRef.current?.scrollToEnd({ animated: true })}
           keyboardDismissMode="interactive"
+          keyboardShouldPersistTaps="handled"
         />
       )}
 
@@ -176,7 +200,6 @@ export default function ChatView({
         backgroundColor: colors.card,
         borderTopColor: colors.border,
         flexDirection: isArabic ? 'row-reverse' : 'row',
-        paddingBottom: 8,
       }]}>
         {showAttachmentButtons && (
           <>
@@ -229,7 +252,10 @@ export default function ChatView({
           )}
         </TouchableOpacity>
       </View>
-    </KeyboardAvoidingView>
+
+      {/* Animated spacer that pushes content up when keyboard appears */}
+      <Animated.View style={{ height: keyboardHeight }} />
+    </View>
   );
 }
 

@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { StatusBar } from 'expo-status-bar';
-import { Modal, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Keyboard, Modal, Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { DarkTheme, DefaultTheme, NavigationContainer } from '@react-navigation/native';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -57,6 +57,20 @@ export default function App() {
 
 function AppNavigator() {
   const { isDark, colors } = useAppTheme();
+  const [keyboardUp, setKeyboardUp] = React.useState(false);
+
+  React.useEffect(() => {
+    const showSub = Keyboard.addListener(
+      Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow',
+      () => setKeyboardUp(true)
+    );
+    const hideSub = Keyboard.addListener(
+      Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide',
+      () => setKeyboardUp(false)
+    );
+    return () => { showSub.remove(); hideSub.remove(); };
+  }, []);
+
   const navTheme = isDark
     ? {
       ...DarkTheme,
@@ -95,8 +109,8 @@ function AppNavigator() {
         </NavigationContainer>
       </View>
 
-      {/* Fixed bottom ad banner — always visible for free accounts */}
-      <AdBanner position="bottom" />
+      {/* Fixed bottom ad banner — hide when keyboard is open to avoid squeezing input */}
+      {!keyboardUp && <AdBanner position="bottom" />}
     </View>
   );
 }

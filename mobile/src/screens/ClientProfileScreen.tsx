@@ -279,10 +279,16 @@ export default function ClientProfileScreen({ route, navigation }: any) {
                 if (groups && groups.length > 0) {
                   navigateToFeature('WorkoutTable');
                 } else {
-                  navigateToFeature('WorkoutBuilder');
+                  Alert.alert(
+                    isArabic ? 'لا يوجد جدول' : 'No Plan',
+                    isArabic ? 'يرجى تصميم الجدول للتعديل عليه' : 'Please design a plan to edit it'
+                  );
                 }
               } catch (e) {
-                navigateToFeature('WorkoutBuilder');
+                Alert.alert(
+                  isArabic ? 'لا يوجد جدول' : 'No Plan',
+                  isArabic ? 'يرجى تصميم الجدول للتعديل عليه' : 'Please design a plan to edit it'
+                );
               }
             }}
           >
@@ -329,10 +335,16 @@ export default function ClientProfileScreen({ route, navigation }: any) {
                 if (Array.isArray(plans) && plans.length > 0) {
                   navigateToFeature('DietTable');
                 } else {
-                  navigateToFeature('ManualDietBuilder');
+                  Alert.alert(
+                    isArabic ? 'لا يوجد جدول' : 'No Plan',
+                    isArabic ? 'يرجى تصميم الجدول للتعديل عليه' : 'Please design a plan to edit it'
+                  );
                 }
               } catch (e) {
-                navigateToFeature('ManualDietBuilder');
+                Alert.alert(
+                  isArabic ? 'لا يوجد جدول' : 'No Plan',
+                  isArabic ? 'يرجى تصميم الجدول للتعديل عليه' : 'Please design a plan to edit it'
+                );
               }
             }}
           >
@@ -350,39 +362,20 @@ export default function ClientProfileScreen({ route, navigation }: any) {
             <Ionicons name="chevron-forward" size={20} color={colors.mutedText} />
           </TouchableOpacity>
 
-          {/* 5. تحاليل الدم */}
+          {/* 5. الفحوصات والتحاليل (Lab + InBody merged) */}
           <TouchableOpacity 
             style={[styles.actionCard, { backgroundColor: colors.card, borderColor: colors.border, flexDirection: 'row', marginTop: 12 }]}
-            onPress={() => navigation.navigate('Compare', { clientId, initialTab: 'lab' })}
+            onPress={() => navigation.navigate('Compare', { clientId })}
           >
             <View style={[styles.iconWrapper, { backgroundColor: 'rgba(168, 85, 247, 0.15)', marginRight: 16 }]}>
-              <Ionicons name="medical" size={28} color="#a855f7" />
+              <Ionicons name="medkit" size={28} color="#a855f7" />
             </View>
             <View style={{ flex: 1, alignItems: 'flex-start' }}>
               <Text style={[styles.actionTitle, { color: colors.text, textAlign: 'left' }]}>
-                {isArabic ? 'التحاليل الخاصة بالمتدرب' : 'Blood Tests'}
+                {isArabic ? 'الفحوصات والتحاليل' : 'Tests & Body Scans'}
               </Text>
               <Text style={[styles.actionDesc, { color: colors.mutedText, textAlign: 'left' }]}>
-                {isArabic ? 'استعراض ومقارنة فحوصات الدم المرفوعة' : 'Review and compare blood work'}
-              </Text>
-            </View>
-            <Ionicons name="chevron-forward" size={20} color={colors.mutedText} />
-          </TouchableOpacity>
-
-          {/* 6. فحوصات InBody */}
-          <TouchableOpacity 
-            style={[styles.actionCard, { backgroundColor: colors.card, borderColor: colors.border, flexDirection: 'row' }]}
-            onPress={() => navigation.navigate('Compare', { clientId, initialTab: 'inbody' })}
-          >
-            <View style={[styles.iconWrapper, { backgroundColor: 'rgba(16, 185, 129, 0.15)', marginRight: 16 }]}>
-              <Ionicons name="body" size={28} color="#10b981" />
-            </View>
-            <View style={{ flex: 1, alignItems: 'flex-start' }}>
-              <Text style={[styles.actionTitle, { color: colors.text, textAlign: 'left' }]}>
-                {isArabic ? 'فحوصات InBody الخاصة بالمتدرب' : 'InBody Scans'}
-              </Text>
-              <Text style={[styles.actionDesc, { color: colors.mutedText, textAlign: 'left' }]}>
-                {isArabic ? 'استعراض نتائج فحوصات تكوين الجسم' : 'Body composition records'}
+                {isArabic ? 'استعراض تحاليل الدم وفحوصات تكوين الجسم (InBody)' : 'Blood tests & InBody body composition'}
               </Text>
             </View>
             <Ionicons name="chevron-forward" size={20} color={colors.mutedText} />

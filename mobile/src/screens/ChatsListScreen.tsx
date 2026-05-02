@@ -9,7 +9,7 @@ import {
   I18nManager,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useFocusEffect } from '@react-navigation/native';
 import { isArabicLanguage } from '../lib/isArabic';
 import { useAppTheme } from '../context/ThemeContext';
@@ -31,6 +31,7 @@ export default function ChatsListScreen({ navigation }: any) {
   const { colors, isDark } = useAppTheme();
   const isArabic = I18nManager.isRTL;
   const { user } = useAuth();
+  const queryClient = useQueryClient();
 
   const { data: conversations, isLoading, refetch } = useQuery<ChatConversation[]>({
     queryKey: ['chats-list'],
@@ -38,7 +39,10 @@ export default function ChatsListScreen({ navigation }: any) {
     refetchInterval: 10000, // Poll every 10s
   });
 
-  useFocusEffect(useCallback(() => { refetch(); }, [refetch]));
+  // Refresh chats list when returning to this screen (clears read badges)
+  useFocusEffect(useCallback(() => {
+    queryClient.invalidateQueries({ queryKey: ['chats-list'] });
+  }, [queryClient]));
 
   const formatTime = (dateStr: string) => {
     const d = new Date(dateStr);
@@ -56,6 +60,11 @@ export default function ChatsListScreen({ navigation }: any) {
   };
 
   const handleChatPress = (chat: ChatConversation) => {
+    // Optimistically clear unread count immediately so badge disappears
+    queryClient.setQueryData<ChatConversation[]>(['chats-list'], (old) =>
+      (old || []).map(c => c.id === chat.id ? { ...c, unreadCount: 0 } : c)
+    );
+
     if (chat.chatType === 'standalone') {
       navigation.navigate('StandaloneChat', {
         otherUserId: chat.otherUserId,

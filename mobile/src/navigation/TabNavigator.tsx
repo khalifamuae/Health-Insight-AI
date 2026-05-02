@@ -80,9 +80,10 @@ export default function TabNavigator({ navigation }: any) {
     <TouchableOpacity
       onPress={() => setIsMenuVisible(true)}
       style={styles.menuTrigger}
+      hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
       testID="button-header-menu"
     >
-      <Ionicons name="menu" size={20} color={colors.text} />
+      <Ionicons name="menu" size={24} color={colors.text} />
     </TouchableOpacity>
   );
 
@@ -194,10 +195,10 @@ export default function TabNavigator({ navigation }: any) {
           headerLeft: renderMenuTrigger,
           headerRight: undefined,
           headerLeftContainerStyle: {
-            paddingHorizontal: 6,
+            paddingHorizontal: 12,
           },
           headerRightContainerStyle: {
-            paddingHorizontal: 6,
+            paddingHorizontal: 12,
           },
         })}
       >
@@ -708,9 +709,9 @@ export default function TabNavigator({ navigation }: any) {
 
 const styles = StyleSheet.create({
   menuTrigger: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
+    width: 44,
+    height: 44,
+    borderRadius: 12,
     borderWidth: 0,
     backgroundColor: 'transparent',
     alignItems: 'center',
