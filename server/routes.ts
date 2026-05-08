@@ -2412,6 +2412,12 @@ export async function registerRoutes(
       const { groupName, exercises } = req.body;
       const userId = req.user.claims?.sub || req.user.id;
 
+      // Verify paid subscription
+      const [profile] = await db.select().from(userProfiles).where(eq(userProfiles.id, userId)).limit(1);
+      if (!profile || profile.subscriptionPlan === 'free') {
+        return res.status(403).json({ error: "SUBSCRIPTION_REQUIRED", message: "Sharing requires a paid subscription." });
+      }
+
       if (!groupName || !exercises || !Array.isArray(exercises) || exercises.length === 0) {
         return res.status(400).json({ error: "Invalid workout data provided." });
       }
@@ -2467,6 +2473,12 @@ export async function registerRoutes(
     try {
       const { planData } = req.body;
       const userId = req.user.claims?.sub || req.user.id;
+
+      // Verify paid subscription
+      const [profile] = await db.select().from(userProfiles).where(eq(userProfiles.id, userId)).limit(1);
+      if (!profile || profile.subscriptionPlan === 'free') {
+        return res.status(403).json({ error: "SUBSCRIPTION_REQUIRED", message: "Sharing requires a paid subscription." });
+      }
 
       if (!planData || typeof planData !== 'object') {
         return res.status(400).json({ error: "Invalid diet plan data provided." });

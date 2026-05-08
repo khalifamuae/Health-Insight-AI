@@ -8,6 +8,7 @@ import { useFocusEffect } from '@react-navigation/native';
 
 import { api, queries } from '../lib/api';
 import { useAppTheme } from '../context/ThemeContext';
+import { useSubscription } from '../context/SubscriptionContext';
 
 import { formatAppDate, getDateCalendarPreference, type CalendarType } from '../lib/dateFormat';
 import DietPlanDisplay from '../components/DietPlanDisplay';
@@ -26,6 +27,7 @@ export default function MyDietPlansScreen({ route, navigation }: any) {
   const { clientId } = route?.params || {};
   const { t, i18n } = useTranslation();
   const { colors, isDark } = useAppTheme();
+  const { isPaid } = useSubscription();
   const isArabic = isArabicLanguage();
   const [dateCalendar, setDateCalendar] = useState<CalendarType>('gregorian');
   const [expandedId, setExpandedId] = useState<string | null>(null);
@@ -181,6 +183,17 @@ export default function MyDietPlansScreen({ route, navigation }: any) {
     );
   };
   const handleShareAllManualPlans = async () => {
+    if (!isPaid()) {
+      Alert.alert(
+        isArabic ? 'ميزة مدفوعة' : 'Premium Feature',
+        isArabic ? 'ميزة مشاركة الجداول متاحة فقط للمشتركين. قم بالترقية للاستمتاع بهذه الميزة.' : 'Sharing plans is available only for subscribers. Upgrade to enjoy this feature.',
+        [
+          { text: isArabic ? 'إلغاء' : 'Cancel', style: 'cancel' },
+          { text: isArabic ? 'ترقية' : 'Upgrade', onPress: () => navigation.navigate('Subscription') }
+        ]
+      );
+      return;
+    }
     const allGroups: any[] = [];
     savedPlansList.forEach(p => {
       try {
@@ -282,6 +295,17 @@ export default function MyDietPlansScreen({ route, navigation }: any) {
   };
 
   const handleSharePlan = async (parsedPlan: any) => {
+    if (!isPaid()) {
+      Alert.alert(
+        isArabic ? 'ميزة مدفوعة' : 'Premium Feature',
+        isArabic ? 'ميزة مشاركة الجداول متاحة فقط للمشتركين. قم بالترقية للاستمتاع بهذه الميزة.' : 'Sharing plans is available only for subscribers. Upgrade to enjoy this feature.',
+        [
+          { text: isArabic ? 'إلغاء' : 'Cancel', style: 'cancel' },
+          { text: isArabic ? 'ترقية' : 'Upgrade', onPress: () => navigation.navigate('Subscription') }
+        ]
+      );
+      return;
+    }
     setIsSharing(true);
     try {
       const res = await api.post<{ shareCode: string }>('/api/diet-plans/share', { planData: parsedPlan });
@@ -299,6 +323,17 @@ export default function MyDietPlansScreen({ route, navigation }: any) {
   };
 
   const handleShareGroup = async (group: any) => {
+    if (!isPaid()) {
+      Alert.alert(
+        isArabic ? 'ميزة مدفوعة' : 'Premium Feature',
+        isArabic ? 'ميزة مشاركة الجداول متاحة فقط للمشتركين. قم بالترقية للاستمتاع بهذه الميزة.' : 'Sharing plans is available only for subscribers. Upgrade to enjoy this feature.',
+        [
+          { text: isArabic ? 'إلغاء' : 'Cancel', style: 'cancel' },
+          { text: isArabic ? 'ترقية' : 'Upgrade', onPress: () => navigation.navigate('Subscription') }
+        ]
+      );
+      return;
+    }
     setIsSharing(true);
     try {
       let calories = 0, protein = 0, carbs = 0, fat = 0;

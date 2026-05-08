@@ -12,6 +12,7 @@ import { WorkoutStore, WorkoutGroup, SavedExercise } from '../lib/WorkoutStore';
 import { EXERCISE_REGISTRY, GlobalExercise } from '../lib/WorkoutRegistry';
 import { VideoCacheManager } from '../lib/VideoCacheManager';
 import AppTextInput from '../components/AppTextInput';
+import { useSubscription } from '../context/SubscriptionContext';
 
 // --- Subcomponent: Exercise item with Video Player, Sets, Reps, and Download ---
 const ExerciseCard = ({ savedExercise, globalExercise, groupId, onRemove, onUpdateWeights }: { savedExercise: SavedExercise, globalExercise: GlobalExercise, groupId: string, onRemove: () => void, onUpdateWeights: (groupId: string, exerciseId: string, start: number | undefined, end: number | undefined, unit: 'kg' | 'lbs') => void }) => {
@@ -244,6 +245,7 @@ const ExerciseCard = ({ savedExercise, globalExercise, groupId, onRemove, onUpda
 export default function WorkoutPlansScreen({ route, navigation }: any) {
   const { clientId } = route?.params || {};
   const { colors, isDark } = useAppTheme();
+  const { isPaid } = useSubscription();
   const isArabic = isArabicLanguage();
   const [groups, setGroups] = useState<WorkoutGroup[]>([]);
   const [expandedGroupIds, setExpandedGroupIds] = useState<string[]>([]);
@@ -355,6 +357,17 @@ export default function WorkoutPlansScreen({ route, navigation }: any) {
   };
 
   const handleShareGroup = async (groupId: string, groupName: string) => {
+    if (!isPaid()) {
+      Alert.alert(
+        isArabic ? 'ميزة مدفوعة' : 'Premium Feature',
+        isArabic ? 'ميزة مشاركة الجداول متاحة فقط للمشتركين. قم بالترقية للاستمتاع بهذه الميزة.' : 'Sharing plans is available only for subscribers. Upgrade to enjoy this feature.',
+        [
+          { text: isArabic ? 'إلغاء' : 'Cancel', style: 'cancel' },
+          { text: isArabic ? 'ترقية' : 'Upgrade', onPress: () => navigation.navigate('Subscription') }
+        ]
+      );
+      return;
+    }
     setIsSharing(groupId);
     try {
       const code = await WorkoutStore.shareGroup(groupId, clientId);
@@ -372,6 +385,17 @@ export default function WorkoutPlansScreen({ route, navigation }: any) {
   };
 
   const handleShareAllGroups = async () => {
+    if (!isPaid()) {
+      Alert.alert(
+        isArabic ? 'ميزة مدفوعة' : 'Premium Feature',
+        isArabic ? 'ميزة مشاركة الجداول متاحة فقط للمشتركين. قم بالترقية للاستمتاع بهذه الميزة.' : 'Sharing plans is available only for subscribers. Upgrade to enjoy this feature.',
+        [
+          { text: isArabic ? 'إلغاء' : 'Cancel', style: 'cancel' },
+          { text: isArabic ? 'ترقية' : 'Upgrade', onPress: () => navigation.navigate('Subscription') }
+        ]
+      );
+      return;
+    }
     setIsSharingAll(true);
     try {
       const code = await WorkoutStore.shareAllGroups(clientId);
