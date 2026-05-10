@@ -27,6 +27,7 @@ export default function TrainerListScreen({ navigation }: any) {
   const { colors, isDark } = useAppTheme();
   const isArabic = isArabicLanguage();
   const [search, setSearch] = useState('');
+  const [showDisclaimer, setShowDisclaimer] = useState(false);
   const styles = getStyles(isArabic);
 
   const { data: trainers, isLoading, refetch } = useQuery<Trainer[]>({
@@ -133,6 +134,64 @@ export default function TrainerListScreen({ navigation }: any) {
         </Text>
       </View>
 
+      {/* Disclaimer */}
+      <TouchableOpacity
+        onPress={() => setShowDisclaimer(!showDisclaimer)}
+        activeOpacity={0.8}
+        style={[styles.disclaimerHeader, {
+          backgroundColor: isDark ? '#3a2e1e' : '#fffbeb',
+          borderColor: isDark ? '#f59e0b30' : '#fde68a',
+        }]}
+        testID="button-toggle-disclaimer"
+      >
+        <Ionicons name="warning" size={18} color="#f59e0b" />
+        <Text style={[styles.disclaimerTitle, { color: isDark ? '#fcd34d' : '#92400e' }]}>
+          {isArabic ? 'إخلاء مسؤولية' : 'Disclaimer'}
+        </Text>
+        <Ionicons
+          name={showDisclaimer ? 'chevron-up' : 'chevron-down'}
+          size={18}
+          color={isDark ? '#fcd34d' : '#92400e'}
+        />
+      </TouchableOpacity>
+
+      {showDisclaimer && (
+        <View style={[styles.disclaimerBody, {
+          backgroundColor: isDark ? '#2a1f10' : '#fffbeb',
+          borderColor: isDark ? '#f59e0b30' : '#fde68a',
+        }]}>
+          <Text style={[styles.disclaimerIntro, { color: isDark ? '#fde68a' : '#78350f' }]}>
+            {isArabic
+              ? 'يُعد تطبيق BioTrack AI منصة وسيطة تهدف إلى تسهيل التواصل بين المستخدمين والمدربين المعتمدين فقط، ولا يُشكّل طرفاً في أي علاقة تعاقدية أو مهنية تنشأ بينهما.'
+              : 'BioTrack AI is an intermediary platform that facilitates communication between users and certified trainers only. It is not a party to any contractual or professional relationship between them.'}
+          </Text>
+          <Text style={[styles.disclaimerSubtitle, { color: isDark ? '#fcd34d' : '#92400e' }]}>
+            {isArabic ? 'النقاط الرئيسية:' : 'Key points:'}
+          </Text>
+          {(isArabic
+            ? [
+                'لا يتحمل التطبيق أي مسؤولية عن جودة الخدمات المقدمة من المدربين أو نتائجها',
+                'لا يتحمل التطبيق أي مسؤولية عن أي التزامات أو اتفاقيات مالية أو غير مالية بين المستخدم والمدرب',
+                'لا يتحمل التطبيق أي مسؤولية عن أي أضرار جسدية أو صحية أو مادية قد تنتج عن اتباع تعليمات المدرب',
+                'يتحمل الطرفان كامل المسؤولية عن التحقق من المؤهلات والشهادات',
+              ]
+            : [
+                'The app is not responsible for the quality or outcomes of services provided by trainers',
+                'The app is not responsible for any financial or non-financial agreements between users and trainers',
+                'The app is not responsible for any physical, health, or material damages resulting from following a trainer\'s instructions',
+                'Both parties are fully responsible for verifying qualifications and certifications',
+              ]
+          ).map((line, i) => (
+            <View key={i} style={styles.disclaimerBullet}>
+              <Text style={[styles.disclaimerBulletDot, { color: '#f59e0b' }]}>•</Text>
+              <Text style={[styles.disclaimerBulletText, { color: isDark ? '#fde68a' : '#78350f' }]}>
+                {line}
+              </Text>
+            </View>
+          ))}
+        </View>
+      )}
+
       {/* List */}
       <FlatList
         data={filtered}
@@ -193,6 +252,30 @@ const getStyles = (isArabic: boolean) => StyleSheet.create({
     borderWidth: 1,
   },
   infoText: { flex: 1, fontSize: 12, lineHeight: 18, fontWeight: '500', textAlign: 'left' },
+  disclaimerHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginHorizontal: 16,
+    marginTop: 8,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: 10,
+    borderWidth: 1,
+  },
+  disclaimerTitle: { flex: 1, fontSize: 13, fontWeight: '700', textAlign: isArabic ? 'right' : 'left' },
+  disclaimerBody: {
+    marginHorizontal: 16,
+    marginTop: 6,
+    padding: 14,
+    borderRadius: 10,
+    borderWidth: 1,
+  },
+  disclaimerIntro: { fontSize: 12, lineHeight: 20, marginBottom: 10, textAlign: isArabic ? 'right' : 'left' },
+  disclaimerSubtitle: { fontSize: 13, fontWeight: '700', marginBottom: 6, textAlign: isArabic ? 'right' : 'left' },
+  disclaimerBullet: { flexDirection: isArabic ? 'row-reverse' : 'row', alignItems: 'flex-start', gap: 6, marginBottom: 6 },
+  disclaimerBulletDot: { fontSize: 16, lineHeight: 18, fontWeight: '700' },
+  disclaimerBulletText: { flex: 1, fontSize: 12, lineHeight: 18, textAlign: isArabic ? 'right' : 'left' },
   listContent: { padding: 16, paddingTop: 8 },
   trainerCard: {
     flexDirection: 'row',
