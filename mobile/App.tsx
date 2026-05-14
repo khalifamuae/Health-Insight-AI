@@ -13,6 +13,7 @@ import { ThemeProvider, useAppTheme } from './src/context/ThemeContext';
 import { SubscriptionProvider } from './src/context/SubscriptionContext';
 import RootNavigator from './src/navigation/RootNavigator';
 import AdBanner from './src/components/AdBanner';
+import UpdateChecker from './src/components/UpdateChecker';
 import { initIAP, endIAP } from './src/services/IAPService';
 import { initializeReminderNotifications } from './src/services/ReminderNotificationService';
 import mobileAds from 'react-native-google-mobile-ads';
@@ -117,6 +118,7 @@ function AppNavigator() {
           <StatusBar style={isDark ? 'light' : 'dark'} />
           <RootNavigator />
           <AIConsentModal />
+          <UpdateChecker />
         </NavigationContainer>
       </View>
 

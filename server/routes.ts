@@ -280,6 +280,20 @@ export async function registerRoutes(
     console.error("[startup] shared_diet_plans table setup:", err.message);
   }
 
+  // ========== APP VERSION CHECK ==========
+  // Public endpoint — no auth required
+  // Update 'latestVersion' here every time you publish a new build
+  app.get("/api/app/version", (_req: Request, res: Response) => {
+    res.json({
+      latestVersion: "1.0.11",
+      forceUpdate: false,
+      updateUrl: {
+        ios: "https://apps.apple.com/app/biotrack-ai/id6744056718",
+        android: "https://play.google.com/store/apps/details?id=com.biotrack.ai",
+      },
+    });
+  });
+
   // Register Admin Routes
   app.use("/api/admin", adminRouter);
 
