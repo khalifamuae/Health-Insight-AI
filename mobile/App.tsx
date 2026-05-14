@@ -15,6 +15,7 @@ import RootNavigator from './src/navigation/RootNavigator';
 import AdBanner from './src/components/AdBanner';
 import { initIAP, endIAP } from './src/services/IAPService';
 import { initializeReminderNotifications } from './src/services/ReminderNotificationService';
+import mobileAds from 'react-native-google-mobile-ads';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -27,6 +28,16 @@ const queryClient = new QueryClient({
 
 export default function App() {
   useEffect(() => {
+    // Initialize Google Mobile Ads SDK
+    mobileAds()
+      .initialize()
+      .then((adapterStatuses) => {
+        console.log('[AdMob] Initialized:', adapterStatuses);
+      })
+      .catch((err) => {
+        console.error('[AdMob] Init failed:', err);
+      });
+
     initIAP().then((connected) => {
       if (connected) {
         console.log('[IAP] Connection established');
