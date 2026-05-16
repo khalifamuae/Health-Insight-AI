@@ -291,7 +291,7 @@ export default function DietPlanDisplay({ plan, colors, isDark, t, isArabicSyste
                             {sup.targetLabValue && (
                                 <View style={styles.targetLabRow}>
                                     <Ionicons name="flask" size={12} color="#6366f1" />
-                                    <Text style={[styles.targetLabText, { color: colors.text }]}>{isPlanContentArabic ? 'القيمة المستهدفة' : 'Target'}: {sup.targetLabValue}</Text>
+                                    <Text style={[styles.targetLabText, { color: colors.text }]}>{t('targetLabValue') || (isPlanContentArabic ? 'القيمة المستهدفة' : 'Target')}: {sup.targetLabValue}</Text>
                                 </View>
                             )}
                             {sup.scientificBasis && (
